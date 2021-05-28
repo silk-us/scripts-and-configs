@@ -75,7 +75,7 @@ Write-Host -ForegroundColor yellow "Creating Storage account $storage_accountnam
 $sa = New-AzStorageAccount -Name $storage_accountname -ResourceGroupName $rg.ResourceGroupName -Location $rg.Location -SkuName Standard_LRS
 $sc = $sa | New-AzStorageContainer -Name $storage_container 
 
-# Generate storage contexts and 
+# Generate storage contexts and copy blob
 Write-Host -ForegroundColor yellow "Copying $imageFileName to $storage_accountname"
 $sakeys = $sa | Get-AzStorageAccountKey
 

@@ -6,7 +6,9 @@ param(
     [parameter(Mandatory)]
     [string] $imageFileName,
     [parameter(Mandatory)]
-    [string] $sasToken
+    [string] $sasToken,
+    [parameter()]
+    [string] $souceStorageAccount = "silkimages"
 )
 
 function Build-MenuFromArray {
@@ -75,11 +77,11 @@ Write-Host -ForegroundColor yellow "Creating Storage account $storage_accountnam
 $sa = New-AzStorageAccount -Name $storage_accountname -ResourceGroupName $rg.ResourceGroupName -Location $rg.Location -SkuName Standard_LRS
 $sc = $sa | New-AzStorageContainer -Name $storage_container 
 
-# Generate storage contexts and copy blob
+# Generate storage contexts and 
 Write-Host -ForegroundColor yellow "Copying $imageFileName to $storage_accountname"
 $sakeys = $sa | Get-AzStorageAccountKey
 
-$srcContext = New-AzStorageContext -StorageAccountName silkimages -SasToken $sasToken 
+$srcContext = New-AzStorageContext -StorageAccountName $souceStorageAccount -SasToken $sasToken 
 $dstContext = New-AzStorageContext -StorageAccountName $sa.StorageAccountName -StorageAccountKey $sakeys[0].Value
 Start-AzStorageBlobCopy -DestContainer $storage_container -SrcBlob $imageFileName -SrcContainer 'images' -DestContext $dstContext -Context $srcContext -DestBlob $imageFileName 
 

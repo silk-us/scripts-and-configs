@@ -11,4 +11,4 @@ sudo iscsiadm -m node --login
 target="sudo iscsiadm -m node session | grep $sdpdatainterface | awk  '{ print $2 }'"
 sudo iscsiadm -m discovery -t sendtargets -p $sdpdatainterface
 sudo iscsiadm -m node -T $target -o update -n node.session.nr_sessions -v 6
-sudo iscsiadm -m node --login
+sudo iscsiadm -m node --login 

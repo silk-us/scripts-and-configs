@@ -36,7 +36,7 @@ if ($setMPIO) {
 $session = 0
 while ($session -lt $sessionsPerPath) {
     New-IscsiTargetPortal -TargetPortalAddress $targetIP.IPAddressToString -TargetPortalPortNumber 3260 -InitiatorPortalAddress $iSCSIData1.IPAddress
-    $SDPIQN = Get-IscsiTarget
+    $SDPIQN = Get-IscsiTarget | Where-Object {$_.NodeAddress -match "kaminario"}
     Connect-IscsiTarget -NodeAddress $SDPIQN.NodeAddress -TargetPortalAddress $targetIP.IPAddressToString -TargetPortalPortNumber 3260 -InitiatorPortalAddress $iSCSIData1.IPAddress -IsPersistent $true -IsMultipathEnabled $true
     $session++
 }

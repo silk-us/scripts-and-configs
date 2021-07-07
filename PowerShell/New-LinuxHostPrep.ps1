@@ -45,8 +45,12 @@ while ($number -le $numberOfVolumes) {
 }
 
 # Add host connection information
-if ($iqn) {Set-SDPHostIqn -iqn $iqn -hostName $name -verbose}
-if ($pwwn) {Set-SDPHostPwwn -pwwn $pwwn -hostName $name -verbose}
+if ($iqn) {
+    Set-SDPHostIqn -iqn $iqn -hostName $name -verbose
+} else {
+    $iqn = "iqn.2005-03.org.open-iscsi:" + $name
+    Set-SDPHostIqn -iqn $iqn -hostName $name -verbose
+}
 
 Write-Host -ForegroundColor yellow '--- To remove all objects ---'
 Write-Host -ForegroundColor yellow "Get-SDPHost -name $name | Get-SDPHostMapping | Remove-SDPHostMapping"

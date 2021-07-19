@@ -12,3 +12,4 @@ foreach ($r in $badResources) {
     $badArray += $o
 }
 
+$badArray

@@ -105,8 +105,6 @@ Start-AzStorageBlobCopy -DestContainer $storage_container -SrcBlob $dimageFileNa
 
 # Run VM size validation here
 
-
-
 $badArray = @()
 
 $response = Get-AzComputeResourceSku -Location $rg.Location | Where-Object {$_.Name -eq 'Standard_D64ds_v4' -or $_.Name -eq 'Standard_L8s_v2'}

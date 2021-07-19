@@ -119,7 +119,7 @@ foreach ($r in $badResources) {
     $badArray += $o
 }
 
-Write-Host -ForegroundColor yellow  "Checking for VM deployment restructions..."
+Write-Host -ForegroundColor yellow  "Checking for VM deployment restrictions..."
 $badArray
 
 # Wait for file to be copied

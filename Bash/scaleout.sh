@@ -12,6 +12,6 @@ sessionsper=$3
 target=`sudo iscsiadm -m node session | grep $sdpdatainterface | awk  '{ print $2 }'`
 
 sudo iscsiadm -m discovery -t sendtargets -p $sdpdatainterface
-sudo iscsiadm -m node -T $target -p $sdpnode3interface= -o update -n node.session.nr_sessions -v $sessionsper
+sudo iscsiadm -m node -T $target -p $sdpnode3interface -o update -n node.session.nr_sessions -v $sessionsper
 
 sudo iscsiadm -m node --login

@@ -23,6 +23,7 @@ do
 done
 
 sessionsper=`expr 24 / $check`
+echo $sessionsper
 
 for ((i = $startIndex ; i <= $endIndex ; i++))
 do
@@ -33,6 +34,9 @@ do
                 then
                         sudo iscsiadm -m node -T $target -p $ipTarget -o update -n node.session.nr_sessions -v $sessionsper
                         sudo iscsiadm -m node --login
-                        sleep 10
+                        sleep 5
+                else 
+                        sudo iscsiadm -m node -T $target -p $ipTarget -u
+                        sleep 3
                 fi
 done

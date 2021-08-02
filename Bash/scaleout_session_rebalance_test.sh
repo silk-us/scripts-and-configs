@@ -28,9 +28,9 @@ for ((i = $startIndex ; i <= $endIndex ; i++))
 do
         ipTarget="${ipPrefix}.${i}"
         up=`nc -zv $ipTarget 3260 -w 2 2>&1 | grep 'succeeded' | wc -l`
+        sudo iscsiadm -m node -T $target -p $ipTarget --logout
         if [ $up -eq 1 ]
                 then
-                        sudo iscsiadm -m node -T $target -p $ipTarget --logout
                         sudo iscsiadm -m node -T $target -p $ipTarget -o update -n node.session.nr_sessions -v $sessionsper
                         sudo iscsiadm -m node --login
                         sleep 10

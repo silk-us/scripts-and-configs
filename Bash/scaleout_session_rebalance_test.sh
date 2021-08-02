@@ -33,7 +33,7 @@ do
         if [ $up -eq 1 ]
                 then
                         sudo iscsiadm -m node -T $target -p $ipTarget -o update -n node.session.nr_sessions -v $sessionsper
-                        sudo iscsiadm -m node --login
+                        iscsiadm -m node -T $target -p $ipTarget --login
                         sleep 5
                 else 
                         sudo iscsiadm -m node -T $target -p $ipTarget -u

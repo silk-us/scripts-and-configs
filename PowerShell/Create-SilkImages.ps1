@@ -74,25 +74,26 @@ $storage_accountname = 'images' + ( -join ((48..57) + (65..90) + (97..122) | Get
 if ($cnodeVersion) {
     $cImageName = "k2c-cnode-" + $cnodeVersion.Replace('.','-')
     $cImageFileName = $cImageName + ".vhd"
+    $currentCImage = Get-AzImage -Name $cimageName -ResourceGroupName $target_rg -ErrorAction SilentlyContinue
+    if ($currentCImage) {
+        Write-Host -ForegroundColor yellow "Image -- $imageName -- Already exists in resource group -- $target_rg."
+        exit 
+    }
 }
 
 if ($dnodeVersion) {
     $dImageName = "azure-dnode-" + $dnodeVersion.Replace('.','-')
     $dImageFileName = $dImageName + ".vhd"
+    $currentDImage = Get-AzImage -Name $dimageName -ResourceGroupName $target_rg -ErrorAction SilentlyContinue
+    if ($currentDImage) {
+        Write-Host -ForegroundColor yellow "Image -- $imageName -- Already exists in resource group -- $target_rg."
+        exit 
+    }
 }
 
-# Check for images
-$currentCImage = Get-AzImage -Name $cimageName -ResourceGroupName $target_rg -ErrorAction SilentlyContinue
-if ($currentCImage) {
-    Write-Host -ForegroundColor yellow "Image -- $imageName -- Already exists in resource group -- $target_rg."
-    exit 
-}
 
-$currentDImage = Get-AzImage -Name $dimageName -ResourceGroupName $target_rg -ErrorAction SilentlyContinue
-if ($currentDImage) {
-    Write-Host -ForegroundColor yellow "Image -- $imageName -- Already exists in resource group -- $target_rg."
-    exit 
-}
+
+
 
 
 # Create target storage account

@@ -2,5 +2,3 @@ ACTION=="add|change", SUBSYSTEM=="block", ENV{ID_SERIAL}=="20024*", ATTR{queue/s
 ACTION=="add|change", SUBSYSTEM=="block", ENV{ID_SERIAL}=="20024*", ATTR{queue/scheduler}="none"
 ACTION=="add|change", SUBSYSTEM=="block", ENV{DM_UUID}=="mpath-20024*", ATTR{queue/scheduler}="noop"
 ACTION=="add|change", SUBSYSTEM=="block", ENV{DM_UUID}=="mpath-20024*", ATTR{queue/scheduler}="none"
-ACTION=="add|change", SUBSYSTEM=="block", ENV{ID_SERIAL}=="20024*", ATTR{queue/max_sectors_kb}="1024"
-ACTION=="add|change", SUBSYSTEM=="block", ENV{DM_UUID}=="mpath-20024*", ATTR{queue/max_sectors_kb}="1024"

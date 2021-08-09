@@ -16,7 +16,7 @@ check=0
 for ((i = $startIndex ; i <= $endIndex ; i++))
 do
         ipTarget="${ipPrefix}.${i}"
-        up=`nc -zv $ipTarget 3260 -w 2 2>&1 | grep 'succeeded' | wc -l`
+        up=`nc -zv $ipTarget 3260 -w 2 2>&1 | egrep 'succeeded | received' | wc -l`
         if [ $up -eq 1 ]
                 then
                         echo $ipTarget
@@ -28,11 +28,11 @@ done
 sessionsper=`expr 24 / $check`
 echo $sessionsper
 
-# This loop performs the actual iscsiadm commands to retire old sessions, create new sessins, and set the appropriate number of paths per session.
+# This loop performs the actual iscsiadm commands to retire old sessions, create new sessions, and set the appropriate number of paths per session.
 for ((i = $startIndex ; i <= $endIndex ; i++))
 do
         ipTarget="${ipPrefix}.${i}"
-        up=`nc -zv $ipTarget 3260 -w 2 2>&1 | grep 'succeeded' | wc -l`
+        up=`nc -zv $ipTarget 3260 -w 2 2>&1 | egrep 'succeeded | received' | wc -l`
         sudo iscsiadm -m node -T $target -p $ipTarget --logout
         if [ $up -eq 1 ]
                 then

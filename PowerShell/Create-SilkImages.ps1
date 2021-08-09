@@ -3,9 +3,9 @@ param(
     [string] $target_rg,
     [parameter()]
     [string] $storage_container = 'silk',
-    [parameter(Mandatory)]
+    [parameter()]
     [string] $cnodeVersion,
-    [parameter(Mandatory)]
+    [parameter()]
     [string] $dnodeVersion,
     [parameter(Mandatory)]
     [string] $sasToken,
@@ -52,6 +52,11 @@ if (!$sasToken) {
 }
 #>
 
+if (!$cnodeVersion -and !$dnodeVersion) {
+    Write-Host -ForegroundColor yellow "No image versions specified, please set -cnodeVersion or -dnodeVersion (or both)"
+    exit
+}
+
 if (!$target_rg) {
     $rglist = Get-AzResourceGroup
     $target_rg = Build-MenuFromArray -array $rglist -property resourcegroupname -message "Select the appropriate Resource Group"
@@ -66,15 +71,15 @@ if (!$rg) {
 
 $storage_accountname = 'images' + ( -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 10 | ForEach-Object {[char]$_})).ToLower()
 
-$cImageName = "k2c-cnode-" + $cnodeVersion.Replace('.','-')
-$cImageFileName = $cImageName + ".vhd"
+if ($cnodeVersion) {
+    $cImageName = "k2c-cnode-" + $cnodeVersion.Replace('.','-')
+    $cImageFileName = $cImageName + ".vhd"
+}
 
-$dImageName = "azure-dnode-" + $dnodeVersion.Replace('.','-')
-$dImageFileName = $dImageName + ".vhd"
-
-# $imageName = $imageFileName.replace('.vhd',$null)
-
-
+if ($dnodeVersion) {
+    $dImageName = "azure-dnode-" + $dnodeVersion.Replace('.','-')
+    $dImageFileName = $dImageName + ".vhd"
+}
 
 # Check for images
 $currentCImage = Get-AzImage -Name $cimageName -ResourceGroupName $target_rg -ErrorAction SilentlyContinue
@@ -89,6 +94,7 @@ if ($currentDImage) {
     exit 
 }
 
+
 # Create target storage account
 Write-Host -ForegroundColor yellow "Creating Storage account $storage_accountname"
 $sa = New-AzStorageAccount -Name $storage_accountname -ResourceGroupName $rg.ResourceGroupName -Location $rg.Location -SkuName Standard_LRS
@@ -100,8 +106,12 @@ $sakeys = $sa | Get-AzStorageAccountKey
 
 $srcContext = New-AzStorageContext -StorageAccountName $souceStorageAccount -SasToken $sasToken 
 $dstContext = New-AzStorageContext -StorageAccountName $sa.StorageAccountName -StorageAccountKey $sakeys[0].Value
-Start-AzStorageBlobCopy -DestContainer $storage_container -SrcBlob $cimageFileName -SrcContainer 'images' -DestContext $dstContext -Context $srcContext -DestBlob $cimageFileName 
-Start-AzStorageBlobCopy -DestContainer $storage_container -SrcBlob $dimageFileName -SrcContainer 'images' -DestContext $dstContext -Context $srcContext -DestBlob $dimageFileName 
+if ($cnodeVersion) {
+    Start-AzStorageBlobCopy -DestContainer $storage_container -SrcBlob $cimageFileName -SrcContainer 'images' -DestContext $dstContext -Context $srcContext -DestBlob $cimageFileName 
+}
+if ($dnodeVersion) {
+    Start-AzStorageBlobCopy -DestContainer $storage_container -SrcBlob $dimageFileName -SrcContainer 'images' -DestContext $dstContext -Context $srcContext -DestBlob $dimageFileName 
+}
 
 # Run VM size validation here
 
@@ -119,22 +129,31 @@ foreach ($r in $badResources) {
     $badArray += $o
 }
 
-Write-Host -ForegroundColor yellow  "Checking for VM deployment restrictions..."
+Write-Host -ForegroundColor yellow  "Checking for VM deployment restructions..."
 $badArray
 
 # Wait for file to be copied
-Get-AzStorageBlobCopyState -Blob $cimageFileName -Container $storage_container -Context $dstContext -WaitForComplete
-Get-AzStorageBlobCopyState -Blob $dimageFileName -Container $storage_container -Context $dstContext -WaitForComplete
+if ($cnodeVersion) {
+    Get-AzStorageBlobCopyState -Blob $cimageFileName -Container $storage_container -Context $dstContext -WaitForComplete
+}
+if ($dnodeVersion) {
+    Get-AzStorageBlobCopyState -Blob $dimageFileName -Container $storage_container -Context $dstContext -WaitForComplete
+}
 
-# Create cnode Image
-$cimageURI = $sc.CloudBlobContainer.Uri.AbsoluteUri + '/' + $cimageFileName
-$cimageConfig = New-AzImageConfig -Location $rg.Location
-$cimageConfig = Set-AzImageOsDisk -Image $cimageConfig -OsType Linux -OsState Generalized -BlobUri $cimageURI
-New-AzImage -ImageName $cimageName -ResourceGroupName $rg.ResourceGroupName -Image $cimageConfig
+if ($cnodeVersion) {
+    # Create cnode Image
+    $cimageURI = $sc.CloudBlobContainer.Uri.AbsoluteUri + '/' + $cimageFileName
+    $cimageConfig = New-AzImageConfig -Location $rg.Location
+    $cimageConfig = Set-AzImageOsDisk -Image $cimageConfig -OsType Linux -OsState Generalized -BlobUri $cimageURI
+    New-AzImage -ImageName $cimageName -ResourceGroupName $rg.ResourceGroupName -Image $cimageConfig
+}
 
-# Create dnode Image
-$dimageURI = $sc.CloudBlobContainer.Uri.AbsoluteUri + '/' + $dimageFileName
-$dimageConfig = New-AzImageConfig -Location $rg.Location
-$dimageConfig = Set-AzImageOsDisk -Image $dimageConfig -OsType Linux -OsState Generalized -BlobUri $dimageURI
-New-AzImage -ImageName $dimageName -ResourceGroupName $rg.ResourceGroupName -Image $dimageConfig
+if ($dnodeVersion) {
+    # Create dnode Image
+    $dimageURI = $sc.CloudBlobContainer.Uri.AbsoluteUri + '/' + $dimageFileName
+    $dimageConfig = New-AzImageConfig -Location $rg.Location
+    $dimageConfig = Set-AzImageOsDisk -Image $dimageConfig -OsType Linux -OsState Generalized -BlobUri $dimageURI
+    New-AzImage -ImageName $dimageName -ResourceGroupName $rg.ResourceGroupName -Image $dimageConfig
+}
+
 

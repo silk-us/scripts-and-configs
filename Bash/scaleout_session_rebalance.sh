@@ -38,7 +38,7 @@ do
                 then
                         sudo iscsiadm -m node -T $target -p $ipTarget -o update -n node.session.nr_sessions -v $sessionsper
                         iscsiadm -m node -T $target -p $ipTarget --login
-                        sleep 5
+                        sleep 30
                 else 
                         sudo iscsiadm -m node -T $target -p $ipTarget -u
                         sleep 3

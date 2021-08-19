@@ -71,7 +71,11 @@ if (!$rg) {
     exit
 }
 
-$storage_accountname = 'images' + ( -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 10 | ForEach-Object {[char]$_})).ToLower()
+if (!$storageAccount) {
+    $storage_accountname = 'images' + ( -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 10 | ForEach-Object {[char]$_})).ToLower()
+} else {
+    $storage_accountname = $storageAccount
+}
 
 if ($cnodeVersion) {
     $cImageName = "k2c-cnode-" + $cnodeVersion.Replace('.','-')

@@ -108,7 +108,12 @@ if (!$storageAccount) {
 
 $sc = $sa | Get-AzStorageContainer -Name $storage_container -ErrorAction SilentlyContinue
 if (!$sc) {
-    $sc = $sa | New-AzStorageContainer -Name $storage_container 
+    try {
+        $sc = $sa | New-AzStorageContainer -Name $storage_container 
+    } catch {
+        Write-Error 'Can not create or read container in this storage account, please check your permissions'
+        exit
+    }
 }
 
 

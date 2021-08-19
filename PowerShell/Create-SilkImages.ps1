@@ -98,7 +98,7 @@ if ($dnodeVersion) {
 
 # Create target storage account
 Write-Host -ForegroundColor yellow "Creating Storage account $storage_accountname"
-$sa = New-AzStorageAccount -Name $storage_accountname -ResourceGroupName $rg.ResourceGroupName -Location $rg.Location -SkuName Standard_LRS
+$sa = New-AzStorageAccount -Name $storage_accountname -ResourceGroupName $rg.ResourceGroupName -Location $rg.Location -SkuName Standard_LRS -AllowBlobPublicAccess $false
 $sc = $sa | New-AzStorageContainer -Name $storage_container 
 
 # Generate storage contexts and 

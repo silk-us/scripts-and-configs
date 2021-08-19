@@ -98,10 +98,6 @@ if ($dnodeVersion) {
 }
 
 
-
-
-
-
 # Create target storage account
 if (!$storageAccount) {
     Write-Host -ForegroundColor yellow "Creating Storage account $storage_accountname"
@@ -109,6 +105,8 @@ if (!$storageAccount) {
 } else {
     $sa = Get-AzStorageAccount -ResourceGroupName $rg.ResourceGroupName -Name $storageAccount
 }
+
+$sc = $sa | New-AzStorageContainer -Name $storage_container 
 
 # Generate storage contexts and 
 Write-Host -ForegroundColor yellow "Copying $cimageFileName and $dimageFileName to $storage_accountname"

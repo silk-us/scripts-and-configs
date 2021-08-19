@@ -2,6 +2,8 @@ param(
     [parameter()]
     [string] $target_rg,
     [parameter()]
+    [string] $storageAccount,
+    [parameter()]
     [string] $storage_container = 'silk',
     [parameter()]
     [string] $cnodeVersion,
@@ -97,9 +99,12 @@ if ($dnodeVersion) {
 
 
 # Create target storage account
-Write-Host -ForegroundColor yellow "Creating Storage account $storage_accountname"
-$sa = New-AzStorageAccount -Name $storage_accountname -ResourceGroupName $rg.ResourceGroupName -Location $rg.Location -SkuName Standard_LRS -AllowBlobPublicAccess $false
-$sc = $sa | New-AzStorageContainer -Name $storage_container 
+if (!$storageAccount) {
+    Write-Host -ForegroundColor yellow "Creating Storage account $storage_accountname"
+    $sa = New-AzStorageAccount -Name $storage_accountname -ResourceGroupName $rg.ResourceGroupName -Location $rg.Location -SkuName Standard_LRS -AllowBlobPublicAccess $false
+} else {
+    $sa = Get-AzStorageAccount -ResourceGroupName $rg.ResourceGroupName -Name $storageAccount
+}
 
 # Generate storage contexts and 
 Write-Host -ForegroundColor yellow "Copying $cimageFileName and $dimageFileName to $storage_accountname"
@@ -156,5 +161,4 @@ if ($dnodeVersion) {
     $dimageConfig = Set-AzImageOsDisk -Image $dimageConfig -OsType Linux -OsState Generalized -BlobUri $dimageURI
     New-AzImage -ImageName $dimageName -ResourceGroupName $rg.ResourceGroupName -Image $dimageConfig
 }
-
 

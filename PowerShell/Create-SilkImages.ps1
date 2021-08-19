@@ -106,7 +106,11 @@ if (!$storageAccount) {
     $sa = Get-AzStorageAccount -ResourceGroupName $rg.ResourceGroupName -Name $storageAccount
 }
 
-$sc = $sa | New-AzStorageContainer -Name $storage_container 
+$sc = $sa | Get-AzStorageContainer -Name $storage_container -ErrorAction SilentlyContinue
+if (!$sc) {
+    $sc = $sa | New-AzStorageContainer -Name $storage_container 
+}
+
 
 # Generate storage contexts and 
 Write-Host -ForegroundColor yellow "Copying $cimageFileName and $dimageFileName to $storage_accountname"

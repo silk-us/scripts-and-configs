@@ -1,0 +1,76 @@
+- name: Install AWS VM packages
+  hosts: "*"
+  tasks:
+    - name: Install YUM packages
+      yum:
+        name:
+        - iscsi-initiator-utils
+        - device-mapper-multipath
+        state: present
+        update_cache: true
+      become: true
+
+- name: Copy multipath files to hosts
+  hosts: "*"
+  tasks:
+    - name: create /etc/multipath.conf
+      copy: 
+        src: ~/multipath.conf
+        dest: /etc/multipath.conf
+        mode: '0644'
+      become: true
+    - name: create /etc/udev/rules.d/62-io-schedulers.rules
+      copy: 
+        src: ~/62-io-schedulers.rules
+        dest: /etc/udev/rules.d/62-io-schedulers.rules
+        mode: '0644'
+      become: true
+
+- name: Deploy host volumes
+    hosts: "*"
+    tasks:
+    - name: "Create Host"
+        sdp_host: 
+            name: "{{ inventory_hostname }}"
+            type: "Linux"
+            iqn: "iqn.2005-03.org.open-iscsi:{{ inventory_hostname }}"
+        register: newhost
+
+    - name: "Create Volume Group"
+        sdp_volumegroup: 
+            name: "{{ newhost.meta.name }}-vg"
+            dedupe: False
+        register: newvg
+
+    - name: "Create Volume 1"
+        sdp_volume: 
+            name: "{{ newhost.meta.name }}-vol1"
+            sizeInGB: 80
+            volumegroup: "{{ newvg.meta.name }}"
+        register: newvol1
+
+    - name: "Create Host Group mapping"
+        sdp_hostgroupmapping:
+            hostname: "{{ newhost.meta.name }}"
+            volumename: "{{ newvol1.meta.name }}"
+    
+
+- name: Connect to SDP
+  hosts: "*"
+  tasks:
+    - name: Run iscsiadm commands
+        ansible.builtin.shell: |
+
+            sdpdatainterface='10.141.150.18'
+
+            sudo systemctl restart multipathd
+
+            sudo echo "InitiatorName=iqn.2005-03.org.open-iscsi:`hostname`" | sudo tee /etc/iscsi/initiatorname.iscsi
+            sudo systemctl restart iscsid
+
+            sudo iscsiadm -m discovery -t sendtargets -p $sdpdatainterface
+            sudo iscsiadm -m node --login
+            target=`sudo iscsiadm -m node session | grep $sdpdatainterface | awk  '{ print $2 }'`
+            sudo iscsiadm -m discovery -t sendtargets -p $sdpdatainterface
+            sudo iscsiadm -m node -T $target -o update -n node.session.nr_sessions -v 4
+            sudo iscsiadm -m node --login 

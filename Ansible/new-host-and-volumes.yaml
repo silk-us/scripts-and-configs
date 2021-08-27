@@ -1,0 +1,42 @@
+- hosts: localhost
+  tasks:
+    - name: "Create Host Group"
+      sdp_hostgroup:
+        name: "ATHG01"
+        description: "host group"
+        allowDifferentHostTypes: True
+
+    - name: "Create Host"
+      sdp_host: 
+        name: "ATH01"
+        type: "Linux"
+        hostgroup: "ATHG01"
+        iqn: "iqn.2005-03.org.open-iscsi:ath01"
+
+    - name: "Create Volume Group"
+      sdp_volumegroup: 
+        name: "ATVG01"
+        quotaInGB: 2000
+        dedupe: True
+
+    - name: "Create Volume"
+      sdp_volume: 
+        name: "ATV01"
+        sizeInGB: 80
+        volumegroup: "ATVG01"
+
+    - name: "Create Volume 2"
+      sdp_volume: 
+        name: "ATV02"
+        sizeInGB: 50
+        volumegroup: "ATVG01"
+
+    - name: "Create Host Group mapping"
+      sdp_hostgroupmapping:
+        hostgroupname: "ATHG01"
+        volumename: "ATV01"
+
+    - name: "Create Host Group mapping"
+      sdp_hostgroupmapping:
+        hostgroupname: "ATHG01"
+        volumename: "ATV02"

@@ -39,7 +39,7 @@ data "template_file" "default" {
 }
 
 resource "google_compute_instance" "default" {
-    name = "${var.vm-name}-${count.index}"
+    name = "${var.vm-name}"
     machine_type = "e2-highcpu-16"
     zone         = var.zone
     allow_stopping_for_update = true
@@ -66,7 +66,7 @@ resource "google_compute_instance" "default" {
 }
 
 resource "silk_volume" "Silk-Volume" {
-    name = "${var.vm-name}-${count.index}-vd1"
+    name = "${var.vm-name}-vd1"
     size_in_gb = 200
     volume_group_name = silk_volume_group.Silk-Volume-Group.name
     description = "Build with TF"
@@ -83,7 +83,7 @@ resource "silk_volume_group" "Silk-Volume-Group" {
 }
 
 resource "silk_host" "Silk-Host" {
-    name = "${var.vm-name}-${count.index}"
+    name = "${var.vm-name}"
     host_type = "Linux"
     iqn = "iqn.2005-03.org.open-iscsi:${var.vm-name}"
 }

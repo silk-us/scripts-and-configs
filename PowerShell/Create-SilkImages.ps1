@@ -134,7 +134,7 @@ if ($dnodeVersion) {
 
 $badArray = @()
 
-$response = Get-AzComputeResourceSku -Location $rg.Location | Where-Object {$_.Name -eq 'Standard_D64ds_v4' -or $_.Name -eq 'Standard_L8s_v2'}
+$response = Get-AzComputeResourceSku -Location $rg.Location | Where-Object {$_.Name -eq 'Standard_D64s_v4' -or $_.Name -eq 'Standard_L8s_v2'}
 $badResources = ($response | Where-Object {$_.Restrictions})
 foreach ($r in $badResources) {
     $o = New-Object psobject

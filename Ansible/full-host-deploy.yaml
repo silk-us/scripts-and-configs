@@ -26,35 +26,6 @@
         mode: '0644'
       become: true
 
-- name: Deploy host volumes
-    hosts: "*"
-    tasks:
-    - name: "Create Host"
-        sdp_host: 
-            name: "{{ inventory_hostname }}"
-            type: "Linux"
-            iqn: "iqn.2005-03.org.open-iscsi:{{ inventory_hostname }}"
-        register: newhost
-
-    - name: "Create Volume Group"
-        sdp_volumegroup: 
-            name: "{{ newhost.meta.name }}-vg"
-            dedupe: False
-        register: newvg
-
-    - name: "Create Volume 1"
-        sdp_volume: 
-            name: "{{ newhost.meta.name }}-vol1"
-            sizeInGB: 80
-            volumegroup: "{{ newvg.meta.name }}"
-        register: newvol1
-
-    - name: "Create Host Group mapping"
-        sdp_hostgroupmapping:
-            hostname: "{{ newhost.meta.name }}"
-            volumename: "{{ newvol1.meta.name }}"
-    
-
 - name: Connect to SDP
   hosts: "*"
   tasks:

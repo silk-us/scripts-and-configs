@@ -30,7 +30,7 @@
   hosts: "*"
   tasks:
     - name: Run iscsiadm commands
-        ansible.builtin.shell: |
+        shell: |
 
             sdpdatainterface='10.141.150.18'
 

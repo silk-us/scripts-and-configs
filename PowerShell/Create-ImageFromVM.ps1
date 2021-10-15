@@ -1,15 +1,15 @@
 param(
     [string] $vmname,
     [switch] $diskonly,
-    [switch] $cleanup
+    [switch] $cleanup,
+    [string] $availabilityZone
 )
 
 # Gather VM facts and snapshot the VM OS disk
 $azvm = get-azvm -Name $vmname
 $azdisk = Get-AzDisk -Name $azvm.StorageProfile.OsDisk.name
 
-# $snapconfig = New-AzSnapshotConfig -SourceUri $azvm.StorageProfile.OsDisk.ManagedDisk.Id -OsType $azdisk.OsType -DiskSizeGB $azdisk.DiskSizeGB -Location $azdisk.Location -HyperVGeneration $azdisk.HyperVGeneration -AccountType Standard_LRS -CreateOption copy -EncryptionSettingsEnabled $false
-# -copy- $snapconfig = New-AzSnapshotConfig -SourceUri $azvm.StorageProfile.OsDisk.ManagedDisk.Id -Location $azdisk.Location -CreateOption copy -SkuName Standard_LRS
+# Create the snapshot
 $snapconfig = New-AzSnapshotConfig -SourceUri $azvm.StorageProfile.OsDisk.ManagedDisk.Id -Location $azdisk.Location -CreateOption empty -SkuName Standard_LRS
 
 
@@ -22,10 +22,14 @@ $finalsnap = New-AzSnapshot -ResourceGroupName $azvm.ResourceGroupName -Snapshot
 $finalsnap
 
 # Create a disk from that snapshot
-$snapDiskConfig = New-AzDiskConfig -Tier $azdisk.Tier -OsType $azdisk.OsType -DiskSizeGB $azdisk.DiskSizeGB -Location $azdisk.Location -HyperVGeneration $azdisk.HyperVGeneration -CreateOption copy -SourceResourceId $finalsnap.id
+if ($availabilityZone) {
+    $snapDiskConfig = New-AzDiskConfig -Tier $azdisk.Tier -OsType $azdisk.OsType -DiskSizeGB $azdisk.DiskSizeGB -Location $azdisk.Location -HyperVGeneration $azdisk.HyperVGeneration -CreateOption copy -SourceResourceId $finalsnap.id -Zone $availabilityZone
+} else {
+    $snapDiskConfig = New-AzDiskConfig -Tier $azdisk.Tier -OsType $azdisk.OsType -DiskSizeGB $azdisk.DiskSizeGB -Location $azdisk.Location -HyperVGeneration $azdisk.HyperVGeneration -CreateOption copy -SourceResourceId $finalsnap.id
+}
 $diskName = $azvm.Name + '_' + (get-random)
 Write-Host "--- Creating disk $diskName"`n`n
-$snapDisk = New-AzDisk -ResourceGroupName $azvm.ResourceGroupName -DiskName $diskName -Disk $snapDiskConfig
+$snapDisk = New-AzDisk -ResourceGroupName $azvm.ResourceGroupName -DiskName $diskName -Disk $snapDiskConfig 
 
 if ($diskonly) {
     if ($cleanup) {

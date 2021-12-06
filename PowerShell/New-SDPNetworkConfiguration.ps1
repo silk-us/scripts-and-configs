@@ -10,7 +10,11 @@ param(
     [parameter()]
     [ipaddress] $remoteData2Subnet,
     [parameter()]
-    [ipaddress] $remoteDataSubnetMask = $subnetMask
+    [ipaddress] $remoteDataSubnetMask = $subnetMask,
+    [parameter()]
+    [ipaddress] $data1Gateway,
+    [parameter()]
+    [ipaddress] $data2Gateway
 )
 
 <#
@@ -39,11 +43,9 @@ foreach ($i in $dataPorts) {
     if ($dpid -eq "1") {
         [ipaddress]$ipint = $data1Subnet.Address + $ipup   
         Get-SDPSystemNetPorts -name $i.name | New-SDPSystemNetIps -ipAddress $ipint.IPAddressToString -subnetMask $subnetMask -service iscsi     
-    } else {
-        if ($data2Subnet) {
-            [ipaddress]$ipint = $data2Subnet.Address + $ipup
-            Get-SDPSystemNetPorts -name $i.name | New-SDPSystemNetIps -ipAddress $ipint.IPAddressToString -subnetMask $subnetMask -service iscsi
-        }
+    } elseif ($data2Subnet) {   
+        [ipaddress]$ipint = $data2Subnet.Address + $ipup
+        Get-SDPSystemNetPorts -name $i.name | New-SDPSystemNetIps -ipAddress $ipint.IPAddressToString -subnetMask $subnetMask -service iscsi
     }
 }
 

@@ -29,7 +29,7 @@
 #### SDP variables ####
 sdpVIP="10.2.7.4"
 sdpUser="cvuser"
-sdpPass="NeedCV123!"
+sdpPass="Password"
 drsdpVIP="10.3.4.76"
 targetVG="epic-vg"
 drHost="epic-proxy-vm"

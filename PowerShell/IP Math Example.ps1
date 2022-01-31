@@ -1,7 +1,7 @@
 <#
  The example IP math function. 
  Example use: Add-IPAddressSpace -ip 10.1.0.192 -increment 10 
- Returns a classed [IPAddress] object for the address of 10.1.0.202
+ Returns a ip address string of 10.1.0.202
 #>
 function Add-IPAddressSpace {
     param(
@@ -14,7 +14,8 @@ function Add-IPAddressSpace {
     $ipup = 16777216 * $increment
     [ipaddress]$ipMath = $ip.Address + $ipup
 
-    return $ipMath
+    return $ipMath.IPAddressToString
+    # Or return $ipMath if you want the classed result. 
 }
  
 # Declare vnet and subnet name for the az powershell query.
@@ -28,6 +29,6 @@ $subnet = Get-AzVirtualNetwork -Name $vnetName | Get-AzVirtualNetworkSubnetConfi
 # Apply the IP math function
 $interfaceAddress = Add-IPAddressSpace -ip $subnetspace.IPAddressToString -increment 10
 
-# [IPAddress]$interfaceAddress is now ready to express. For example grab the IP string value by expressing $interfaceAddress.IPAddressToString
+# $interfaceAddress is now ready to express. 
 return $interfaceAddress
 

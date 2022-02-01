@@ -35,3 +35,5 @@ $myVM.NetworkProfile.NetworkInterfaces[0].Primary = $true
 
 # Update the VM with the apended meta
 $myVM | Update-AzVM
+
+# Test.

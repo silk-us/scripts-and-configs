@@ -12,7 +12,9 @@ param(
     [parameter(Mandatory)]
     [string] $sasToken,
     [parameter()]
-    [string] $souceStorageAccount = "silkimages"
+    [string] $souceStorageAccount = "silkimages",
+    [parameter()]
+    [string] $Location
 )
 
 function Build-MenuFromArray {
@@ -71,6 +73,10 @@ if (!$rg) {
     exit
 }
 
+if (!$Location) {
+    $Location = $rg.Location
+}
+
 if (!$storageAccount) {
     $storage_accountname = 'images' + ( -join ((48..57) + (65..90) + (97..122) | Get-Random -Count 10 | ForEach-Object {[char]$_})).ToLower()
 } else {
@@ -101,7 +107,7 @@ if ($dnodeVersion) {
 # Create target storage account
 if (!$storageAccount) {
     Write-Host -ForegroundColor yellow "Creating Storage account $storage_accountname"
-    $sa = New-AzStorageAccount -Name $storage_accountname -ResourceGroupName $rg.ResourceGroupName -Location $rg.Location -SkuName Standard_LRS -AllowBlobPublicAccess $false
+    $sa = New-AzStorageAccount -Name $storage_accountname -ResourceGroupName $rg.ResourceGroupName -Location $Location -SkuName Standard_LRS -AllowBlobPublicAccess $false
 } else {
     $sa = Get-AzStorageAccount -ResourceGroupName $rg.ResourceGroupName -Name $storageAccount
 }
@@ -134,7 +140,7 @@ if ($dnodeVersion) {
 
 $badArray = @()
 
-$response = Get-AzComputeResourceSku -Location $rg.Location | Where-Object {$_.Name -eq 'Standard_D64s_v4' -or $_.Name -eq 'Standard_L8s_v2'}
+$response = Get-AzComputeResourceSku -Location $Location | Where-Object {$_.Name -eq 'Standard_D64s_v4' -or $_.Name -eq 'Standard_L8s_v2'}
 $badResources = ($response | Where-Object {$_.Restrictions})
 foreach ($r in $badResources) {
     $o = New-Object psobject
@@ -160,7 +166,7 @@ if ($dnodeVersion) {
 if ($cnodeVersion) {
     # Create cnode Image
     $cimageURI = $sc.CloudBlobContainer.Uri.AbsoluteUri + '/' + $cimageFileName
-    $cimageConfig = New-AzImageConfig -Location $rg.Location
+    $cimageConfig = New-AzImageConfig -Location $Location
     $cimageConfig = Set-AzImageOsDisk -Image $cimageConfig -OsType Linux -OsState Generalized -BlobUri $cimageURI
     New-AzImage -ImageName $cimageName -ResourceGroupName $rg.ResourceGroupName -Image $cimageConfig
 }
@@ -168,7 +174,7 @@ if ($cnodeVersion) {
 if ($dnodeVersion) {
     # Create dnode Image
     $dimageURI = $sc.CloudBlobContainer.Uri.AbsoluteUri + '/' + $dimageFileName
-    $dimageConfig = New-AzImageConfig -Location $rg.Location
+    $dimageConfig = New-AzImageConfig -Location $Location
     $dimageConfig = Set-AzImageOsDisk -Image $dimageConfig -OsType Linux -OsState Generalized -BlobUri $dimageURI
     New-AzImage -ImageName $dimageName -ResourceGroupName $rg.ResourceGroupName -Image $dimageConfig
 }

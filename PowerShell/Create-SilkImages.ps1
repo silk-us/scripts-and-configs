@@ -140,7 +140,7 @@ if ($dnodeVersion) {
 
 $badArray = @()
 
-$response = Get-AzComputeResourceSku -Location $Location | Where-Object {$_.Name -eq 'Standard_D64s_v4' -or $_.Name -eq 'Standard_L8s_v2'}
+$response = Get-AzComputeResourceSku -Location $Location | Where-Object {$_.Name -eq 'Standard_D64s_v4' -or $_.Name -eq 'Standard_D64s_v5' -or $_.Name -eq 'Standard_L8s_v2'}
 $badResources = ($response | Where-Object {$_.Restrictions})
 foreach ($r in $badResources) {
     $o = New-Object psobject
@@ -154,6 +154,7 @@ foreach ($r in $badResources) {
 
 Write-Host -ForegroundColor yellow  "Checking for VM deployment restructions..."
 $badArray
+Write-Host -ForegroundColor yellow  "Please verify zone availability"
 $response
 
 # Wait for file to be copied

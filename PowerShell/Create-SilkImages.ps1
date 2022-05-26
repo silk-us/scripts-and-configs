@@ -154,6 +154,7 @@ foreach ($r in $badResources) {
 
 Write-Host -ForegroundColor yellow  "Checking for VM deployment restructions..."
 $badArray
+$response
 
 # Wait for file to be copied
 if ($cnodeVersion) {

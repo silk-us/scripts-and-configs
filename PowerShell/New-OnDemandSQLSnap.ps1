@@ -8,12 +8,10 @@ Run this from the target SQL server.
 #>
 
 # Set up the vars
-
 $targethostName = $env:COMPUTERNAME #self
 $volumeGroupName = 'SQL01-vg'
 
 # Import the modules
-
 Import-Module sqlps
 Import-Module sdp
 
@@ -22,11 +20,9 @@ $password = ConvertTo-SecureString 'Password1' -AsPlainText -Force
 $creds = New-Object System.Management.Automation.PSCredential ('sqlservice', $password)
 
 # Connect to the SDP
-
 Connect-SDP -server 10.12.0.13 -credentials $creds
 
 # Create the snaps
-
 $snapshotName = $targethostName + '-' + (Get-Date -UFormat "%s").Split('.')[0]
 New-SDPVolumeGroupSnapshot -name $snapshotName -volumeGroupName $volumeGroupName -retentionPolicyName Backup
 
@@ -53,7 +49,6 @@ foreach ($i in $vols) {
 }
 
 # Grab the log file info and create vars for SQL command
-
 foreach ($d in $datafiles) {
     $databasename = $d.Name.Trim('.mdf')
     $dblogfileName = $databasename + '_log.ldf'
@@ -75,6 +70,3 @@ GO
 "@
 Invoke-Sqlcmd -Query $codeblock
 }
-
-
-

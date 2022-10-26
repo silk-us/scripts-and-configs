@@ -1,10 +1,13 @@
 #!/bin/sh
-sdpdatasubnet='10.10.0.16/28'
-hostdatagw='10.10.1.1'
-hostdatainterface='eth1'
+## Uncomment if you need routing
+# sdpdatasubnet='10.10.0.16/28'
+# hostdatagw='10.10.1.1'
+# hostdatainterface='eth1'
+
 sdpdatainterface='10.10.0.20'
 
-sudo ip route add $sdpdatasubnet via $hostdatagw dev $hostdatainterface
+## Use your proper route command to make this route persistent. As in, nmcli or netplan. 'ip route' is not persistent on restart. 
+# sudo ip route add $sdpdatasubnet via $hostdatagw dev $hostdatainterface
 
 sudo wget -O /etc/udev/rules.d/98-sdp-io.rules 'https://raw.githubusercontent.com/silk-us/scripts-and-configs/main/Configs/98-sdp-io.rules'  
 sudo wget -O /etc/multipath.conf 'https://raw.githubusercontent.com/silk-us/scripts-and-configs/main/Configs/multipath.conf' 

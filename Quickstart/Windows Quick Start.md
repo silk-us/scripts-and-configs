@@ -42,7 +42,7 @@ ifIndex InterfaceAlias                  AddressFamily NlMtu(Bytes) InterfaceMetr
 
 And then use that index value to set the route:
 ```PowerShell
-New-NetRoute -DestinationPrefix "10.231.0.128/28" -InterfaceIndex 7 -NextHop 10.231.3.1 -PolicyStore PersistentStore
+New-NetRoute -DestinationPrefix "10.231.0.128/28" -InterfaceIndex 7 -NextHop 10.231.3.1 
 ```
 ## 5. Connect to the SDP using silkiscsi
 ```PowerShell

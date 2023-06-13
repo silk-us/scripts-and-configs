@@ -47,6 +47,7 @@ New-NetRoute -DestinationPrefix "10.231.0.128/28" -InterfaceIndex 7 -NextHop 10.
 ## 5. Connect to the SDP using silkiscsi
 ```PowerShell
 Find-Module silkiscsi | Install-Module -force
+Import-Module silkiscsi
 ```
 
 

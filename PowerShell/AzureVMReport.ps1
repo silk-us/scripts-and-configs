@@ -7,6 +7,17 @@ param(
     [string] $outputFile
 )
 
+<#
+    .SYNOPSIS 
+    Generates an Azure VM report. 
+
+    .EXAMPLE    
+    ./AzureVMReport.ps1 -outputFile report.csv
+
+    This generates the results and loads tem into a simple CSV file named report.csv
+
+#>
+
 if ($subscriptionName) {
     Set-AzContext -Subscription $subscriptionName
 }

@@ -39,6 +39,8 @@ foreach ($i in $vmlist) {
         $o | Add-Member -MemberType NoteProperty -Name "Disk Name" -Value $diskInfo.Name
         $o | Add-Member -MemberType NoteProperty -Name "DiskSKU" -Value $diskInfo.Sku.name
         $o | Add-Member -MemberType NoteProperty -Name "DiskSizeGB" -Value $diskInfo.DiskSizeGB
+        $o | Add-Member -MemberType NoteProperty -Name "Disk Tier" -Value $diskInfo.Tier
+        $o | Add-Member -MemberType NoteProperty -Name "Disk IOPS" -Value $diskInfo.DiskIOPSReadWrite
         $o | Add-Member -MemberType NoteProperty -Name "ResourceGroup" -Value $i.ResourceGroupName
         $o | Add-Member -MemberType NoteProperty -Name "Region" -Value $i.Location
         $o | Add-Member -MemberType NoteProperty -Name "Zone" -Value $i.Zones[0]

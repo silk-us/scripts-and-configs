@@ -10,7 +10,7 @@ terraform {
 provider "silk" {
   server = "10.10.10.10"
   username = "admin"
-  password = "Password01"
+  password = "Password"
 }
 
 provider "azurerm" {
@@ -20,27 +20,27 @@ provider "azurerm" {
 
 variable "vmname" {
     type = string
-    default = "tfvm01"
+    default = "example-vm"
 }
 
 variable "rgname" {
     type = string
-    default = "host-rg"
+    default = "example-rg"
 }
 
 variable "vnetname" {
     type = string
-    default = "production-vnet-01"
+    default = "example-vnet"
 }
 
 variable "mgmtsnname" {
     type = string
-    default = "hosts_mgmt"
+    default = "example_host_mgmt"
 }
 
 variable "datasnname" {
     type = string
-    default = "hosts_data"
+    default = "example_host_data"
 }
 
 variable "location" {
@@ -95,7 +95,7 @@ resource "azurerm_network_interface" "mgmt" {
 
   ip_configuration {
     name                          = "internal"
-    subnet_id                     = "/subscriptions/8d6bebd5-173e-42dd-afed-53dd32674bd5/resourceGroups/${var.rgname}/providers/Microsoft.Network/virtualNetworks/${var.vnetname}/subnets/${var.mgmtsnname}"
+    subnet_id                     = "/subscriptions/9c37fc06-40d2-1234-5678-69e602a0f1b4/resourceGroups/${var.rgname}/providers/Microsoft.Network/virtualNetworks/${var.vnetname}/subnets/${var.mgmtsnname}"
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id = azurerm_public_ip.main.id
   }
@@ -109,7 +109,7 @@ resource "azurerm_network_interface" "data" {
 
   ip_configuration {
     name                          = "internal"
-    subnet_id                     = "/subscriptions/8d6bebd5-173e-42dd-afed-53dd32674bd5/resourceGroups/${var.rgname}/providers/Microsoft.Network/virtualNetworks/${var.vnetname}/subnets/${var.datasnname}"
+    subnet_id                     = "/subscriptions/9c37fc06-40d2-1234-5678-69e602a0f1b4/resourceGroups/${var.rgname}/providers/Microsoft.Network/virtualNetworks/${var.vnetname}/subnets/${var.datasnname}"
     private_ip_address_allocation = "Dynamic"
   }
 }
@@ -119,7 +119,7 @@ resource "azurerm_linux_virtual_machine" "main" {
   resource_group_name             = var.rgname
   location                        = var.location
   size                            = "Standard_D2s_v3"
-  admin_username                  = "kmdemo-azure"
+  admin_username                  = "example-admin"
   disable_password_authentication = true
   zone = "1"
   custom_data = filebase64("./bootstrap/bootstrap.sh")
@@ -130,8 +130,8 @@ resource "azurerm_linux_virtual_machine" "main" {
   ]
 
   admin_ssh_key {
-    username = "kmdemo-azure"
-    public_key = file("~/.ssh/kmdemo-azure.pub")
+    username = "example-admin"
+    public_key = file("~/.ssh/example-admin.pub")
   }
 
   source_image_reference {

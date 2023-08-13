@@ -3,6 +3,8 @@ param(
     [string] $vmName,
     [parameter(Mandatory)]
     [string] $ResourceGroupName,
+    [parameter()]
+    [string] $vnetResourceGroupName = $ResourceGroupName,
     [parameter(Mandatory)]
     [string] $vnetName,
     [parameter(Mandatory)]
@@ -23,7 +25,7 @@ if ($myVMStatus.Statuses[-1].DisplayStatus -eq 'VM running') {
 }
 
 # Create VMNic
-$data1subnet = Get-AzVirtualNetwork -ResourceGroupName $ResourceGroupName -Name $vnetName | Get-AzVirtualNetworkSubnetConfig | where-object {$_.name -eq $subnetName}
+$data1subnet = Get-AzVirtualNetwork -ResourceGroupName $vnetResourceGroupName -Name $vnetName | Get-AzVirtualNetworkSubnetConfig | where-object {$_.name -eq $subnetName}
 
 $data1nic = New-AzNetworkInterface -Subnet $data1subnet -Name $nic1Name -ResourceGroupName $ResourceGroupName -Location $myVM.Location -EnableAcceleratedNetworking
 
@@ -35,5 +37,3 @@ $myVM.NetworkProfile.NetworkInterfaces[0].Primary = $true
 
 # Update the VM with the apended meta
 $myVM | Update-AzVM
-
-# Test.

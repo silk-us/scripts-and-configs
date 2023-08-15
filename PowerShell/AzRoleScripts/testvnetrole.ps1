@@ -1,26 +1,23 @@
 param(
-    [parameter()]
+    [parameter(Mandatory)]
     [string] $name
 )
 
 $actions = @(
     "Microsoft.Network/virtualNetworks/read"
     "Microsoft.Network/virtualNetworks/write"
-    "Microsoft.Network/virtualNetworks/join/action"
-    "Microsoft.Network/virtualNetworks/peer/action"
     "Microsoft.Network/virtualNetworks/subnets/read"
     "Microsoft.Network/virtualNetworks/subnets/write"
-    "Microsoft.Network/virtualNetworks/subnets/joinLoadBalancer/action"
     "Microsoft.Network/virtualNetworks/subnets/join/action"
-    "Microsoft.Network/virtualNetworks/subnets/joinViaServiceEndpoint/action"
     "Microsoft.Network/networkSecurityGroups/read"
     "Microsoft.Network/networkSecurityGroups/write"
-    "Microsoft.Network/networkSecurityGroups/join/action"
     "Microsoft.Network/networkInterfaces/read"
     "Microsoft.Network/networkInterfaces/write"
     "Microsoft.Network/networkInterfaces/join/action"
-    "Microsoft.Network/networkInterfaces/effectiveRouteTable/action"
-    "Microsoft.Network/networkInterfaces/effectiveNetworkSecurityGroups/action" 
+    "Microsoft.Network/networkInterfaces/delete"
+    "Microsoft.Network/virtualNetworks/peer/action"
+    "Microsoft.Network/virtualNetworks/virtualNetworkPeerings/read"
+    "Microsoft.Network/virtualNetworks/virtualNetworkPeerings/write"
 )
 
 $role = Get-AzRoleDefinition -Name $name

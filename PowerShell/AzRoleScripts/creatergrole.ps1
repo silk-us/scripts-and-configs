@@ -1,5 +1,5 @@
 param(
-    [parameter()]
+    [parameter(Mandatory)]
     [string] $name = "flex-rg-contributor-custom",
     [parameter()]
     [string] $description = 'Needed permissions for Silk Flex to operate inside an existing Resource Group'

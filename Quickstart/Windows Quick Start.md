@@ -57,7 +57,8 @@ Again, this assumes that the SDP’s data subnet is 10.231.0.128/28.
 Connect-Silkcnode -cnodeIP 10.231.0.132 -sessionCount 12
 Connect-Silkcnode -cnodeIP 10.231.0.133 -sessionCount 12
 ```
-## 6. (Optional) Flatten and put a file system the new disks using this quick command:
+## 6. (Optional) Flatten and put a file system the silk disks using this quick command:
+Be aware, this will format any silk disks, new or existing. Only use this as a reference for automation. 
 ```PowerShell
 $newdisks = Get-Disk | Where-Object {$_.FriendlyName -like "SILK*" -and $_.size -gt "1048576"}
 foreach ($i in $newdisks) {

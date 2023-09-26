@@ -50,6 +50,8 @@ $actions = @(
     "Microsoft.Storage/storageAccounts/listServiceSas/action"
     "Microsoft.Storage/storageAccounts/listAccountSas/action"
     "Microsoft.Storage/storageAccounts/write"
+    "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/write" 
+    "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/delete" 
 )
 
 $role = Get-AzRoleDefinition -Name $name

@@ -1,5 +1,5 @@
 param(
-    [parameter(Mandatory)]
+    [parameter()]
     [string] $name = "flex-rg-contributor-custom",
     [parameter()]
     [string] $description = 'Needed permissions for Silk Flex to operate inside an existing Resource Group'
@@ -63,10 +63,16 @@ $actions = @(
     "Microsoft.Storage/storageAccounts/write"
 )
 
+$dataActions = @(
+    "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/write"
+    "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/delete" 
+)
+
 $rolescope.Name = $name
 $rolescope.IsCustom = $true
 $rolescope.Description = $description
 $rolescope.Actions = $actions
+$rolescope.DataActions = $dataActions
 $rolescope.AssignableScopes = $scope
 
 $rolescope | write-verbose

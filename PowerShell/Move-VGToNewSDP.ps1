@@ -114,6 +114,10 @@ if ($vg.replication_sessions) {
 } else {
     Write-Verbose 'SOURCE --> Generate new replication sessions for the volume group.' -Verbose
     $repSessionName = $volumeGroupName + '-rep'
+    if ($repSessionName.Length -gt 41) {
+        $repSessionName = $vg.id + "-rep-" + (get-random)
+        Write-Verbose "--> Replication name longer than 42 characters, generating random shortname of $repSessionName" -verbose
+    }
     New-SDPReplicationSession -name $repSessionName -volumeGroupName $volumeGroupName -replicationPeerName $peerArray.name -retentionPolicyName Replication_Retention -externalRetentionPolicyName Replication_Retention -RPO 1200 -mapped | Start-SDPReplicationSession | Out-Null
 }
 

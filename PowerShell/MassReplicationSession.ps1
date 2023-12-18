@@ -19,9 +19,9 @@ param(
 
 $vglist = Get-Content $filename
 foreach ($v in $vglist) {
-    $repsessionname = $v + "-rep" 
+    $repSessionName = $v + "-rep" 
     if ($repSessionName.Length -gt 41) {
-        $repSessionName = $vg.id + "-" + (get-random)
+        $repSessionName = $vg.id + "-rep-" + (get-random) 
     }
     New-SDPReplicationSession -name $repSessionName -volumeGroupName $v -replicationPeerName $peername -retentionPolicyName Replication_Retention -externalRetentionPolicyName Replication_Retention -RPO 1200 -mapped | Start-SDPReplicationSession 
 

@@ -52,7 +52,12 @@ foreach ($i in $globalSQLDBs) {
     $o | Add-Member -MemberType NoteProperty -Name 'Performance Tier' -Value $i.Edition
     $o | Add-Member -MemberType NoteProperty -Name 'Hardware Type' -Value $i.SkuName
     $o | Add-Member -MemberType NoteProperty -Name 'Region' -Value $i.Location 
-    $o | Add-Member -MemberType NoteProperty -Name 'vCOREs' -Value $i.Capacity
+    if ($i.ElasticPoolName) {
+        $ep = Get-AzSqlElasticPool -ElasticPoolName $i.ElasticPoolName -ServerName $i.ServerName -ResourceGroupName $i.ResourceGroupName
+        $o | Add-Member -MemberType NoteProperty -Name 'vCOREs' -Value $ep.Capacity
+    } else {
+        $o | Add-Member -MemberType NoteProperty -Name 'vCOREs' -Value $i.Capacity
+    }
     $globalSQLServerDatabaseDetails += $o
 }
 

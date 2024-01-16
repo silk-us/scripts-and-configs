@@ -54,9 +54,9 @@ foreach ($i in $globalSQLDBs) {
     $o | Add-Member -MemberType NoteProperty -Name 'Region' -Value $i.Location 
     if ($i.ElasticPoolName) {
         $ep = Get-AzSqlElasticPool -ElasticPoolName $i.ElasticPoolName -ServerName $i.ServerName -ResourceGroupName $i.ResourceGroupName
-        $o | Add-Member -MemberType NoteProperty -Name 'vCOREs' -Value $ep.Capacity
+        $o | Add-Member -MemberType NoteProperty -Name 'vCOREs/DTUs' -Value $ep.Capacity
     } else {
-        $o | Add-Member -MemberType NoteProperty -Name 'vCOREs' -Value $i.Capacity
+        $o | Add-Member -MemberType NoteProperty -Name 'vCOREs/DTUs' -Value $i.Capacity
     }
     $globalSQLServerDatabaseDetails += $o
 }

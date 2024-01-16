@@ -1,6 +1,6 @@
 param(
     [parameter(Mandatory)]
-    [string] $name = "flex-vnet-contributor-custom",
+    [string] $name = "flex-vnet-contributor",
     [parameter()]
     [string] $description = 'Needed permissions for Silk Flex to operate inside an existing Resource Group'
 
@@ -17,18 +17,25 @@ $rolescope = New-Object Microsoft.Azure.Commands.Resources.Models.Authorization.
 $actions = @(
     "Microsoft.Network/virtualNetworks/read"
     "Microsoft.Network/virtualNetworks/write"
+    "Microsoft.Network/virtualNetworks/joinLoadBalancer/action"
+    "Microsoft.Network/virtualNetworks/join/action"
+    "Microsoft.Network/virtualNetworks/peer/action"
     "Microsoft.Network/virtualNetworks/subnets/read"
     "Microsoft.Network/virtualNetworks/subnets/write"
+    "Microsoft.Network/virtualNetworks/subnets/delete"
+    "Microsoft.Network/virtualNetworks/subnets/joinLoadBalancer/action"
     "Microsoft.Network/virtualNetworks/subnets/join/action"
+    "Microsoft.Network/virtualNetworks/subnets/joinViaServiceEndpoint/action"
     "Microsoft.Network/networkSecurityGroups/read"
     "Microsoft.Network/networkSecurityGroups/write"
+    "Microsoft.Network/networkSecurityGroups/delete"
+    "Microsoft.Network/networkSecurityGroups/join/action"
     "Microsoft.Network/networkInterfaces/read"
     "Microsoft.Network/networkInterfaces/write"
     "Microsoft.Network/networkInterfaces/join/action"
     "Microsoft.Network/networkInterfaces/delete"
-    "Microsoft.Network/virtualNetworks/peer/action"
-    "Microsoft.Network/virtualNetworks/virtualNetworkPeerings/read"
-    "Microsoft.Network/virtualNetworks/virtualNetworkPeerings/write"
+    "Microsoft.Network/networkInterfaces/effectiveRouteTable/action"
+    "Microsoft.Network/networkInterfaces/effectiveNetworkSecurityGroups/action" 
 )
 
 $rolescope.Name = $name

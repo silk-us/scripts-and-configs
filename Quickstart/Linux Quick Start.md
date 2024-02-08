@@ -106,7 +106,7 @@ Once done, re-apply the affected device (eth1 in this case) using this command:
 nmcli device reapply eth1
 ```
 
-(Optional )If you see a down interface, such as eth1 in this example:
+(Optional) If you see a down interface when attempting to configure the above, such as eth1 in this example:
 
 ```
 [root@slob03 rules.d]# nmcli dev status

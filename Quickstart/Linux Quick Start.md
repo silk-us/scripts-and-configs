@@ -1,5 +1,5 @@
 ## 1. Add multipath to the system:
-You can test if mulitpath is already installed by simply exeuting `multipath`.
+You can test if mulitpath is already installed by simply executing `multipath`.
 ### Using yum:
 ```
 sudo yum install device-mapper-multipath

@@ -121,7 +121,7 @@ Bring it online using nmcli. For example this creates a meta-entry for `eth1` ca
 ```
 nmcli con add con-name data type ethernet ifname eth1
 ```
-THen you should see it listed as `data` when you query status:
+Then you should see it listed as `data` when you query status:
 ```
 [root@slob03 rules.d]# nmcli dev status
 DEVICE  TYPE      STATE         CONNECTION
@@ -157,7 +157,7 @@ sudo systemctl restart iscsid
 
 ## 6. (Optional) how to utilize the devicemaps properly in fstab:
 
-Use `multipath -ll` and lok for the `/dev/mapper/mpath` alias for the desired block device. 
+Use `multipath -ll` and look for the `/dev/mapper/mpath` alias for the desired block device. 
 
 the `/dev/mapper/mpath*` alias is preferable over the `/dev/dm-*` device, as the `/dev/mapper/mpath*` alias is tracked against the device id and remains consistant through device changes. `/dev/dm-*` is likely to change as new device maps are added and removed. 
 

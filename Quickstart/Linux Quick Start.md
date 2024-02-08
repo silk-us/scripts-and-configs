@@ -4,7 +4,7 @@ You can test if mulitpath is already installed by simply exeuting `multipath`.
 ```
 sudo yum install device-mapper-multipath
 ```
-### using apt:
+### Using apt:
 ```
 sudo apt-get install multipath-tools
 ```
@@ -159,12 +159,12 @@ sudo systemctl restart iscsid
 
 Use `multipath -ll` and lok for the `/dev/mapper/mpath` alias for the desired block device. 
 
-the `/dev/mapper/mpath*` alias is preferable over the `/dev/dm-*` device, as the `/dev/mapper/mpath*` alias is tracked against the device id and remains consistant through device changes. `/dev/dm-*` is likely to chagne as new device maps are added and removed. 
+the `/dev/mapper/mpath*` alias is preferable over the `/dev/dm-*` device, as the `/dev/mapper/mpath*` alias is tracked against the device id and remains consistant through device changes. `/dev/dm-*` is likely to change as new device maps are added and removed. 
 
-Otherwise, you add the device same as you would any other block device. So for example, if the disk device is represented by `/dev/mapper/mpathc` and I want to mount it to `/mnt/data1` then I would add that to fstab like so:
+Otherwise, you add the device same as you would any other block device. So for example, if the disk device is represented by `/dev/mapper/mpathc` and I want to mount it to `/mnt/data1` as an `ext4` filesystem, then I would add that to fstab like so:
 
 ```
 /dev/mapper/mpathc  /mnt/data1  ext4    defaults,_netdev    0   0
 ```
 
-You will want to include `_netdev` in the options, this prompts fstab to wait until the network stack has enumerated prior to attempting to mount the device. THis is required for devices being served via network, such as nfs and iSCSI. 
+You will want to include `_netdev` in the options, this prompts fstab to wait until the network stack has enumerated prior to attempting to mount the device. This is required for devices being served via network, such as nfs and iSCSI. 

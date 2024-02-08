@@ -141,7 +141,7 @@ You will now see eth1 is configured when you query `ip add`
 ```
 
 
-## 6. (Optional) Query the iqn on the host:
+## 5. (Optional) Query the iqn on the host:
 Express the local system IQN. 
 ```
 cat /etc/iscsi/initiatorname.iscsi
@@ -155,7 +155,7 @@ sudo echo "InitiatorName=iqn.2005-03.org.open-iscsi:`hostname`" | sudo tee /etc/
 sudo systemctl restart iscsid
 ```
 
-## 7. (Optional) how to utilize the devicemaps properly in fstab:
+## 6. (Optional) how to utilize the devicemaps properly in fstab:
 
 Use `multipath -ll` and lok for the `/dev/mapper/mpath` alias for the desired block device. 
 

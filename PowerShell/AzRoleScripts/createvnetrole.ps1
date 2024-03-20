@@ -17,13 +17,11 @@ $rolescope = New-Object Microsoft.Azure.Commands.Resources.Models.Authorization.
 $actions = @(
     "Microsoft.Network/virtualNetworks/read"
     "Microsoft.Network/virtualNetworks/write"
-    "Microsoft.Network/virtualNetworks/joinLoadBalancer/action"
     "Microsoft.Network/virtualNetworks/join/action"
     "Microsoft.Network/virtualNetworks/peer/action"
     "Microsoft.Network/virtualNetworks/subnets/read"
     "Microsoft.Network/virtualNetworks/subnets/write"
     "Microsoft.Network/virtualNetworks/subnets/delete"
-    "Microsoft.Network/virtualNetworks/subnets/joinLoadBalancer/action"
     "Microsoft.Network/virtualNetworks/subnets/join/action"
     "Microsoft.Network/virtualNetworks/subnets/joinViaServiceEndpoint/action"
     "Microsoft.Network/networkSecurityGroups/read"

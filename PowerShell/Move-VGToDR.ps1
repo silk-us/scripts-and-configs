@@ -17,7 +17,7 @@ param(
     Connect-SDP -server {local SDP IP address} -credential $admincreds
     Connect-SDP -server {remote SDP IP address} -credential $admincreds -k2context remote
 
-    Move-VGToDR.ps1 -volumeGroupName SQL01-vg
+    Move-VGToDR.ps1 -volumeGroupName SQL01-vg -remoteHost SQLDR01
 
     .DESCRIPTION
 
@@ -28,7 +28,7 @@ param(
 
 $sdpModule = Get-Module sdp
 if ($sdpModule.Version -lt "1.4.1") {
-    $errormsg = 'SDP PowerShell SDK required to be 1.3.5 or higher.'
+    $errormsg = 'SDP PowerShell SDK required to be 1.4.1 or higher.'
     return $errormsg | Write-Error
 }
 

@@ -1,5 +1,7 @@
 #!/usr/bin/python3
-# April 1, 2024
+# Flex version: v1.50.77
+# April 2, 2024
+# For Azure
 import argparse
 import logging
 import os
@@ -16,9 +18,9 @@ constant_no_proxy = ["localhost", "127.0.0.1", "169.254.169.254", "169.254.170.2
 default_log_dir = "/tmp"
 
 
-def config_logger(log_dir):
+def config_logger(log_dir, debug: bool):
     logging.basicConfig(
-        level=logging.INFO,
+        level=logging.DEBUG if debug else logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
         handlers=[logging.FileHandler(f"{log_dir}/flex-config-{date}.log"), logging.StreamHandler()],
     )
@@ -262,7 +264,7 @@ def parse_args():
         epilog="usage example: ./flex-config set-nvme-check-frequency --minutes 500",
     )
 
-    sp.set_defaults(action="set-nvme-check-frequency")
+    sp.set_defaults(action=set_nvme_check_frequency)
     sp.add_argument(
         "-m",
         "--minutes",
@@ -281,7 +283,7 @@ def parse_args():
         " --mnode-type Large",
     )
 
-    sp.set_defaults(action="update-instance-type")
+    sp.set_defaults(action=update_instance_type)
     sp.add_argument(
         "-i",
         "--instance-type",
@@ -307,7 +309,7 @@ def parse_args():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         epilog="usage example: ./flex-config update-encryption-at-host --enabled false",
     )
-    sp.set_defaults(action="update-encryption-at-host")
+    sp.set_defaults(action=update_encryption_at_host)
 
     sp.add_argument(
         "-e",
@@ -329,7 +331,7 @@ def parse_args():
         "./flex-config update-configmap --configmap-type service-cm --path-to-key "
         "verify_nvme_devices_frequency_minutes --new-value 500 --service-name explorer",
     )
-    sp.set_defaults(action="update-configmap")
+    sp.set_defaults(action=update_configmap)
     sp.add_argument(
         "--configmap-type",
         dest="configmap_type",
@@ -361,6 +363,44 @@ def parse_args():
         required=True,
     )
 
+    """==================================== deployment env updates ================================"""
+    deployment_env = subparsers.add_parser(
+        "set-env",
+        help="set environment variables in deployment",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        epilog="usage example: ./flex-config set-env"
+        " --service-name azcloudconnector"
+        " --container-name azcloudconnector"
+        " --env `http_proxy=http://proxy.io:8000 https_proxy=http://proxy.io:8000`",
+    )
+    deployment_env.set_defaults(action=set_env)
+    deployment_env.add_argument(
+        "-s",
+        "--service-name",
+        dest="service_name",
+        type=str,
+        help="Name of the deployment to modify",
+        required=True,
+    )
+    deployment_env.add_argument(
+        "-c",
+        "--container-name",
+        dest="container_name",
+        default=None,
+        type=str,
+        help=f"Name of the container who's ENVs should be updated. default [passed service-name]",
+        required=False,
+    )
+    deployment_env.add_argument(
+        "-e",
+        "--env",
+        dest="env_variables",
+        type=lambda x: dict([x.split("=")]),
+        nargs="+",
+        help="Environment variables to set in deployment",
+        required=True,
+        action="append",
+    )
     """==================================== deployment updates ===================================="""
     # for specific operation of adding proxy settings to azcc or claritygw
     sp = subparsers.add_parser(
@@ -372,27 +412,7 @@ def parse_args():
         " --proxy http://proxy.io:8000"
         f" --no-proxy www.example.com,10.8.8.45",
     )
-    sp.set_defaults(action="set-proxy-settings")
-
-    sp.add_argument(
-        "-s",
-        "--service-name",
-        dest="service_name",
-        type=str,
-        choices=["azcloudconnector", "claritygw"],
-        help="Name of the service who's deployment we modify, can be one of ['azcloudconnector', 'claritygw']",
-        required=True,
-    )
-    sp.add_argument(
-        "-c",
-        "--container-name",
-        dest="container_name",
-        default=None,
-        type=str,
-        help=f"Name of the container who's ENVs should be updated. default [passed service-name]",
-        required=False,
-    )
-
+    sp.set_defaults(action=set_proxy_settings)
     sp.add_argument(
         "-p",
         "--proxy",
@@ -416,45 +436,33 @@ def parse_args():
     if not action:
         parser.print_help()
         exit(1)
-    if action == "set-nvme-check-frequency":
+    if action == set_nvme_check_frequency:
         args.entity_type = "service-cm"
         args.path_to_key = ["verify_nvme_devices_frequency_minutes"]
         args.new_value = args.minutes
         args.service_name = "explorer"
-
-    elif action == "update-instance-type":
+    elif action == update_instance_type:
         args.entity_type = "node-types-cm"
         args.path_to_key = ["node_config", "azure", "mnodes", args.mnode_type, "instance_type"]
         args.new_value = args.instance_type
         args.service_name = "zorg"
-
-    elif action == "update-encryption-at-host":
+    elif action == update_encryption_at_host:
         args.entity_type = "service-cm"
         args.path_to_key = ["encryption_at_host_enabled"]
         args.new_value = args.is_encryption_at_host_enabled
         args.service_name = "azcloudconnector"
-
-    elif action == "set-proxy-settings":
+    elif action == set_env:
         args.entity_type = K8sResourceType.deployment.value
-        no_proxy = args.no_proxy + constant_no_proxy
-        args.env_variables = {
-            "http_proxy": args.proxy_address,
-            "https_proxy": args.proxy_address,
-            "no_proxy": ",".join(no_proxy),
-        }
+        # [[{'a': 'r'}, {'b': 't'}], [{'l': 'r'}]] -> {'a': 'r', 'b': 't', 'l': 'r'}
+        args.env_variables = {k: v for param in args.env_variables for env in param for k, v in env.items()}
         args.container_name = args.container_name or args.service_name
-    else:
+    elif action == update_configmap:
         args.entity_type = args.configmap_type
 
-    # last action is "update-configmap"
     return args
 
 
-def main():
-    args = parse_args()
-    config_logger(args.log_dir)
-    if args.debug:
-        logging.getLogger().setLevel(level=logging.DEBUG)
+def update_k8s_resource(args):
     try:
         update_entity(args)
         restart_service(args.service_name)
@@ -463,6 +471,48 @@ def main():
         logging.error(f"procedure failed, output: {e.output.decode('utf-8')}")
     except Exception as e:
         logging.error(f"procedure failed, error: {str(e)}")
+
+
+def set_nvme_check_frequency(args):
+    update_k8s_resource(args)
+
+
+def set_env(args):
+    update_k8s_resource(args)
+
+
+def update_instance_type(args):
+    update_k8s_resource(args)
+
+
+def update_encryption_at_host(args):
+    update_k8s_resource(args)
+
+
+def update_configmap(args):
+    update_k8s_resource(args)
+
+
+def set_proxy_settings(args):
+    _args = lambda x: None
+
+    no_proxy = args.no_proxy + constant_no_proxy
+    _args.entity_type = K8sResourceType.deployment.value
+    _args.env_variables = {
+        "http_proxy": args.proxy_address,
+        "https_proxy": args.proxy_address,
+        "no_proxy": ",".join(no_proxy),
+    }
+
+    for service_name in ["azcloudconnector", "claritygw"]:
+        _args.service_name = _args.container_name = service_name
+        update_k8s_resource(_args)
+
+
+def main():
+    args = parse_args()
+    config_logger(args.log_dir, args.debug)
+    args.action(args)
 
 
 if __name__ == "__main__":

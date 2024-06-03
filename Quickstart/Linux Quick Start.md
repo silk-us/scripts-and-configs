@@ -2,11 +2,11 @@
 You can test if mulitpath is already installed by simply executing `multipath`.
 ### Using yum:
 ```
-sudo yum install device-mapper-multipath
+sudo yum install device-mapper-multipath -y
 ```
 ### Using apt:
 ```
-sudo apt-get install multipath-tools
+sudo apt-get install multipath-tools -y
 ```
 
 ## 2. Add muiltipath configuration settings:

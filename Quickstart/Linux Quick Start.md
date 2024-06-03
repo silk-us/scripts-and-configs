@@ -140,23 +140,6 @@ You will now see eth1 is configured when you query `ip add`
        valid_lft forever preferred_lft forever
 ```
 
-### Debian 11 via /etc/network/interfaces.d
-
-Edit the appropriate network interface file listed under `/etc/network/interfaces.d`. 
-Add a `post-up` entry that reads similar to `post-up ip route add 10.1.136.128/28 via 10.1.138.1` to the file under the inet header. It should read similar to this when done:
-```
-auto eth1
-allow-hotplug eth1
-
-iface eth1 inet dhcp
-post-up ip route add 10.1.136.128/28 via 10.1.138.1
-
-iface eth1 inet6 manual
-  try_dhcp 1
-```
-You will need to restart the system to ensure the route persists on restart. 
-
-
 ## 5. (Optional) Query the iqn on the host:
 Express the local system IQN. 
 ```

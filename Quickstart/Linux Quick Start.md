@@ -2,11 +2,11 @@
 You can test if mulitpath is already installed by simply executing `multipath`.
 ### Using yum:
 ```
-sudo yum install device-mapper-multipath
+sudo yum install device-mapper-multipath -y
 ```
 ### Using apt:
 ```
-sudo apt-get install multipath-tools
+sudo apt-get install multipath-tools -y
 ```
 
 ## 2. Add muiltipath configuration settings:
@@ -139,7 +139,6 @@ You will now see eth1 is configured when you query `ip add`
     inet6 fe80::9ce:5cef:ebc8:f10/64 scope link tentative noprefixroute
        valid_lft forever preferred_lft forever
 ```
-
 
 ## 5. (Optional) Query the iqn on the host:
 Express the local system IQN. 

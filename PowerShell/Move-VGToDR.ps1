@@ -27,7 +27,7 @@ param(
 #>
 
 $sdpModule = Get-Module sdp
-if ($sdpModule.Version -lt "1.4.1") {
+if ($sdpModule.Version -lt "1.5.0") {
     $errormsg = 'SDP PowerShell SDK required to be 1.4.1 or higher.'
     return $errormsg | Write-Error
 }
@@ -64,8 +64,9 @@ if ($vg.replication_sessions) {
     Write-Verbose 'SOURCE --> Session exists. Generating new snapshot.' -Verbose
     $replicationSessionID = ConvertFrom-SDPObjectPrefix -Object $vg.replication_sessions -getId
     $session = Get-SDPReplicationSessions -id $replicationSessionID
-    $snapshotName = $volumeGroupName + (Get-Random -Maximum 9999)
-    New-SDPVolumeGroupSnapshot -volumeGroupName $volumeGroupName -name $snapshotName -replicationSession $session.name -retentionPolicyName Replication_Retention
+    # $snapshotName = $volumeGroupName + (Get-Random -Maximum 9999)
+    # New-SDPVolumeGroupSnapshot -volumeGroupName $volumeGroupName -name $snapshotName -replicationSession $session.name -retentionPolicyName Replication_Retention
+    New-SDPReplicationVolumeGroupSnapshot -volumeGroupName $volumeGroupName replicationSession $session.name 
     $session = Get-SDPReplicationSessions -name $session.name
     $repSessionName = $session.name
 } 

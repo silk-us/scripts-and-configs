@@ -31,6 +31,8 @@ sudo iscsiadm -m node -T $target -o update -n node.session.nr_sessions -v 6
 sudo iscsiadm -m node --login 
 ```
 
+After this you should be logged into the SDP as an iSCSI target assuming access and routes have been defined for both the host and SDP interfaces. 
+
 ## 4. (Optional) Add static route - ONLY required if using a secondary interface for iSCSI:
 
 Though you can use the command `ip route add ...` to add a static route, this does NOT persist through restarts. Please use the appropriate network management for your Linux distribution. Typically this is either `netplan` or `NetworkManager`. 

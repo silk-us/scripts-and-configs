@@ -31,9 +31,9 @@ sudo iscsiadm -m node -T $target -o update -n node.session.nr_sessions -v 6
 sudo iscsiadm -m node --login 
 ```
 
-## 4. (Optional) Add static route if using a secondary interface for iSCSI:
+## 4. (Optional) Add static route - ONLY required if using a secondary interface for iSCSI:
 
-Though you can use the command `ip route add ...` to add a static route, this does NOT persist through restarts. Please use the appropriate network management for your Linux distribution. Typically this is either `netplan` or `NetworkManager`.
+Though you can use the command `ip route add ...` to add a static route, this does NOT persist through restarts. Please use the appropriate network management for your Linux distribution. Typically this is either `netplan` or `NetworkManager`. 
 
 ### Using netplan
 If it does not exist, create the file `/etc/cloud/cloud.cfg.d/99-disable-network-config.cfg` and enter the following into the file:

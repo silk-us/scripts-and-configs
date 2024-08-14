@@ -28,7 +28,7 @@ param(
 
 $sdpModule = Get-Module sdp
 if ($sdpModule.Version -lt "1.5.0") {
-    $errormsg = 'SDP PowerShell SDK required to be 1.4.1 or higher.'
+    $errormsg = 'SDP PowerShell SDK required to be 1.5.0 or higher.'
     return $errormsg | Write-Error
 }
 

@@ -18,7 +18,6 @@ foreach ($vg in $allVolumeGroups) {
     $exportVolumeGroups += $vg
 }
 
-
 #export volumes
 $allVolumes = Get-SDPVolume | Where-Object {$_.name -ne 'CTRL'}
 $exportedVolumes = @()
@@ -52,15 +51,12 @@ foreach ($h in $allHosts) {
     $exportHosts += $o 
 }
 
-
 # Export HostGroups
 $exportHostGroups = @()
 $allhostGroups = Get-SDPHostGroup
 foreach ($hg in $allhostGroups) {
     $exportHostGroups += $hg
 }
-
-
 
 # Export host Mappings
 $exportHostMaps = @()
@@ -78,9 +74,7 @@ foreach ($hm in $allHostMaps) {
     $exportHostMaps += $o
 }
 
-
 # Export host group mappings
-
 $exportHostGroupMaps = @()
 $allHostGroupMaps = Get-SDPHostGroupMapping | Where-Object {$_.host.ref -match '/host_groups/'}
 foreach ($hm in $allHostGroupMaps) {
@@ -96,8 +90,26 @@ foreach ($hm in $allHostGroupMaps) {
     $exportHostGroupMaps += $o
 }
 
-# Create the export array
+# Export snapshot schedule 
+$exportSnapshotSchedule = @()
+$allSnapScheds = Get-SDPSnapshotScheduler
+foreach ($ss in $allSnapScheds) {
+    $snapPath = "/snapshot_scheduler/" + $ss.id 
+    $snapMap = Get-SDPSnapshotSchedulerMapping | where-object {$_.snapshot_scheduler.ref -match $snapPath}
 
+    $retPolName = (Get-SDPRetentionPolicy -id (ConvertFrom-SDPObjectPrefix -Object $ss.retention_policy).objectid).name
+    $vgName = (Get-SDPVolumeGroup -id (ConvertFrom-SDPObjectPrefix -Object $snapMap.volume_group).objectid).name
+
+    $o = New-Object psobject
+    $o | Add-Member -MemberType NoteProperty -Name snapshotScheduleName -Value $ss.name
+    $o | Add-Member -MemberType NoteProperty -Name retentionPolicyName -Value $retPolName
+    $o | Add-Member -MemberType NoteProperty -Name volumeGroupName -Value $vgName
+    $o | Add-Member -MemberType NoteProperty -Name minutes -Value $ss.time_interval_min
+    
+    $exportSnapshotSchedule += $o
+}
+
+# Create the export array
 $exportArray = New-Object psobject
 $exportArray | Add-Member -MemberType NoteProperty -Name volumeGroups -Value $exportVolumeGroups 
 $exportArray | Add-Member -MemberType NoteProperty -Name volumes -Value $exportedVolumes
@@ -105,6 +117,7 @@ $exportArray | Add-Member -MemberType NoteProperty -Name hosts -Value $exportHos
 $exportArray | Add-Member -MemberType NoteProperty -Name hostGroups -Value $exportHostGroups
 $exportArray | Add-Member -MemberType NoteProperty -Name hostMaps -Value $exportHostMaps
 $exportArray | Add-Member -MemberType NoteProperty -Name hostGroupMaps -Value $exportHostGroupMaps
+$exportArray | Add-Member -MemberType NoteProperty -Name snapshotSchedules -Value $exportSnapshotSchedule
 
 $systemState = Get-SDPSystemState
 

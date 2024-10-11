@@ -17,7 +17,7 @@ param(
     Connect-SDP -server {local SDP IP address} -credential $admincreds
     Connect-SDP -server {remote SDP IP address} -credential $admincreds -k2context remote
 
-    Move-VGToDR.ps1 -volumeGroupName SQL01-vg -remoteHost SQLDR01
+    Move-VGToDR.ps1 -volumeGroupName SQL01-vg
 
     .DESCRIPTION
 
@@ -27,8 +27,8 @@ param(
 #>
 
 $sdpModule = Get-Module sdp
-if ($sdpModule.Version -lt "1.5.0") {
-    $errormsg = 'SDP PowerShell SDK required to be 1.5.0 or higher.'
+if ($sdpModule.Version -lt "1.5.3") {
+    $errormsg = 'SDP PowerShell SDK required to be 1.5.3 or higher.'
     return $errormsg | Write-Error
 }
 
@@ -58,6 +58,13 @@ if (!$vg) {
     return $errormsg | Write-Error
 }
 
+<# ---------------------- #>
+Write-Verbose 'SOURCE > Removing existing host maps...' -Verbose
+$vgVols = $vg | Get-SDPVolume
+foreach ($v in $vgVols) {
+    Get-SDPHostMapping -volumeName $v.name | Remove-SDPHostMapping
+}
+
 Write-Verbose 'SOURCE > Checking for existing replication session...' -Verbose
 
 if ($vg.replication_sessions) {
@@ -65,8 +72,7 @@ if ($vg.replication_sessions) {
     $replicationSessionID = ConvertFrom-SDPObjectPrefix -Object $vg.replication_sessions -getId
     $session = Get-SDPReplicationSessions -id $replicationSessionID
     # $snapshotName = $volumeGroupName + (Get-Random -Maximum 9999)
-    # New-SDPVolumeGroupSnapshot -volumeGroupName $volumeGroupName -name $snapshotName -replicationSession $session.name -retentionPolicyName Replication_Retention
-    New-SDPReplicationVolumeGroupSnapshot -volumeGroupName $volumeGroupName replicationSession $session.name 
+    New-SDPReplicationVolumeGroupSnapshot -volumeGroupName $volumeGroupName -replicationSession $session.name
     $session = Get-SDPReplicationSessions -name $session.name
     $repSessionName = $session.name
 } 
@@ -93,7 +99,7 @@ $repVG = Get-SDPReplicationPeerVolumeGroups | Where-Object {$_.local_volume_grou
 $remoteVG = Get-SDPVolumeGroup -id $repVG.remote_volume_group_id -k2context remote
 $remoteSession = Get-SDPReplicationSessions -k2context remote -remote_replication_session_id $session.id
 
-Write-Verbose 'SOURCE > Data moved, reversing replication session...' -Verbose
+Write-Verbose 'TARGET > Data moved, reversing replication session...' -Verbose
 
 Get-SDPReplicationSessions -name $repSessionName | Suspend-SDPReplicationSession -wait | Out-Null
 $remoteSession | Switch-SDPReplicationSession -k2context remote -wait | Out-Null

@@ -31,8 +31,8 @@ Write-Verbose "-- No data is destroyed on the source SDP. Host mappings are remo
 Pause
 
 $sdpModule = Get-Module sdp
-if ($sdpModule.Version -lt "1.5.0") {
-    $errormsg = 'SDP PowerShell SDK required to be 1.5.0 or higher.'
+if ($sdpModule.Version -lt "1.5.5") {
+    $errormsg = 'SDP PowerShell SDK required to be 1.5.5 or higher.'
     return $errormsg | Write-Error
 }
 
@@ -67,6 +67,14 @@ foreach ($v in $vgVols) {
     $hostMaps += $hm
 }
 
+$vg = Get-SDPVolumeGroup -name $volumeGroupName
+$vgVols = $vg | Get-SDPVolume
+$hostGroupMaps = @()
+foreach ($v in $vgVols) {
+    $hm = Get-SDPHostGroupMapping -volumeName $v.name
+    $hostGroupMaps += $hm
+}
+
 # Get host list
 Write-Verbose 'SOURCE > Get host list' -Verbose
 
@@ -78,6 +86,14 @@ foreach ($h in $hostMaps) {
 }
 $hostlist = $hostlist | Sort-Object name -Unique
 
+$hostGroupList = @()
+foreach ($h in $hostGroupMaps) {
+    $hostId = ConvertFrom-SDPObjectPrefix -Object $h.host -getId
+    $hostObj = Get-SDPHostGroup -id $hostId
+    $hostGroupList += $hostObj
+}
+$hostGroupList = $hostGroupList | Sort-Object name -Unique
+
 # Remove existing host mappings for the volume group. 
 Write-Verbose 'SOURCE > Remove existing host mappings for the volume group.' -Verbose
 
@@ -85,12 +101,25 @@ $hostMapArray = @()
 foreach ($h in $hostMaps) {
     $hostId = ConvertFrom-SDPObjectPrefix -Object $h.host -getId
     $hostObj = Get-SDPHost -id $hostId
-    $volId = $hostId = ConvertFrom-SDPObjectPrefix -Object $h.volume -getId
+    $volId = ConvertFrom-SDPObjectPrefix -Object $h.volume -getId
     $volObj = Get-SDPVolume -id $volId
     $o = new-object psobject
     $o | Add-Member -MemberType NoteProperty -Name 'host' -Value $hostObj.name
     $o | Add-Member -MemberType NoteProperty -Name 'volume' -Value $volObj.name 
     $hostMapArray += $o
+    Remove-SDPHostMapping -id $h.id
+}
+
+$hostGroupMapArray = @()
+foreach ($h in $hostGroupMaps) {
+    $hostId = ConvertFrom-SDPObjectPrefix -Object $h.host -getId
+    $hostObj = Get-SDPHostGroup -id $hostId
+    $volId = ConvertFrom-SDPObjectPrefix -Object $h.volume -getId
+    $volObj = Get-SDPVolume -id $volId
+    $o = new-object psobject
+    $o | Add-Member -MemberType NoteProperty -Name 'host' -Value $hostObj.name
+    $o | Add-Member -MemberType NoteProperty -Name 'volume' -Value $volObj.name 
+    $hostGroupMapArray += $o
     Remove-SDPHostMapping -id $h.id
 }
 
@@ -169,6 +198,19 @@ foreach ($h in $hostlist) {
     }
 }
 
+foreach ($hg in $hostGroupList) {
+    $remoteHostGroup = Get-SDPHostGroup -name $hg.name -k2context remote
+    if (!$remoteHostGroup) {
+        New-SDPHostGroup -name $hg.name -k2context remote
+        $hostGroupHosts = Get-SDPHostGroup -name $hg.name | Get-SDPHost
+        foreach ($hgh in $hostGroupHosts) {
+            $hostIqn = $hgh | Get-SDPHostIqn
+            New-SDPHost -name $hgh.name -type $hgh.Type -hostGroupName $hg.name -k2context remote
+            Set-SDPHostIqn -hostName $hgh.name -iqn $hostIqn.iqn -k2context remote
+        }
+    }
+}
+
 # Rename those volumes.
 Write-Verbose 'TARGET > Renaming the volumes on target SDP.' -Verbose
 
@@ -187,6 +229,11 @@ Write-Verbose 'TARGET > Mapping target volumes to new target host object.' -Verb
 
 foreach ($hm in $hostMapArray) {
     New-SDPHostMapping -hostName $hm.host -volumeName $hm.volume -k2context remote | Out-Null
+    $hm
+}
+
+foreach ($hm in $hostGroupMapArray) {
+    New-SDPHostGroupMapping -hostGroupName $hm.host -volumeName $hm.volume -k2context remote | Out-Null
     $hm
 }
 

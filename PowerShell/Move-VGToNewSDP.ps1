@@ -36,6 +36,13 @@ if ($sdpModule.Version -lt "1.5.5") {
     return $errormsg | Write-Error
 }
 
+# check PSVersion
+
+if ($psversiontable.PSEdition -ne 'Core') {
+    $errormsg = 'Please use PowerSHell version 7 or greater to run this script.'
+    return $errormsg | Write-Error
+}
+
 # test both local and remote variables
 
 $localSDP = Get-SDPSystemState -ErrorAction SilentlyContinue
@@ -137,7 +144,7 @@ if ($vg.replication_sessions) {
     } else {
         # $snapshotName = $volumeGroupName + (Get-Random -Maximum 9999)
         # New-SDPVolumeGroupSnapshot -volumeGroupName $volumeGroupName -name $snapshotName -replicationSession $session.name -retentionPolicyName Replication_Retention
-        New-SDPReplicationVolumeGroupSnapshot -volumeGroupName $volumeGroupName replicationSession $session.name 
+        New-SDPReplicationVolumeGroupSnapshot -volumeGroupName $volumeGroupName -replicationSession $session.name 
         $session = Get-SDPReplicationSessions -name $session.name
         $repSessionName = $session.name
     }

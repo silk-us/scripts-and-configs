@@ -41,6 +41,13 @@ if(-not $(Get-Item $ResultDir -ErrorAction SilentlyContinue)){
     New-Item -ItemType Directory -Path $ResultDir
 }
 
+$target = Get-Item -Path $TargetDatafile -ErrorAction SilentlyContinue
+if (!$target) {
+    Write-Verbose "Creating test file..." -Verbose
+    & $DiskSpdBinary -d60 -W15 -C15 "-c$($TargetSize)" -t4 -o4 -b8k -L -r -Sh -w50 $TargetDatafile
+    Write-Verbose "... Done." -Verbose
+}
+
 ##Baseline run input
 Write-Host "Starting Diskspd.exe baseline `n
 Target Data File: $TargetDatafile `n
@@ -81,7 +88,9 @@ if (!$threads) {
         8,
         16,
         32,
-        64
+        64,
+        128,
+        256
     )
 } else {
     $threadCount = @($threads)

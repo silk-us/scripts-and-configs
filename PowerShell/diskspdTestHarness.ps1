@@ -25,9 +25,9 @@ param (
     [parameter()]
     [int] $writePercent = 0,
     [parameter()]
-    [switch] $logFile,
-    [parameter()]
-    [switch] $baseLine
+    [switch] $logFile   
+#   [parameter()]
+#   [switch] $baseLine
 )
 
 $TargetDatafile | Write-Verbose -Verbose
@@ -56,6 +56,7 @@ Duration: $Duration `n
 Data file size: $TargetSize `n
 Time $(Get-Date)"
 
+<#
 if ($baseLine) {
     #Run baseline
     $resultsFileName = "results-" + (get-date).ToFileTimeUTC()
@@ -66,6 +67,7 @@ if ($baseLine) {
     }
     Write-Host "Finished baseline at $(Get-Date)"
 }
+#>
 
 if (!$outstanding) {
     $outstanding = @(

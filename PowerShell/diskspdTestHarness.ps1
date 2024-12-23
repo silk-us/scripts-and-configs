@@ -25,9 +25,9 @@ param (
     [parameter()]
     [int] $writePercent = 0,
     [parameter()]
-    [switch] $logFile   
-#   [parameter()]
-#   [switch] $baseLine
+    [switch] $logFile,   
+    [parameter()]
+    [switch] $create
 )
 
 $TargetDatafile | Write-Verbose -Verbose
@@ -43,9 +43,18 @@ if(-not $(Get-Item $ResultDir -ErrorAction SilentlyContinue)){
 
 $target = Get-Item -Path $TargetDatafile -ErrorAction SilentlyContinue
 if (!$target) {
-    Write-Verbose "Creating test file..." -Verbose
-    & $DiskSpdBinary -d60 -W15 -C15 "-c$($TargetSize)" -t4 -o4 -b8k -L -r -Sh -w50 $TargetDatafile
-    Write-Verbose "... Done." -Verbose
+    if (!$create) {
+
+        Write-Verbose "Creating test file..." -Verbose
+        & $DiskSpdBinary -d60 -W15 -C15 "-c$($TargetSize)" -t4 -o4 -b8k -L -r -Sh -w50 $TargetDatafile
+        Write-Verbose "... Done." -Verbose
+    }
+}
+
+if ($create) {
+	$FC = "c"
+} else {
+	$FC = "f"
 }
 
 ##Baseline run input
@@ -61,9 +70,9 @@ if ($baseLine) {
     #Run baseline
     $resultsFileName = "results-" + (get-date).ToFileTimeUTC()
     if ($logFile) {
-        & $DiskSpdBinary "-b$($BlockSize)k" -L -D "-t1" "-o1" "-d$($Duration)" "-W$($Warmup)" -C0 "-w$($writePercent)" -r -z -Suw "-c$($TargetSize)" $TargetDatafile > "$($ResultDir)\\$($resultsFileName)"
+        & $DiskSpdBinary "-b$($BlockSize)k" -L -D "-t1" "-o1" "-d$($Duration)" "-W$($Warmup)" -C0 "-w$($writePercent)" -r -z -Suw "-$($FC)$($TargetSize)" $TargetDatafile > "$($ResultDir)\\$($resultsFileName)"
     } else {
-        & $DiskSpdBinary "-b$($BlockSize)k" -L -D "-t1" "-o1" "-d$($Duration)" "-W$($Warmup)" -C0 "-w$($writePercent)" -r -z -Suw "-c$($TargetSize)" $TargetDatafile 
+        & $DiskSpdBinary "-b$($BlockSize)k" -L -D "-t1" "-o1" "-d$($Duration)" "-W$($Warmup)" -C0 "-w$($writePercent)" -r -z -Suw "-$($FC)$($TargetSize)" $TargetDatafile 
     }
     Write-Host "Finished baseline at $(Get-Date)"
 }
@@ -126,11 +135,11 @@ foreach($thread in $threadCount){
 	    
 	    $vblockSize = $blocksize.tostring() + "k"
 	    $vDuration = $duration.tostring()
-	    write-verbose "-b$vblockSize -L -D -t$thread -o$ioperthread -d$vDuration -W$Warmup -C0 -w$writePercent -r -z -Suw -f$TargetSize $TargetDatafile" -verbose
+	    write-verbose "-b$vblockSize -L -D -t$thread -o$ioperthread -d$vDuration -W$Warmup -C0 -w$writePercent -r -z -Suw -$($FC)$TargetSize $TargetDatafile" -verbose
             if ($logFile) {
-                & $DiskSpdBinary "-b$($blocksize)k" -L -D "-t$($thread)" "-o$($ioperthread)" "-d$($Duration)" "-W$($Warmup)" -C0 "-w$($writePercent)" -r -z -Suw "-f$($TargetSize)" $TargetDatafile > $export      
+                & $DiskSpdBinary "-b$($blocksize)k" -L -D "-t$($thread)" "-o$($ioperthread)" "-d$($Duration)" "-W$($Warmup)" "-w$($writePercent)" -r -z -Suw "-$($FC)$TargetSize" $TargetDatafile > $export      
             } else {
-                & $DiskSpdBinary "-b$($blocksize)k" -L -D "-t$($thread)" "-o$($ioperthread)" "-d$($Duration)" "-W$($Warmup)" -C0 "-w$($writePercent)" -r -z -Suw "-f$($TargetSize)" $TargetDatafile      
+                & $DiskSpdBinary "-b$($blocksize)k" -L -D "-t$($thread)" "-o$($ioperthread)" "-d$($Duration)" "-W$($Warmup)" "-w$($writePercent)" -r -z -Suw "-$($FC)$TargetSize" $TargetDatafile      
             }
 
         } 

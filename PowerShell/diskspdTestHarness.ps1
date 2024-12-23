@@ -20,7 +20,7 @@ param (
     [parameter()]
     [int] $threads, 
     [parameter()]
-    [ValidateSet(8, 16, 32, 64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536, 2048)]
+    # [ValidateSet(8, 16, 32, 64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536, 2048)]
     [int] $outstanding, 
     [parameter()]
     [int] $writePercent = 0,
@@ -123,7 +123,10 @@ foreach($thread in $threadCount){
 
             #composite path
             [string]$export = "$($ResultDir)\$thread-thread-test\resultb$($blocksize)t$($thread)o$($ioperthread).txt"  
-
+	    
+	    $vblockSize = $blocksize.tostring() + "k"
+	    $vDuration = $duration.tostring()
+	    write-verbose "-b$vblockSize -L -D -t$thread -o$ioperthread -d$vDuration -W$Warmup -C0 -w$writePercent -r -z -Suw -f$TargetSize $TargetDatafile" -verbose
             if ($logFile) {
                 & $DiskSpdBinary "-b$($blocksize)k" -L -D "-t$($thread)" "-o$($ioperthread)" "-d$($Duration)" "-W$($Warmup)" -C0 "-w$($writePercent)" -r -z -Suw "-f$($TargetSize)" $TargetDatafile > $export      
             } else {

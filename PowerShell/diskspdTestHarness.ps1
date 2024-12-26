@@ -18,10 +18,14 @@ param (
     [parameter()]
     [int] $BlockSize = 8,
     [parameter()]
+    [switch] $sequential,
+    [parameter()]
     [int] $threads, 
     [parameter()]
     # [ValidateSet(8, 16, 32, 64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536, 2048)]
     [int] $outstanding, 
+    [parameter()]
+    [switch] $noOutstanding,
     [parameter()]
     [int] $writePercent = 0,
     [parameter()]
@@ -57,6 +61,12 @@ if ($create) {
 	$FC = "f"
 }
 
+if ($sequential) {
+	$RS = "s"
+} else {
+	$RS = "r"
+}
+
 ##Baseline run input
 Write-Host "Starting Diskspd.exe baseline `n
 Target Data File: $TargetDatafile `n
@@ -77,22 +87,6 @@ if ($baseLine) {
     Write-Host "Finished baseline at $(Get-Date)"
 }
 #>
-
-if (!$outstanding) {
-    $outstanding = @(
-        64,
-        96,
-        128,
-        192,
-        256,
-        384,
-        512,
-        768,
-        1024,
-        1536,
-        2048
-    )
-}
 
 if (!$threads) {
     $threadCount = @(
@@ -119,30 +113,33 @@ foreach($thread in $threadCount){
         Write-Host "Created directory $ResultDir\$thread-thread-test"
     }
 
-    foreach($io in $outstanding){
-        $message = "Testing IO debt count at $io"
+        $message = "Testing IO debt count at $outstanding"
         $message | Write-Verbose -Verbose
 
-        if ([int]$thread -le [int]$io) {
+        [int]$ioperthread = $outstanding / $thread;
+        
+        $message = "-- outstanding IO debt per thread at $ioperthread"
+        $message | Write-Verbose -Verbose
 
-            [int]$ioperthread = $io / $thread;
-            
-            $message = "-- outstanding IO debt per thread at $ioperthread"
-            $message | Write-Verbose -Verbose
-
-            #composite path
-            [string]$export = "$($ResultDir)\$thread-thread-test\resultb$($blocksize)t$($thread)o$($ioperthread).txt"  
-	    
+        #composite path
+        [string]$export = "$($ResultDir)\$thread-thread-test\resultb$($blocksize)t$($thread)o$($ioperthread).txt"  
+    
 	    $vblockSize = $blocksize.tostring() + "k"
 	    $vDuration = $duration.tostring()
-	    write-verbose "-b$vblockSize -L -D -t$thread -o$ioperthread -d$vDuration -W$Warmup -C0 -w$writePercent -r -z -Suw -$($FC)$TargetSize $TargetDatafile" -verbose
-            if ($logFile) {
-                & $DiskSpdBinary "-b$($blocksize)k" -L -D "-t$($thread)" "-o$($ioperthread)" "-d$($Duration)" "-W$($Warmup)" "-w$($writePercent)" -r -z -Suw "-$($FC)$TargetSize" $TargetDatafile > $export      
+	    write-verbose "-b$vblockSize -L -D -t$thread -o$ioperthread -d$vDuration -W$Warmup -C0 -w$writePercent -$RS -z -Suw -$($FC)$TargetSize $TargetDatafile" -verbose
+        if ($logFile) {
+            if ($noOutstanding) {
+                & $DiskSpdBinary "-b$($blocksize)k" -L -D "-t$($thread)" "-d$($Duration)" "-W$($Warmup)" "-w$($writePercent)" "-$($RS)" -z -Suw "-$($FC)$TargetSize" $TargetDatafile > $export      
             } else {
-                & $DiskSpdBinary "-b$($blocksize)k" -L -D "-t$($thread)" "-o$($ioperthread)" "-d$($Duration)" "-W$($Warmup)" "-w$($writePercent)" -r -z -Suw "-$($FC)$TargetSize" $TargetDatafile      
+                & $DiskSpdBinary "-b$($blocksize)k" -L -D "-t$($thread)" "-o$($ioperthread)" "-d$($Duration)" "-W$($Warmup)" "-w$($writePercent)" "-$($RS)" -z -Suw "-$($FC)$TargetSize" $TargetDatafile > $export      
             }
+        } else {
+            if ($noOutstanding) {
+                & $DiskSpdBinary "-b$($blocksize)k" -L -D "-t$($thread)" "-d$($Duration)" "-W$($Warmup)" "-w$($writePercent)" "-$($RS)" -z -Suw "-$($FC)$TargetSize" $TargetDatafile      
+            } else {
+                & $DiskSpdBinary "-b$($blocksize)k" -L -D "-t$($thread)" "-o$($ioperthread)" "-d$($Duration)" "-W$($Warmup)" "-w$($writePercent)" "-$($RS)" -z -Suw "-$($FC)$TargetSize" $TargetDatafile      
+            }
+        }
 
-        } 
 
-    }
 }

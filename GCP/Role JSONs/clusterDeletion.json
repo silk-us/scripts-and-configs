@@ -1,0 +1,17 @@
+{
+    "name": "silk-cluster-deletion",
+    "title": "silk-cluster-deletion",
+    "description": "silk-cluster-deletion",
+    "includedPermissions": [
+      "compute.firewalls.list",
+      "compute.networks.updatePolicy",
+      "compute.firewalls.delete",
+      "compute.networks.delete",
+      "compute.networks.removePeering",
+      "compute.routers.delete",
+      "compute.subnetworks.delete",
+      "compute.disks.list"
+    ],
+    "stage": "GA",
+    "deleted": false
+  }

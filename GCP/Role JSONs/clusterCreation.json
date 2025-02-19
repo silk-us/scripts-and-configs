@@ -1,0 +1,17 @@
+{
+    "name": "silk-cluster-creation",
+    "title": "silk-cluster-creation",
+    "description": "silk-cluster-creation",
+    "includedPermissions": [
+      "compute.firewalls.create",
+      "compute.firewalls.list",
+      "compute.globalOperations.get",
+      "compute.networks.addPeering",
+      "compute.networks.create",
+      "compute.networks.updatePolicy",
+      "compute.routers.create",
+      "compute.subnetworks.create"
+    ],
+    "stage": "GA",
+    "deleted": false
+  }

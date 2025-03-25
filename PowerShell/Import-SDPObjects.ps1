@@ -23,13 +23,13 @@ foreach ($hg in $importData.hostGroups) {
 
 foreach ($h in $importData.hosts) {
     if (!(Get-SDPHost -name $h.name)) {
-        Set-SDPHostIqn -hostName $h.name -iqn $h.iqn
+        Set-SDPHostIqn -hostName $h.name -iqn $h.iqn -ErrorAction SilentlyContinue
         if ($h.hostGroupName) {
             New-SDPHost -name $h.name -type $h.type -hostGroupName $h.hostGroupName
         } else {
             New-SDPHost -name $h.name -type $h.type
         }
-        Set-SDPHostIqn -hostName $h.name -iqn $h.iqn
+        Set-SDPHostIqn -hostName $h.name -iqn $h.iqn -ErrorAction SilentlyContinue
     } else {
         Write-Host -ForegroundColor yellow "-- Host" $h.name "Already exists --"
     }

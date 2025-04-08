@@ -6,7 +6,7 @@ Reboot
 
 ## 2. Add muiltipath configuration settings:
 ```PowerShell
-New-MSDSMSupportedHW -VendorID SMSFT2005 -Product iSCSIBusType_0x9
+New-MSDSMSupportedHW -VendorID MSFT2005 -Product iSCSIBusType_0x9
 Set-MSDSMGlobalDefaultLoadBalancePolicy -Policy LQD
 Enable-MSDSMAutomaticClaim -BusType iSCSI -Confirm:$false
 Set-MPIOSetting -NewPathVerificationState Enabled

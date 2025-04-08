@@ -17,7 +17,6 @@ Set-MPIOSetting -newRetryInterval 3
 Set-MPIOSetting -CustomPathRecovery Enabled
 Set-MPIOSetting -NewPathRecoveryInterval 20
 Set-MPIOSetting -NewPDORemovePeriod 20
-Set-MPIOSetting -NewPDORemovePeriod 80
 Get-ScheduledTask ScheduledDefrag | Disable-ScheduledTask
 ```
 Reboot

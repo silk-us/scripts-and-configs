@@ -20,22 +20,20 @@ The following values from the [example-flex-subnet-configuration](example-flex-s
 
 ## powershell deployment
 ### import the example-flex-subnet-configuration.json configuration into a powershell object
-This assumes the modified json file is in your working directory.  Update the path accordingly.
+This assumes the modified json file is in your working directory.  Update the `-Path` accordingly.
 ```powershell
 $config = Get-Content -Path .\example-flex-subnet-configuration.json -Raw | ConvertFrom-Json -Depth 100
 ```
 
 ### create the new network security group (nsg)
 ```powershell
-
-
 Get-AzVirtualNetwork -Name $config.vnet_name `
                      -ResourceGroupName $config.resource_group_name |
     Add-AzVirtualNetworkSubnetConfig -Name $config.subnet_name `
                                      -AddressPrefix $config.subnet_ip_range `
                                      -NetworkSecurityGroupId $(
-                                       Get-AzNetworkSecurityGroup `
-                                         -Name $config.nsg_name `
-                                         -ResourceGroupName $config.resource_group_name).Id |
+                                         Get-AzNetworkSecurityGroup `
+                                             -Name $config.nsg_name `
+                                             -ResourceGroupName $config.resource_group_name).Id |
     Set-AzVirtualNetwork
 ```

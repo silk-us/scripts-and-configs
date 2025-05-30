@@ -18,7 +18,7 @@ The first three values from the [example-flex-nsg-configuration](example-flex-ns
 
 ## powershell deployment
 ### import the modified example-flex-nsg-configuration.json configuration into a powershell object
-This assumes the modified json file is in your working directory.  Update the path accordingly.
+This assumes the modified json file is in your working directory.  Update the `-Path` accordingly.
 ```powershell
 $config = Get-Content -Path .\example-flex-nsg-configuration.json -Raw | ConvertFrom-Json -Depth 100
 ```

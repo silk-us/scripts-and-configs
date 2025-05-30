@@ -1,0 +1,23 @@
+{
+  "name": "example-silk-umi-subscription-logs-role",
+  "isCustom": true,
+  "description": "Required permissions to the subscription for umi management of logs within a Silk pod deployment.",
+  "actions": [
+    "Microsoft.ApiManagement/service/providers/Microsoft.Insights/logDefinitions/read",
+    "Microsoft.Compute/virtualMachines/providers/Microsoft.Insights/logDefinitions/read",
+    "Microsoft.Network/azurefirewalls/providers/Microsoft.Insights/logDefinitions/read",
+    "Microsoft.Network/networksecuritygroups/providers/Microsoft.Insights/logDefinitions/read",
+    "Microsoft.Network/publicIPAddresses/providers/Microsoft.Insights/logDefinitions/read",
+    "Microsoft.Network/virtualNetworks/providers/Microsoft.Insights/logDefinitions/read",
+    "Microsoft.Storage/storageAccounts/blobServices/providers/Microsoft.Insights/logDefinitions/read",
+    "Microsoft.Storage/storageAccounts/fileServices/providers/Microsoft.Insights/logDefinitions/read",
+    "Microsoft.Storage/storageAccounts/queueServices/providers/Microsoft.Insights/logDefinitions/read",
+    "Microsoft.Storage/storageAccounts/tableServices/providers/Microsoft.Insights/logDefinitions/read"
+  ],
+  "dataActions": [],
+  "notActions": [],
+  "notDataActions": [],
+  "assignableScopes": [
+    "/subscriptions/YOUR-SUBSCRIPTION-ID"
+  ]
+}

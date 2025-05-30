@@ -1,0 +1,13 @@
+
+{
+    "resource_group_name": "flex-example",
+    "vnet_name": "flex-example-vnet",
+    "subnet_name": "flex-example-subnet",
+    "subnet_ip_range": "10.0.5.0/28",
+    "nsg_name": "flex-example-nsg",
+    "nsg_resource_group_name": "flex-example-nsg-rg",
+    "subnet_service_endpoint": [
+        "Microsoft.Storage.Global",
+        "Microsoft.ContainerRegistry"
+    ]
+}

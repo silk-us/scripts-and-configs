@@ -1,0 +1,40 @@
+{
+    "name": "example-silk-deployment-operator-resource-group-role",
+    "isCustom": true,
+    "description": "Required permissions for the deployment user to execute the Azure marketplace Silk umi based deployment. Applied to the scope of the empty flex resource group.",
+    "actions": [
+        "Microsoft.Authorization/locks/write",
+        "Microsoft.Compute/disks/write",
+        "Microsoft.Compute/virtualMachines/extensions/read",
+        "Microsoft.Compute/virtualMachines/extensions/write",
+        "Microsoft.Compute/virtualMachines/read",
+        "Microsoft.Compute/virtualMachines/write",
+        "Microsoft.Network/networkInterfaces/join/action",
+        "Microsoft.Network/networkInterfaces/read",
+        "Microsoft.Network/networkInterfaces/write",
+        "Microsoft.Resources/deployments/read",
+        "Microsoft.Resources/deployments/validate/action",
+        "Microsoft.Resources/deployments/operations/read",
+        "Microsoft.Resources/deployments/operationstatuses/read",
+        "Microsoft.Resources/deployments/write",
+        "Microsoft.Storage/storageAccounts/blobServices/containers/write",
+        "Microsoft.Storage/storageAccounts/blobServices/read",
+        "Microsoft.Storage/storageAccounts/blobServices/write",
+        "Microsoft.Storage/storageAccounts/read",
+        "Microsoft.Storage/storageAccounts/write",
+        "Microsoft.Resources/deployments/cancel/action",
+        "Microsoft.Resources/deployments/delete",
+        "Microsoft.Resources/deployments/exportTemplate/action"
+    ],
+    "dataActions": [
+        "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/add/action",
+        "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/tags/read",
+        "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/tags/write",
+        "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/write"
+    ],
+    "notActions": [],
+    "notDataActions": [],
+    "assignableScopes": [
+        "/subscriptions/YOUR-SUBSCRIPTION-UID/resourceGroups/EMPTY-RG-FOR-DEPLOYMENT"
+    ]
+}

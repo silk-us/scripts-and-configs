@@ -1,7 +1,7 @@
 {
     "name": "example-silk-deployment-operator-resource-group-role",
     "isCustom": true,
-    "description": "Required permissions for the deployment user to execute the Azure marketplace Silk umi based deployment. Applied to the scope of the empty flex resource group.",
+    "description": "Required permissions for the deployment user to execute the Azure marketplace Silk Flex deployment. Applied to the scope of the empty flex resource group.",
     "actions": [
         "Microsoft.Authorization/locks/write",
         "Microsoft.Compute/disks/write",

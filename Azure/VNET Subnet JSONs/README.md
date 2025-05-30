@@ -10,17 +10,12 @@ It's assumed you've established an authenticated powershell session to azure and
 ## example configuration changes
 The following values from the [example-flex-subnet-configuration](example-flex-subnet-configuration.json) can be updated according to your environment.
 
-`    "resource_group_name": "flex-example",`
-
-`    "vnet_name": "flex-example-vnet",`
-
-`    "subnet_name": "flex-example-subnet",`
-
-`    "subnet_ip_range": "10.0.5.0/28",`
-
-`    "nsg_name": "flex-example-nsg",`
-
-`    "nsg_resource_group_name": "flex-example-nsg-rg",`
+`    "resource_group_name": "flex-example",`  
+`    "vnet_name": "flex-example-vnet",`  
+`    "subnet_name": "flex-example-subnet",`  
+`    "subnet_ip_range": "10.0.5.0/28",`  
+`    "nsg_name": "flex-example-nsg",`  
+`    "nsg_resource_group_name": "flex-example-nsg-rg",`  
 
 
 ## powershell deployment

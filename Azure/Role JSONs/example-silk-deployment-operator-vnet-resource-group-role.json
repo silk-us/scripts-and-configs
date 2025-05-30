@@ -1,7 +1,7 @@
 {
     "name": "example-silk-deployment-operator-vnet-resource-group-role",
     "isCustom": true,
-    "description": "Required permissions for the deployment operator to manage the vnet for the Azure marketplace Silk umi based deployment. Applied to the scope of the vnet resource group.",
+    "description": "Required permissions for the deployment operator to manage the vnet for the Azure marketplace Silk Flex deployment. Applied to the scope of the vnet resource group.",
     "actions": [
         "Microsoft.Network/virtualNetworks/subnets/join/action",
         "Microsoft.Network/virtualNetworks/subnets/read"

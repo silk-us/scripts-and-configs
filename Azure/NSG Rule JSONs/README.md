@@ -11,11 +11,9 @@ It's assumed you've established an authenticated powershell session to azure and
 The first three values from the [example-flex-nsg-configuration](example-flex-nsg-configuration.json) can be updated according to your environment.
 
 
-`    "resource_group_name": "flex-example",`
-
-`    "location": "eastus",`
-
-`    "nsg_name": "flex-example-nsg",`
+`    "resource_group_name": "flex-example",`  
+`    "location": "eastus",`  
+`    "nsg_name": "flex-example-nsg",`  
 
 
 ## powershell deployment

@@ -13,9 +13,7 @@ The first three values from the [example-flex-nsg-configuration](example-flex-ns
 
 `    "resource_group_name": "flex-example",`
 
-
 `    "location": "eastus",`
-
 
 `    "nsg_name": "flex-example-nsg",`
 

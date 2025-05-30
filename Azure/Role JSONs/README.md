@@ -28,8 +28,11 @@ New-AzRoleDefinition -InputFile .\example....json
 ### Operator Roles
 If the user performing the deployment has owner access to the empty resource group which the Silk Flex deployment will target or has higher privilege then no roles need to be created or assigned to the operator.  The operator roles are only required for the deployment, these roles allow only the necessary access is granted to the operator.
 - [Deployment Resource Group Role](example-silk-deployment-operator-resource-group-role.json)
-    This should be created with the assignable scope of the empty Resource Group.
+..-This should be created with the assignable scope of the empty Resource Group.
 - [Deployment Subscription Role](example-silk-deployment-operator-subscription-role.json)
-    This should be created with the assignable scope of the Subscription which the target Resource Group is created.
+..-This should be created with the assignable scope of the Subscription which the target Resource Group is created.
 - [Deployment VNET Resource Group Role](example-silk-deployment-operator-vnet-resource-group-role.json)
-    This role should be created with the assignable scope of the resource group that the VNET will be/has been created.
+..-This role should be created with the assignable scope of the resource group that the VNET will be/has been created.
+
+### User Managed Identity Roles
+If the deployment will use a User Managed Identity instead of the default System Managed Identity these roles can be created and assigned to the UMI to allow only the required actions to the environment.

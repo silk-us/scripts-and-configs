@@ -21,7 +21,6 @@ The following values from the [example-flex-subnet-configuration](example-flex-s
 `    "nsg_name": "flex-example-nsg",`
 
 `    "nsg_resource_group_name": "flex-example-nsg-rg",`
-incase it's different than the vnet resource group, may be the same as above resource group
 
 
 ## powershell deployment

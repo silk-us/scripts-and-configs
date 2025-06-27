@@ -1221,8 +1221,8 @@ spec:
             dnode_quantity: 16
             fru_type: "ISCSI-JBOD-B"
             instance_type: Standard_L32s_v3
-            image_name: "azure-dnode-8-5-90-11"
-            image_version: "8-5-90-11"
+            image_name: "azure-dnode-8-5-80-2"
+            image_version: "8-5-80-2"
             disk_quantity: 4
             disk_capacity: "1920GB"
             storage_quantity: 1
@@ -1237,8 +1237,8 @@ spec:
             dnode_quantity: 16
             fru_type: "ISCSI-JBOD-B"
             instance_type: Standard_L16s_v3
-            image_name: "azure-dnode-8-5-90-11"
-            image_version: "8-5-90-11"
+            image_name: "azure-dnode-8-5-80-2"
+            image_version: "8-5-80-2"
             disk_quantity: 2
             disk_capacity: "1920GB"
             storage_quantity: 1
@@ -1253,8 +1253,8 @@ spec:
             dnode_quantity: 16
             fru_type: "ISCSI-JBOD-B"
             instance_type: Standard_L8s_v3
-            image_name: "azure-dnode-8-5-90-11"
-            image_version: "8-5-90-11"
+            image_name: "azure-dnode-8-5-80-2"
+            image_version: "8-5-80-2"
             disk_quantity: 1
             disk_capacity: "1920GB"
             storage_quantity: 1
@@ -1385,7 +1385,7 @@ spec:
             fru_type: "ISCSI-JBOD-A"
             instance_type: i3en.2xlarge
             image_name: "aws-dnode-8-0-40-6"
-            image_version: "8-5-90-11"
+            image_version: "8-5-80-2"
             disk_quantity: 2
             disk_capacity: "2499GB"
             storage_quantity: 1
@@ -1401,7 +1401,7 @@ spec:
             fru_type: "ISCSI-JBOD-A"
             instance_type: i3en.xlarge
             image_name: "aws-dnode-8-0-40-6"
-            image_version: "8-5-90-11"
+            image_version: "8-5-80-2"
             disk_quantity: 1
             disk_capacity: "2499GB"
             storage_quantity: 1
@@ -1417,7 +1417,7 @@ spec:
             fru_type: "ISCSI-JBOD-A"
             instance_type: i3en.large
             image_name: "aws-dnode-8-0-40-6"
-            image_version: "8-5-90-11"
+            image_version: "8-5-80-2"
             disk_quantity: 1
             disk_capacity: "1249GB"
             storage_quantity: 1
@@ -1575,8 +1575,8 @@ spec:
             dnode_quantity: 16
             fru_type: "ISCSI-JBOD-B"
             instance_type: n2-standard-4
-            image_name: "gcp-dnode-8-5-90-11"
-            image_version: "8-5-90-11"
+            image_name: "gcp-dnode-8-5-80-2"
+            image_version: "8-5-80-2"
             disk_quantity: 16
             disk_capacity: "375GB"
             storage_quantity: 1
@@ -1592,8 +1592,8 @@ spec:
             dnode_quantity: 16
             fru_type: "ISCSI-JBOD-B"
             instance_type: n2-standard-4
-            image_name: "gcp-dnode-8-5-90-11"
-            image_version: "8-5-90-11"
+            image_name: "gcp-dnode-8-5-80-2"
+            image_version: "8-5-80-2"
             disk_quantity: 8
             disk_capacity: "375GB"
             storage_quantity: 1
@@ -1609,8 +1609,8 @@ spec:
             dnode_quantity: 16
             fru_type: "ISCSI-JBOD-B"
             instance_type: n2-standard-4
-            image_name: "gcp-dnode-8-5-90-11"
-            image_version: "8-5-90-11"
+            image_name: "gcp-dnode-8-5-80-2"
+            image_version: "8-5-80-2"
             disk_quantity: 4
             disk_capacity: "375GB"
             storage_quantity: 1
@@ -1626,8 +1626,8 @@ spec:
             dnode_quantity: 16
             fru_type: "ISCSI-JBOD-B"
             instance_type: n2-standard-4
-            image_name: "gcp-dnode-8-5-90-11"
-            image_version: "8-5-90-11"
+            image_name: "gcp-dnode-8-5-80-2"
+            image_version: "8-5-80-2"
             disk_quantity: 2
             disk_capacity: "375GB"
             storage_quantity: 1
@@ -2102,9 +2102,9 @@ spec:
   aws-cnode-image: k2c-cnode-8-5-80-16
   aws-dnode-image: aws-dnode-8-0-40-6
   azure-cnode-image: k2c-cnode-8-5-80-16
-  azure-dnode-image: azure-dnode-8-5-90-11
+  azure-dnode-image: azure-dnode-8-5-80-2
   gcp-cnode-image: k2c-cnode-8-5-80-16
-  gcp-dnode-image: gcp-dnode-8-5-90-11
+  gcp-dnode-image: gcp-dnode-8-5-80-2
   hs-branch: 8.5.95.x
   hs-config-branch: 8.5.95.x
   hs-version: v1.95.30

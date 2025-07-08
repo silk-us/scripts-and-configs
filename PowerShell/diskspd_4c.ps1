@@ -19,21 +19,21 @@ Write-Verbose "-- Using - $iopsDAT --" -Verbose
 # Read IOPS
 $outfile = $localName + '-' + 'read_iops.txt'
 Write-Verbose "-- Running Read IOPS -- outfile $outfile -- " -Verbose
-.\DiskSpd\amd64\diskspd.exe -b4K -W15 -d60 -Sh -L -t192 -r -w0 -f32G E:\Testdata\iops.dat > $outfile
+.\DiskSpd\amd64\diskspd.exe -b4K -W15 -d60 -Sh -L -t192 -r -w0 -f32G $iopsDAT > $outfile
 
 # Write IOPS
 $outfile = $localName + '-' + 'write_iops.txt'
 Write-Verbose "-- Running Write IOPS -- outfile $outfile -- " -Verbose
-.\DiskSpd\amd64\diskspd.exe -b4K -W15 -d60 -Sh -L -t192 -r -w100 -f32G E:\Testdata\iops.dat > $outfile
+.\DiskSpd\amd64\diskspd.exe -b4K -W15 -d60 -Sh -L -t192 -r -w100 -f32G $iopsDAT > $outfile
 
 Write-Verbose "-- Using - $throughputDAT --" -Verbose
 # Read throughput
 $outfile = $localName + '-' + 'read_tp.txt'
 Write-Verbose "-- Running Read throughput -- outfile $outfile -- " -Verbose
-.\DiskSpd\amd64\diskspd.exe -b128k -W15 -d60 -Sh -L -t32 -r -w0 -f64G E:\Testdata\throughput.dat > $outfile
+.\DiskSpd\amd64\diskspd.exe -b128k -W15 -d60 -Sh -L -t32 -r -w0 -f64G $throughputDAT > $outfile
 
 # Write throughput
 $outfile = $localName + '-' + 'write_tp.txt'
 Write-Verbose "-- Running Write throughput -- outfile $outfile -- " -Verbose
-.\DiskSpd\amd64\diskspd.exe -b128k -W15 -d60 -Sh -L -t32 -r -w100 -f64G E:\Testdata\throughput.dat > $outfile
+.\DiskSpd\amd64\diskspd.exe -b128k -W15 -d60 -Sh -L -t32 -r -w100 -f64G $throughputDAT > $outfile
 

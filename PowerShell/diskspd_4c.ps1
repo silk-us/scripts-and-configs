@@ -9,10 +9,10 @@ $iopsDAT = $drive + 'Testdata\iops.dat'
 $throughputDAT = $drive + 'Testdata\throughput.dat'
 $localName = $env:computername
 
-
-Write-Verbose "-- Creating IO files - $iopsDAT and $throughputDAT --" -Verbose
 New-Item -Name "testdata" -Path $drive -ItemType Directory -ErrorAction SilentlyContinue
+Write-Verbose "-- Creating IO file - $iopsDAT --" -Verbose
 .\DiskSpd\amd64\diskspd.exe -d60 -W15 -C15 -c32G -t64 -o4 -b4k -L -r -Sh -w50 $iopsDAT
+Write-Verbose "-- Creating IO file - $throughputDAT --" -Verbose
 .\DiskSpd\amd64\diskspd.exe -d60 -W15 -C15 -c64G -t2 -o4 -b128k -L -r -Sh -w50 $throughputDAT
 
 Write-Verbose "-- Using - $iopsDAT --" -Verbose

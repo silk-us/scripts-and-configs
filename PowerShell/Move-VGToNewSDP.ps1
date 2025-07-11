@@ -129,7 +129,7 @@ foreach ($h in $hostGroupMaps) {
     $hostGroupMapArray += $o
     Remove-SDPHostMapping -id $h.id
 }
-
+ 
 # Generate net-new replication sessions for the volume group.
 
 Write-Verbose 'SOURCE > Checking for existing replication session...' -Verbose
@@ -152,7 +152,7 @@ if ($vg.replication_sessions) {
     Write-Verbose 'SOURCE --> Generate new replication sessions for the volume group.' -Verbose
     [string]$vgprefix = $vg.id
     $repSessionName = $vgprefix + "-rep-" + (get-random)
-    New-SDPReplicationSession -name $repSessionName -volumeGroupName $volumeGroupName -replicationPeerName $peerArray.name -retentionPolicyName Replication_Retention -externalRetentionPolicyName Replication_Retention -RPO 1200 -mapped | Start-SDPReplicationSession | Out-Null
+    New-SDPReplicationSession -name $repSessionName -volumeGroupName $volumeGroupName -replicationPeerName $peerArray.name -retentionPolicyName Replication_Retention -externalRetentionPolicyName Replication_Retention -RPO 1200 -mapped | Start-SDPReplicationSession -ErrorAction SilentlyContinue | Out-Null
 }
 
 # Monitor replication effort.
@@ -228,8 +228,8 @@ foreach ($i in $volArray) {
 
 Write-Verbose "TARGET --> Renaming volume group to $volumeGroupName" -Verbose
 
-$rvg = Get-SDPVolumeGroup -name $repVG.name -k2context remote
-$rvg | Set-SDPVolumeGroup -name $volumeGroupName -enableDeDuplication $rvg.is_dedup -k2context remote
+# $rvg = Get-SDPVolumeGroup -name $repVG.name -k2context remote
+# $rvg | Set-SDPVolumeGroup -name $volumeGroupName -enableDeDuplication $rvg.is_dedup -k2context remote
 
 # Map those new hosts to the new volumes
 Write-Verbose 'TARGET > Mapping target volumes to new target host object.' -Verbose

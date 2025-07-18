@@ -7,15 +7,22 @@ This readme offers a method to deploy and configure a subnet to prepare for a Si
 It's assumed you've established an authenticated powershell session to azure and are operating in that session for the entirety of this process. You can use `Connect-AzAccount` to establish that connection and would need to do this in each powershell session you operate out of.
 
 
-## example configuration changes
+## example configuration
+This configuration example specifies all required elements for a flex subnet, including the Microsoft.Storage.Global and Microsoft.ContainerRegistry service endpoints, which are not required on any of the other subnets.
+
+### example values to change
 The following values from the [example-flex-subnet-configuration](example-flex-subnet-configuration.json) can be updated according to your environment.
 
-`    "resource_group_name": "flex-example",`  
-`    "vnet_name": "flex-example-vnet",`  
-`    "subnet_name": "flex-example-subnet",`  
-`    "subnet_ip_range": "10.0.5.0/28",`  
-`    "nsg_name": "flex-example-nsg",`  
-`    "nsg_resource_group_name": "flex-example-nsg-rg",`  
+`    "resource_group_name": "flex-example",`
+`    "vnet_name": "flex-example-vnet",`
+`    "subnet_name": "flex-example-subnet",`
+`    "subnet_ip_range": "10.0.5.0/28",`
+`    "nsg_name": "flex-example-nsg",`
+`    "nsg_resource_group_name": "flex-example-nsg-rg",`
+
+### static example values
+The following values from the [example-flex-subnet-configuration](example-flex-subnet-configuration.json) are constant for any Azure flex subnet deployment.
+`    "subnet_service_endpoint": ["Microsoft.Storage.Global", "Microsoft.ContainerRegistry"]`
 
 
 ## powershell deployment

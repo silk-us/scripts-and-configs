@@ -2,7 +2,7 @@ terraform {
   required_providers {
     silk = {
       source  = "localdomain/provider/silk"
-      version = "1.0.9"
+      version = "1.2.5"
     }
   }
 }
@@ -22,6 +22,11 @@ provider "silk" {
 variable "region" {
     type = string
     default = "us-east4"
+}
+
+variable "clusterid" {
+    type = string
+    default = "1234"
 }
 
 variable "zone" {

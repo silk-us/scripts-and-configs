@@ -1,51 +1,12 @@
-terraform {
-  required_providers {
-    silk = {
-      source  = "localdomain/provider/silk"
-      version = "1.2.4"
-    }
-  }
-}
-
 provider "silk" {
-  server = "10.10.10.10"
+  server = "20.57.43.65"
   username = "admin"
-  password = "Password"
+  password = "NeedF13x1234!"
 }
 
 provider "azurerm" {
+  subscription_id = var.subscriptionID
   features {}
-}
-
-
-variable "vmname" {
-    type = string
-    default = "example-vm"
-}
-
-variable "rgname" {
-    type = string
-    default = "example-rg"
-}
-
-variable "vnetname" {
-    type = string
-    default = "example-vnet"
-}
-
-variable "mgmtsnname" {
-    type = string
-    default = "example_host_mgmt"
-}
-
-variable "datasnname" {
-    type = string
-    default = "example_host_data"
-}
-
-variable "location" {
-    type = string
-    default = "centralus"
 }
 
 resource "silk_volume_group" "vg1" {
@@ -95,43 +56,30 @@ resource "azurerm_network_interface" "mgmt" {
 
   ip_configuration {
     name                          = "internal"
-    subnet_id                     = "/subscriptions/9c37fc06-40d2-1234-5678-69e602a0f1b4/resourceGroups/${var.rgname}/providers/Microsoft.Network/virtualNetworks/${var.vnetname}/subnets/${var.mgmtsnname}"
+    subnet_id                     = "/subscriptions/8d6bebd5-173e-42dd-afed-53dd32674bd5/resourceGroups/${var.rgname}/providers/Microsoft.Network/virtualNetworks/${var.vnetname}/subnets/${var.subnet}"
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id = azurerm_public_ip.main.id
   }
 }
 
-resource "azurerm_network_interface" "data" {
-  name                = "${var.vmname}-data1"
-  resource_group_name = var.rgname
-  location            = var.location
-  enable_accelerated_networking = true
-
-  ip_configuration {
-    name                          = "internal"
-    subnet_id                     = "/subscriptions/9c37fc06-40d2-1234-5678-69e602a0f1b4/resourceGroups/${var.rgname}/providers/Microsoft.Network/virtualNetworks/${var.vnetname}/subnets/${var.datasnname}"
-    private_ip_address_allocation = "Dynamic"
-  }
-}
 
 resource "azurerm_linux_virtual_machine" "main" {
   name                            = var.vmname
   resource_group_name             = var.rgname
   location                        = var.location
   size                            = "Standard_D2s_v3"
-  admin_username                  = "example-admin"
+  admin_username                  = "kmdemo-azure"
   disable_password_authentication = true
   zone = "1"
   custom_data = filebase64("./bootstrap/bootstrap.sh")
 
   network_interface_ids = [
     azurerm_network_interface.mgmt.id,
-    azurerm_network_interface.data.id,
   ]
 
   admin_ssh_key {
-    username = "example-admin"
-    public_key = file("~/.ssh/example-admin.pub")
+    username = "kmdemo-azure"
+    public_key = file("~/.ssh/kmdemo-azure.pub")
   }
 
   source_image_reference {

@@ -1,0 +1,6 @@
+vmname = "sdp-vm"
+rgname = "target-rg"
+vnetname = "target-vnet"
+subnet = "target_subnet"
+location = "eastus2"
+subscriptionID = "12345678-1234-1234-abe2-12345678901234"

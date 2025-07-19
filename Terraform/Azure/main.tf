@@ -1,7 +1,7 @@
 provider "silk" {
-  server = "20.57.43.65"
+  server = "10.10.10.10"
   username = "admin"
-  password = "NeedF13x1234!"
+  password = "Password!"
 }
 
 provider "azurerm" {

@@ -228,8 +228,8 @@ foreach ($i in $volArray) {
 
 Write-Verbose "TARGET --> Renaming volume group to $volumeGroupName" -Verbose
 
-# $rvg = Get-SDPVolumeGroup -name $repVG.name -k2context remote
-# $rvg | Set-SDPVolumeGroup -name $volumeGroupName -enableDeDuplication $rvg.is_dedup -k2context remote
+$rvg = Get-SDPVolumeGroup -name $repVG.name -k2context remote
+$rvg | Set-SDPVolumeGroup -name $volumeGroupName -k2context remote
 
 # Map those new hosts to the new volumes
 Write-Verbose 'TARGET > Mapping target volumes to new target host object.' -Verbose

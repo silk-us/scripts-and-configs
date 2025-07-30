@@ -16,14 +16,15 @@ $throughputDAT = $drive + 'Testdata\throughput.dat'
 $localName = $env:computername
 
 if (!$diskspdExecutable) {
+    if (!$skipPrep) {
+        Invoke-RestMethod -Uri 'https://github.com/microsoft/diskspd/releases/download/v2.2/DiskSpd.ZIP' -OutFile DiskSpd.ZIP
+        Expand-Archive .\DiskSpd.ZIP -force 
+    }
+    Write-Verbose "-- Downloading diskspd --" -Verbose
     $diskspdExecutable = '.\DiskSpd\amd64\diskspd.exe'
 }
 
 if (!$skipPrep) {
-    if (!$diskspdExecutable) {
-        Invoke-RestMethod -Uri 'https://github.com/microsoft/diskspd/releases/download/v2.2/DiskSpd.ZIP' -OutFile DiskSpd.ZIP
-        Expand-Archive .\DiskSpd.ZIP -force 
-    }
     New-Item -Name "testdata" -Path $drive -ItemType Directory -ErrorAction SilentlyContinue
     Write-Verbose "-- Creating IO file - $iopsDAT --" -Verbose
     & $diskspdExecutable -d60 -W5 -C15 -c32G -t64 -o4 -b4k -L -r -Suw -w100 $iopsDAT

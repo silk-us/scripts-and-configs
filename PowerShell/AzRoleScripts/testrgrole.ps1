@@ -34,6 +34,12 @@ $actions = @(
     "Microsoft.Compute/virtualMachines/runCommand/action"
     "Microsoft.Compute/virtualMachines/start/action"
     "Microsoft.Compute/virtualMachines/write"
+    "Microsoft.Compute/galleries/write"
+    "Microsoft.Compute/galleries/read"
+    "Microsoft.Compute/galleries/images/read"
+    "Microsoft.Compute/galleries/images/write"
+    "Microsoft.Compute/galleries/images/versions/read"
+    "Microsoft.Compute/galleries/images/versions/write"
     "Microsoft.Network/loadBalancers/read"
     "Microsoft.Network/networkInterfaces/delete"
     "Microsoft.Network/networkInterfaces/ipconfigurations/join/action"
@@ -54,6 +60,7 @@ $actions = @(
     "Microsoft.Storage/storageAccounts/listServiceSas/action"
     "Microsoft.Storage/storageAccounts/read"
     "Microsoft.Storage/storageAccounts/write"
+    "Microsoft.Storage/storageAccounts/listKeys/action"
 )
 
 $dataActions = @(

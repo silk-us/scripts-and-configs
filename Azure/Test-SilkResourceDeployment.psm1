@@ -313,15 +313,26 @@ function Test-SilkResourceDeployment
 
                 # Initialize the mNodeSizeObject array with mnode VM SKU details
                 $mNodeSizeObject = @(
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "s_v3";   PhysicalSize = 19.5};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "s_v3";   PhysicalSize = 39.1};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 32;   vmSkuSuffix = "s_v3";   PhysicalSize = 78.2};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 2;    vmSkuSuffix = "aos_v4"; PhysicalSize = 14.67};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 4;    vmSkuSuffix = "aos_v4"; PhysicalSize = 29.34};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "aos_v4"; PhysicalSize = 58.67};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 12;   vmSkuSuffix = "aos_v4"; PhysicalSize = 88.01};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "aos_v4"; PhysicalSize = 117.35}
+                                        [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "s_v3";   PhysicalSize = 19.5};
+                                        [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "s_v3";   PhysicalSize = 39.1};
+                                        [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 32;   vmSkuSuffix = "s_v3";   PhysicalSize = 78.2};
+                                        [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 2;    vmSkuSuffix = "aos_v4"; PhysicalSize = 14.67};
+                                        [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 4;    vmSkuSuffix = "aos_v4"; PhysicalSize = 29.34};
+                                        [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "aos_v4"; PhysicalSize = 58.67};
+                                        [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 12;   vmSkuSuffix = "aos_v4"; PhysicalSize = 88.01};
+                                        [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "aos_v4"; PhysicalSize = 117.35}
                                     )
+
+                # $mNodeSizeObject = @(
+                #                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "s_v3";   PhysicalSize = 19.5};
+                #                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "s_v3";   PhysicalSize = 39.1};
+                #                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 32;   vmSkuSuffix = "s_v3";   PhysicalSize = 78.2};
+                #                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 2;    vmSkuSuffix = "aos_v4"; PhysicalSize = 14.67};
+                #                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 4;    vmSkuSuffix = "aos_v4"; PhysicalSize = 29.34};
+                #                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "aos_v4"; PhysicalSize = 58.67};
+                #                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 12;   vmSkuSuffix = "aos_v4"; PhysicalSize = 88.01};
+                #                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "aos_v4"; PhysicalSize = 117.35}
+                #                     )
 
                 # ensure that the Az module is imported and the user is logged in
                 try
@@ -618,10 +629,23 @@ function Test-SilkResourceDeployment
                                 -Name $("{0}-nsg" -f $ResourceNamePrefix) `
                                 -SecurityRules $nSGDenyAllOutboundRule, $nSGDenyAllInboundRule
 
+                        Write-Verbose -Message "✓ Network Security Group '$($nSG.Name)' created with isolation rules:"
+
+                        # Get detailed rule information for verbose output (using independent variables)
+                        $verboseInboundRule = $nSG.SecurityRules | Where-Object Direction -eq 'Inbound'
+                        $verboseOutboundRule = $nSG.SecurityRules | Where-Object Direction -eq 'Outbound'
+
+                        Write-Verbose -Message "  - Inbound Rule: '$($verboseInboundRule.Name)' - $($verboseInboundRule.Access) traffic from source '$($verboseInboundRule.SourceAddressPrefix)' ports '$($verboseInboundRule.SourcePortRange)' to destination '$($verboseInboundRule.DestinationAddressPrefix)' ports '$($verboseInboundRule.DestinationPortRange)' protocol '$($verboseInboundRule.Protocol)' [Priority: $($verboseInboundRule.Priority)]"
+                        Write-Verbose -Message "  - Outbound Rule: '$($verboseOutboundRule.Name)' - $($verboseOutboundRule.Access) traffic from source '$($verboseOutboundRule.SourceAddressPrefix)' ports '$($verboseOutboundRule.SourcePortRange)' to destination '$($verboseOutboundRule.DestinationAddressPrefix)' ports '$($verboseOutboundRule.DestinationPortRange)' protocol '$($verboseOutboundRule.Protocol)' [Priority: $($verboseOutboundRule.Priority)]"
+
+                        Write-Verbose -Message "  - Security Impact: Complete network isolation - NO traffic allowed in any direction"
+
                         $mGMTSubnet = New-AzVirtualNetworkSubnetConfig `
                                         -Name $("{0}-mgmt-subnet" -f $ResourceNamePrefix) `
                                         -AddressPrefix $IPRangeCIDR `
                                         -NetworkSecurityGroup $nSG
+
+                        Write-Verbose -Message "✓ Management subnet '$($mGMTSubnet.Name)' configured with address range $($mGMTSubnet.AddressPrefix)"
 
                         # $storageSubnet = New-AzVirtualNetworkSubnetConfig `
                         #                 -Name $("{0}-storage-subnet" -f $ResourceNamePrefix) `
@@ -634,6 +658,9 @@ function Test-SilkResourceDeployment
                                     -Name $("{0}-vnet" -f $ResourceNamePrefix) `
                                     -AddressPrefix $IPRangeCIDR `
                                     -Subnet $mGMTSubnet #, $storageSubnet
+
+                        Write-Verbose -Message "✓ Virtual Network '$($vNET.Name)' created with address space $IPRangeCIDR"
+                        Write-Verbose -Message "✓ Network isolation configured: All VMs will be deployed with NO internet access"
 
                         $mGMTSubnetID = $vNET.Subnets | Where-Object { $_.Name -eq $mGMTSubnet.Name } | Select-Object -ExpandProperty Id
                         # $storageSubnetID = $vNET.Subnets | Where-Object { $_.Name -eq $storageSubnet.Name } | Select-Object -ExpandProperty Id
@@ -662,16 +689,55 @@ function Test-SilkResourceDeployment
                 # create vm instances
                 try
                     {
+                        # Clean up any old jobs before starting deployment to better track jobs related to the active run
+                        Write-Verbose -Message "Cleaning up any existing background jobs..."
+                        Get-Job | Remove-Job -Force
+                        Write-Verbose -Message "All existing jobs have been removed."
+
+                        # Calculate total VMs for progress tracking
+                        $totalDNodes = ($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum
+                        $totalVMs = $CNodeCount + $totalDNodes
+
+                        # Start main VM creation progress
+                        Write-Progress `
+                            -Status "Initializing" `
+                            -CurrentOperation "Starting VM deployment process..." `
+                            -PercentComplete 0 `
+                            -Activity "VM Deployment" `
+                            -Id 1
+
                         $DeployedVMs = New-Object 'System.Collections.Generic.List[System.Object]'
+
+                        # CNode creation with sub-progress
+                        Write-Progress `
+                            -Status "Creating CNodes" `
+                            -CurrentOperation "Preparing to create $CNodeCount CNode VMs..." `
+                            -PercentComplete 5 `
+                            -Activity "VM Deployment" `
+                            -Id 1
 
                         for ($cNode = 1; $cNode -le $CNodeCount; $cNode++)
                             {
-                                # create the cnode management
+                                # Calculate CNode SKU for display
+                                $currentCNodeSku = "{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix
+
+                                # Update sub-progress for CNode creation
+                                Write-Progress `
+                                    -Status "Creating CNode $cNode of $CNodeCount ($currentCNodeSku)" `
+                                    -CurrentOperation "Configuring CNode $cNode with SKU $currentCNodeSku..." `
+                                    -PercentComplete $(($cNode / $CNodeCount) * 100) `
+                                    -Activity "CNode Creation" `
+                                    -ParentId 1 `
+                                    -Id 2
+
+                                # create the cnode management NIC
                                 $cNodeMGMTNIC = New-AzNetworkInterface `
                                                     -ResourceGroupName $ResourceGroupName `
                                                     -Location $Region `
                                                     -Name $("{0}-cnode-mgmt-nic-{1}" -f $ResourceNamePrefix, $cNode) `
                                                     -SubnetId $mGMTSubnetID
+
+                                Write-Verbose -Message "✓ CNode $cNode management NIC '$($cNodeMGMTNIC.Name)' successfully created with IP '$($cNodeMGMTNIC.IpConfigurations[0].PrivateIpAddress)'"
 
                                 # $cNodeStorageNIC = New-AzNetworkInterface `
                                 #                     -ResourceGroupName $ResourceGroupName `
@@ -749,14 +815,44 @@ function Test-SilkResourceDeployment
                                     -ResourceGroupName $ResourceGroupName `
                                     -Location $Region `
                                     -VM $cNodeConfig `
-                                    -AsJob
+                                    -AsJob | Out-Null
                             }
 
+                        # Clean up CNode creation sub-progress bar as this phase is complete
+                        Write-Progress -Activity "CNode Creation" -Id 2 -Completed
+
                         $dNodeStartCount = 0
+                        $currentMNode = 0
                         foreach ($mNode in $mNodeObject)
                             {
+                                $currentMNode++
+
+                                # Calculate MNode SKU and physical size for display
+                                $currentMNodeSku = "{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix
+                                $currentMNodePhysicalSize = $mNode.PhysicalSize
+
+                                # Update main progress for MNode group
+                                $processedCNodes = $CNodeCount
+                                $processedDNodes = $dNodeStartCount
+                                $totalProcessed = $processedCNodes + $processedDNodes
+                                $mainPercentComplete = [Math]::Min([Math]::Round(($totalProcessed / $totalVMs) * 100), 90)
+                                Write-Progress `
+                                    -Status "Processing MNode Group $currentMNode of $($mNodeObject.Count) - $currentMNodePhysicalSize TiB ($currentMNodeSku)" `
+                                    -CurrentOperation "Creating $($mNode.dNodeCount) DNodes for $currentMNodePhysicalSize TiB MNode..." `
+                                    -PercentComplete $mainPercentComplete `
+                                    -Activity "VM Deployment" `
+                                    -Id 1
                                 for ($dNode = 1; $dNode -le $mNode.dNodeCount; $dNode++)
                                     {
+                                        # Update sub-progress for DNode creation
+                                        Write-Progress `
+                                            -Status "Creating DNode $dNode of $($mNode.dNodeCount) - $currentMNodePhysicalSize TiB ($currentMNodeSku)" `
+                                            -CurrentOperation "Configuring DNode $($dNode + $dNodeStartCount) with SKU $currentMNodeSku..." `
+                                            -PercentComplete $(($dNode / $mNode.dNodeCount) * 100) `
+                                            -Activity "MNode Group $currentMNode DNode Creation" `
+                                            -ParentId 1 `
+                                            -Id 3
+
                                         # set dnode number to use for naming
                                         $dNodeNumber = $dNode + $dNodeStartCount
 
@@ -766,6 +862,8 @@ function Test-SilkResourceDeployment
                                                         -Location $Region `
                                                         -Name $("{0}-dnode-{1}-mgmt-nic" -f $ResourceNamePrefix, $dNodeNumber) `
                                                         -SubnetId $mGMTSubnetID
+
+                                        Write-Verbose -Message "✓ DNode $dNodeNumber management NIC '$($dNodeMGMTNIC.Name)' successfully created with IP '$($dNodeMGMTNIC.IpConfigurations[0].PrivateIpAddress)'"
 
                                         # $cNodeStorageNIC = New-AzNetworkInterface `
                                         #                     -ResourceGroupName $ResourceGroupName `
@@ -839,127 +937,550 @@ function Test-SilkResourceDeployment
                                         #                 -Primary:$false `
                                         #                 -DeleteOption "Delete"
 
+                                        # Update sub-progress for VM creation
+                                        Write-Progress `
+                                            -Status "Creating DNode $dNode VM ($currentMNodeSku)..." `
+                                            -CurrentOperation "Starting VM creation job for DNode $dNodeNumber with SKU $currentMNodeSku..." `
+                                            -PercentComplete $(($dNode / $mNode.dNodeCount) * 100) `
+                                            -Activity "MNode Group $currentMNode DNode Creation" `
+                                            -ParentId 1 `
+                                            -Id 3
+
                                         New-AzVM `
                                             -ResourceGroupName $ResourceGroupName `
                                             -Location $Region `
                                             -VM $dNodeConfig `
-                                            -AsJob 
+                                            -AsJob | Out-Null
                                     }
-                                $dNodeStartCount += 16
+
+                                # Clean up this MNode group's sub-progress bar as it's complete
+                                Write-Progress -Activity "MNode Group $currentMNode DNode Creation" -Id 3 -Completed
+
+                                $dNodeStartCount += $mNode.dNodeCount
                             }
 
 
-                        # Wait for all VMs to be created
+                        # Validate all network interfaces were created successfully
+                        Write-Verbose -Message "✓ All network interfaces created successfully: $((Get-AzNetworkInterface -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }).Count) total NICs"
+
+                        # Wait for all VMs to be created - Final phase of VM deployment
                         $allVMJobs = Get-Job
 
+                        # Update main progress to show completion phase and immediately show monitoring sub-progress
                         Write-Progress `
-                            -Status "Running" `
-                            -CurrentOperation "Waiting for all VMs to be created." `
-                            -PercentComplete $(($($allVMJobs | Where-Object { $_.State -ne 'Running' }).Count / $allVMJobs.Count) * 100) `
-                            -Activity "Creating VMs" `
+                            -Status "VM Creation Jobs Submitted - Monitoring Deployment" `
+                            -CurrentOperation "Waiting for all VMs to be deployed..." `
+                            -PercentComplete 95 `
+                            -Activity "VM Deployment" `
                             -Id 1
+
+                        # Immediately start VM deployment monitoring sub-progress
+                        Write-Progress `
+                            -Status "Monitoring VM Deployment" `
+                            -CurrentOperation "Waiting for $($allVMJobs.Count) VMs to deploy..." `
+                            -PercentComplete 0 `
+                            -Activity "VM Deployment Monitoring" `
+                            -ParentId 1 `
+                            -Id 4
+
+                        # Initial status check to show immediate progress
+                        $currentVMJobs = Get-Job
+                        $completedJobs = $currentVMJobs | Where-Object { $_.State -ne 'Running' }
+                        $runningJobs = $currentVMJobs | Where-Object { $_.State -eq 'Running' }
+                        $initialCompletionPercent = [Math]::Round(($completedJobs.Count / $allVMJobs.Count) * 100)
+
+                        # Update sub-progress immediately with current status
+                        Write-Progress `
+                            -Status "VM Deployment: $initialCompletionPercent%" `
+                            -CurrentOperation "Monitoring $($runningJobs.Count) running VMs..." `
+                            -PercentComplete $initialCompletionPercent `
+                            -Activity "VM Deployment Monitoring" `
+                            -ParentId 1 `
+                            -Id 4
 
                         do
                             {
-                                Start-Sleep -Seconds 10
+                                # Regular monitoring interval
+                                Start-Sleep -Seconds 3
                                 $currentVMJobs = Get-Job
+                                $completedJobs = $currentVMJobs | Where-Object { $_.State -ne 'Running' }
+                                $runningJobs = $currentVMJobs | Where-Object { $_.State -eq 'Running' }
+                                $completionPercent = [Math]::Round(($completedJobs.Count / $allVMJobs.Count) * 100)
 
+                                # Update sub-progress for VM deployment
                                 Write-Progress `
-                                    -Status $("Progress...{0}%" -f [System.Math]::($(($($currentVMJobs | Where-Object { $_.State -ne 'Running' }).Count / $allVMJobs.Count) * 100),0)) `
-                                    -CurrentOperation $("Waiting for {0} VMs to be created." -f $($currentVMJobs | Where-Object { $_.State -ne 'Running' }).Count) `
-                                    -PercentComplete $(($($currentVMJobs | Where-Object { $_.State -ne 'Running' }).Count / $allVMJobs.Count) * 100) `
-                                    -Activity "Creating VMs" `
-                                    -Id 1
+                                    -Status "VM Deployment: $completionPercent%" `
+                                    -CurrentOperation "Waiting for $($runningJobs.Count) remaining VMs to deploy..." `
+                                    -PercentComplete $completionPercent `
+                                    -Activity "VM Deployment Monitoring" `
+                                    -ParentId 1 `
+                                    -Id 4
                             } `
                         while
                             (
                                 $currentVMJobs.State -contains 'Running'
                             )
 
+                        # Final progress updates
                         Write-Progress `
-                            -Status "Progress 100%" `
-                            -CurrentOperation "All VMs have been created." `
+                            -Status "VM Deployment Complete" `
+                            -CurrentOperation "All VMs have been successfully deployed" `
                             -PercentComplete 100 `
-                            -Activity "Creating VMs" `
+                            -Activity "VM Deployment Monitoring" `
+                            -ParentId 1 `
+                            -Id 4
+
+                        Write-Progress `
+                            -Status "VM Deployment Complete" `
+                            -CurrentOperation "All VMs have been deployed successfully" `
+                            -PercentComplete 100 `
+                            -Activity "VM Deployment" `
                             -Id 1
 
-                        Start-Sleep -Seconds 5
+                        Start-Sleep -Seconds 2
 
-                        Write-Progress -Id 1 -Completed
+                        # Complete sub-progress bars
+                        Write-Progress -Activity "VM Deployment Monitoring" -Id 4 -Completed
 
-                        # Collect the deployed VMs
-                        $DeployedVMs = Get-AzVM -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
-
-                        $DeployedVMs |
-                            ForEach-Object `
-                                {
-                                    Write-Host "Deployed VM: {0} sku: {1}" -f $_.Name, $_.HardwareProfile.VmSize
-                                }
-
-                        Start-Sleep -Seconds 10
-                        Read-Host -Prompt "Press Enter to continue..."
                     }
                 catch
                     {
-                        Write-Host "Error occurred while creating VMs: $_"
+                        Write-Warning -Message "Error occurred while creating VMs: $_"
+                    }
+
+                # clean up jobs
+                Get-Job | Remove-Job -Force | Out-Null
+
+                # Comprehensive resource validation and reporting
+                Write-Host "`n=== Post-Deployment Validation ===" -ForegroundColor Cyan
+
+                # Get all deployed resources for validation
+                $deployedVMs = Get-AzVM -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
+                $deployedNICs = Get-AzNetworkInterface -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
+                $deployedVNet = Get-AzVirtualNetwork -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
+                $deployedNSG = Get-AzNetworkSecurityGroup -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
+                $allResources = Get-AzResource -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
+
+                # Create deployment report
+                $deploymentReport = @()
+
+                # Build CNode deployment report
+                for ($cNode = 1; $cNode -le $CNodeCount; $cNode++) {
+                    $expectedVMName = "$ResourceNamePrefix-cnode-$cNode"
+                    $expectedNICName = "$ResourceNamePrefix-cnode-mgmt-nic-$cNode"
+
+                    $vm = $deployedVMs | Where-Object { $_.Name -eq $expectedVMName }
+                    $nic = $deployedNICs | Where-Object { $_.Name -eq $expectedNICName }
+
+                    # Calculate CNode SKU for reporting
+                    $reportCNodeSku = "{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix
+
+                    $deploymentReport += [PSCustomObject]@{
+                        ResourceType = "CNode"
+                        GroupNumber = "CNode Group"
+                        NodeNumber = $cNode
+                        VMName = $expectedVMName
+                        ExpectedSKU = $reportCNodeSku
+                        DeployedSKU = if ($vm) { $vm.HardwareProfile.VmSize } else { "Not Found" }
+                        VMStatus = if ($vm) { "✓ Deployed" } else { "✗ Failed" }
+                        NICStatus = if ($nic) { "✓ Created" } else { "✗ Failed" }
+                    }
+                }
+
+                # Build DNode deployment report
+                $dNodeStartCount = 0
+                $currentMNode = 0
+                foreach ($mNode in $mNodeObject) {
+                    $currentMNode++
+                    $currentMNodePhysicalSize = $mNode.PhysicalSize
+                    $reportMNodeSku = "{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix
+
+                    for ($dNode = 1; $dNode -le $mNode.dNodeCount; $dNode++) {
+                        $dNodeNumber = $dNode + $dNodeStartCount
+                        $expectedVMName = "$ResourceNamePrefix-dnode-$dNodeNumber"
+                        $expectedNICName = "$ResourceNamePrefix-dnode-$dNodeNumber-mgmt-nic"
+
+                        $vm = $deployedVMs | Where-Object { $_.Name -eq $expectedVMName }
+                        $nic = $deployedNICs | Where-Object { $_.Name -eq $expectedNICName }
+
+                        $deploymentReport += [PSCustomObject]@{
+                            ResourceType = "DNode"
+                            GroupNumber = "MNode $currentMNode ($currentMNodePhysicalSize TiB)"
+                            NodeNumber = $dNodeNumber
+                            VMName = $expectedVMName
+                            ExpectedSKU = $reportMNodeSku
+                            DeployedSKU = if ($vm) { $vm.HardwareProfile.VmSize } else { "Not Found" }
+                            VMStatus = if ($vm) { "✓ Deployed" } else { "✗ Failed" }
+                            NICStatus = if ($nic) { "✓ Created" } else { "✗ Failed" }
+                        }
+                    }
+                    $dNodeStartCount += $mNode.dNodeCount
+                }
+
+                # Display the deployment report table
+                Write-Host "`n=== VM Deployment Report ===" -ForegroundColor Cyan
+
+                # CNode Report
+                $cNodeReport = $deploymentReport | Where-Object { $_.ResourceType -eq "CNode" }
+                if ($cNodeReport) {
+                    $cNodeExpectedSku = $cNodeReport[0].ExpectedSKU
+                    Write-Host "`nCNode Deployment Status (Expected SKU: $cNodeExpectedSku):" -ForegroundColor Yellow
+                    $cNodeReport | Format-Table -Property @(
+                        @{Label="Node"; Expression={"CNode $($_.NodeNumber)"}; Width=12},
+                        @{Label="VM Name"; Expression={$_.VMName}; Width=25},
+                        @{Label="Deployed SKU"; Expression={$_.DeployedSKU}; Width=18},
+                        @{Label="VM Status"; Expression={$_.VMStatus}; Width=15},
+                        @{Label="NIC Status"; Expression={$_.NICStatus}; Width=15}
+                    ) -AutoSize
+                }
+
+                # DNode Report by MNode Group
+                $mNodeGroups = $deploymentReport | Where-Object { $_.ResourceType -eq "DNode" } | Group-Object GroupNumber
+                foreach ($group in $mNodeGroups) {
+                    $mNodeExpectedSku = $group.Group[0].ExpectedSKU
+                    Write-Host "`n$($group.Name) DNode Deployment Status (Expected SKU: $mNodeExpectedSku):" -ForegroundColor Yellow
+                    $group.Group | Format-Table -Property @(
+                        @{Label="Node"; Expression={"DNode $($_.NodeNumber)"}; Width=12},
+                        @{Label="VM Name"; Expression={$_.VMName}; Width=25},
+                        @{Label="Deployed SKU"; Expression={$_.DeployedSKU}; Width=18},
+                        @{Label="VM Status"; Expression={$_.VMStatus}; Width=15},
+                        @{Label="NIC Status"; Expression={$_.NICStatus}; Width=15}
+                    ) -AutoSize
+                }
+
+                # Silk Component Summary
+                Write-Host "`n=== Silk Component Summary ===" -ForegroundColor Cyan
+
+                # Calculate CNode statistics
+                $cNodeReport = $deploymentReport | Where-Object { $_.ResourceType -eq "CNode" }
+                $successfulCNodes = ($cNodeReport | Where-Object { $_.VMStatus -eq "✓ Deployed" }).Count
+                $cNodeSummaryLabel = if ($cNodeReport) { $cNodeReport[0].ExpectedSKU } else { "Unknown" }
+
+                # Calculate DNode statistics by MNode group
+                $dNodeReport = $deploymentReport | Where-Object { $_.ResourceType -eq "DNode" }
+                $mNodeGroups = $dNodeReport | Group-Object GroupNumber
+
+                # Create summary table
+                $silkSummary = @()
+
+                # Add CNode summary
+                $silkSummary += [PSCustomObject]@{
+                    Component = "CNode"
+                    DeployedCount = $successfulCNodes
+                    ExpectedCount = $CNodeCount
+                    SKU = $cNodeSummaryLabel
+                    Status = if ($successfulCNodes -eq $CNodeCount) { "✓ Complete" } else { "⚠ Partial" }
+                }
+
+                # Add MNode/DNode summary for each group
+                foreach ($group in $mNodeGroups) {
+                    $groupSuccessful = ($group.Group | Where-Object { $_.VMStatus -eq "✓ Deployed" }).Count
+                    $groupExpected = $group.Group.Count
+                    $groupSku = $group.Group[0].ExpectedSKU
+                    $groupName = $group.Name.Replace("MNode ", "M").Replace(" TiB)", "TB)")
+
+                    $silkSummary += [PSCustomObject]@{
+                        Component = $groupName
+                        DeployedCount = $groupSuccessful
+                        ExpectedCount = $groupExpected
+                        SKU = $groupSku
+                        Status = if ($groupSuccessful -eq $groupExpected) { "✓ Complete" } else { "⚠ Partial" }
+                    }
+                }
+
+                # Display the summary table
+                $silkSummary | Format-Table -Property @(
+                    @{Label="Silk Component"; Expression={$_.Component}; Width=20},
+                    @{Label="Deployed"; Expression={$_.DeployedCount}; Width=10},
+                    @{Label="Expected"; Expression={$_.ExpectedCount}; Width=10},
+                    @{Label="VM SKU"; Expression={$_.SKU}; Width=20},
+                    @{Label="Status"; Expression={$_.Status}; Width=15}
+                ) -AutoSize
+
+                # Infrastructure Summary
+                Write-Host "`n=== Infrastructure Summary ===" -ForegroundColor Cyan
+                $totalExpectedVMs = $CNodeCount + ($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum
+                $successfulVMs = ($deploymentReport | Where-Object { $_.VMStatus -eq "✓ Deployed" }).Count
+                $failedVMs = ($deploymentReport | Where-Object { $_.VMStatus -eq "✗ Failed" }).Count
+
+                Write-Host "Virtual Network: " -NoNewline
+                if ($deployedVNet) { Write-Host "✓ $($deployedVNet.Name)" -ForegroundColor Green } else { Write-Host "✗ Not Found" -ForegroundColor Red }
+
+                Write-Host "Network Security Group: " -NoNewline
+                if ($deployedNSG) { Write-Host "✓ $($deployedNSG.Name)" -ForegroundColor Green } else { Write-Host "✗ Not Found" -ForegroundColor Red }
+
+                Write-Host "Expected VMs: $totalExpectedVMs"
+                Write-Host "Successfully Deployed VMs: " -NoNewline
+                if ($successfulVMs -eq $totalExpectedVMs) {
+                    Write-Host "$successfulVMs" -ForegroundColor Green
+                } else {
+                    Write-Host "$successfulVMs" -ForegroundColor Yellow
+                }
+
+                if ($failedVMs -gt 0) {
+                    Write-Host "Failed VM Deployments: " -NoNewline
+                    Write-Host "$failedVMs" -ForegroundColor Red
+                }
+
+                Write-Host "Total Network Interfaces: $($deployedNICs.Count)"
+                Write-Host "Total Resources Created: $($allResources.Count)"
+
+                # Overall Status
+                Write-Host "`n=== Overall Deployment Status ===" -ForegroundColor Cyan
+                if ($successfulVMs -eq $totalExpectedVMs -and $deployedVNet -and $deployedNSG) {
+                    Write-Host "✓ DEPLOYMENT SUCCESSFUL - All resources deployed correctly!" -ForegroundColor Green
+                } else {
+                    Write-Host "⚠ DEPLOYMENT ISSUES DETECTED - Review the report above for details" -ForegroundColor Yellow
+                }
+
+                Write-Progress -Id 1 -Completed
+
+                Start-Sleep -Seconds 2
+                if (!$DisableCleanup)
+                    {
+                        Write-Verbose -Message "Deployment completed. Resources have been created in the resource group: $ResourceGroupName."
+                        Read-Host -Prompt "Press Enter to continue with cleanup or Ctrl+C to exit without cleanup."
                     }
             }
         end
             {
                 if ( $RunCleanupOnly -or !$DisableCleanup )
                     {
+                        # Start main cleanup progress
+                        Write-Progress `
+                            -Status "Initializing Resource Cleanup" `
+                            -CurrentOperation "Preparing to clean up all deployed resources..." `
+                            -PercentComplete 0 `
+                            -Activity "Resource Cleanup" `
+                            -Id 5
+
                         # Clean up resources
 
                         # clean up deployed test VMs
                         if (Get-AzVM -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -Match $ResourceNamePrefix })
                             {
+                                # Update main progress for VM cleanup phase (VMs = 50% of total cleanup)
+                                Write-Progress `
+                                    -Status "Cleaning Up Virtual Machines" `
+                                    -CurrentOperation "Removing test VMs from resource group..." `
+                                    -PercentComplete 10 `
+                                    -Activity "Resource Cleanup" `
+                                    -ParentId 1 `
+                                    -Id 5
+
+                                # Start VM cleanup sub-progress
+                                Write-Progress `
+                                    -Status "Removing Virtual Machines" `
+                                    -CurrentOperation "Submitting VM removal jobs..." `
+                                    -PercentComplete 0 `
+                                    -Activity "VM Cleanup" `
+                                    -ParentId 5 `
+                                    -Id 6
+
+                                $vmsToRemove = Get-AzVM -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
+                                $totalVMs = $vmsToRemove.Count
+                                $currentVMCount = 0
+
                                 # Remove all cnode virtual machines in the resource group
-                                Get-AzVM -ResourceGroupName $ResourceGroupName |
-                                    Where-Object { $_.Name -match $ResourceNamePrefix } |
-                                        ForEach-Object  {
-                                                            Write-Host $("Removing virtual machine: {0} in resource group: {1}" -f $_.Name, $ResourceGroupName);
-                                                            Remove-AzVM -ResourceGroupName $ResourceGroupName -Name $_.Name -Force:$true -AsJob
-                                                        }
+                                $vmsToRemove |
+                                    ForEach-Object `
+                                        {
+                                            $currentVMCount++
+
+                                            # Update sub-progress for each VM
+                                            Write-Progress `
+                                                -Status "Removing VM $currentVMCount of $totalVMs" `
+                                                -CurrentOperation "Removing virtual machine: $($_.Name)..." `
+                                                -PercentComplete $(($currentVMCount / $totalVMs) * 50) `
+                                                -Activity "VM Cleanup" `
+                                                -ParentId 5 `
+                                                -Id 6
+
+                                            Write-Verbose -Message $("Removing virtual machine: {0} in resource group: {1}" -f $_.Name, $ResourceGroupName);
+                                            Remove-AzVM -ResourceGroupName $ResourceGroupName -Name $_.Name -Force:$true -AsJob | Out-Null
+                                        }
+
+                                # Update sub-progress for waiting phase
+                                Write-Progress `
+                                    -Status "Waiting for VM Removal Completion" `
+                                    -CurrentOperation "Waiting for all $totalVMs virtual machines to be removed..." `
+                                    -PercentComplete 50 `
+                                    -Activity "VM Cleanup" `
+                                    -ParentId 5 `
+                                    -Id 6
+
                                 # Wait for all VM removal jobs to complete
-                                Get-Job | Wait-Job
+                                Write-Verbose -Message "Waiting for all virtual machines to be removed..."
+                                $vmJobs = Get-Job
+
+                                # Initialize progress with jobs submitted
+                                Write-Progress `
+                                    -Status "VM Removal Progress: 0%" `
+                                    -CurrentOperation "All $($vmJobs.Count) VM removal jobs submitted, monitoring completion..." `
+                                    -PercentComplete 0 `
+                                    -Activity "VM Cleanup" `
+                                    -ParentId 5 `
+                                    -Id 6
+
+                                do {
+                                    Start-Sleep -Seconds 2
+                                    $currentVMJobs = Get-Job
+                                    $completedVMJobs = $currentVMJobs | Where-Object { $_.State -ne 'Running' }
+
+                                    # VM sub-progress: Calculate actual completion percentage
+                                    $vmCompletionPercent = [Math]::Round(($completedVMJobs.Count / $vmJobs.Count) * 100)
+
+                                    # Update main progress during VM cleanup (10% to 50% - VMs represent 50% of total)
+                                    $mainProgressPercent = 10 + [Math]::Round(($completedVMJobs.Count / $vmJobs.Count) * 40)
+                                    Write-Progress `
+                                        -Status "Cleaning Up Virtual Machines - $vmCompletionPercent%" `
+                                        -CurrentOperation "VM cleanup in progress: $(($vmJobs.Count - $completedVMJobs.Count)) VMs remaining..." `
+                                        -PercentComplete $mainProgressPercent `
+                                        -Activity "Resource Cleanup" `
+                                        -ParentId 1 `
+                                        -Id 5
+
+                                    Write-Progress `
+                                        -Status "VM Removal Progress: $vmCompletionPercent%" `
+                                        -CurrentOperation "Waiting for $(($vmJobs.Count - $completedVMJobs.Count)) remaining VM removal jobs..." `
+                                        -PercentComplete $vmCompletionPercent `
+                                        -Activity "VM Cleanup" `
+                                        -ParentId 5 `
+                                        -Id 6
+                                } while ($currentVMJobs.State -contains 'Running')
+
+                                Get-Job | Wait-Job | Out-Null
+                                Write-Verbose -Message "All virtual machines have been removed."
+
+                                # Complete VM cleanup sub-progress
+                                Write-Progress -Activity "VM Cleanup" -Id 6 -Completed
+
+                                # clean up jobs
+                                Get-Job | Remove-Job -Force | Out-Null
                             }
 
                         if (Get-AzNetworkInterface -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -Match $ResourceNamePrefix })
                             {
-                                # Remove all cnode virtual machines in the resource group
-                                Get-AzNetworkInterface -ResourceGroupName $ResourceGroupName |
-                                    Where-Object { $_.Name -match $ResourceNamePrefix } |
-                                        ForEach-Object {
-                                                            Write-Host $("Removing network interface: {0} in resource group: {1}" -f $_.Name, $ResourceGroupName);
-                                                            Remove-AzNetworkInterface -ResourceGroupName $ResourceGroupName -Name $_.Name -Force:$true -AsJob
-                                                        }
+                                # Update main cleanup progress (NICs = next 15% after VMs)
+                                Write-Progress -Id 5 -ParentId 1 -Activity "Cleaning up test resources..." -Status "Removing network interfaces..." -PercentComplete 55
+
+                                # Start NIC cleanup sub-progress
+                                Write-Progress -Id 7 -ParentId 5 -Activity "Network Interface Cleanup" -Status "Identifying network interfaces to remove..." -PercentComplete 0
+
+                                # Get all NICs to remove
+                                $nicsToRemove = Get-AzNetworkInterface -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
+                                $totalNICs = $nicsToRemove.Count
+
+                                Write-Progress -Id 7 -ParentId 5 -Activity "Network Interface Cleanup" -Status "Found $totalNICs network interfaces to remove" -PercentComplete 10
+
+                                # Remove all network interfaces in the resource group
+                                $nicCount = 0
+                                $nicsToRemove | ForEach-Object {
+                                    $nicCount++
+                                    $nicProgress = [math]::Round((($nicCount / $totalNICs) * 60) + 10)
+                                    Write-Progress -Id 7 -ParentId 5 -Activity "Network Interface Cleanup" -Status "Removing NIC: $($_.Name) ($nicCount of $totalNICs)" -PercentComplete $nicProgress
+                                    Write-Host $("Removing network interface: {0} in resource group: {1}" -f $_.Name, $ResourceGroupName);
+                                    Remove-AzNetworkInterface -ResourceGroupName $ResourceGroupName -Name $_.Name -Force:$true -AsJob | Out-Null
+                                }
+
+                                # Wait for all NIC removal jobs to complete before proceeding
+                                Write-Progress -Id 7 -ParentId 5 -Activity "Network Interface Cleanup" -Status "Waiting for all NIC removal jobs to complete..." -PercentComplete 80
+                                Write-Verbose -Message "Waiting for all network interfaces to be removed..."
+                                Get-Job | Wait-Job | Out-Null
+                                Write-Verbose -Message "All network interfaces have been removed."
+
+                                Write-Progress -Id 7 -ParentId 5 -Activity "Network Interface Cleanup" -Status "Network interface cleanup completed" -PercentComplete 100
+                                Start-Sleep -Milliseconds 500
+                                Write-Progress -Id 7 -Activity "Network Interface Cleanup" -Completed
+
+                                # clean up jobs
+                                Get-Job | Remove-Job -Force | Out-Null
                             }
 
-                    # clean up deployed test Storage account
+                        # clean up deployed test Storage account
                         if (Get-AzStorageAccount -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq $bootDiagStorageAccount.StorageAccountName })
                             {
-                                Write-Host $("Removing boot diagnostics storage account: {0}" -f $bootDiagStorageAccount.StorageAccountName)
+                                # Update main cleanup progress (Storage = next 10% after NICs)
+                                Write-Progress -Id 5 -ParentId 1 -Activity "Cleaning up test resources..." -Status "Removing storage account..." -PercentComplete 70
+
+                                # Start Storage Account cleanup sub-progress
+                                Write-Progress -Id 8 -ParentId 5 -Activity "Storage Account Cleanup" -Status "Removing boot diagnostics storage account..." -PercentComplete 0
+
+                                Write-Verbose -Message $("Removing boot diagnostics storage account: {0}" -f $bootDiagStorageAccount.StorageAccountName)
+
+                                Write-Progress -Id 8 -ParentId 5 -Activity "Storage Account Cleanup" -Status "Deleting storage account: $($bootDiagStorageAccount.StorageAccountName)" -PercentComplete 50
+
                                 # Remove the boot diagnostics storage account
                                 $bootDiagStorageAccount | Remove-AzStorageAccount -Force:$true
+
+                                Write-Progress -Id 8 -ParentId 5 -Activity "Storage Account Cleanup" -Status "Storage account cleanup completed" -PercentComplete 100
+                                Start-Sleep -Milliseconds 500
+                                Write-Progress -Id 8 -Activity "Storage Account Cleanup" -Completed
                             }
 
-                        # clean up virtual network
+
+                        # Start VNet removal job
                         if (Get-AzVirtualNetwork -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $ResourceNamePrefix })
                             {
+                                # Update main cleanup progress (VNet = next 15% after Storage)
+                                Write-Progress -Id 5 -ParentId 1 -Activity "Cleaning up test resources..." -Status "Removing virtual network..." -PercentComplete 85
+
+                                # Start VNet cleanup sub-progress
+                                Write-Progress -Id 9 -ParentId 5 -Activity "Virtual Network Cleanup" -Status "Identifying virtual network to remove..." -PercentComplete 0
+
                                 $foundVNet = Get-AzVirtualNetwork -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $ResourceNamePrefix }
-                                Write-Host $("Removing virtual network: {0}" -f $foundVNet.Name)
-                                # Remove the virtual network
-                                $foundVNet | Remove-AzVirtualNetwork -Force:$true
+
+                                Write-Progress -Id 9 -ParentId 5 -Activity "Virtual Network Cleanup" -Status "Removing virtual network: $($foundVNet.Name)" -PercentComplete 25
+                                Write-Verbose -Message $("Starting removal of virtual network: {0}" -f $foundVNet.Name)
+
+                                Write-Progress -Id 9 -ParentId 5 -Activity "Virtual Network Cleanup" -Status "Executing VNet removal..." -PercentComplete 50
+                                $foundVNet | Remove-AzVirtualNetwork -Force:$true -AsJob | Out-Null
+
+                                Write-Progress -Id 9 -ParentId 5 -Activity "Virtual Network Cleanup" -Status "Waiting for VNet removal to complete..." -PercentComplete 75
+                                Get-Job | Wait-Job | Out-Null
+                                Write-Verbose -Message "Virtual Network resource cleanup completed."
+
+                                Write-Progress -Id 9 -ParentId 5 -Activity "Virtual Network Cleanup" -Status "Virtual network cleanup completed" -PercentComplete 100
+                                Start-Sleep -Milliseconds 500
+                                Write-Progress -Id 9 -Activity "Virtual Network Cleanup" -Completed
+
+                                # clean up jobs
+                                Get-Job | Remove-Job -Force | Out-Null
                             }
 
-                        # clean up network security group
+                        # Start NSG removal job
                         if (Get-AzNetworkSecurityGroup -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $ResourceNamePrefix })
                             {
+                                # Update main cleanup progress (NSG = final 5% before completion)
+                                Write-Progress -Id 5 -ParentId 1 -Activity "Cleaning up test resources..." -Status "Removing network security group..." -PercentComplete 95
+
+                                # Start NSG cleanup sub-progress
+                                Write-Progress -Id 10 -ParentId 5 -Activity "Network Security Group Cleanup" -Status "Identifying network security group to remove..." -PercentComplete 0
+
                                 $foundNSG = Get-AzNetworkSecurityGroup -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $ResourceNamePrefix }
-                                Write-Host $("Removing network security group: {0}" -f $foundNSG.Name)
-                                # Remove the network security group
-                                $foundNSG | Remove-AzNetworkSecurityGroup -Force:$true
+
+                                Write-Progress -Id 10 -ParentId 5 -Activity "Network Security Group Cleanup" -Status "Removing NSG: $($foundNSG.Name)" -PercentComplete 25
+                                Write-Verbose -Message $("Starting removal of network security group: {0}" -f $foundNSG.Name)
+
+                                Write-Progress -Id 10 -ParentId 5 -Activity "Network Security Group Cleanup" -Status "Executing NSG removal..." -PercentComplete 50
+                                $foundNSG | Remove-AzNetworkSecurityGroup -Force:$true -AsJob | Out-Null
+
+                                Write-Progress -Id 10 -ParentId 5 -Activity "Network Security Group Cleanup" -Status "Waiting for NSG removal to complete..." -PercentComplete 75
+                                Get-Job | Wait-Job | Out-Null
+                                Write-Verbose -Message "Network Security Group resource cleanup completed."
+
+                                Write-Progress -Id 10 -ParentId 5 -Activity "Network Security Group Cleanup" -Status "Network security group cleanup completed" -PercentComplete 100
+                                Start-Sleep -Milliseconds 500
+                                Write-Progress -Id 10 -Activity "Network Security Group Cleanup" -Completed
+
+                                # clean up jobs
+                                Get-Job | Remove-Job -Force | Out-Null
                             }
+
+                        # Final cleanup completion
+                        Write-Progress -Id 5 -Activity "Cleaning up test resources..." -Status "All cleanup operations completed" -PercentComplete 100
+                        Start-Sleep -Milliseconds 500
+                        Write-Progress -Id 5 -Activity "Cleaning up test resources..." -Completed
                     }
             }
     }

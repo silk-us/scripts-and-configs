@@ -1167,11 +1167,6 @@ function Test-SilkResourceDeployment
 
                         Write-Verbose -Message $("✓ Management subnet '{0}' configured with address range {1}" -f $mGMTSubnet.Name, ($mGMTSubnet.AddressPrefix -join ','))
 
-                        # $storageSubnet = New-AzVirtualNetworkSubnetConfig `
-                        #                 -Name $("{0}-storage-subnet" -f $ResourceNamePrefix) `
-                        #                 -AddressPrefix $StorageIPRangeCIDR `
-                        #                 -NetworkSecurityGroup $nSG
-
                         $vNET = New-AzVirtualNetwork `
                                     -ResourceGroupName $ResourceGroupName `
                                     -Location $Region `
@@ -1183,7 +1178,6 @@ function Test-SilkResourceDeployment
                         Write-Verbose -Message "✓ Network isolation configured: All VMs will be deployed with NO network access"
 
                         $mGMTSubnetID = $vNET.Subnets | Where-Object { $_.Name -eq $mGMTSubnet.Name } | Select-Object -ExpandProperty Id
-                        # $storageSubnetID = $vNET.Subnets | Where-Object { $_.Name -eq $storageSubnet.Name } | Select-Object -ExpandProperty Id
 
                         # create proximity placement group to add created availablity sets to
                         # Collect all VM SKUs that will be deployed for PPG intent
@@ -1232,21 +1226,6 @@ function Test-SilkResourceDeployment
                         Write-Error $("An error occurred while creating shared resource group infrastructure: {0}" -f $_)
                         return
                     }
-
-                # # create standard storage account for the resource group os diagnostics
-                # try {
-                #         $bootDiagStorageAccount = New-AzStorageAccount `
-                #                                     -ResourceGroupName $ResourceGroupName `
-                #                                     -Name $("{0}osdiag" -f $ResourceNamePrefix -replace "-","") `
-                #                                     -Location $Region `
-                #                                     -SkuName "Standard_LRS" `
-                #                                     -Kind "StorageV2"
-                #     }
-                # catch
-                #     {
-                #         Write-Error "An error occurred while creating the storage account for OS diagnostics: $_"
-                #         returnWorkspace 1
-                #     }
 
                 # create vm instances
                 try
@@ -1323,13 +1302,6 @@ function Test-SilkResourceDeployment
 
                                 Write-Verbose -Message $("✓ CNode {0} management NIC '{1}' successfully created with IP '{2}'" -f $cNode, $cNodeMGMTNIC.Name, $cNodeMGMTNIC.IpConfigurations[0].PrivateIpAddress)
 
-                                # $cNodeStorageNIC = New-AzNetworkInterface `
-                                #                     -ResourceGroupName $ResourceGroupName `
-                                #                     -Location $Region `
-                                #                     -Name $("{0}-cnode-storage-nic-{1:D2}" -f $ResourceNamePrefix, $cNode) `
-                                #                     -SubnetId $storageSubnetID `
-                                #                     -EnableAcceleratedNetworking:$true
-
                                 # create the cnode vm configuration
                                 # Use availability sets when not using zones
                                 $cNodeConfig = New-AzVMConfig `
@@ -1370,13 +1342,6 @@ function Test-SilkResourceDeployment
                                                 -CreateOption FromImage `
                                                 -DeleteOption "Delete"
 
-                                # # set the cnode vm diagnostics
-                                # $cNodeConfig = Set-AzVMBootDiagnostic `
-                                #                 -VM $cNodeConfig `
-                                #                 -ResourceGroupName $ResourceGroupName `
-                                #                 -StorageAccountName $bootDiagStorageAccount.StorageAccountName `
-                                #                 -Enable:$true
-
                                 # set the cnode vm diagnostics
                                 $cNodeConfig = Set-AzVMBootDiagnostic `
                                                 -VM $cNodeConfig `
@@ -1388,13 +1353,6 @@ function Test-SilkResourceDeployment
                                                 -Id $cNodeMGMTNIC.Id `
                                                 -Primary:$true `
                                                 -DeleteOption "Delete"
-
-                                # # Add the storage NIC to the cnode vm configuration
-                                # $cNodeConfig = Add-AzVMNetworkInterface `
-                                #                 -VM $cNodeConfig `
-                                #                 -Id $cNodeStorageNIC.Id `
-                                #                 -Primary:$false `
-                                #                 -DeleteOption "Delete"
 
                                 try
                                     {
@@ -1480,13 +1438,6 @@ function Test-SilkResourceDeployment
 
                                         Write-Verbose -Message $("✓ DNode {0} management NIC '{1}' successfully created with IP '{2}'" -f $dNodeNumber, $dNodeMGMTNIC.Name, $dNodeMGMTNIC.IpConfigurations[0].PrivateIpAddress)
 
-                                        # $cNodeStorageNIC = New-AzNetworkInterface `
-                                        #                     -ResourceGroupName $ResourceGroupName `
-                                        #                     -Location $Region `
-                                        #                     -Name $("{0}-dnode-storage-nic-{1:D2}" -f $ResourceNamePrefix, $dNodeNumber) `
-                                        #                     -SubnetId $storageSubnetID `
-                                        #                     -EnableAcceleratedNetworking:$true
-
                                         # create the dnode vm configuration
                                         $dNodeConfig = New-AzVMConfig `
                                                         -VMName $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNodeNumber) `
@@ -1526,13 +1477,6 @@ function Test-SilkResourceDeployment
                                                         -CreateOption FromImage `
                                                         -DeleteOption "Delete"
 
-                                        # # set the cnode vm diagnostics
-                                        # $cNodeConfig = Set-AzVMBootDiagnostic `
-                                        #                 -VM $cNodeConfig `
-                                        #                 -ResourceGroupName $ResourceGroupName `
-                                        #                 -StorageAccountName $bootDiagStorageAccount.StorageAccountName `
-                                        #                 -Enable:$true
-
                                         # set the dnode vm diagnostics
                                         $dNodeConfig = Set-AzVMBootDiagnostic `
                                                         -VM $dNodeConfig `
@@ -1544,13 +1488,6 @@ function Test-SilkResourceDeployment
                                                         -Id $dNodeMGMTNIC.Id `
                                                         -Primary:$true `
                                                         -DeleteOption "Delete"
-
-                                        # # Add the storage NIC to the dnode vm configuration
-                                        # $dNodeConfig = Add-AzVMNetworkInterface `
-                                        #                 -VM $dNodeConfig `
-                                        #                 -Id $dNodeStorageNIC.Id `
-                                        #                 -Primary:$false `
-                                        #                 -DeleteOption "Delete"
 
                                         # Update sub-progress for VM creation
                                         Write-Progress `
@@ -2341,52 +2278,7 @@ function Test-SilkResourceDeployment
                                 Get-Job | Remove-Job -Force | Out-Null
                             }
 
-                        # clean up deployed test Storage account
-                        if (Get-AzStorageAccount -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq $bootDiagStorageAccount.StorageAccountName })
-                            {
-                                # Update main cleanup progress (Storage = next 10% after NICs)
-                                Write-Progress `
-                                    -Id 5 `
-                                    -Activity "Cleaning up test resources..." `
-                                    -Status "Removing storage account..." `
-                                    -PercentComplete 70
-
-                                # Start Storage Account cleanup sub-progress
-                                Write-Progress `
-                                    -Id 8 `
-                                    -ParentId 5 `
-                                    -Activity "Storage Account Cleanup" `
-                                    -Status "Removing boot diagnostics storage account..." `
-                                    -PercentComplete 0
-
-                                Write-Verbose -Message $("Removing boot diagnostics storage account: {0}" -f $bootDiagStorageAccount.StorageAccountName)
-
-                                Write-Progress `
-                                    -Id 8 `
-                                    -ParentId 5 `
-                                    -Activity "Storage Account Cleanup" `
-                                    -Status $("Deleting storage account: {0}" -f $bootDiagStorageAccount.StorageAccountName) `
-                                    -PercentComplete 50
-
-                                # Remove the boot diagnostics storage account
-                                $bootDiagStorageAccount | Remove-AzStorageAccount -Force:$true
-
-                                Write-Progress `
-                                    -Id 8 `
-                                    -ParentId 5 `
-                                    -Activity "Storage Account Cleanup" `
-                                    -Status "Storage account cleanup completed" `
-                                    -PercentComplete 100
-
-                                Start-Sleep -Milliseconds 500
-
-                                Write-Progress `
-                                    -Id 8 `
-                                    -Activity "Storage Account Cleanup" `
-                                    -Completed
-                            }
-
-
+                            
                         # Start VNet removal job
                         if (Get-AzVirtualNetwork -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $ResourceNamePrefix })
                             {

@@ -56,9 +56,8 @@ function Test-SilkResourceDeployment
                 This parameter overrides JSON configuration values if provided.
 
             .PARAMETER ConfigurationJson
-                Path to JSON configuration file containing all deployment parameters.
+                Path to JSON configuration file as formatted by the Silk deployment checklist containing all deployment parameters.
                 When specified, parameters are loaded from this file unless overridden by command line parameters.
-                Used with ConfigurationJson parameter sets for simplified deployment management.
                 Example: "C:\configs\silk-deployment.json"
 
             .PARAMETER CNodeFriendlyName
@@ -2278,7 +2277,7 @@ function Test-SilkResourceDeployment
                                 Get-Job | Remove-Job -Force | Out-Null
                             }
 
-                            
+
                         # Start VNet removal job
                         if (Get-AzVirtualNetwork -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $ResourceNamePrefix })
                             {

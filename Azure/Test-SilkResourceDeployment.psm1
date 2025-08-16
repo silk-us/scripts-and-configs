@@ -8,6 +8,7 @@ function Test-SilkResourceDeployment
                 Tests Azure VM SKU availability for Silk Infrastructure deployments by deploying test resources.
 
             .DESCRIPTION
+                v1.0.0
                 This function validates that required Azure VM SKUs and resources are available for Silk Infrastructure
                 deployments by creating test VMs and resources. It supports multiple parameter sets for different
                 deployment scenarios including CNode/MNode configurations using friendly names or explicit SKUs.
@@ -85,6 +86,7 @@ function Test-SilkResourceDeployment
                 Deployment status information and resource validation results.
 
             .NOTES
+                Supports version 1.97.9
                 - Requires Azure PowerShell module and valid Azure authentication
                 - Creates resources with "sdp-test" prefix for easy identification
                 - All VMs are deployed with network isolation (no internet access) for security
@@ -1664,6 +1666,193 @@ function Test-SilkResourceDeployment
                             }
 
                         $dNodeStartCount += $mNode.dNodeCount
+                    }
+
+                # ===============================================================================
+                # SKU Support and Quota Availability Report
+                # ===============================================================================
+                Write-Host "`n=== SKU Support and Quota Availability Report ===" -ForegroundColor Cyan
+
+                # CNode SKU Support Report
+                if($cNodeObject)
+                    {
+                        $cNodeSkuName = "{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix
+                        $cNodeSupportedSKU = $locationSupportedSKU | Where-Object { $_.Name -eq $cNodeSkuName }
+
+                        Write-Host "`nCNode SKU Support:" -ForegroundColor Yellow
+                        Write-Host $("  SKU: {0}" -f $cNodeSkuName)
+                        Write-Host $("  Region: {0}" -f $Region)
+                        if ($cNodeSupportedSKU)
+                            {
+                                if ($Zone -eq "Zoneless")
+                                    {
+                                        Write-Host "  Zone Support: ✓ Supported (Zoneless deployment)" -ForegroundColor Green
+                                    }
+                                elseif ($cNodeSupportedSKU.LocationInfo.Zones -contains $Zone)
+                                    {
+                                        Write-Host $("  Zone Support: ✓ Supported in target zone {0}" -f $Zone) -ForegroundColor Green
+                                        Write-Host $("  All Available Zones: {0}" -f ($cNodeSupportedSKU.LocationInfo.Zones -join ", "))
+                                    }
+                                elseif ($cNodeSupportedSKU.LocationInfo.Zones -notcontains $Zone)
+                                    {
+                                        Write-Host $("  Zone Support: ⚠ Not supported in target zone {0}" -f $Zone) -ForegroundColor Yellow
+                                        Write-Host $("  Available Zones: {0}" -f ($cNodeSupportedSKU.LocationInfo.Zones -join ", "))
+                                    }
+                                else
+                                    {
+                                        Write-Host "  Zone Support: ⚠ Unable to determine" -ForegroundColor Yellow
+                                    }
+                            }
+                        else
+                            {
+                                Write-Host "  Region Support: ✗ Not supported in region" -ForegroundColor Red
+                            }
+
+                        # CNode Quota Information
+                        if ($computeQuotaUsage)
+                            {
+                                $cNodeSKUFamilyQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $cNodeObject.QuotaFamily }
+                                $cNodevCPUCount = $cNodeObject.vCPU * $CNodeCount
+                                Write-Host $("  Quota Family: {0}" -f $cNodeObject.QuotaFamily)
+                                if ($cNodeSKUFamilyQuota)
+                                    {
+                                        $availableQuota = $cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue
+                                        if ($availableQuota -ge $cNodevCPUCount)
+                                            {
+                                                Write-Host $("  vCPU Quota: ✓ Sufficient (Required: {0}, Available: {1}/{2})" -f $cNodevCPUCount, $availableQuota, $cNodeSKUFamilyQuota.Limit) -ForegroundColor Green
+                                            }
+                                        else
+                                            {
+                                                Write-Host $("  vCPU Quota: ✗ Insufficient (Required: {0}, Available: {1}/{2})" -f $cNodevCPUCount, $availableQuota, $cNodeSKUFamilyQuota.Limit) -ForegroundColor Red
+                                            }
+                                    }
+                                else
+                                    {
+                                        Write-Host "  vCPU Quota: ⚠ Unable to determine" -ForegroundColor Yellow
+                                    }
+                            }
+                    }
+
+                # MNode SKU Support Report
+                if($MNodeSize -and $mNodeObjectUnique)
+                    {
+                        foreach ($mNodeType in $mNodeObjectUnique)
+                            {
+                                $mNodeSkuName = "{0}{1}{2}" -f $mNodeType.vmSkuPrefix, $mNodeType.vCPU, $mNodeType.vmSkuSuffix
+                                $mNodeSupportedSKU = $locationSupportedSKU | Where-Object { $_.Name -eq $mNodeSkuName }
+
+                                Write-Host $("`nMNode SKU Support ({0} TiB):" -f $mNodeType.PhysicalSize) -ForegroundColor Yellow
+                                Write-Host $("  SKU: {0}" -f $mNodeSkuName)
+                                Write-Host $("  Region: {0}" -f $Region)
+                                if ($mNodeSupportedSKU)
+                                    {
+                                        if ($Zone -eq "Zoneless")
+                                            {
+                                                Write-Host "  Zone Support: ✓ Supported (Zoneless deployment)" -ForegroundColor Green
+                                            }
+                                        elseif ($mNodeSupportedSKU.LocationInfo.Zones -contains $Zone)
+                                            {
+                                                Write-Host $("  Zone Support: ✓ Supported in target zone {0}" -f $Zone) -ForegroundColor Green
+                                                Write-Host $("  All Available Zones: {0}" -f ($mNodeSupportedSKU.LocationInfo.Zones -join ", "))
+                                            }
+                                        elseif ($mNodeSupportedSKU.LocationInfo.Zones -notcontains $Zone)
+                                            {
+                                                Write-Host $("  Zone Support: ⚠ Not supported in target zone {0}" -f $Zone) -ForegroundColor Yellow
+                                                Write-Host $("  Available Zones: {0}" -f ($mNodeSupportedSKU.LocationInfo.Zones -join ", "))
+                                            }
+                                        else
+                                            {
+                                                Write-Host "  Zone Support: ⚠ Unable to determine" -ForegroundColor Yellow
+                                            }
+                                    }
+                                else
+                                    {
+                                        Write-Host "  Region Support: ✗ Not supported in region" -ForegroundColor Red
+                                    }
+
+                                # MNode Quota Information
+                                if ($computeQuotaUsage)
+                                    {
+                                        $mNodeSKUFamilyQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $mNodeType.QuotaFamily }
+                                        $mNodeInstanceCount = $MNodeSize | Group-Object | Select-Object Name, Count
+                                        $mNodevCPUCount = $mNodeType.vCPU * $mNodeType.dNodeCount * ($mNodeInstanceCount | Where-Object { $_.Name -eq $mNodeType.PhysicalSize }).Count
+                                        Write-Host $("  Quota Family: {0}" -f $mNodeType.QuotaFamily)
+                                        if ($mNodeSKUFamilyQuota)
+                                            {
+                                                $availableQuota = $mNodeSKUFamilyQuota.Limit - $mNodeSKUFamilyQuota.CurrentValue
+                                                if ($availableQuota -ge $mNodevCPUCount)
+                                                    {
+                                                        Write-Host $("  vCPU Quota: ✓ Sufficient (Required: {0}, Available: {1}/{2})" -f $mNodevCPUCount, $availableQuota, $mNodeSKUFamilyQuota.Limit) -ForegroundColor Green
+                                                    }
+                                                else
+                                                    {
+                                                        Write-Host $("  vCPU Quota: ✗ Insufficient (Required: {0}, Available: {1}/{2})" -f $mNodevCPUCount, $availableQuota, $mNodeSKUFamilyQuota.Limit) -ForegroundColor Red
+                                                    }
+                                            }
+                                        else
+                                            {
+                                                Write-Host "  vCPU Quota: ⚠ Unable to determine" -ForegroundColor Yellow
+                                            }
+                                    }
+                            }
+                    }
+
+                # Overall Quota Summary
+                if ($computeQuotaUsage)
+                    {
+                        Write-Host "`nOverall Quota Summary:" -ForegroundColor Yellow
+
+                        # Total VM Quota
+                        $totalVMQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Virtual Machines" }
+                        if ($totalVMQuota)
+                            {
+                                $totalVMCount = $CNodeCount + (($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum)
+                                $availableVMQuota = $totalVMQuota.Limit - $totalVMQuota.CurrentValue
+                                if ($availableVMQuota -ge $totalVMCount)
+                                    {
+                                        Write-Host $("  Total VMs: ✓ Sufficient (Required: {0}, Available: {1}/{2})" -f $totalVMCount, $availableVMQuota, $totalVMQuota.Limit) -ForegroundColor Green
+                                    }
+                                else
+                                    {
+                                        Write-Host $("  Total VMs: ✗ Insufficient (Required: {0}, Available: {1}/{2})" -f $totalVMCount, $availableVMQuota, $totalVMQuota.Limit) -ForegroundColor Red
+                                    }
+                            }
+
+                        # Total Regional vCPU Quota
+                        $totalVCPUQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Total Regional vCPUs" }
+                        if ($totalVCPUQuota)
+                            {
+                                $totalvCPUCount = 0
+                                if ($cNodeObject) { $totalvCPUCount += $cNodeObject.vCPU * $CNodeCount }
+                                if ($mNodeObject) { $totalvCPUCount += ($mNodeObject | ForEach-Object { $_.vCPU * $_.dNodeCount } | Measure-Object -Sum).Sum }
+                                $availableVCPUQuota = $totalVCPUQuota.Limit - $totalVCPUQuota.CurrentValue
+                                if ($availableVCPUQuota -ge $totalvCPUCount)
+                                    {
+                                        Write-Host $("  Total vCPUs: ✓ Sufficient (Required: {0}, Available: {1}/{2})" -f $totalvCPUCount, $availableVCPUQuota, $totalVCPUQuota.Limit) -ForegroundColor Green
+                                    }
+                                else
+                                    {
+                                        Write-Host $("  Total vCPUs: ✗ Insufficient (Required: {0}, Available: {1}/{2})" -f $totalvCPUCount, $availableVCPUQuota, $totalVCPUQuota.Limit) -ForegroundColor Red
+                                    }
+                            }
+
+                        # Availability Sets Quota
+                        $totalAvailabilitySetQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Availability Sets" }
+                        if ($totalAvailabilitySetQuota)
+                            {
+                                $totalAvailabilitySetCount = 0
+                                if ($cNodeObject) { $totalAvailabilitySetCount += 1 }
+                                if ($mNodeObjectUnique) { $totalAvailabilitySetCount += $mNodeObjectUnique.Count }
+                                $availableAvSetQuota = $totalAvailabilitySetQuota.Limit - $totalAvailabilitySetQuota.CurrentValue
+                                if ($availableAvSetQuota -ge $totalAvailabilitySetCount)
+                                    {
+                                        Write-Host $("  Availability Sets: ✓ Sufficient (Required: {0}, Available: {1}/{2})" -f $totalAvailabilitySetCount, $availableAvSetQuota, $totalAvailabilitySetQuota.Limit) -ForegroundColor Green
+                                    }
+                                else
+                                    {
+                                        Write-Host $("  Availability Sets: ✗ Insufficient (Required: {0}, Available: {1}/{2})" -f $totalAvailabilitySetCount, $availableAvSetQuota, $totalAvailabilitySetQuota.Limit) -ForegroundColor Red
+                                    }
+                            }
                     }
 
                 # Display the deployment report table

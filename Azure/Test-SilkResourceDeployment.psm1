@@ -8,7 +8,6 @@ function Test-SilkResourceDeployment
                 Tests Azure VM SKU availability for Silk Infrastructure deployments by deploying test resources.
 
             .DESCRIPTION
-                v1.0.0
                 This function validates that required Azure VM SKUs and resources are available for Silk Infrastructure
                 deployments by creating test VMs and resources. It performs comprehensive SKU availability checking,
                 quota validation, and actual deployment testing to ensure successful production deployments.
@@ -33,6 +32,9 @@ function Test-SilkResourceDeployment
                 - CNodes: Control nodes that manage the overall Silk cluster operations and coordination
                 - MNodes: Media nodes that coordinate data operations and storage management
                 - DNodes: Data nodes that store and serve data (deployed as part of MNode groups)
+                
+                Function Version: 1.97.9-1.0.0
+                Supporting Silk SDP configurations from version 1.97.9
 
             .PARAMETER SubscriptionId
                 Azure Subscription ID where resources will be deployed.

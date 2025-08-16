@@ -448,35 +448,36 @@ function Test-SilkResourceDeployment
                 try
                     {
                         # check subscription ID
-                        $SubscriptionCheck = Get-AzSubscription -SubscriptionId $SubscriptionId -ErrorAction Stop
-                        Write-Verbose -Message $("Subscription '{0}' was identified with the ID '{1}'." -f $SubscriptionCheck.Name, $SubscriptionCheck.Id)
+                        $subscriptionCheck = Get-AzSubscription -SubscriptionId $SubscriptionId -ErrorAction Stop
+                        Write-Verbose -Message $("Subscription '{0}' was identified with the ID '{1}'." -f $subscriptionCheck.Name, $subscriptionCheck.Id)
 
                         # check resource group
-                        $ResourceGroupCheck = Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction Stop
-                        Write-Verbose -Message $("Resource group '{0}' was identified in the subscription {1}." -f $ResourceGroupCheck.ResourceGroupName, $SubscriptionCheck.Name)
+                        $resourceGroupCheck = Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction Stop
+                        Write-Verbose -Message $("Resource group '{0}' was identified in the subscription {1}." -f $resourceGroupCheck.ResourceGroupName, $subscriptionCheck.Name)
 
                         # check region
-                        $LocationAvailableSKU = Get-AzComputeResourceSku -Location $Region -ErrorAction Stop
+                        $locationSupportedSKU = Get-AzComputeResourceSku -Location $Region -ErrorAction Stop
 
                         # check zone
-                        if ($Zone -notin $LocationAvailableSKU.LocationInfo.Zones)
+                        if ($Zone -notin $locationSupportedSKU.LocationInfo.Zones)
                             {
                                 Write-Error -Message $("The specified zone '{0}' is not available in the region '{1}'." -f $Zone, $Region)
                                 return
                             }
-                        elseif ($Zone -eq "Zoneless" -and $LocationAvailableSKU.LocationInfo.Zones.Count -ne 0)
+                        elseif ($Zone -eq "Zoneless" -and $locationSupportedSKU.LocationInfo.Zones.Count -ne 0)
                             {
-                                Write-Error -Message $("The specified region '{0}' has availability zones {1}, but 'Zoneless' was specified." -f $Region, (($LocationAvailableSKU.LocationInfo.Zones | Sort-Object | Select-Object -Unique) -join ", "))
+                                Write-Error -Message $("The specified region '{0}' has availability zones {1}, but 'Zoneless' was specified." -f ($locationSupportedSKU.LocationInfo.Location | Select-Object -Unique), (($locationSupportedSKU.LocationInfo.Zones | Sort-Object | Select-Object -Unique) -join ", "))
                                 return
                             }
                         elseif ($Zone -eq "Zoneless")
                             {
-                                Write-Verbose -Message $("Zoneless is a valid zone selection for the specified region '{0}'." -f $Region)
+                                Write-Verbose -Message $("Zoneless is a valid zone selection for the specified region '{0}'." -f ($locationSupportedSKU.LocationInfo.Location | Select-Object -Unique))
                             }
                         else
                             {
-                                Write-Verbose -Message $("The specified zone '{0}' is available in the region '{1}' with zones {2}." -f $Zone, $Region, (($LocationAvailableSKU.LocationInfo.Zones | Sort-Object | Select-Object -Unique) -join ", "))
+                                Write-Verbose -Message $("The specified zone '{0}' is available in the region '{1}' with zones {2}." -f $Zone, ($locationSupportedSKU.LocationInfo.Location | Select-Object -Unique), (($locationSupportedSKU.LocationInfo.Zones | Sort-Object | Select-Object -Unique) -join ", "))
                             }
+
                     } `
                 catch
                     {
@@ -500,18 +501,18 @@ function Test-SilkResourceDeployment
                 # Production CNode SKU Configuration (commented out for testing)
                 # Actual production deployments use 64 vCPU SKUs:
                 $cNodeSizeObject = @(
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "v5"; cNodeFriendlyName = "No_Increased_Logical_Capacity"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "v3"; cNodeFriendlyName = "Read_Cache_Enabled"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "v5"; cNodeFriendlyName = "Increased_Logical_Capacity"}
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "v5"; QuotaFamily = "Standard Dsv5 Family vCPUs"; cNodeFriendlyName = "No_Increased_Logical_Capacity"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "v3"; QuotaFamily = "Standard Lsv3 Family vCPUs"; cNodeFriendlyName = "Read_Cache_Enabled"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "v5"; QuotaFamily = "Standard Esv5 Family vCPUs"; cNodeFriendlyName = "Increased_Logical_Capacity"}
                                     )
 
                 if($Testing)
                     {
                         Write-Verbose -Message "Running in testing mode, using reduced CNode configuration for faster deployment."
                         $cNodeSizeObject = @(
-                                                [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 2; vmSkuSuffix = "s_v5"; cNodeFriendlyName = "No_Increased_Logical_Capacity"};
-                                                [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 2; vmSkuSuffix = "s_v3"; cNodeFriendlyName = "Read_Cache_Enabled"};
-                                                [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 2; vmSkuSuffix = "s_v5"; cNodeFriendlyName = "Increased_Logical_Capacity"}
+                                                [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 2; vmSkuSuffix = "s_v5"; QuotaFamily = "Standard Dsv5 Family vCPUs"; cNodeFriendlyName = "No_Increased_Logical_Capacity"};
+                                                [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 2; vmSkuSuffix = "s_v3"; QuotaFamily = "Standard Lsv3 Family vCPUs"; cNodeFriendlyName = "Read_Cache_Enabled"};
+                                                [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 2; vmSkuSuffix = "s_v5"; QuotaFamily = "Standard Esv5 Family vCPUs"; cNodeFriendlyName = "Increased_Logical_Capacity"}
                                             )
                     }
 
@@ -542,28 +543,28 @@ function Test-SilkResourceDeployment
                 # Production MNode/DNode SKU Configuration (commented out for testing)
                 # Actual production deployments use 16 DNodes per MNode for high availability:
                 $mNodeSizeObject = @(
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "s_v3";   PhysicalSize = 19.5};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "s_v3";   PhysicalSize = 39.1};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 32;   vmSkuSuffix = "s_v3";   PhysicalSize = 78.2};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 2;    vmSkuSuffix = "aos_v4"; PhysicalSize = 14.67};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 4;    vmSkuSuffix = "aos_v4"; PhysicalSize = 29.34};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "aos_v4"; PhysicalSize = 58.67};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 12;   vmSkuSuffix = "aos_v4"; PhysicalSize = 88.01};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "aos_v4"; PhysicalSize = 117.35}
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "s_v3";   PhysicalSize = 19.5;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "s_v3";   PhysicalSize = 39.1;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 32;   vmSkuSuffix = "s_v3";   PhysicalSize = 78.2;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 2;    vmSkuSuffix = "aos_v4"; PhysicalSize = 14.67;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 4;    vmSkuSuffix = "aos_v4"; PhysicalSize = 29.34;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "aos_v4"; PhysicalSize = 58.67;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 12;   vmSkuSuffix = "aos_v4"; PhysicalSize = 88.01;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "aos_v4"; PhysicalSize = 117.35;  QuotaFamily = "Standard Laosv4 Family vCPUs"}
                                     )
 
                 if($Testing)
                     {
                         Write-Verbose -Message "Running in testing mode, using reduced MNode/DNode configuration for faster deployment."
                         $mNodeSizeObject = @(
-                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "s_v3";   PhysicalSize = 19.5};
-                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "s_v3";   PhysicalSize = 39.1};
-                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 32;   vmSkuSuffix = "s_v3";   PhysicalSize = 78.2};
-                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 2;    vmSkuSuffix = "aos_v4"; PhysicalSize = 14.67};
-                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 4;    vmSkuSuffix = "aos_v4"; PhysicalSize = 29.34};
-                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "aos_v4"; PhysicalSize = 58.67};
-                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 12;   vmSkuSuffix = "aos_v4"; PhysicalSize = 88.01};
-                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "aos_v4"; PhysicalSize = 117.35}
+                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "s_v3";   PhysicalSize = 19.5;     QuotaFamily = "Standard Lsv3 Family vCPUs"};
+                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "s_v3";   PhysicalSize = 39.1;     QuotaFamily = "Standard Lsv3 Family vCPUs"};
+                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 32;   vmSkuSuffix = "s_v3";   PhysicalSize = 78.2;     QuotaFamily = "Standard Lsv3 Family vCPUs"};
+                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 2;    vmSkuSuffix = "aos_v4"; PhysicalSize = 14.67;    QuotaFamily = "Standard Laosv4 Family vCPUs"};
+                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 4;    vmSkuSuffix = "aos_v4"; PhysicalSize = 29.34;    QuotaFamily = "Standard Laosv4 Family vCPUs"};
+                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "aos_v4"; PhysicalSize = 58.67;    QuotaFamily = "Standard Laosv4 Family vCPUs"};
+                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 12;   vmSkuSuffix = "aos_v4"; PhysicalSize = 88.01;    QuotaFamily = "Standard Laosv4 Family vCPUs"};
+                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "aos_v4"; PhysicalSize = 117.35;   QuotaFamily = "Standard Laosv4 Family vCPUs"}
                                             )
                     }
 
@@ -572,6 +573,7 @@ function Test-SilkResourceDeployment
                     {
                         Write-Verbose -Message $("MNode Physical Size {0} TiB configuration has {1} DNodes using SKU: {2}{3}{4}" -f $mNodeSizedetail.PhysicalSize, $mNodeSizedetail.dNodeCount, $mNodeSizedetail.vmSkuPrefix, $mNodeSizedetail.vCPU, $mNodeSizedetail.vmSkuSuffix)
                     }
+
 
                 # set IP space for the vnet and subnet if not provided by importing from json or using generic value
                 if (!$IPRangeCIDR -and $ConfigImport -and $ConfigImport.cluster.ip_range)
@@ -582,6 +584,11 @@ function Test-SilkResourceDeployment
                     {
                         $IPRangeCIDR = "10.0.0.0/24"
                     }
+
+
+
+                # ===============================================================================
+                # identify SKU details
 
                 # identify cnode sku details
                 if($CNodeCount -and ($CNodeFriendlyName -eq "Read_Cache_Enabled" -or $ConfigImport.sdp.read_cache_enabled))
@@ -606,6 +613,11 @@ function Test-SilkResourceDeployment
                         return
                     }
 
+                if($cNodeObject)
+                    {
+                        Write-Verbose -Message ("Identified CNode Sku: {0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix)
+                    }
+
                 # Set MNodeSize from parameter values when not using JSON configuration
                 if (!$MNodeSize -and $ConfigImport)
                     {
@@ -619,6 +631,8 @@ function Test-SilkResourceDeployment
                     {
                         $MNodeSize = $MnodeSizeLaosv4
                     }
+
+                Write-Verbose -Message ("MNode Size(s) identified: {0}" -f ($MNodeSize -join ", "))
 
                 # initialize mnode object list to hold configuration for each mnode type
                 $mNodeObject = New-Object -TypeName 'System.Collections.Generic.List[PSCustomObject]'
@@ -640,6 +654,196 @@ function Test-SilkResourceDeployment
                         Write-Error "MNode configuration is not valid. Please specify either MNodeSize with Friendly parameter or MNodeSku with MNodebySKU parameter set."
                         return
                     }
+
+                # create unique mnode object list to avoid duplicates and detail mnode configurations in verbose messaging
+                if($MNodeSize)
+                    {
+                        # create unique mnode object list to avoid duplicates
+                        $mNodeObjectUnique = New-Object System.Collections.Generic.List[PSCustomObject]
+                        $mNodeObject | % { if(-not $mNodeObjectUnique.Contains($_)) { $mNodeObjectUnique.Add($_) } }
+
+                        foreach($mNodeDetail in $mNodeObject)
+                            {
+                                Write-Verbose -Message $("MNode Physical Size {0} TiB configuration has {1} DNodes using SKU: {2}{3}{4}" -f $mNodeDetail.PhysicalSize, $mNodeDetail.dNodeCount, $mNodeDetail.vmSkuPrefix, $mNodeDetail.vCPU, $mNodeDetail.vmSkuSuffix)
+                            }
+                    }
+
+
+                # ===============================================================================
+                # compute sku location support check
+                if($cNodeObject)
+                    {
+                        $cNodeSupportedSKU = $locationSupportedSKU | ? Name -eq $("{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix)
+                        if (!$cNodeSupportedSKU)
+                            {
+                                Write-Error "Unable to identify location for CNode SKU: {0}{1}{2} in region: {3}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix, $Region
+                                return
+                            } `
+                        elseif($cNodeSupportedSKU -and $Zone -eq "Zoneless")
+                            {
+                                Write-Verbose -Message $("CNode SKU: {0} is supported in region: {1} without zones." -f $cNodeSupportedSKU.Name, $cNodeSupportedSKU.LocationInfo.Location)
+                            } `
+                        elseif($cNodeSupportedSKU -and $cNodeSupportedSKU.LocationInfo.Zones -contains $Zone)
+                            {
+                                Write-Verbose -Message $("CNode SKU: {0} is supported in the target zone {1} in region: {2}. All supported zones: {3}" -f $cNodeSupportedSKU.Name, $Zone, $cNodeSupportedSKU.LocationInfo.Location, ($cNodeSupportedSKU.LocationInfo.Zones -join ", "))
+                            } `
+                        elseif($cNodeSupportedSKU -and $cNodeSupportedSKU.LocationInfo.Zones -notcontains $Zone)
+                            {
+                                Write-Verbose -Message $("CNode SKU: {0} is not supported in the target zone {1} in region: {2}. It is supported in zones: {3}" -f $cNodeSupportedSKU.Name, $Zone, $cNodeSupportedSKU.LocationInfo.Location, ($cNodeSupportedSKU.LocationInfo.Zones -join ", "))
+                            } `
+                        else
+                            {
+                                Write-Warning -Message $("Unable to determine regional support for CNode SKU: {0} in region: {1}." -f $cNodeSupportedSKU.Name, $cNodeSupportedSKU.LocationInfo.Location)
+                            }
+                    }
+
+                if($MNodeSize)
+                    {
+                        foreach ($supportedMNodeSKU in $mNodeObjectUnique)
+                            {
+                                $mNodeSupportedSKU = $locationSupportedSKU | ? Name -eq $("{0}{1}{2}" -f $supportedMNodeSKU.vmSkuPrefix, $supportedMNodeSKU.vCPU, $supportedMNodeSKU.vmSkuSuffix)
+                                if (!$mNodeSupportedSKU)
+                                    {
+                                        Write-Error "Unable to identify regional support for MNode SKU: {0}{1}{2} in region: {3}" -f $supportedMNodeSKU.vmSkuPrefix, $supportedMNodeSKU.vCPU, $supportedMNodeSKU.vmSkuSuffix, $Region
+                                        return
+                                    } `
+                                elseif($mNodeSupportedSKU -and $Zone -eq "Zoneless")
+                                    {
+                                        Write-Verbose -Message $("MNode SKU: {0} is supported in region: {1} without zones." -f $mNodeSupportedSKU.Name, $mNodeSupportedSKU.LocationInfo.Location)
+                                    } `
+                                elseif($mNodeSupportedSKU -and $mNodeSupportedSKU.LocationInfo.Zones -contains $Zone)
+                                    {
+                                        Write-Verbose -Message $("MNode SKU: {0} is supported in the target zone {1} in region: {2}. All supported zones: {3}" -f $mNodeSupportedSKU.Name, $Zone, $mNodeSupportedSKU.LocationInfo.Location, ($mNodeSupportedSKU.LocationInfo.Zones -join ", "))
+                                    } `
+                                elseif($mNodeSupportedSKU -and $mNodeSupportedSKU.LocationInfo.Zones -notcontains $Zone)
+                                    {
+                                        Write-Verbose -Message $("MNode SKU: {0} is not supported in the target zone {1} in region: {2}. It is supported in zones: {3}" -f $mNodeSupportedSKU.Name, $Zone, $mNodeSupportedSKU.LocationInfo.Location, ($mNodeSupportedSKU.LocationInfo.Zones -join ", "))
+                                    }
+                                else
+                                    {
+                                        Write-Warning "Unable to determine regional support for MNode SKU: {0} in region: {1}." -f $mNodeSupportedSKU.Name, $mNodeSupportedSKU.LocationInfo.Location
+                                    }
+                            }
+                    }
+
+
+                # ===============================================================================
+                # quota check
+                try
+                    {
+                        $computeQuotaUsage = Get-AzVMUsage -Location $Region -ErrorAction SilentlyContinue
+
+                        $availabilitySetCount = 0
+                        $totalVMCount = 0
+                        $totalvCPUCount = 0
+
+                        $insufficientQuota = $false
+
+                        # Check if CNodeSize is within the available quota
+                        if($cNodeObject)
+                            {
+                                # increment for generic quota checks
+                                $availabilitySetCount += 1
+                                $totalVMCount += $CNodeCount
+                                $cNodevCPUCount = $cNodeObject.vCPU * $CNodeCount
+                                $totalvCPUCount += $cNodevCPUCount
+
+                                # Check if CNodeSize is within the available quota
+                                $cNodeSKUFamilyQuota = $ComputeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $cNodeObject.QuotaFamily }
+                                if (($cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue) -lt $cNodevCPUCount)
+                                    {
+                                        $quotaErrorMessage = "{0} {1}" -f $("Insufficient vCPU quota available for CNode SKU: {0}{1}{2}. Required: {3} -> Limit: {4}, Consumed: {5}, Available: {6}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix, $CnodevCPUCount, $cNodeSKUFamilyQuota.Limit, $cNodeSKUFamilyQuota.CurrentValue, ($cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue)), $quotaErrorMessage
+                                        Write-Warning $quotaErrorMessage
+                                        $insufficientQuota = $true
+                                    } `
+                                else
+                                    {
+                                        Write-Verbose -Message $("Sufficient vCPU quota available for CNode SKU: {0}{1}{2}. Required: {3} -> Limit: {4}, Consumed: {5}, Available: {6}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix, $CnodevCPUCount, $cNodeSKUFamilyQuota.Limit, $cNodeSKUFamilyQuota.CurrentValue, ($cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue))
+                                    }
+                            }
+
+                        # check for quota for mnodes
+                        if($MNodeSize)
+                            {
+                                $mNodeInstanceCount = $MNodeSize | Group-Object | Select-Object Name, Count
+                                foreach ($mNodeType in $mNodeObjectUnique)
+                                    {
+                                        $availabilitySetCount += 1
+                                        $totalVMCount += $mNodeType.dNodeCount * $($mNodeInstanceCount | ? Name -eq $mNodeType.PhysicalSize).Count
+                                        $mNodevCPUCount = $mNodeType.vCPU * $mNodeType.dNodeCount * $($mNodeInstanceCount | ? Name -eq $mNodeType.PhysicalSize).Count
+                                        $totalvCPUCount += $mNodevCPUCount
+
+                                        # Check if MNodeSize is within the available quota
+                                        $mNodeSKUFamilyQuota = $ComputeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $mNodeType.QuotaFamily }
+                                        if (($mNodeSKUFamilyQuota.Limit - $mNodeSKUFamilyQuota.CurrentValue) -lt $mNodevCPUCount)
+                                            {
+                                                $quotaErrorMessage = "{0} {1}" -f $("Insufficient vCPU quota available for MNode SKU: {0}{1}{2}. Required: {3} -> Limit: {4}, Consumed: {5}, Available: {6}" -f $mNodeType.vmSkuPrefix, $mNodeType.vCPU, $mNodeType.vmSkuSuffix, $mNodevCPUCount, $mNodeSKUFamilyQuota.Limit, $mNodeSKUFamilyQuota.CurrentValue, ($mNodeSKUFamilyQuota.Limit - $mNodeSKUFamilyQuota.CurrentValue)), $quotaErrorMessage
+                                                Write-Warning $quotaErrorMessage
+                                                $insufficientQuota = $true
+                                            } `
+                                        else
+                                            {
+                                                Write-Verbose -Message $("Sufficient vCPU quota available for MNode SKU: {0}{1}{2}. Required: {3} -> Limit: {4}, Consumed: {5}, Available: {6}" -f $mNodeType.vmSkuPrefix, $mNodeType.vCPU, $mNodeType.vmSkuSuffix, $mNodevCPUCount, $mNodeSKUFamilyQuota.Limit, $mNodeSKUFamilyQuota.CurrentValue, ($mNodeSKUFamilyQuota.Limit - $mNodeSKUFamilyQuota.CurrentValue))
+                                            }
+                                    }
+                            }
+
+                        # check general quota values
+                        # check vm quota
+                        $totalVMQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Virtual Machines" }
+                        if($totalVMCount -gt ($totalVMQuota.Limit - $totalVMQuota.CurrentValue))
+                            {
+                                $quotaErrorMessage = "{0} {1}" -f $("Insufficient VM quota available. Required: {0} -> Limit: {1}, Consumed: {2}, Available: {3}" -f $totalVMCount, $totalVMQuota.Limit, $totalVMQuota.CurrentValue, ($totalVMQuota.Limit - $totalVMQuota.CurrentValue)), $quotaErrorMessage
+                                Write-Warning $quotaErrorMessage
+                                $insufficientQuota = $true
+                            } `
+                        else
+                            {
+                                Write-Verbose $("Sufficient VM quota available. Required: {0} -> Limit: {1}, Consumed: {2}, Available: {3}" -f $totalVMCount, $totalVMQuota.Limit, $totalVMQuota.CurrentValue, ($totalVMQuota.Limit - $totalVMQuota.CurrentValue))
+                            }
+
+                        # check regional vcpu quota
+                        $totalVCPUQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Total Regional vCPUs" }
+                        if($totalVCPUCount -gt ($totalVCPUQuota.Limit - $totalVCPUQuota.CurrentValue))
+                            {
+                                $quotaErrorMessage = "{0} {1}" -f $("Insufficient vCPU quota available. Required: {0} -> Limit: {1}, Consumed: {2}, Available: {3}" -f $totalVCPUCount, $totalVCPUQuota.Limit, $totalVCPUQuota.CurrentValue, ($totalVCPUQuota.Limit - $totalVCPUQuota.CurrentValue)), $quotaErrorMessage
+                                Write-Warning $quotaErrorMessage
+                                $insufficientQuota = $true
+                            } `
+                        else
+                            {
+                                Write-Verbose $("Sufficient vCPU quota available. Required: {0} -> Limit: {1}, Consumed: {2}, Available: {3}" -f $totalVCPUCount, $totalVCPUQuota.Limit, $totalVCPUQuota.CurrentValue, ($totalVCPUQuota.Limit - $totalVCPUQuota.CurrentValue))
+                            }
+
+                        # check availability set quota
+                        $totalAvailabilitySetQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Availability Sets" }
+                        if($totalAvailabilitySetCount -gt ($totalAvailabilitySetQuota.Limit - $totalAvailabilitySetQuota.CurrentValue))
+                            {
+                                $quotaErrorMessage = "{0} {1}" -f $("Insufficient Availability Set quota available. Required: {0} -> Limit: {1}, Consumed: {2}, Available: {3}" -f $totalAvailabilitySetCount, $totalAvailabilitySetQuota.Limit, $totalAvailabilitySetQuota.CurrentValue, ($totalAvailabilitySetQuota.Limit - $totalAvailabilitySetQuota.CurrentValue)), $quotaErrorMessage
+                                Write-Warning $quotaErrorMessage
+                                $insufficientQuota = $true
+                            } `
+                        else
+                            {
+                                Write-Verbose $("Sufficient Availability Set quota available. Required: {0} -> Limit: {1}, Consumed: {2}, Available: {3}" -f $totalAvailabilitySetCount, $totalAvailabilitySetQuota.Limit, $totalAvailabilitySetQuota.CurrentValue, ($totalAvailabilitySetQuota.Limit - $totalAvailabilitySetQuota.CurrentValue))
+                            }
+
+                        if($insufficientQuota)
+                            {
+                                Write-Error $quotaErrorMessage
+                                return
+                            }
+                        else
+                            {
+                                Write-Verbose "All required quotas are available for the specified CNode and MNode configurations."
+                            }
+
+                    } `
+                catch
+                    {
+                        Write-Error "Error occurred while checking compute quota: $_"
+                    }
+
 
                 # ===============================================================================
                 # VM Image SKU Discovery and Selection

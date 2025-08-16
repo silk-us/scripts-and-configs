@@ -32,7 +32,7 @@ function Test-SilkResourceDeployment
                 - CNodes: Control nodes that manage the overall Silk cluster operations and coordination
                 - MNodes: Media nodes that coordinate data operations and storage management
                 - DNodes: Data nodes that store and serve data (deployed as part of MNode groups)
-                
+
                 Function Version: 1.97.9-1.0.0
                 Supporting Silk SDP configurations from version 1.97.9
 
@@ -2077,7 +2077,7 @@ function Test-SilkResourceDeployment
                     {
                         Write-Verbose -Message $("Deployment completed. Resources have been created in the resource group: {0}." -f $ResourceGroupName)
 
-                        # Read-Host -Prompt "Press Enter to continue with cleanup or Ctrl+C to exit without cleanup."
+                        Read-Host -Prompt "Press Enter to continue with cleanup or Ctrl+C to exit without cleanup."
                     }
             }
         end

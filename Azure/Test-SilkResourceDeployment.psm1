@@ -226,15 +226,20 @@ function Test-SilkResourceDeployment
             (
                 # Azure Subscription ID where test resources will be deployed
                 # Overrides JSON configuration values when specified via command line
-                [Parameter(ParameterSetName = 'ConfigurationJson', Mandatory = $false)]
+                [Parameter(ParameterSetName = 'ConfigurationJson',              Mandatory = $false)]
                 [Parameter(ParameterSetName = "Cleanup Only ConfigurationJson", Mandatory = $false)]
-                [Parameter(ParameterSetName = "Cleanup Only", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU", Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true)]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $true)]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $true)]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true)]
                 [ValidateNotNullOrEmpty()]
                 [string]
                 $SubscriptionId,
@@ -242,15 +247,20 @@ function Test-SilkResourceDeployment
                 # Azure Resource Group name where test resources will be deployed
                 # Resource group must already exist in the specified subscription
                 # Overrides JSON configuration values when specified via command line
-                [Parameter(ParameterSetName = 'ConfigurationJson', Mandatory = $false)]
+                [Parameter(ParameterSetName = 'ConfigurationJson',              Mandatory = $false)]
                 [Parameter(ParameterSetName = "Cleanup Only ConfigurationJson", Mandatory = $false)]
-                [Parameter(ParameterSetName = "Cleanup Only", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU", Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true)]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $true)]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $true)]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true)]
                 [ValidateNotNullOrEmpty()]
                 [string]
                 $ResourceGroupName,
@@ -258,15 +268,20 @@ function Test-SilkResourceDeployment
                 # Azure region for resource deployment - must be a valid Azure region name
                 # Common examples: eastus, westus2, northeurope, eastasia
                 # Overrides JSON configuration values when specified via command line
-                [Parameter(ParameterSetName = 'ConfigurationJson', Mandatory = $false)]
+                [Parameter(ParameterSetName = 'ConfigurationJson',              Mandatory = $false)]
                 [Parameter(ParameterSetName = "Cleanup Only ConfigurationJson", Mandatory = $false)]
-                [Parameter(ParameterSetName = "Cleanup Only", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU", Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true)]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $true)]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $true)]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true)]
                 [ValidateSet("asia", "asiapacific", "australia", "australiacentral", "australiacentral2", "australiaeast", "australiasoutheast", "austriaeast", "brazil", "brazilsouth", "brazilsoutheast", "canada", "canadacentral", "canadaeast", "centralindia", "centralus", "centraluseuap", "chilecentral", "eastasia", "eastus", "eastus2", "eastus2euap", "europe", "france", "francecentral", "francesouth", "germany", "germanynorth", "germanywestcentral", "global", "india", "indonesiacentral", "israel", "israelcentral", "italy", "italynorth", "japan", "japaneast", "japanwest", "korea", "koreacentral", "koreasouth", "malaysiawest", "mexicocentral", "newzealand", "newzealandnorth", "northcentralus", "northeurope", "norway", "norwayeast", "norwaywest", "poland", "polandcentral", "qatar", "qatarcentral", "singapore", "southafrica", "southafricanorth", "southafricawest", "southcentralus", "southeastasia", "southindia", "spaincentral", "sweden", "swedencentral", "switzerland", "switzerlandnorth", "switzerlandwest", "uaecentral", "uaenorth", "uksouth", "ukwest", "unitedstates", "westcentralus", "westeurope", "westindia", "westus", "westus2", "westus3")]
                 [ValidateNotNullOrEmpty()]
                 [string]
@@ -275,15 +290,20 @@ function Test-SilkResourceDeployment
                 # Azure Availability Zone for resource placement (1, 2, 3, or Zoneless for regions without zones)
                 # Use "Zoneless" for regions that do not support availability zones
                 # Overrides JSON configuration values when specified via command line
-                [Parameter(ParameterSetName = 'ConfigurationJson', Mandatory = $false)]
+                [Parameter(ParameterSetName = 'ConfigurationJson',              Mandatory = $false)]
                 [Parameter(ParameterSetName = "Cleanup Only ConfigurationJson", Mandatory = $false)]
-                [Parameter(ParameterSetName = "Cleanup Only", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4", Mandatory = $true)]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU", Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true)]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $true)]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $true)]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true)]
                 [ValidateSet("1", "2", "3", "Zoneless")]
                 [ValidateNotNullOrEmpty()]
                 [string]
@@ -292,7 +312,7 @@ function Test-SilkResourceDeployment
                 # Path to JSON configuration file containing all deployment parameters
                 # When specified, all parameters are loaded from file unless overridden by command line
                 # Enables simplified deployment management and repeatability
-                [Parameter(ParameterSetName = 'ConfigurationJson', Mandatory = $true)]
+                [Parameter(ParameterSetName = 'ConfigurationJson',              Mandatory = $true)]
                 [Parameter(ParameterSetName = "Cleanup Only ConfigurationJson", Mandatory = $true)]
                 [string]
                 $ConfigurationJson,
@@ -301,9 +321,10 @@ function Test-SilkResourceDeployment
                 # Increased_Logical_Capacity (Standard_E64s_v5) - Most common, high memory
                 # Read_Cache_Enabled (Standard_L64s_v3) - High-speed local SSD storage
                 # No_Increased_Logical_Capacity (Standard_D64s_v5) - Basic compute, rarely used
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3")]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4")]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU")]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true)]
                 [ValidateSet("Increased_Logical_Capacity", "Read_Cache_Enabled", "No_Increased_Logical_Capacity")]
                 [string]
                 $CNodeFriendlyName,
@@ -311,21 +332,24 @@ function Test-SilkResourceDeployment
                 # Explicit Azure VM SKU for CNode VMs when using direct SKU specification
                 # Standard_E64s_v5 (default) - High memory, Standard_L64s_v3 - SSD storage, Standard_D64s_v5 - Basic compute
                 # Alternative to CNodeFriendlyName for advanced scenarios requiring specific SKU control
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3")]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4")]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU")]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true)]
                 [ValidateSet("Standard_D64s_v5", "Standard_L64s_v3", "Standard_E64s_v5")]
                 [string]
                 $CNodeSku,
 
                 # Number of CNode VMs to deploy (range: 2-8)
                 # Silk Infrastructure requires minimum 2 CNodes for cluster quorum, maximum 8 for optimal management
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3")]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4")]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU")]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3")]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4")]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU")]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true)]
                 [ValidateRange(2, 8)]
                 [ValidateNotNullOrEmpty()]
                 [int]
@@ -334,8 +358,9 @@ function Test-SilkResourceDeployment
                 # Array of MNode storage capacities for Lsv3 series SKUs (older generation, proven stability)
                 # Valid values: "19.5" (L8s_v3), "39.1" (L16s_v3), "78.2" (L32s_v3) TiB capacity
                 # Example: @("19.5", "39.1") for mixed capacity deployment
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3")]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",  Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",    Mandatory = $true)]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                 Mandatory = $true)]
                 [ValidateSet("19.5", "39.1", "78.2")]
                 [string[]]
                 $MnodeSizeLsv3,
@@ -343,8 +368,9 @@ function Test-SilkResourceDeployment
                 # Array of MNode storage capacities for Laosv4 series SKUs (newer generation, higher density)
                 # Valid values: "14.67" (L2aos_v4), "29.34" (L4aos_v4), "58.67" (L8aos_v4), "88.01" (L12aos_v4), "117.35" (L16aos_v4) TiB capacity
                 # Example: @("14.67", "29.34") for cost-optimized mixed capacity deployment
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4")]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $true)]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $true)]
                 [ValidateSet("14.67", "29.34", "58.67", "88.01", "117.35")]
                 [string[]]
                 $MnodeSizeLaosv4,
@@ -353,8 +379,9 @@ function Test-SilkResourceDeployment
                 # Lsv3 SKUs: Standard_L8s_v3, Standard_L16s_v3, Standard_L32s_v3
                 # Laosv4 SKUs: Standard_L2aos_v4, Standard_L4aos_v4, Standard_L8aos_v4, Standard_L12aos_v4, Standard_L16aos_v4
                 # Alternative to size-based selection for advanced scenarios requiring specific SKU control
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU")]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true)]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true)]
                 [ValidateSet("Standard_L2aos_v4", "Standard_L4aos_v4", "Standard_L8aos_v4", "Standard_L12aos_v4", "Standard_L16aos_v4", "Standard_L8s_v3", "Standard_L16s_v3", "Standard_L32s_v3")]
                 [string[]]
                 $MNodeSku,
@@ -362,8 +389,9 @@ function Test-SilkResourceDeployment
                 # Number of MNode instances when using explicit SKU specification (range: 1-4)
                 # Determines how many DNode VMs are deployed per MNode configuration
                 # Production typically uses 1 MNode per capacity requirement
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU")]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true)]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true)]
                 [ValidateRange(1, 4)]
                 [ValidateNotNullOrEmpty()]
                 [int]
@@ -372,20 +400,25 @@ function Test-SilkResourceDeployment
                 # Switch to disable automatic cleanup of test resources after deployment validation
                 # When specified, resources remain in Azure for manual inspection or extended testing
                 # Resources must be manually removed or cleaned up using -RunCleanupOnly parameter
-                [Parameter(ParameterSetName = 'ConfigurationJson')]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3")]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4")]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU")]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3")]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4")]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU")]
+                [Parameter(ParameterSetName = 'ConfigurationJson',              Mandatory = $false)]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false)]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false)]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false)]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false)]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false)]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false)]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false)]
                 [Switch]
                 $DisableCleanup,
 
                 # Switch to only perform cleanup operations, removing all previously created test resources
                 # Identifies and removes resources based on resource name prefix (default: "sdp-test")
                 # Use this to clean up resources from failed deployments or when cleanup was disabled
-                [Parameter(ParameterSetName = "Cleanup Only", Mandatory = $true)]
+                [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true)]
                 [Parameter(ParameterSetName = "Cleanup Only ConfigurationJson", Mandatory = $true)]
                 [Switch]
                 $RunCleanupOnly,
@@ -692,25 +725,50 @@ function Test-SilkResourceDeployment
                 # SKU Configuration Identification and Validation
                 # ===============================================================================
                 # Identify and validate CNode SKU configuration based on provided parameters
-                if ($CNodeCount -and ($CNodeFriendlyName -eq "Read_Cache_Enabled" -or $ConfigImport.sdp.read_cache_enabled))
+                if (!$CNodeCount -and !$CNodeFriendlyName -and !$CNodeSku -and ($MnodeSizeLsv3 -or $MnodeSizeLaosv4 -or $MNodeSku))
+                    {
+                        # MNode-only deployment scenario - no CNode configuration required
+                        Write-Verbose -Message "MNode-only deployment mode - CNode configuration skipped."
+                        $cNodeObject = $null
+                    } `
+                elseif ($CNodeCount -and ($CNodeFriendlyName -eq "Read_Cache_Enabled" -or $ConfigImport.sdp.read_cache_enabled) -and ($MnodeSizeLsv3 -or $MnodeSizeLaosv4 -or $MNodeSku))
                     {
                         $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "Read_Cache_Enabled" }
                     } `
-                elseif ($CNodeCount -and ($CNodeFriendlyName -eq "Increased_Logical_Capacity" -or $ConfigImport.sdp.increased_logical_capacity))
+                elseif ($CNodeCount -and ($CNodeFriendlyName -eq "Increased_Logical_Capacity" -or $ConfigImport.sdp.increased_logical_capacity) -and ($MnodeSizeLsv3 -or $MnodeSizeLaosv4 -or $MNodeSku))
                     {
                         $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "Increased_Logical_Capacity" }
                     } `
-                elseif ($CNodeCount -and $CNodeFriendlyName -eq "No_Increased_Logical_Capacity")
+                elseif ($CNodeCount -and $CNodeFriendlyName -eq "No_Increased_Logical_Capacity" -and ($MnodeSizeLsv3 -or $MnodeSizeLaosv4 -or $MNodeSku))
                     {
                         $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "No_Increased_Logical_Capacity" }
                     } `
-                elseif ($CNodeCount -and $CNodeSku)
+                elseif ($CNodeCount -and $CNodeSku -and ($MnodeSizeLsv3 -or $MnodeSizeLaosv4 -or $MNodeSku))
                     {
                         $cNodeObject = $cNodeSizeObject | Where-Object { $("{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix) -eq $CNodeSku }
                     } `
+                elseif ($CNodeCount -and !$MnodeSizeLsv3 -and !$MnodeSizeLaosv4 -and !$MNodeSku)
+                    {
+                        # CNode-only deployment scenario - need to determine CNode configuration
+                        if ($CNodeFriendlyName)
+                            {
+                                $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq $CNodeFriendlyName }
+                                Write-Verbose -Message "CNode-only deployment mode - MNode configuration will be skipped."
+                            } `
+                        elseif ($CNodeSku)
+                            {
+                                $cNodeObject = $cNodeSizeObject | Where-Object { $("{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix) -eq $CNodeSku }
+                                Write-Verbose -Message "CNode-only deployment mode - MNode configuration will be skipped."
+                            } `
+                        else
+                            {
+                                Write-Error "CNode-only deployment requires either CNodeFriendlyName or CNodeSku parameter."
+                                return
+                            }
+                    } `
                 else
                     {
-                        Write-Error "CNode configuration is not valid. Please specify either CNodeFriendlyName with Friendly parameter or CNodeSku with CNodebySKU parameter set."
+                        Write-Error "Configuration is not valid. Please specify either CNode parameters (CNodeFriendlyName/CNodeSku with CNodeCount) or MNode parameters (MnodeSizeLsv3/MnodeSizeLaosv4/MNodeSku), or both."
                         return
                     }
 
@@ -733,7 +791,10 @@ function Test-SilkResourceDeployment
                         $MNodeSize = $MnodeSizeLaosv4
                     }
 
-                Write-Verbose -Message ("MNode size(s) identified: {0}" -f ($MNodeSize -join ", "))
+                if ($MNodeSize)
+                    {
+                        Write-Verbose -Message ("MNode size(s) identified: {0}" -f ($MNodeSize -join ", "))
+                    }
 
                 # Initialize MNode object list to hold configuration for each MNode type
                 $mNodeObject = New-Object -TypeName 'System.Collections.Generic.List[PSCustomObject]'
@@ -750,9 +811,14 @@ function Test-SilkResourceDeployment
                                 $mNodeObject.Add($($mNodeSizeObject | Where-Object { $("{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix) -eq $MNodeSku }))
                             }
                     } `
-                else
+                elseif ($CNodeCount -and !$MnodeSizeLsv3 -and !$MnodeSizeLaosv4 -and !$MNodeSku)
                     {
-                        Write-Error "MNode configuration is not valid. Please specify either MNodeSize with Friendly parameter or MNodeSku with MNodebySKU parameter set."
+                        # CNode-only deployment scenario - no MNode configuration required
+                        Write-Verbose -Message "CNode-only deployment mode - no MNode resources will be created."
+                    } `
+                elseif (!$CNodeCount -and !$MnodeSizeLsv3 -and !$MnodeSizeLaosv4 -and !$MNodeSku)
+                    {
+                        Write-Error "No valid configuration specified. Please specify either CNode parameters (CNodeFriendlyName/CNodeSku with CNodeCount) or MNode parameters (MnodeSizeLsv3/MnodeSizeLaosv4/MNodeSku), or both."
                         return
                     }
 
@@ -855,38 +921,50 @@ function Test-SilkResourceDeployment
                                 $cNodeSKUFamilyQuota = $ComputeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $cNodeObject.QuotaFamily }
                                 if (($cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue) -lt $cNodevCPUCount)
                                     {
-                                        $quotaErrorMessage = "{0} {1}" -f $("Insufficient vCPU quota available for CNode SKU: {0}{1}{2}. Required: {3} -> Limit: {4}, Consumed: {5}, Available: {6}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix, $CnodevCPUCount, $cNodeSKUFamilyQuota.Limit, $cNodeSKUFamilyQuota.CurrentValue, ($cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue)), $quotaErrorMessage
+                                        $quotaErrorMessage = "{0} {1}" -f $("Insufficient vCPU quota available for CNode SKU: {0}{1}{2}. Required: {3} -> Limit: {4}, Consumed: {5}, Available: {6}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix, $cNodevCPUCount, $cNodeSKUFamilyQuota.Limit, $cNodeSKUFamilyQuota.CurrentValue, ($cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue)), $quotaErrorMessage
                                         Write-Warning $quotaErrorMessage
                                         $insufficientQuota = $true
                                     } `
                                 else
                                     {
-                                        Write-Verbose -Message $("Sufficient vCPU quota available for CNode SKU: {0}{1}{2}. Required: {3} -> Limit: {4}, Consumed: {5}, Available: {6}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix, $CnodevCPUCount, $cNodeSKUFamilyQuota.Limit, $cNodeSKUFamilyQuota.CurrentValue, ($cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue))
+                                        Write-Verbose -Message $("Sufficient vCPU quota available for CNode SKU: {0}{1}{2}. Required: {3} -> Limit: {4}, Consumed: {5}, Available: {6}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix, $cNodevCPUCount, $cNodeSKUFamilyQuota.Limit, $cNodeSKUFamilyQuota.CurrentValue, ($cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue))
                                     }
                             }
 
                         # check for quota for mnodes
                         if($MNodeSize)
                             {
-                                $mNodeInstanceCount = $MNodeSize | Group-Object | Select-Object Name, Count
-                                foreach ($mNodeType in $mNodeObjectUnique)
+
+                                # increment the number of availability sets for MNodes
+                                foreach($mNodeAvailablitySet in $mNodeObject)
                                     {
                                         $availabilitySetCount += 1
-                                        $totalVMCount += $mNodeType.dNodeCount * $($mNodeInstanceCount | ? Name -eq $mNodeType.PhysicalSize).Count
-                                        $mNodevCPUCount = $mNodeType.vCPU * $mNodeType.dNodeCount * $($mNodeInstanceCount | ? Name -eq $mNodeType.PhysicalSize).Count
-                                        $totalvCPUCount += $mNodevCPUCount
+                                    }
+
+                                $mNodeFamilyCount = $mNodeObject | Group-Object -Property QuotaFamily
+                                $mNodeInstanceCount = $MNodeSize | Group-Object | Select-Object Name, Count
+
+                                foreach ($mNodeFamily in $mNodeFamilyCount)
+                                    {
+                                        # total mnode vcpu count
+                                        foreach ($mNodeType in $mNodeObjectUnique)
+                                            {
+                                                $totalVMCount += $mNodeType.dNodeCount * $($mNodeInstanceCount | ? Name -eq $mNodeType.PhysicalSize).Count
+                                                $mNodeFamilyvCPUCount += $mNodeType.vCPU * $mNodeType.dNodeCount * $($mNodeInstanceCount | ? Name -eq $mNodeType.PhysicalSize).Count
+                                                $totalvCPUCount += $mNodeFamilyvCPUCount
+                                            }
 
                                         # Check if MNodeSize is within the available quota
-                                        $mNodeSKUFamilyQuota = $ComputeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $mNodeType.QuotaFamily }
-                                        if (($mNodeSKUFamilyQuota.Limit - $mNodeSKUFamilyQuota.CurrentValue) -lt $mNodevCPUCount)
+                                        $mNodeSKUFamilyQuota = $ComputeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $mNodeFamily.Name }
+                                        if (($mNodeSKUFamilyQuota.Limit - $mNodeSKUFamilyQuota.CurrentValue) -lt $mNodeFamilyvCPUCount)
                                             {
-                                                $quotaErrorMessage = "{0} {1}" -f $("Insufficient vCPU quota available for MNode SKU: {0}{1}{2}. Required: {3} -> Limit: {4}, Consumed: {5}, Available: {6}" -f $mNodeType.vmSkuPrefix, $mNodeType.vCPU, $mNodeType.vmSkuSuffix, $mNodevCPUCount, $mNodeSKUFamilyQuota.Limit, $mNodeSKUFamilyQuota.CurrentValue, ($mNodeSKUFamilyQuota.Limit - $mNodeSKUFamilyQuota.CurrentValue)), $quotaErrorMessage
+                                                $quotaErrorMessage = "{0} {1}" -f $("Insufficient vCPU quota available for MNode SKU: {0} of SKU Family: {1}. Required: {2} -> Limit: {3}, Consumed: {4}, Available: {5}" -f $(($mNodeFamily.group | % { "{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix }) -join ', '), $mNodeFamily.Name, $mNodeFamilyvCPUCount, $mNodeSKUFamilyQuota.Limit, $mNodeSKUFamilyQuota.CurrentValue, ($mNodeSKUFamilyQuota.Limit - $mNodeSKUFamilyQuota.CurrentValue)), $quotaErrorMessage
                                                 Write-Warning $quotaErrorMessage
                                                 $insufficientQuota = $true
                                             } `
                                         else
                                             {
-                                                Write-Verbose -Message $("Sufficient vCPU quota available for MNode SKU: {0}{1}{2}. Required: {3} -> Limit: {4}, Consumed: {5}, Available: {6}" -f $mNodeType.vmSkuPrefix, $mNodeType.vCPU, $mNodeType.vmSkuSuffix, $mNodevCPUCount, $mNodeSKUFamilyQuota.Limit, $mNodeSKUFamilyQuota.CurrentValue, ($mNodeSKUFamilyQuota.Limit - $mNodeSKUFamilyQuota.CurrentValue))
+                                                Write-Verbose -Message $("Sufficient vCPU quota available for MNode SKU {0} of Family: {1}. Required: {2} -> Limit: {3}, Consumed: {4}, Available: {5}" -f $(($mNodeFamily.group | % { "{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix }) -join ', '), $mNodeFamily.Name, $mNodeFamilyvCPUCount, $mNodeSKUFamilyQuota.Limit, $mNodeSKUFamilyQuota.CurrentValue, ($mNodeSKUFamilyQuota.Limit - $mNodeSKUFamilyQuota.CurrentValue))
                                             }
                                     }
                             }
@@ -1065,16 +1143,47 @@ function Test-SilkResourceDeployment
                 Write-Verbose -Message $("Resource Name Prefix: {0}" -f $ResourceNamePrefix)
                 Write-Verbose -Message $("Network CIDR Range: {0}" -f $IPRangeCIDR)
                 Write-Verbose -Message $("VM Image: {0}" -f $VMImageOffer)
-                Write-Verbose -Message $("CNode Count: {0}" -f $CNodeCount)
 
-                if ($mNodeObject -and $mNodeObject.Count -gt 0) {
-                    $mNodeSizeDisplay = ($mNodeObject | ForEach-Object { $_.PhysicalSize }) -join ", "
-                    Write-Verbose -Message $("MNode Configuration: {0} TiB" -f $mNodeSizeDisplay)
-                }
+                if ($CNodeCount -gt 0)
+                    {
+                        Write-Verbose -Message $("CNode Count: {0}" -f $CNodeCount)
+                    } `
+                else
+                    {
+                        Write-Verbose -Message "CNode Count: 0 (MNode-only deployment)"
+                    }
 
-                $totalDNodes = ($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum
-                $totalVMs = $CNodeCount + $totalDNodes
-                Write-Verbose -Message $("Total VMs to Deploy: {0} ({1} CNodes + {2} DNodes)" -f $totalVMs, $CNodeCount, $totalDNodes)
+                if ($mNodeObject -and $mNodeObject.Count -gt 0)
+                    {
+                        $mNodeSizeDisplay = ($mNodeObject | ForEach-Object { $_.PhysicalSize }) -join ", "
+                        Write-Verbose -Message $("MNode Configuration: {0} TiB" -f $mNodeSizeDisplay)
+                    }
+
+                # identify total dnodes
+                if($mNodeSize)
+                    {
+                        $totalDNodes = ($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum
+                    }
+                else
+                    {
+                        $totalDNodes = 0
+                    }
+
+                if ($CNodeCount -gt 0 -and $totalDNodes -gt 0)
+                    {
+                        $totalVMs = $CNodeCount + $totalDNodes
+                        Write-Verbose -Message $("Total VMs to Deploy: {0} ({1} CNodes + {2} DNodes)" -f $totalVMs, $CNodeCount, $totalDNodes)
+                    } `
+                elseif ($CNodeCount -gt 0 -and $totalDNodes -eq 0)
+                    {
+                        $totalVMs = $CNodeCount
+                        Write-Verbose -Message $("Total VMs to Deploy: {0} (CNode-only: {1})" -f $totalVMs, $CNodeCount)
+                    } `
+                else
+                    {
+                        $totalVMs = $totalDNodes
+                        Write-Verbose -Message $("Total VMs to Deploy: {0} (MNode-only: {1} DNodes)" -f $totalVMs, $totalDNodes)
+                    }
 
                 if ($Testing) {
                     Write-Verbose -Message "Testing Mode: ENABLED (reduced VM sizes for faster deployment)"
@@ -1082,7 +1191,6 @@ function Test-SilkResourceDeployment
                     Write-Verbose -Message "Testing Mode: DISABLED (production VM sizes)"
                 }
                 Write-Verbose -Message "=========================================="
-
             }
 
         # This block is used to provide record-by-record processing for the function.
@@ -1184,20 +1292,27 @@ function Test-SilkResourceDeployment
                         # Collect all VM SKUs that will be deployed for PPG intent
                         $vmSizes = @()
 
-                        # Add CNode SKU
-                        $cNodeVMSku = "{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix
-                        $vmSizes += $cNodeVMSku
-
-                        # Add MNode SKUs
-                        foreach ($mNode in $mNodeObject)
+                        # Add CNode SKU if cnodes will be deployed
+                        if ($cNodeObject)
                             {
-                                $mNodeVMSku = "{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix
-                                if ($vmSizes -notcontains $mNodeVMSku)
+                                $cNodeVMSku = "{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix
+                                $vmSizes += $cNodeVMSku
+                            }
+
+                        # Add MNode SKUs if MNodes will be deployed
+                        if($mNodeSize)
+                            {
+                                foreach ($mNode in $mNodeObject)
                                     {
-                                        $vmSizes += $mNodeVMSku
+                                        $mNodeVMSku = "{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix
+                                        if ($vmSizes -notcontains $mNodeVMSku)
+                                            {
+                                                $vmSizes += $mNodeVMSku
+                                            }
                                     }
                             }
 
+                        # create proximity placement group including VMsizes if Zoneless
                         if($Zone -ne "Zoneless")
                             {
                                 Write-Verbose -Message $("Creating Proximity Placement Group in region '{0}' with zone '{1}' and VM sizes: {2}" -f $Region, $Zone, ($vmSizes -join ", "))
@@ -1239,7 +1354,14 @@ function Test-SilkResourceDeployment
 
                         # Calculate total VMs for progress tracking
                         $totalDNodes = ($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum
-                        $totalVMs = $CNodeCount + $totalDNodes
+                        if ($CNodeCount -gt 0)
+                            {
+                                $totalVMs = $CNodeCount + $totalDNodes
+                            } `
+                        else
+                            {
+                                $totalVMs = $totalDNodes
+                            }
 
                         # Start main VM creation progress
                         Write-Progress `
@@ -2566,6 +2688,8 @@ function Test-SilkResourceDeployment
                     }
             }
     }
+
+
 
 Export-ModuleMember -Function Test-SilkResourceDeployment
 

@@ -57,7 +57,7 @@ function Test-SilkResourceDeployment
                 Valid values: "1", "2", "3", "Zoneless"
                 This parameter overrides JSON configuration values if provided.
 
-            .PARAMETER ConfigurationJson
+            .PARAMETER ChecklistJSON
                 Path to JSON configuration file as formatted by the Silk deployment checklist containing all deployment parameters.
                 When specified, parameters are loaded from this file unless overridden by command line parameters.
                 Example: "C:\configs\silk-deployment.json"
@@ -163,7 +163,7 @@ function Test-SilkResourceDeployment
                 Uses testing mode for faster deployment with reduced VM sizes and verbose output for detailed progress tracking.
 
             .EXAMPLE
-                Test-SilkResourceDeployment -ConfigurationJson "C:\configs\silk-deployment.json" -Testing -Verbose
+                Test-SilkResourceDeployment -ChecklistJSON "C:\configs\silk-deployment.json" -Testing -Verbose
 
                 Uses JSON configuration file for all deployment parameters with testing mode enabled and verbose output.
                 All parameters are loaded from the JSON file unless overridden by command line parameters.
@@ -226,8 +226,8 @@ function Test-SilkResourceDeployment
             (
                 # Azure Subscription ID where test resources will be deployed
                 # Overrides JSON configuration values when specified via command line
-                [Parameter(ParameterSetName = 'ConfigurationJson',              Mandatory = $false, HelpMessage = "Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012")]
-                [Parameter(ParameterSetName = "Cleanup Only ConfigurationJson", Mandatory = $false, HelpMessage = "Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = 'ChecklistJSON',              Mandatory = $false, HelpMessage = "Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON", Mandatory = $false, HelpMessage = "Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012")]
                 [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true,  HelpMessage = "Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012")]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true,  HelpMessage = "Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012")]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true,  HelpMessage = "Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012")]
@@ -247,8 +247,8 @@ function Test-SilkResourceDeployment
                 # Azure Resource Group name where test resources will be deployed
                 # Resource group must already exist in the specified subscription
                 # Overrides JSON configuration values when specified via command line
-                [Parameter(ParameterSetName = 'ConfigurationJson',              Mandatory = $false, HelpMessage = "Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg")]
-                [Parameter(ParameterSetName = "Cleanup Only ConfigurationJson", Mandatory = $false, HelpMessage = "Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg")]
+                [Parameter(ParameterSetName = 'ChecklistJSON',              Mandatory = $false, HelpMessage = "Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg")]
+                [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON", Mandatory = $false, HelpMessage = "Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg")]
                 [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true,  HelpMessage = "Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg")]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true,  HelpMessage = "Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg")]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true,  HelpMessage = "Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg")]
@@ -268,8 +268,8 @@ function Test-SilkResourceDeployment
                 # Azure region for resource deployment - must be a valid Azure region name
                 # Common examples: eastus, westus2, northeurope, eastasia
                 # Overrides JSON configuration values when specified via command line
-                [Parameter(ParameterSetName = 'ConfigurationJson',              Mandatory = $false, HelpMessage = "Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia")]
-                [Parameter(ParameterSetName = "Cleanup Only ConfigurationJson", Mandatory = $false, HelpMessage = "Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia")]
+                [Parameter(ParameterSetName = 'ChecklistJSON',              Mandatory = $false, HelpMessage = "Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia")]
+                [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON", Mandatory = $false, HelpMessage = "Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia")]
                 [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true,  HelpMessage = "Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia")]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true,  HelpMessage = "Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia")]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true,  HelpMessage = "Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia")]
@@ -290,8 +290,8 @@ function Test-SilkResourceDeployment
                 # Azure Availability Zone for resource placement (1, 2, 3, or Zoneless for regions without zones)
                 # Use "Zoneless" for regions that do not support availability zones
                 # Overrides JSON configuration values when specified via command line
-                [Parameter(ParameterSetName = 'ConfigurationJson',              Mandatory = $false, HelpMessage = "Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support).")]
-                [Parameter(ParameterSetName = "Cleanup Only ConfigurationJson", Mandatory = $false, HelpMessage = "Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support).")]
+                [Parameter(ParameterSetName = 'ChecklistJSON',              Mandatory = $false, HelpMessage = "Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support).")]
+                [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON", Mandatory = $false, HelpMessage = "Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support).")]
                 [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true,  HelpMessage = "Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support).")]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true,  HelpMessage = "Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support).")]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true,  HelpMessage = "Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support).")]
@@ -312,10 +312,10 @@ function Test-SilkResourceDeployment
                 # Path to JSON configuration file containing all deployment parameters
                 # When specified, all parameters are loaded from file unless overridden by command line
                 # Enables simplified deployment management and repeatability
-                [Parameter(ParameterSetName = 'ConfigurationJson',              Mandatory = $true, HelpMessage = "Enter the full path to a JSON configuration file containing deployment parameters. Example: C:\\configs\\silk-deployment.json")]
-                [Parameter(ParameterSetName = "Cleanup Only ConfigurationJson", Mandatory = $true, HelpMessage = "Enter the full path to a JSON configuration file containing deployment parameters. Example: C:\\configs\\silk-deployment.json")]
+                [Parameter(ParameterSetName = 'ChecklistJSON',              Mandatory = $true, HelpMessage = "Enter the full path to a JSON configuration file containing deployment parameters. Example: C:\\configs\\silk-deployment.json")]
+                [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON", Mandatory = $true, HelpMessage = "Enter the full path to a JSON configuration file containing deployment parameters. Example: C:\\configs\\silk-deployment.json")]
                 [string]
-                $ConfigurationJson,
+                $ChecklistJSON,
 
                 # Friendly name for CNode SKU selection using descriptive categories
                 # Increased_Logical_Capacity (Standard_E64s_v5) - Most common, high memory
@@ -402,7 +402,7 @@ function Test-SilkResourceDeployment
                 # Switch to disable automatic cleanup of test resources after deployment validation
                 # When specified, resources remain in Azure for manual inspection or extended testing
                 # Resources must be manually removed or cleaned up using -RunCleanupOnly parameter
-                [Parameter(ParameterSetName = 'ConfigurationJson',              Mandatory = $false, HelpMessage = "Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up.")]
+                [Parameter(ParameterSetName = 'ChecklistJSON',              Mandatory = $false, HelpMessage = "Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up.")]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = "Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up.")]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = "Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up.")]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = "Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up.")]
@@ -421,7 +421,7 @@ function Test-SilkResourceDeployment
                 # Identifies and removes resources based on resource name prefix (default: "sdp-test")
                 # Use this to clean up resources from failed deployments or when cleanup was disabled
                 [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true, HelpMessage = "Run cleanup only mode to remove all test resources (prefixed by -ResourceNamePrefix default is 'sdp-test') from the resource group")]
-                [Parameter(ParameterSetName = "Cleanup Only ConfigurationJson", Mandatory = $true, HelpMessage = "Run cleanup only mode to remove all test resources (prefixed by -ResourceNamePrefix default is 'sdp-test') from the resource group")]
+                [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON", Mandatory = $true, HelpMessage = "Run cleanup only mode to remove all test resources (prefixed by -ResourceNamePrefix default is 'sdp-test') from the resource group")]
                 [Switch]
                 $RunCleanupOnly,
 
@@ -484,7 +484,7 @@ function Test-SilkResourceDeployment
                 # The resource group must NOT already exist
                 # When specified, a resource group is created for the test deployment and deleted
                 # the -RunCleanupOnly parameter can not be used to clean up resource groups you will have to manually delete them
-                [Parameter(ParameterSetName = 'ConfigurationJson',              Mandatory = $false, HelpMessage = "Advanced Option to create a resource group by the given name, requires elevated Role assignment.")]
+                [Parameter(ParameterSetName = 'ChecklistJSON',              Mandatory = $false, HelpMessage = "Advanced Option to create a resource group by the given name, requires elevated Role assignment.")]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = "Advanced Option to create a resource group by the given name, requires elevated Role assignment.")]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = "Advanced Option to create a resource group by the given name, requires elevated Role assignment.")]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = "Advanced Option to create a resource group by the given name, requires elevated Role assignment.")]
@@ -544,10 +544,10 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 # Load deployment configuration from JSON file if specified
                 # Command line parameters take precedence over JSON values
-                if ($ConfigurationJson)
+                if ($ChecklistJSON)
                     {
                         # Load and parse the JSON configuration file
-                        $ConfigImport = Get-Content -Path $ConfigurationJson | ConvertFrom-Json
+                        $ConfigImport = Get-Content -Path $ChecklistJSON | ConvertFrom-Json
 
                         # Override JSON values with command line parameters if provided
                         # This allows selective override of JSON config while preserving other values

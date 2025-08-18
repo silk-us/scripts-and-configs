@@ -362,6 +362,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",    Mandatory = $true)]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                 Mandatory = $true)]
                 [ValidateSet("19.5", "39.1", "78.2")]
+                [ValidateCount(1, 4)]
                 [string[]]
                 $MnodeSizeLsv3,
 
@@ -371,6 +372,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true)]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $true)]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $true)]
+                [ValidateCount(1, 4)]
                 [ValidateSet("14.67", "29.34", "58.67", "88.01", "117.35")]
                 [string[]]
                 $MnodeSizeLaosv4,

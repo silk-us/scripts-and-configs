@@ -715,6 +715,27 @@ function Test-SilkResourceDeployment
                                     }
                             }
 
+                        # Suppress Azure PowerShell breaking change warnings for cleaner output
+                        Write-Verbose -Message "Configuring Azure PowerShell warning preferences..."
+                        try
+                            {
+                                # Suppress breaking change warnings globally for this session
+                                Set-Item -Path Env:SuppressAzurePowerShellBreakingChangeWarnings -Value $true -Force -ErrorAction SilentlyContinue
+
+                                # Also suppress using PowerShell preference variable as a backup
+                                if (Get-Variable -Name WarningPreference -ErrorAction SilentlyContinue)
+                                    {
+                                        $originalWarningPreference = $WarningPreference
+                                        $WarningPreference = 'SilentlyContinue'
+                                    }
+
+                                Write-Verbose -Message "✓ Azure PowerShell breaking change warnings suppressed for cleaner output."
+                            }
+                        catch
+                            {
+                                Write-Verbose -Message "Warning: Could not suppress Azure PowerShell breaking change warnings."
+                            }
+
                         # Verify Azure authentication status
                         Write-Verbose -Message "Checking Azure authentication status..."
                         $currentAzContext = Get-AzContext
@@ -1794,11 +1815,13 @@ function Test-SilkResourceDeployment
 
                                 try
                                     {
+                                        # Suppress warnings specifically for VM creation
                                         $cNodeJob = New-AzVM `
                                                         -ResourceGroupName $ResourceGroupName `
                                                         -Location $Region `
                                                         -VM $cNodeConfig `
-                                                        -AsJob
+                                                        -AsJob `
+                                                        -WarningAction SilentlyContinue
 
                                         Write-Verbose -Message $("✓ CNode {0} VM creation job started successfully" -f $cNode)
                                     } `
@@ -1938,11 +1961,13 @@ function Test-SilkResourceDeployment
 
                                         try
                                             {
+                                                # Suppress warnings specifically for VM creation
                                                 $dNodeJob = New-AzVM `
                                                                 -ResourceGroupName $ResourceGroupName `
                                                                 -Location $Region `
                                                                 -VM $dNodeConfig `
-                                                                -AsJob
+                                                                -AsJob `
+                                                                -WarningAction SilentlyContinue
 
                                                 Write-Verbose -Message $("✓ DNode {0} VM creation job started successfully" -f $dNodeNumber)
                                             } `
@@ -3097,6 +3122,20 @@ function Test-SilkResourceDeployment
             }
         end
             {
+                # Restore original warning preference if it was changed
+                try
+                    {
+                        if (Get-Variable -Name originalWarningPreference -ErrorAction SilentlyContinue)
+                            {
+                                $WarningPreference = $originalWarningPreference
+                                Write-Verbose -Message "✓ Original PowerShell warning preference restored."
+                            }
+                    }
+                catch
+                    {
+                        Write-Verbose -Message "Note: Could not restore original warning preference."
+                    }
+
                 if ( $RunCleanupOnly -or !$DisableCleanup )
                     {
                         # Start main cleanup progress

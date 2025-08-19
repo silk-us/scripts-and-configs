@@ -1967,7 +1967,7 @@ function Test-SilkResourceDeployment
 
                         # Update main progress to show completion phase and immediately show monitoring sub-progress
                         Write-Progress `
-                            -Status "VM Creation Jobs Submitted - Monitoring Deployment" `
+                            -Status "Monitoring VM Creation Jobs" `
                             -CurrentOperation "Waiting for all VMs to be deployed..." `
                             -PercentComplete 95 `
                             -Activity "VM Deployment" `
@@ -2553,19 +2553,19 @@ function Test-SilkResourceDeployment
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; line-height: 1.6; }
         .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; margin-bottom: 30px; }
-        h2 { color: #34495e; border-left: 4px solid #3498db; padding-left: 15px; margin-top: 30px; }
+        h1 { color: #2c3e50; border-bottom: 3px solid #FF00FF; padding-bottom: 10px; margin-bottom: 30px; }
+        h2 { color: #34495e; border-left: 4px solid #FF00FF; padding-left: 15px; margin-top: 30px; }
         h3 { color: #7f8c8d; margin-top: 25px; }
         .status-success { color: #27ae60; font-weight: bold; }
         .status-warning { color: #f39c12; font-weight: bold; }
         .status-error { color: #e74c3c; font-weight: bold; }
         table { width: 100%; border-collapse: collapse; margin: 15px 0; background: white; }
         th, td { padding: 12px; text-align: left; border: 1px solid #ddd; }
-        th { background-color: #3498db; color: white; font-weight: 600; }
+        th { background-color: #FF00FF; color: white; font-weight: 600; }
         tr:nth-child(even) { background-color: #f8f9fa; }
         tr:hover { background-color: #e8f4f8; }
         .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0; }
-        .info-card { background: #f8f9fa; padding: 20px; border-radius: 6px; border-left: 4px solid #3498db; }
+        .info-card { background: #f8f9fa; padding: 20px; border-radius: 6px; border-left: 4px solid #FF00FF; }
         .info-card h4 { margin-top: 0; color: #2c3e50; }
         .quota-item { margin: 8px 0; padding: 8px; background: #ecf0f1; border-radius: 4px; }
         .timestamp { color: #7f8c8d; font-size: 0.9em; text-align: right; margin-top: 30px; }

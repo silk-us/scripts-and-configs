@@ -632,7 +632,6 @@ function Test-SilkResourceDeployment
                 $VMInstanceCredential = (New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "azureuser", (ConvertTo-SecureString 'sdpD3ploym3ntT3$t' -AsPlainText -Force))
             )
 
-        # This block is used to provide optional one-time pre-processing for the function.
         begin
             {
 
@@ -640,27 +639,143 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 # Azure Authentication and Module Validation
                 # ===============================================================================
-                # Ensure that the Az module is available and the user is authenticated to Azure
+                # Comprehensive Azure PowerShell module management and user authentication
+                # Ensures Az module is installed, imported, and user is properly authenticated
                 try
                     {
-                        # Optional: Uncomment these lines if you want to enforce Az module installation
-                        # if (-not (Get-Module -Name Az -ListAvailable))
-                        #     {
-                        #         Write-Error "Az module is not installed. Please install the Az module to use this function."
-                        #         return
-                        #     }
-                        # Import-Module Az -Force
+                        Write-Verbose -Message "=== Azure PowerShell Module Validation ==="
 
-                        # Verify that the user is authenticated to Azure
-                        if (-not (Get-AzContext))
+                        # Check if Az module is available and install if necessary
+                        $azModuleAvailable = Get-Module -Name Az -ListAvailable
+                        if (-not $azModuleAvailable)
                             {
-                                Write-Error "You are not logged in to Azure. Please log in using Connect-AzAccount."
-                                return
+                                Write-Warning -Message "Azure PowerShell (Az) module is not installed. Attempting to install..."
+
+                                # Check if running as administrator for module installation
+                                $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+                                $isAdmin = $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+                                try
+                                    {
+                                        if ($isAdmin)
+                                            {
+                                                Write-Verbose -Message "Installing Az module for all users (administrator privileges detected)..."
+                                                Install-Module -Name Az -Repository PSGallery -Scope AllUsers -Force -AllowClobber -Confirm:$false
+                                            }
+                                        else
+                                            {
+                                                Write-Verbose -Message "Installing Az module for current user (no administrator privileges)..."
+                                                Install-Module -Name Az -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -Confirm:$false
+                                            }
+
+                                        Write-Verbose -Message "✓ Azure PowerShell (Az) module installed successfully."
+                                    }
+                                catch
+                                    {
+                                        Write-Error -Message $("Failed to install Azure PowerShell (Az) module: {0}. Please install manually using 'Install-Module -Name Az -Repository PSGallery -Scope CurrentUser'" -f $_.Exception.Message)
+                                        return
+                                    }
                             }
+                        else
+                            {
+                                $azModuleVersion = ($azModuleAvailable | Sort-Object Version -Descending | Select-Object -First 1).Version
+                                Write-Verbose -Message $("✓ Azure PowerShell (Az) module is available (version {0})" -f $azModuleVersion)
+                            }
+
+                        # Check if any Az modules are already imported to avoid assembly conflicts
+                        $azModulesImported = Get-Module -Name Az*
+                        if ($azModulesImported.Count -eq 0)
+                            {
+                                Write-Verbose -Message "Importing Azure PowerShell (Az) module..."
+                                try
+                                    {
+                                        $importedModule = Import-Module Az -PassThru -ErrorAction Stop
+                                        if ($importedModule)
+                                            {
+                                                Write-Verbose -Message "✓ Azure PowerShell (Az) module imported successfully."
+                                            }
+                                    }
+                                catch
+                                    {
+                                        Write-Error -Message $("Failed to import Azure PowerShell (Az) module: {0}. Please restart PowerShell and try again." -f $_.Exception.Message)
+                                        return
+                                    }
+                            }
+                        else
+                            {
+                                $azCoreModule = $azModulesImported | Where-Object { $_.Name -eq 'Az' } | Select-Object -First 1
+                                if ($azCoreModule)
+                                    {
+                                        Write-Verbose -Message $("✓ Azure PowerShell (Az) module is already imported (version {0})" -f $azCoreModule.Version)
+                                    }
+                                else
+                                    {
+                                        $moduleCount = $azModulesImported.Count
+                                        Write-Verbose -Message $("✓ Azure PowerShell sub-modules are already imported ({0} modules loaded)" -f $moduleCount)
+                                    }
+                            }
+
+                        # Verify Azure authentication status
+                        Write-Verbose -Message "Checking Azure authentication status..."
+                        $currentAzContext = Get-AzContext
+                        if (-not $currentAzContext)
+                            {
+                                Write-Warning -Message "You are not authenticated to Azure. Attempting interactive authentication..."
+
+                                try
+                                    {
+                                        # Attempt interactive authentication
+                                        Write-Host "Opening Azure authentication dialog. Please complete the sign-in process..." -ForegroundColor Yellow
+                                        $connectResult = Connect-AzAccount -ErrorAction Stop
+
+                                        if ($connectResult)
+                                            {
+                                                $newContext = Get-AzContext
+                                                Write-Verbose -Message $("✓ Successfully authenticated to Azure as '{0}' in tenant '{1}'" -f $newContext.Account.Id, $newContext.Tenant.Id)
+                                            }
+                                        else
+                                            {
+                                                Write-Error -Message "Azure authentication failed. Please run 'Connect-AzAccount' manually and try again."
+                                                return
+                                            }
+                                    }
+                                catch
+                                    {
+                                        Write-Error -Message $("Azure authentication failed: {0}. Please run 'Connect-AzAccount' manually and try again." -f $_.Exception.Message)
+                                        return
+                                    }
+                            }
+                        else
+                            {
+                                Write-Verbose -Message $("✓ Already authenticated to Azure as '{0}' in tenant '{1}'" -f $currentAzContext.Account.Id, $currentAzContext.Tenant.Id)
+
+                                # Check if the current context is still valid
+                                try
+                                    {
+                                        $testConnection = Get-AzSubscription -SubscriptionId $currentAzContext.Subscription.Id -ErrorAction Stop
+                                        Write-Verbose -Message "✓ Azure authentication is valid and active."
+                                    }
+                                catch
+                                    {
+                                        Write-Warning -Message "Current Azure context appears to be expired. Attempting re-authentication..."
+                                        try
+                                            {
+                                                $connectResult = Connect-AzAccount -ErrorAction Stop
+                                                Write-Verbose -Message "✓ Azure re-authentication successful."
+                                            }
+                                        catch
+                                            {
+                                                Write-Error -Message $("Azure re-authentication failed: {0}. Please run 'Connect-AzAccount' manually and try again." -f $_.Exception.Message)
+                                                return
+                                            }
+                                    }
+                            }
+
+                        Write-Verbose -Message "=== Azure PowerShell Prerequisites Complete ==="
                     }
                 catch
                     {
-                        Write-Error $("An error occurred while importing the Az module or checking the Azure context: {0}" -f $_)
+                        Write-Error $("An error occurred during Azure PowerShell module validation or authentication: {0}" -f $_.Exception.Message)
                         return
                     }
 

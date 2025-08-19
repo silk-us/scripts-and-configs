@@ -75,7 +75,7 @@ function Test-SilkResourceDeployment
 
             .PARAMETER CNodeCount
                 Number of CNode VMs to deploy. Silk Infrastructure requires minimum 2 CNodes for cluster quorum,
-                maximum 8 CNodes for optimal cluster management. Range: 2-8
+                maximum 8 CNodes for maximum performance. Range: 2-8
 
             .PARAMETER MnodeSizeLsv3
                 Array of MNode storage capacities for Lsv3 series SKUs (older generation with proven stability).
@@ -151,10 +151,10 @@ function Test-SilkResourceDeployment
                 Default: Username "azureuser" with secure password for testing purposes.
                 Used for VM deployment - SSH key authentication not implemented in test scenarios.
 
-            .PARAMETER Testing
-                Switch parameter to enable testing mode with reduced VM sizes and instance counts.
-                When enabled: Uses 2 vCPU SKUs instead of production 64 vCPU, 1 DNode per MNode instead of 16.
-                Significantly reduces deployment time and costs for faster testing iterations.
+            # .PARAMETER Testing
+            #     Switch parameter to enable testing mode with reduced VM sizes and instance counts.
+            #     When enabled: Uses 2 vCPU SKUs instead of production 64 vCPU, 1 DNode per MNode instead of 16.
+            #     Significantly reduces deployment time and costs for faster testing iterations.
 
             .EXAMPLE
                 Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -MnodeSizeLaosv4 @("14.67","29.34") -Testing -Verbose
@@ -226,8 +226,8 @@ function Test-SilkResourceDeployment
             (
                 # Azure Subscription ID where test resources will be deployed
                 # Overrides JSON configuration values when specified via command line
-                [Parameter(ParameterSetName = 'ChecklistJSON',              Mandatory = $false, HelpMessage = "Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012")]
-                [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON", Mandatory = $false, HelpMessage = "Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON",     Mandatory = $false, HelpMessage = "Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012")]
                 [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true,  HelpMessage = "Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012")]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true,  HelpMessage = "Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012")]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true,  HelpMessage = "Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012")]
@@ -247,8 +247,8 @@ function Test-SilkResourceDeployment
                 # Azure Resource Group name where test resources will be deployed
                 # Resource group must already exist in the specified subscription
                 # Overrides JSON configuration values when specified via command line
-                [Parameter(ParameterSetName = 'ChecklistJSON',              Mandatory = $false, HelpMessage = "Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg")]
-                [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON", Mandatory = $false, HelpMessage = "Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg")]
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg")]
+                [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON",     Mandatory = $false, HelpMessage = "Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg")]
                 [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true,  HelpMessage = "Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg")]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true,  HelpMessage = "Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg")]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true,  HelpMessage = "Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg")]
@@ -268,8 +268,8 @@ function Test-SilkResourceDeployment
                 # Azure region for resource deployment - must be a valid Azure region name
                 # Common examples: eastus, westus2, northeurope, eastasia
                 # Overrides JSON configuration values when specified via command line
-                [Parameter(ParameterSetName = 'ChecklistJSON',              Mandatory = $false, HelpMessage = "Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia")]
-                [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON", Mandatory = $false, HelpMessage = "Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia")]
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia")]
+                [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON",     Mandatory = $false, HelpMessage = "Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia")]
                 [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true,  HelpMessage = "Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia")]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true,  HelpMessage = "Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia")]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true,  HelpMessage = "Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia")]
@@ -290,8 +290,8 @@ function Test-SilkResourceDeployment
                 # Azure Availability Zone for resource placement (1, 2, 3, or Zoneless for regions without zones)
                 # Use "Zoneless" for regions that do not support availability zones
                 # Overrides JSON configuration values when specified via command line
-                [Parameter(ParameterSetName = 'ChecklistJSON',              Mandatory = $false, HelpMessage = "Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support).")]
-                [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON", Mandatory = $false, HelpMessage = "Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support).")]
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support).")]
+                [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON",     Mandatory = $false, HelpMessage = "Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support).")]
                 [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true,  HelpMessage = "Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support).")]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true,  HelpMessage = "Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support).")]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true,  HelpMessage = "Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support).")]
@@ -341,7 +341,7 @@ function Test-SilkResourceDeployment
                 $CNodeSku,
 
                 # Number of CNode VMs to deploy (range: 2-8)
-                # Silk Infrastructure requires minimum 2 CNodes for cluster quorum, maximum 8 for optimal management
+                # Silk Infrastructure requires minimum 2 CNodes for pod resilience, supporting up to 8 for maximum performance
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true, HelpMessage = "Enter number of CNode VMs to deploy (2-8). Minimum 2 required Maximum of 8. 3 CNodes required at deployment to enable up to 1 PB of logical capacity.")]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true, HelpMessage = "Enter number of CNode VMs to deploy (2-8). Minimum 2 required Maximum of 8. 3 CNodes required at deployment to enable up to 1 PB of logical capacity.")]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true, HelpMessage = "Enter number of CNode VMs to deploy (2-8). Minimum 2 required Maximum of 8. 3 CNodes required at deployment to enable up to 1 PB of logical capacity.")]
@@ -399,10 +399,48 @@ function Test-SilkResourceDeployment
                 [int]
                 $MNodeCount,
 
+                # Switch to disable HTML report generation
+                # By default, a comprehensive HTML report is generated summarizing deployment status,
+                # quota usage, SKU support, and resource validation results
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Disable HTML report generation. Reports are generated by default.")]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = "Disable HTML report generation. Reports are generated by default.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = "Disable HTML report generation. Reports are generated by default.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = "Disable HTML report generation. Reports are generated by default.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = "Disable HTML report generation. Reports are generated by default.")]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = "Disable HTML report generation. Reports are generated by default.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = "Disable HTML report generation. Reports are generated by default.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = "Disable HTML report generation. Reports are generated by default.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = "Disable HTML report generation. Reports are generated by default.")]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = "Disable HTML report generation. Reports are generated by default.")]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = "Disable HTML report generation. Reports are generated by default.")]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = "Disable HTML report generation. Reports are generated by default.")]
+                [Switch]
+                $NoHTMLReport,
+
+                # Path where the HTML report should be saved
+                # Default: Current working directory with filename 'SilkDeploymentReport_[timestamp].html'
+                # HTML reports are generated by default unless -NoHTMLReport is specified
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Path where the HTML report should be saved. Defaults to current working directory.")]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = "Path where the HTML report should be saved. Defaults to current working directory.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = "Path where the HTML report should be saved. Defaults to current working directory.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = "Path where the HTML report should be saved. Defaults to current working directory.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = "Path where the HTML report should be saved. Defaults to current working directory.")]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = "Path where the HTML report should be saved. Defaults to current working directory.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = "Path where the HTML report should be saved. Defaults to current working directory.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = "Path where the HTML report should be saved. Defaults to current working directory.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = "Path where the HTML report should be saved. Defaults to current working directory.")]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = "Path where the HTML report should be saved. Defaults to current working directory.")]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = "Path where the HTML report should be saved. Defaults to current working directory.")]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = "Path where the HTML report should be saved. Defaults to current working directory.")]
+                [Parameter(HelpMessage = "Path where the HTML report should be saved. Defaults to current working directory.")]
+                [ValidateNotNullOrEmpty()]
+                [string]
+                $ReportOutputPath = (Get-Location).Path,
+
                 # Switch to disable automatic cleanup of test resources after deployment validation
                 # When specified, resources remain in Azure for manual inspection or extended testing
                 # Resources must be manually removed or cleaned up using -RunCleanupOnly parameter
-                [Parameter(ParameterSetName = 'ChecklistJSON',              Mandatory = $false, HelpMessage = "Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up.")]
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up.")]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = "Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up.")]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = "Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up.")]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = "Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up.")]
@@ -420,71 +458,35 @@ function Test-SilkResourceDeployment
                 # Switch to only perform cleanup operations, removing all previously created test resources
                 # Identifies and removes resources based on resource name prefix (default: "sdp-test")
                 # Use this to clean up resources from failed deployments or when cleanup was disabled
-                [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true, HelpMessage = "Run cleanup only mode to remove all test resources (prefixed by -ResourceNamePrefix default is 'sdp-test') from the resource group")]
+                [Parameter(ParameterSetName = "Cleanup Only",               Mandatory = $true, HelpMessage = "Run cleanup only mode to remove all test resources (prefixed by -ResourceNamePrefix default is 'sdp-test') from the resource group")]
                 [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON", Mandatory = $true, HelpMessage = "Run cleanup only mode to remove all test resources (prefixed by -ResourceNamePrefix default is 'sdp-test') from the resource group")]
                 [Switch]
                 $RunCleanupOnly,
 
-                # CIDR notation for VNet and subnet IP address range used for network isolation
+                # CIDR notation for VNet and subnet IP address range, will not be peered or exposed otherwise.
                 # Default: "10.0.0.0/24" (provides 254 usable IP addresses)
                 # Overrides JSON configuration values when specified via command line
-                [Parameter(HelpMessage = "Specify VNet CIDR range for network isolation. Example: 10.0.0.0/24")]
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24")]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = "Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = "Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = "Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = "Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24")]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = "Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = "Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = "Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = "Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24")]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = "Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24")]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = "Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24")]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = "Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24")]
                 [ValidateNotNullOrEmpty()]
                 [string]
                 $IPRangeCIDR,
-
-                # Azure Marketplace image offer for VM operating system
-                # Default: "0001-com-ubuntu-server-jammy" (Ubuntu 22.04 LTS)
-                # Advanced parameter - modify only if specific OS requirements exist
-                [Parameter(HelpMessage = "Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only")]
-                [ValidateNotNullOrEmpty()]
-                [string]
-                $VMImageOffer = "0001-com-ubuntu-server-jammy",
-
-                # Azure Marketplace image publisher for VM operating system
-                # Default: "Canonical" (official Ubuntu publisher)
-                # Advanced parameter - modify only if using non-Ubuntu images
-                [Parameter(HelpMessage = "Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only")]
-                [ValidateNotNullOrEmpty()]
-                [string]
-                $VMImagePublisher = "Canonical",
-
-                # Azure Marketplace image SKU for VM operating system
-                # If not specified, automatically selects latest available SKU with Gen2 preference
-                # Advanced parameter - function auto-detects best available SKU for most scenarios
-                [Parameter(HelpMessage = "Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only")]
-                [string]
-                $VMImageSku,
-
-                # Azure Marketplace image version for VM operating system
-                # Default: "latest" (automatically uses most recent image version)
-                # Advanced parameter - specify only if specific image version required for compliance
-                [Parameter(HelpMessage = "Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements")]
-                [ValidateNotNullOrEmpty()]
-                [string]
-                $VMImageVersion = "latest",
-
-                # Prefix used for all created Azure resource names to enable easy identification and cleanup
-                # Default: "sdp-test" (creates names like "sdp-test-cnode-01", "sdp-test-vnet")
-                # Modify for multiple parallel test deployments or organizational naming standards
-                [Parameter(HelpMessage = "Resource name prefix for easy identification and cleanup. Default: sdp-test. Example: my-test (creates my-test-cnode-01, my-test-vnet)")]
-                [ValidateNotNullOrEmpty()]
-                [string]
-                $ResourceNamePrefix = "sdp-test",
-
-                # PowerShell credential object for VM local administrator account
-                # Default: Username "azureuser" with secure password for testing purposes
-                # Used for VM deployment - SSH key authentication not implemented in test scenarios
-                [Parameter(HelpMessage = "PowerShell credential object to assign to VM local administrator account.")]
-                [ValidateNotNullOrEmpty()]
-                [pscredential]
-                $VMInstanceCredential = (New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "azureuser", (ConvertTo-SecureString 'sdpD3ploym3ntT3$t' -AsPlainText -Force)),
 
                 # Switch to enabled Creation of a resource group by the given resource group name
                 # The resource group must NOT already exist
                 # When specified, a resource group is created for the test deployment and deleted
                 # the -RunCleanupOnly parameter can not be used to clean up resource groups you will have to manually delete them
-                [Parameter(ParameterSetName = 'ChecklistJSON',              Mandatory = $false, HelpMessage = "Advanced Option to create a resource group by the given name, requires elevated Role assignment.")]
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Advanced Option to create a resource group by the given name, requires elevated Role assignment.")]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = "Advanced Option to create a resource group by the given name, requires elevated Role assignment.")]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = "Advanced Option to create a resource group by the given name, requires elevated Role assignment.")]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = "Advanced Option to create a resource group by the given name, requires elevated Role assignment.")]
@@ -499,12 +501,125 @@ function Test-SilkResourceDeployment
                 [Switch]
                 $CreateResourceGroup,
 
+                # Azure Marketplace image offer for VM operating system
+                # Default: "0001-com-ubuntu-server-jammy" (Ubuntu 22.04 LTS)
+                # Advanced parameter - modify only if specific OS requirements exist
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only")]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = "Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = "Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = "Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = "Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only")]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = "Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = "Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = "Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = "Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only")]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = "Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only")]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = "Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only")]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = "Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only")]
+                [ValidateNotNullOrEmpty()]
+                [string]
+                $VMImageOffer = "0001-com-ubuntu-server-jammy",
+
+                # Azure Marketplace image publisher for VM operating system
+                # Default: "Canonical" (official Ubuntu publisher)
+                # Advanced parameter - modify only if using non-Ubuntu images
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only")]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = "Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = "Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = "Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = "Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only")]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = "Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = "Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = "Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = "Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only")]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = "Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only")]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = "Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only")]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = "Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only")]
+                [ValidateNotNullOrEmpty()]
+                [string]
+                $VMImagePublisher = "Canonical",
+
+                # Azure Marketplace image SKU for VM operating system
+                # If not specified, automatically selects latest available SKU with Gen2 preference
+                # Advanced parameter - function auto-detects best available SKU for most scenarios
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only")]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = "Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = "Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = "Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = "Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only")]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = "Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = "Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = "Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = "Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only")]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = "Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only")]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = "Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only")]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = "Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only")]
+                [string]
+                $VMImageSku,
+
+                # Azure Marketplace image version for VM operating system
+                # Default: "latest" (automatically uses most recent image version)
+                # Advanced parameter - specify only if specific image version required for compliance
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements")]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = "Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = "Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = "Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = "Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements")]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = "Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = "Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = "Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = "Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements")]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = "Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements")]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = "Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements")]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = "Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements")]
+                [ValidateNotNullOrEmpty()]
+                [string]
+                $VMImageVersion = "latest",
+
+                # Prefix used for all created Azure resource names to enable easy identification and cleanup
+                # Default: "sdp-test" (creates names like "sdp-test-cnode-01", "sdp-test-vnet")
+                # Modify for multiple parallel test deployments or organizational naming standards
+                [Parameter(HelpMessage = "Resource name prefix for easy identification and cleanup. Default: sdp-test. Example: my-test (creates my-test-cnode-01, my-test-vnet)")]
+                [ValidateNotNullOrEmpty()]
+                [string]
+                $ResourceNamePrefix = "sdp-test",
+
                 # Switch to enable testing mode with reduced VM sizes and instance counts
                 # When enabled: Uses 2 vCPU SKUs instead of production 64 vCPU, 1 DNode per MNode instead of 16
                 # Significantly reduces deployment time and costs for faster testing iterations
-                [Parameter(HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
                 [Switch]
-                $Testing
+                $Testing,
+
+                # PowerShell credential object for VM local administrator account
+                # Default: Username "azureuser" with secure password for testing purposes
+                # Used for VM deployment - SSH key authentication not implemented in test scenarios
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "PowerShell credential object to assign to VM local administrator account.")]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = "PowerShell credential object to assign to VM local administrator account.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = "PowerShell credential object to assign to VM local administrator account.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = "PowerShell credential object to assign to VM local administrator account.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = "PowerShell credential object to assign to VM local administrator account.")]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = "PowerShell credential object to assign to VM local administrator account.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = "PowerShell credential object to assign to VM local administrator account.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = "PowerShell credential object to assign to VM local administrator account.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = "PowerShell credential object to assign to VM local administrator account.")]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = "PowerShell credential object to assign to VM local administrator account.")]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = "PowerShell credential object to assign to VM local administrator account.")]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = "PowerShell credential object to assign to VM local administrator account.")]
+                [ValidateNotNullOrEmpty()]
+                [pscredential]
+                $VMInstanceCredential = (New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "azureuser", (ConvertTo-SecureString 'sdpD3ploym3ntT3$t' -AsPlainText -Force))
             )
 
         # This block is used to provide optional one-time pre-processing for the function.
@@ -537,6 +652,44 @@ function Test-SilkResourceDeployment
                     {
                         Write-Error $("An error occurred while importing the Az module or checking the Azure context: {0}" -f $_)
                         return
+                    }
+
+                # ===============================================================================
+                # HTML Report Configuration
+                # ===============================================================================
+                # Enable HTML report by default unless NoHTMLReport switch is specified
+                if (-not $NoHTMLReport)
+                    {
+                        Write-Verbose -Message "HTML report generation enabled (default behavior). Use -NoHTMLReport to disable."
+                    }
+                else
+                    {
+                        Write-Verbose -Message "HTML report generation disabled by -NoHTMLReport switch."
+                    }
+
+                # Configure HTML report output file path with timestamp
+                if (-not $NoHTMLReport)
+                    {
+                        $ReportTimestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+                        $ReportFileName = "SilkDeploymentReport_$ReportTimestamp.html"
+
+                        # Ensure the output path is valid and create directory if needed
+                        if (-not (Test-Path $ReportOutputPath))
+                            {
+                                try
+                                    {
+                                        New-Item -Path $ReportOutputPath -ItemType Directory -Force | Out-Null
+                                        Write-Verbose -Message $("Created report output directory: {0}" -f $ReportOutputPath)
+                                    }
+                                catch
+                                    {
+                                        Write-Warning -Message $("Failed to create report output directory '{0}': {1}. Using current directory." -f $ReportOutputPath, $_.Exception.Message)
+                                        $ReportOutputPath = (Get-Location).Path
+                                    }
+                            }
+
+                        $ReportFullPath = Join-Path -Path $ReportOutputPath -ChildPath $ReportFileName
+                        Write-Verbose -Message $("HTML report will be generated at: {0}" -f $ReportFullPath)
                     }
 
                 # ===============================================================================
@@ -696,7 +849,7 @@ function Test-SilkResourceDeployment
                         Write-Verbose -Message "Running in testing mode, using reduced CNode configuration for faster deployment."
                         $cNodeSizeObject = @(
                                                 [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 2; vmSkuSuffix = "s_v5"; QuotaFamily = "Standard Dsv5 Family vCPUs"; cNodeFriendlyName = "No_Increased_Logical_Capacity"};
-                                                [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 2; vmSkuSuffix = "s_v3"; QuotaFamily = "Standard Lsv3 Family vCPUs"; cNodeFriendlyName = "Read_Cache_Enabled"};
+                                                [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 4; vmSkuSuffix = "s_v3"; QuotaFamily = "Standard Lsv3 Family vCPUs"; cNodeFriendlyName = "Read_Cache_Enabled"};
                                                 [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 2; vmSkuSuffix = "s_v5"; QuotaFamily = "Standard Esv5 Family vCPUs"; cNodeFriendlyName = "Increased_Logical_Capacity"}
                                             )
                     }
@@ -1904,30 +2057,6 @@ function Test-SilkResourceDeployment
                             {
                                 Write-Host "  Region Support: ✗ Not supported in region" -ForegroundColor Red
                             }
-
-                        # CNode Quota Information
-                        if ($computeQuotaUsage)
-                            {
-                                $cNodeSKUFamilyQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $cNodeObject.QuotaFamily }
-                                $cNodevCPUCount = $cNodeObject.vCPU * $CNodeCount
-                                Write-Host $("  Quota Family: {0}" -f $cNodeObject.QuotaFamily)
-                                if ($cNodeSKUFamilyQuota)
-                                    {
-                                        $availableQuota = $cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue
-                                        if ($availableQuota -ge $cNodevCPUCount)
-                                            {
-                                                Write-Host $("  vCPU Quota: ✓ Sufficient (Required: {0}, Available: {1}/{2})" -f $cNodevCPUCount, $availableQuota, $cNodeSKUFamilyQuota.Limit) -ForegroundColor Green
-                                            }
-                                        else
-                                            {
-                                                Write-Host $("  vCPU Quota: ✗ Insufficient (Required: {0}, Available: {1}/{2})" -f $cNodevCPUCount, $availableQuota, $cNodeSKUFamilyQuota.Limit) -ForegroundColor Red
-                                            }
-                                    }
-                                else
-                                    {
-                                        Write-Host "  vCPU Quota: ⚠ Unable to determine" -ForegroundColor Yellow
-                                    }
-                            }
                     }
 
                 # MNode SKU Support Report
@@ -1966,30 +2095,77 @@ function Test-SilkResourceDeployment
                                     {
                                         Write-Host "  Region Support: ✗ Not supported in region" -ForegroundColor Red
                                     }
+                            }
+                    }
 
-                                # MNode Quota Information
-                                if ($computeQuotaUsage)
+                # Quota Family Summary
+                if ($computeQuotaUsage)
+                    {
+                        Write-Host "`nQuota Family Summary:" -ForegroundColor Yellow
+
+                        # Collect all quota families and their vCPU requirements
+                        $quotaFamilyRequirements = @{}
+
+                        # Add CNode quota family requirements
+                        if ($cNodeObject)
+                            {
+                                $cNodeTotalvCPU = $cNodeObject.vCPU * $CNodeCount
+                                if ($quotaFamilyRequirements.ContainsKey($cNodeObject.QuotaFamily))
                                     {
-                                        $mNodeSKUFamilyQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $mNodeType.QuotaFamily }
+                                        $quotaFamilyRequirements[$cNodeObject.QuotaFamily] += $cNodeTotalvCPU
+                                    }
+                                else
+                                    {
+                                        $quotaFamilyRequirements[$cNodeObject.QuotaFamily] = $cNodeTotalvCPU
+                                    }
+                            }
+
+                        # Add MNode quota family requirements
+                        if ($mNodeObject)
+                            {
+                                foreach ($mNodeType in $mNodeObjectUnique)
+                                    {
                                         $mNodeInstanceCount = $MNodeSize | Group-Object | Select-Object Name, Count
-                                        $mNodevCPUCount = $mNodeType.vCPU * $mNodeType.dNodeCount * ($mNodeInstanceCount | Where-Object { $_.Name -eq $mNodeType.PhysicalSize }).Count
-                                        Write-Host $("  Quota Family: {0}" -f $mNodeType.QuotaFamily)
-                                        if ($mNodeSKUFamilyQuota)
+                                        $mNodeTotalvCPU = $mNodeType.vCPU * $mNodeType.dNodeCount * ($mNodeInstanceCount | Where-Object { $_.Name -eq $mNodeType.PhysicalSize }).Count
+
+                                        if ($quotaFamilyRequirements.ContainsKey($mNodeType.QuotaFamily))
                                             {
-                                                $availableQuota = $mNodeSKUFamilyQuota.Limit - $mNodeSKUFamilyQuota.CurrentValue
-                                                if ($availableQuota -ge $mNodevCPUCount)
-                                                    {
-                                                        Write-Host $("  vCPU Quota: ✓ Sufficient (Required: {0}, Available: {1}/{2})" -f $mNodevCPUCount, $availableQuota, $mNodeSKUFamilyQuota.Limit) -ForegroundColor Green
-                                                    }
-                                                else
-                                                    {
-                                                        Write-Host $("  vCPU Quota: ✗ Insufficient (Required: {0}, Available: {1}/{2})" -f $mNodevCPUCount, $availableQuota, $mNodeSKUFamilyQuota.Limit) -ForegroundColor Red
-                                                    }
+                                                $quotaFamilyRequirements[$mNodeType.QuotaFamily] += $mNodeTotalvCPU
                                             }
                                         else
                                             {
-                                                Write-Host "  vCPU Quota: ⚠ Unable to determine" -ForegroundColor Yellow
+                                                $quotaFamilyRequirements[$mNodeType.QuotaFamily] = $mNodeTotalvCPU
                                             }
+                                    }
+                            }
+
+                        # Display quota family summary
+                        foreach ($quotaFamily in $quotaFamilyRequirements.Keys | Sort-Object)
+                            {
+                                $requiredvCPU = $quotaFamilyRequirements[$quotaFamily]
+                                $quotaFamilyInfo = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $quotaFamily }
+
+                                Write-Host $("`n  {0}:" -f $quotaFamily) -ForegroundColor Cyan
+                                if ($quotaFamilyInfo)
+                                    {
+                                        $availableQuota = $quotaFamilyInfo.Limit - $quotaFamilyInfo.CurrentValue
+                                        if ($availableQuota -ge $requiredvCPU)
+                                            {
+                                                Write-Host $("    vCPU Required: {0}" -f $requiredvCPU)
+                                                Write-Host $("    vCPU Available: {0}/{1}" -f $availableQuota, $quotaFamilyInfo.Limit)
+                                                Write-Host $("    Status: ✓ Sufficient") -ForegroundColor Green
+                                            }
+                                        else
+                                            {
+                                                Write-Host $("    vCPU Required: {0}" -f $requiredvCPU)
+                                                Write-Host $("    vCPU Available: {0}/{1}" -f $availableQuota, $quotaFamilyInfo.Limit)
+                                                Write-Host $("    Status: ✗ Insufficient (Shortfall: {0} vCPU)" -f ($requiredvCPU - $availableQuota)) -ForegroundColor Red
+                                            }
+                                    }
+                                else
+                                    {
+                                        Write-Host $("    vCPU Required: {0}" -f $requiredvCPU)
+                                        Write-Host $("    Status: ⚠ Unable to determine quota") -ForegroundColor Yellow
                                     }
                             }
                     }
@@ -2229,6 +2405,561 @@ function Test-SilkResourceDeployment
                     }
 
                 Write-Progress -Id 1 -Completed
+
+
+                # ===============================================================================
+                # HTML Report Generation
+                # ===============================================================================
+                if (-not $NoHTMLReport)
+                    {
+                        Write-Host "`n=== Generating HTML Report ===" -ForegroundColor Cyan
+                        Write-Verbose -Message $("Generating HTML report at: {0}" -f $ReportFullPath)
+
+                        try
+                            {
+                                # HTML report template with embedded CSS for professional styling
+                                $htmlContent = @"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silk Azure Deployment Report - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; line-height: 1.6; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; margin-bottom: 30px; }
+        h2 { color: #34495e; border-left: 4px solid #3498db; padding-left: 15px; margin-top: 30px; }
+        h3 { color: #7f8c8d; margin-top: 25px; }
+        .status-success { color: #27ae60; font-weight: bold; }
+        .status-warning { color: #f39c12; font-weight: bold; }
+        .status-error { color: #e74c3c; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; background: white; }
+        th, td { padding: 12px; text-align: left; border: 1px solid #ddd; }
+        th { background-color: #3498db; color: white; font-weight: 600; }
+        tr:nth-child(even) { background-color: #f8f9fa; }
+        tr:hover { background-color: #e8f4f8; }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0; }
+        .info-card { background: #f8f9fa; padding: 20px; border-radius: 6px; border-left: 4px solid #3498db; }
+        .info-card h4 { margin-top: 0; color: #2c3e50; }
+        .quota-item { margin: 8px 0; padding: 8px; background: #ecf0f1; border-radius: 4px; }
+        .timestamp { color: #7f8c8d; font-size: 0.9em; text-align: right; margin-top: 30px; }
+        .checkmark { color: #27ae60; }
+        .warning-mark { color: #f39c12; }
+        .error-mark { color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏗️ Silk Azure Deployment Report</h1>
+
+        <div class="info-grid">
+            <div class="info-card">
+                <h4>📋 Deployment Configuration</h4>
+                <strong>Subscription ID:</strong> $SubscriptionId<br>
+                <strong>Resource Group:</strong> $ResourceGroupName<br>
+                <strong>Region:</strong> $Region<br>
+                <strong>Availability Zone:</strong> $Zone<br>
+"@
+
+                                # Add CNode configuration if present
+                                if ($cNodeObject -and $CNodeCount -gt 0)
+                                    {
+                                        $htmlContent += @"
+                <strong>CNode Count:</strong> $CNodeCount<br>
+                <strong>CNode SKU:</strong> $($cNodeObject.vmSkuPrefix)$($cNodeObject.vCPU)$($cNodeObject.vmSkuSuffix)<br>
+"@
+                                    }
+
+                                # Add MNode configuration if present
+                                if ($mNodeObject -and $mNodeObject.Count -gt 0)
+                                    {
+                                        $mNodeSizeDisplay = ($mNodeObject | ForEach-Object { $_.PhysicalSize }) -join ", "
+                                        $htmlContent += @"
+                <strong>MNode Sizes:</strong> $mNodeSizeDisplay TiB<br>
+                <strong>Total DNodes:</strong> $totalDNodes<br>
+"@
+                                    }
+
+                                $htmlContent += @"
+            </div>
+            <div class="info-card">
+                <h4>📊 Deployment Summary</h4>
+                <strong>Total Expected VMs:</strong> $totalExpectedVMs<br>
+                <strong>Successfully Deployed:</strong> <span class="$(if($successfulVMs -eq $totalExpectedVMs){'status-success'}else{'status-warning'})">$successfulVMs</span><br>
+                $(if($failedVMs -gt 0){"<strong>Failed Deployments:</strong> <span class='status-error'>$failedVMs</span><br>"})
+                <strong>Network Interfaces:</strong> $($deployedNICs.Count)<br>
+                <strong>Overall Status:</strong> <span class="$(if($successfulVMs -eq $totalExpectedVMs -and $deployedVNet -and $deployedNSG){'status-success'}else{'status-warning'})">$(if($successfulVMs -eq $totalExpectedVMs -and $deployedVNet -and $deployedNSG){'✓ SUCCESSFUL'}else{'⚠ ISSUES DETECTED'})</span>
+            </div>
+        </div>
+"@
+
+                                # Add CNode deployment table if present
+                                if ($cNodeReport)
+                                    {
+                                        $htmlContent += @"
+        <h2>🖥️ CNode Deployment Status</h2>
+        <p><strong>Expected SKU:</strong> $($cNodeReport[0].ExpectedSKU)</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Node</th>
+                    <th>VM Name</th>
+                    <th>Deployed SKU</th>
+                    <th>VM Status</th>
+                    <th>NIC Status</th>
+                    <th>Availability Set</th>
+                </tr>
+            </thead>
+            <tbody>
+"@
+                                        foreach ($cNode in $cNodeReport)
+                                            {
+                                                $vmStatusClass = if ($cNode.VMStatus -like "*Deployed*") { "checkmark" } else { "error-mark" }
+                                                $nicStatusClass = if ($cNode.NICStatus -like "*Created*") { "checkmark" } else { "error-mark" }
+
+                                                $htmlContent += @"
+                <tr>
+                    <td>CNode $($cNode.NodeNumber)</td>
+                    <td>$($cNode.VMName)</td>
+                    <td>$($cNode.DeployedSKU)</td>
+                    <td><span class="$vmStatusClass">$($cNode.VMStatus)</span></td>
+                    <td><span class="$nicStatusClass">$($cNode.NICStatus)</span></td>
+                    <td>$($cNode.AvailabilitySet)</td>
+                </tr>
+"@
+                                            }
+                                        $htmlContent += @"
+            </tbody>
+        </table>
+"@
+                                    }
+
+                                # Add MNode/DNode deployment tables if present
+                                $mNodeGroups = $deploymentReport | Where-Object { $_.ResourceType -eq "DNode" } | Group-Object GroupNumber
+                                if ($mNodeGroups)
+                                    {
+                                        foreach ($group in $mNodeGroups)
+                                            {
+                                                $mNodeExpectedSku = $group.Group[0].ExpectedSKU
+                                                $groupNumber = $group.Name
+
+                                                $htmlContent += @"
+        <h2>💾 MNode Group $groupNumber DNode Status</h2>
+        <p><strong>Expected SKU:</strong> $mNodeExpectedSku</p>
+        <table>
+            <thead>
+                <tr>
+                    <th>Node</th>
+                    <th>VM Name</th>
+                    <th>Deployed SKU</th>
+                    <th>VM Status</th>
+                    <th>NIC Status</th>
+                    <th>Availability Set</th>
+                </tr>
+            </thead>
+            <tbody>
+"@
+                                                foreach ($dNode in $group.Group)
+                                                    {
+                                                        $vmStatusClass = if ($dNode.VMStatus -like "*Deployed*") { "checkmark" } else { "error-mark" }
+                                                        $nicStatusClass = if ($dNode.NICStatus -like "*Created*") { "checkmark" } else { "error-mark" }
+
+                                                        $htmlContent += @"
+                <tr>
+                    <td>DNode $($dNode.NodeNumber)</td>
+                    <td>$($dNode.VMName)</td>
+                    <td>$($dNode.DeployedSKU)</td>
+                    <td><span class="$vmStatusClass">$($dNode.VMStatus)</span></td>
+                    <td><span class="$nicStatusClass">$($dNode.NICStatus)</span></td>
+                    <td>$($dNode.AvailabilitySet)</td>
+                </tr>
+"@
+                                                    }
+                                                $htmlContent += @"
+            </tbody>
+        </table>
+"@
+                                            }
+                                    }
+
+                                # Add SKU Support and Quota Summary sections
+                                $htmlContent += @"
+        <h2>🔧 SKU Support Analysis</h2>
+        <div class="info-grid">
+"@
+
+                                # Add CNode SKU Support if present
+                                if($cNodeObject)
+                                    {
+                                        $cNodeSkuName = "{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix
+                                        $cNodeSupportedSKU = $locationSupportedSKU | Where-Object { $_.Name -eq $cNodeSkuName }
+                                        $cNodevCPUCount = $cNodeObject.vCPU * $CNodeCount
+                                        $cNodeSKUFamilyQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $cNodeObject.QuotaFamily }
+
+                                        $zoneSupport = ""
+                                        $zoneSupportClass = ""
+                                        if ($cNodeSupportedSKU)
+                                            {
+                                                if ($Zone -eq "Zoneless")
+                                                    {
+                                                        $zoneSupport = "✓ Supported (Zoneless deployment)"
+                                                        $zoneSupportClass = "status-success"
+                                                    }
+                                                elseif ($cNodeSupportedSKU.LocationInfo.Zones -contains $Zone)
+                                                    {
+                                                        $zoneSupport = "✓ Supported in target zone $Zone"
+                                                        $zoneSupportClass = "status-success"
+                                                    }
+                                                else
+                                                    {
+                                                        $zoneSupport = "⚠ Not supported in target zone $Zone"
+                                                        $zoneSupportClass = "status-warning"
+                                                    }
+                                            }
+                                        else
+                                            {
+                                                $zoneSupport = "✗ Not supported in region"
+                                                $zoneSupportClass = "status-error"
+                                            }
+
+                                        $htmlContent += @"
+            <div class="info-card">
+                <h4>🖥️ CNode SKU Support</h4>
+                <strong>SKU:</strong> $cNodeSkuName<br>
+                <strong>Region:</strong> $Region<br>
+                <strong>Zone Support:</strong> <span class="$zoneSupportClass">$zoneSupport</span><br>
+                $(if($cNodeSupportedSKU -and $cNodeSupportedSKU.LocationInfo.Zones){"<strong>Available Zones:</strong> $($cNodeSupportedSKU.LocationInfo.Zones -join ', ')"})
+            </div>
+"@
+                                    }
+
+                                # Add MNode SKU Support if present
+                                if($MNodeSize -and $mNodeObjectUnique)
+                                    {
+                                        foreach ($mNodeType in $mNodeObjectUnique)
+                                            {
+                                                $mNodeSkuName = "{0}{1}{2}" -f $mNodeType.vmSkuPrefix, $mNodeType.vCPU, $mNodeType.vmSkuSuffix
+                                                $mNodeSupportedSKU = $locationSupportedSKU | Where-Object { $_.Name -eq $mNodeSkuName }
+                                                $mNodeInstanceCount = $MNodeSize | Group-Object | Select-Object Name, Count
+                                                $mNodevCPUCount = $mNodeType.vCPU * $mNodeType.dNodeCount * ($mNodeInstanceCount | Where-Object { $_.Name -eq $mNodeType.PhysicalSize }).Count
+                                                $mNodeSKUFamilyQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $mNodeType.QuotaFamily }
+
+                                                $zoneSupport = ""
+                                                $zoneSupportClass = ""
+                                                if ($mNodeSupportedSKU)
+                                                    {
+                                                        if ($Zone -eq "Zoneless")
+                                                            {
+                                                                $zoneSupport = "✓ Supported (Zoneless deployment)"
+                                                                $zoneSupportClass = "status-success"
+                                                            }
+                                                        elseif ($mNodeSupportedSKU.LocationInfo.Zones -contains $Zone)
+                                                            {
+                                                                $zoneSupport = "✓ Supported in target zone $Zone"
+                                                                $zoneSupportClass = "status-success"
+                                                            }
+                                                        else
+                                                            {
+                                                                $zoneSupport = "⚠ Not supported in target zone $Zone"
+                                                                $zoneSupportClass = "status-warning"
+                                                            }
+                                                    }
+                                                else
+                                                    {
+                                                        $zoneSupport = "✗ Not supported in region"
+                                                        $zoneSupportClass = "status-error"
+                                                    }
+
+                                                $instanceCount = ($mNodeInstanceCount | Where-Object { $_.Name -eq $mNodeType.PhysicalSize }).Count
+                                                $htmlContent += @"
+            <div class="info-card">
+                <h4>💾 MNode SKU Support ($($instanceCount)x $($mNodeType.PhysicalSize) TiB)</h4>
+                <strong>SKU:</strong> $mNodeSkuName<br>
+                <strong>Region:</strong> $Region<br>
+                <strong>Zone Support:</strong> <span class="$zoneSupportClass">$zoneSupport</span><br>
+                $(if($mNodeSupportedSKU -and $mNodeSupportedSKU.LocationInfo.Zones){"<strong>Available Zones:</strong> $($mNodeSupportedSKU.LocationInfo.Zones -join ', ')"})
+            </div>
+"@
+                                            }
+                                    }
+
+                                $htmlContent += @"
+        </div>
+
+        <h2>� Quota Family Summary</h2>
+        <div class="info-grid">
+"@
+
+                                # Add quota family summary if available
+                                if ($computeQuotaUsage)
+                                    {
+                                        # Use the same quota family collection logic from console output
+                                        $quotaFamilyRequirements = @{}
+
+                                        # Add CNode quota family requirements
+                                        if ($cNodeObject)
+                                            {
+                                                $cNodeTotalvCPU = $cNodeObject.vCPU * $CNodeCount
+                                                if ($quotaFamilyRequirements.ContainsKey($cNodeObject.QuotaFamily))
+                                                    {
+                                                        $quotaFamilyRequirements[$cNodeObject.QuotaFamily] += $cNodeTotalvCPU
+                                                    }
+                                                else
+                                                    {
+                                                        $quotaFamilyRequirements[$cNodeObject.QuotaFamily] = $cNodeTotalvCPU
+                                                    }
+                                            }
+
+                                        # Add MNode quota family requirements
+                                        if ($mNodeObject)
+                                            {
+                                                foreach ($mNodeType in $mNodeObjectUnique)
+                                                    {
+                                                        $mNodeInstanceCount = $MNodeSize | Group-Object | Select-Object Name, Count
+                                                        $mNodeTotalvCPU = $mNodeType.vCPU * $mNodeType.dNodeCount * ($mNodeInstanceCount | Where-Object { $_.Name -eq $mNodeType.PhysicalSize }).Count
+
+                                                        if ($quotaFamilyRequirements.ContainsKey($mNodeType.QuotaFamily))
+                                                            {
+                                                                $quotaFamilyRequirements[$mNodeType.QuotaFamily] += $mNodeTotalvCPU
+                                                            }
+                                                        else
+                                                            {
+                                                                $quotaFamilyRequirements[$mNodeType.QuotaFamily] = $mNodeTotalvCPU
+                                                            }
+                                                    }
+                                            }
+
+                                        # Generate HTML for each quota family
+                                        foreach ($quotaFamily in $quotaFamilyRequirements.Keys | Sort-Object)
+                                            {
+                                                $requiredvCPU = $quotaFamilyRequirements[$quotaFamily]
+                                                $quotaFamilyInfo = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $quotaFamily }
+
+                                                $quotaStatus = ""
+                                                $quotaStatusClass = ""
+                                                if ($quotaFamilyInfo)
+                                                    {
+                                                        $availableQuota = $quotaFamilyInfo.Limit - $quotaFamilyInfo.CurrentValue
+                                                        if ($availableQuota -ge $requiredvCPU)
+                                                            {
+                                                                $quotaStatus = "✓ Sufficient"
+                                                                $quotaStatusClass = "status-success"
+                                                            }
+                                                        else
+                                                            {
+                                                                $shortfall = $requiredvCPU - $availableQuota
+                                                                $quotaStatus = "✗ Insufficient (Shortfall: $shortfall vCPU)"
+                                                                $quotaStatusClass = "status-error"
+                                                            }
+                                                    }
+                                                else
+                                                    {
+                                                        $quotaStatus = "⚠ Unable to determine quota"
+                                                        $quotaStatusClass = "status-warning"
+                                                    }
+
+                                                $htmlContent += @"
+            <div class="info-card">
+                <h4>🔧 $quotaFamily</h4>
+                <strong>vCPU Required:</strong> $requiredvCPU<br>
+                $(if($quotaFamilyInfo){"<strong>vCPU Available:</strong> $($quotaFamilyInfo.Limit - $quotaFamilyInfo.CurrentValue)/$($quotaFamilyInfo.Limit)<br>"})
+                <strong>Status:</strong> <span class="$quotaStatusClass">$quotaStatus</span>
+            </div>
+"@
+                                            }
+                                    }
+
+                                $htmlContent += @"
+        </div>
+
+        <h2>�📊 Quota Summary</h2>
+        <div class="info-grid">
+"@
+
+                                # Add quota summary if available
+                                if ($computeQuotaUsage)
+                                    {
+                                        # Total VM Quota
+                                        $totalVMQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Virtual Machines" }
+                                        if ($totalVMQuota)
+                                            {
+                                                $totalVMCount = $CNodeCount + (($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum)
+                                                $availableVMQuota = $totalVMQuota.Limit - $totalVMQuota.CurrentValue
+                                                $vmQuotaStatus = if ($availableVMQuota -ge $totalVMCount) { "✓ Sufficient" } else { "✗ Insufficient" }
+                                                $vmQuotaClass = if ($availableVMQuota -ge $totalVMCount) { "status-success" } else { "status-error" }
+
+                                                $htmlContent += @"
+            <div class="info-card">
+                <h4>🖥️ Virtual Machine Quota</h4>
+                <strong>Status:</strong> <span class="$vmQuotaClass">$vmQuotaStatus</span><br>
+                <strong>Required:</strong> $totalVMCount VMs<br>
+                <strong>Available:</strong> $availableVMQuota/$($totalVMQuota.Limit)<br>
+            </div>
+"@
+                                            }
+
+                                        # Total Regional vCPU Quota
+                                        $totalVCPUQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Total Regional vCPUs" }
+                                        if ($totalVCPUQuota)
+                                            {
+                                                $totalvCPUCount = 0
+                                                if ($cNodeObject) { $totalvCPUCount += $cNodeObject.vCPU * $CNodeCount }
+                                                if ($mNodeObject) { $totalvCPUCount += ($mNodeObject | ForEach-Object { $_.vCPU * $_.dNodeCount } | Measure-Object -Sum).Sum }
+                                                $availableVCPUQuota = $totalVCPUQuota.Limit - $totalVCPUQuota.CurrentValue
+                                                $vcpuQuotaStatus = if ($availableVCPUQuota -ge $totalvCPUCount) { "✓ Sufficient" } else { "✗ Insufficient" }
+                                                $vcpuQuotaClass = if ($availableVCPUQuota -ge $totalvCPUCount) { "status-success" } else { "status-error" }
+
+                                                $htmlContent += @"
+            <div class="info-card">
+                <h4>⚡ Regional vCPU Quota</h4>
+                <strong>Status:</strong> <span class="$vcpuQuotaClass">$vcpuQuotaStatus</span><br>
+                <strong>Required:</strong> $totalvCPUCount vCPUs<br>
+                                <strong>Available:</strong> $availableVCPUQuota/$($totalVCPUQuota.Limit)<br>
+            </div>
+"@
+                                            }
+
+                                        # Availability Sets Quota
+                                        $totalAvailabilitySetQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Availability Sets" }
+                                        if ($totalAvailabilitySetQuota)
+                                            {
+                                                $totalAvailabilitySetCount = 0
+                                                if ($cNodeObject) { $totalAvailabilitySetCount += 1 }
+                                                if ($mNodeObjectUnique) { $totalAvailabilitySetCount += $mNodeObjectUnique.Count }
+                                                $availableAvSetQuota = $totalAvailabilitySetQuota.Limit - $totalAvailabilitySetQuota.CurrentValue
+                                                $avsetQuotaStatus = if ($availableAvSetQuota -ge $totalAvailabilitySetCount) { "✓ Sufficient" } else { "✗ Insufficient" }
+                                                $avsetQuotaClass = if ($availableAvSetQuota -ge $totalAvailabilitySetCount) { "status-success" } else { "status-error" }
+
+                                                $htmlContent += @"
+            <div class="info-card">
+                <h4>📋 Availability Sets Quota</h4>
+                <strong>Status:</strong> <span class="$avsetQuotaClass">$avsetQuotaStatus</span><br>
+                <strong>Required:</strong> $totalAvailabilitySetCount sets<br>
+                <strong>Available:</strong> $availableAvSetQuota/$($totalAvailabilitySetQuota.Limit)<br>
+            </div>
+"@
+                                            }
+                                    }
+
+                                $htmlContent += @"
+        </div>
+
+        <h2>🏗️ Infrastructure Resources</h2>
+        <div class="info-grid">
+            <div class="info-card">
+                <h4>🌐 Network Infrastructure</h4>
+                <strong>Virtual Network:</strong> <span class="$(if($deployedVNet){'checkmark'}else{'error-mark'})">$(if($deployedVNet){'✓ Created'}else{'✗ Not Created'})</span><br>
+                $(if($deployedVNet){"<strong>VNet Name:</strong> $($deployedVNet.Name)<br><strong>Address Space:</strong> $($deployedVNet.AddressSpace.AddressPrefixes -join ', ')<br>"})
+                <strong>Network Security Group:</strong> <span class="$(if($deployedNSG){'checkmark'}else{'error-mark'})">$(if($deployedNSG){'✓ Created'}else{'✗ Not Created'})</span><br>
+                $(if($deployedNSG){"<strong>NSG Name:</strong> $($deployedNSG.Name)<br>"})
+                <strong>Subnet Configuration:</strong> $(if($deployedVNet){'✓ Management subnet configured'}else{'✗ Not configured'})
+            </div>
+            <div class="info-card">
+                <h4>📍 Placement and Availability</h4>
+"@
+
+                                # Add Proximity Placement Group details
+                                $deployedPPG = Get-AzProximityPlacementGroup -ResourceGroupName $ResourceGroupName -Name "$ResourceNamePrefix-ppg" -ErrorAction SilentlyContinue
+                                if ($deployedPPG)
+                                    {
+                                        $htmlContent += @"
+                <strong>Proximity Placement Group:</strong> <span class="checkmark">✓ Created</span><br>
+                <strong>PPG Name:</strong> $($deployedPPG.Name)<br>
+                <strong>PPG Type:</strong> Standard<br>
+                <strong>Location:</strong> $($deployedPPG.Location)<br>
+"@
+                                    }
+                                else
+                                    {
+                                        $htmlContent += @"
+                <strong>Proximity Placement Group:</strong> <span class="error-mark">✗ Not Found</span><br>
+"@
+                                    }
+
+                                # Add Availability Sets details
+                                $deployedAvailabilitySets = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $ResourceNamePrefix }
+                                if ($deployedAvailabilitySets)
+                                    {
+                                        $avSetNames = ($deployedAvailabilitySets.Name | Sort-Object) -join ", "
+                                        $htmlContent += @"
+                <strong>Availability Sets:</strong> <span class="checkmark">✓ $($deployedAvailabilitySets.Count) Created</span><br>
+                <strong>AvSet Names:</strong> $avSetNames<br>
+                <strong>Fault Domains:</strong> $($deployedAvailabilitySets[0].PlatformFaultDomainCount)<br>
+                <strong>Update Domains:</strong> $($deployedAvailabilitySets[0].PlatformUpdateDomainCount)
+"@
+                                    }
+                                else
+                                    {
+                                        $htmlContent += @"
+                <strong>Availability Sets:</strong> <span class="error-mark">✗ Not Found</span>
+"@
+                                    }
+
+                                $htmlContent += @"
+            </div>
+            <div class="info-card">
+                <h4>📈 Resource Summary</h4>
+                <strong>Resource Group:</strong> $ResourceGroupName<br>
+                <strong>Resource Name Prefix:</strong> $ResourceNamePrefix<br>
+                <strong>Total Resources Created:</strong> $(($deployedVMs.Count + $deployedNICs.Count + $(if($deployedPPG){1}else{0}) + $deployedAvailabilitySets.Count + $(if($deployedVNet){1}else{0}) + $(if($deployedNSG){1}else{0})))<br>
+                <strong>Virtual Machines:</strong> $($deployedVMs.Count)<br>
+                <strong>Network Interfaces:</strong> $($deployedNICs.Count)<br>
+                <strong>Network Resources:</strong> $($(if($deployedVNet){1}else{0}) + $(if($deployedNSG){1}else{0}))<br>
+                <strong>Placement Resources:</strong> $($(if($deployedPPG){1}else{0}) + $deployedAvailabilitySets.Count)
+            </div>
+        </div>
+
+        <div class="timestamp">
+            Report generated on $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') by Test-SilkResourceDeployment PowerShell module
+        </div>
+    </div>
+</body>
+</html>
+"@
+
+                                # Write HTML content to file
+                                $htmlContent | Out-File -FilePath $ReportFullPath -Encoding UTF8
+                                Write-Host "✓ HTML report generated successfully!" -ForegroundColor Green
+                                Write-Host "📄 Report saved to: $ReportFullPath" -ForegroundColor Cyan
+
+                                # Attempt to open the report automatically (with error handling for headless systems)
+                                try
+                                    {
+                                        if ($IsWindows -or $PSVersionTable.PSVersion.Major -le 5)
+                                            {
+                                                Start-Process $ReportFullPath
+                                                Write-Verbose -Message "HTML report opened in default browser."
+                                            }
+                                        elseif ($IsLinux)
+                                            {
+                                                if (Get-Command xdg-open -ErrorAction SilentlyContinue)
+                                                    {
+                                                        & xdg-open $ReportFullPath
+                                                        Write-Verbose -Message "HTML report opened with xdg-open."
+                                                    }
+                                                else
+                                                    {
+                                                        Write-Verbose -Message "xdg-open not available. Report saved but not opened automatically."
+                                                    }
+                                            }
+                                        elseif ($IsMacOS)
+                                            {
+                                                & open $ReportFullPath
+                                                Write-Verbose -Message "HTML report opened with macOS open command."
+                                            }
+                                    }
+                                catch
+                                    {
+                                        Write-Verbose -Message $("Unable to automatically open HTML report (likely headless system): {0}" -f $_.Exception.Message)
+                                        Write-Host "ℹ️  Report available at: $ReportFullPath" -ForegroundColor Yellow
+                                    }
+                            }
+                        catch
+                            {
+                                Write-Warning -Message $("Failed to generate HTML report: {0}" -f $_.Exception.Message)
+                            }
+                    }
 
                 Start-Sleep -Seconds 2
 

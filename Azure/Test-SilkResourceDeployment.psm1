@@ -2089,6 +2089,13 @@ function Test-SilkResourceDeployment
                 # clean up jobs
                 Get-Job | Remove-Job -Force | Out-Null
 
+                # ===============================================================================
+                # Console Output Stabilization
+                # ===============================================================================
+                # Ensure all progress updates are complete before displaying reports
+                Start-Sleep -Milliseconds 250
+                [System.Console]::Out.Flush()
+
                 # Comprehensive resource validation and reporting
                 Write-Host "`n=== Post-Deployment Validation ===" -ForegroundColor Cyan
 
@@ -2556,12 +2563,29 @@ function Test-SilkResourceDeployment
 
                 Write-Progress -Id 1 -Completed
 
+                # ===============================================================================
+                # Console Output Buffer Management
+                # ===============================================================================
+                # Add buffer space to prevent console output overlap in Azure Cloud Shell
+                Write-Host ""
+                Write-Host ""
+                Start-Sleep -Milliseconds 500
+
+                # Clear any remaining progress artifacts
+                [System.Console]::Out.Flush()
 
                 # ===============================================================================
                 # HTML Report Generation
                 # ===============================================================================
                 if (-not $NoHTMLReport)
                     {
+                        # ===============================================================================
+                        # Pre-HTML Generation Buffer
+                        # ===============================================================================
+                        # Ensure clean console state before HTML generation messages
+                        Start-Sleep -Milliseconds 300
+                        [System.Console]::Out.Flush()
+
                         Write-Host "`n=== Generating HTML Report ===" -ForegroundColor Cyan
                         Write-Verbose -Message $("Generating HTML report at: {0}" -f $ReportFullPath)
 
@@ -3109,14 +3133,22 @@ function Test-SilkResourceDeployment
                             {
                                 Write-Warning -Message $("Failed to generate HTML report: {0}" -f $_.Exception.Message)
                             }
+
+                        # ===============================================================================
+                        # Post-HTML Generation Buffer
+                        # ===============================================================================
+                        # Final console stabilization for clean output
+                        Write-Host ""
+                        Start-Sleep -Milliseconds 200
+                        [System.Console]::Out.Flush()
                     }
 
                 Start-Sleep -Seconds 2
 
+                Write-Verbose -Message $("Deployment completed. Resources have been created in the resource group: {0}." -f $ResourceGroupName)
+
                 if (!$DisableCleanup)
                     {
-                        Write-Verbose -Message $("Deployment completed. Resources have been created in the resource group: {0}." -f $ResourceGroupName)
-
                         Read-Host -Prompt "Press Enter to continue with cleanup or Ctrl+C to exit without cleanup."
                     }
             }

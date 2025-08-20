@@ -1119,7 +1119,8 @@ function Test-SilkResourceDeployment
 
                 if ($cNodeObject)
                     {
-                        Write-Verbose -Message ("Identified CNode SKU: {0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix)
+                        $cNodeVMSku = "{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix
+                        Write-Verbose -Message ("Identified CNode SKU: {0}" -f $cNodeVMSku)
                     }
 
                 # Initialize MNode object list to hold configuration for each MNode type
@@ -1168,10 +1169,10 @@ function Test-SilkResourceDeployment
                 # Verify that selected SKUs are supported in the target region and availability zone
                 if ($cNodeObject)
                     {
-                        $cNodeSupportedSKU = $locationSupportedSKU | Where-Object Name -eq $("{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix)
+                        $cNodeSupportedSKU = $locationSupportedSKU | Where-Object Name -eq $cNodeVMSku
                         if (!$cNodeSupportedSKU)
                             {
-                                Write-Error "Unable to identify location for CNode SKU: {0}{1}{2} in region: {3}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix, $Region
+                                Write-Error "Unable to identify location for CNode SKU: {0} in region: {1}" -f $cNodeVMSku, $Region
                                 return
                             } `
                         elseif ($cNodeSupportedSKU -and $Zone -eq "Zoneless")
@@ -1247,13 +1248,13 @@ function Test-SilkResourceDeployment
                                 $cNodeSKUFamilyQuota = $ComputeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $cNodeObject.QuotaFamily }
                                 if (($cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue) -lt $cNodevCPUCount)
                                     {
-                                        $quotaErrorMessage = "{0} {1}" -f $("Insufficient vCPU quota available for CNode SKU: {0}{1}{2}. Required: {3} -> Limit: {4}, Consumed: {5}, Available: {6}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix, $cNodevCPUCount, $cNodeSKUFamilyQuota.Limit, $cNodeSKUFamilyQuota.CurrentValue, ($cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue)), $quotaErrorMessage
+                                        $quotaErrorMessage = "{0} {1}" -f $("Insufficient vCPU quota available for CNode SKU: {0}. Required: {1} -> Limit: {2}, Consumed: {3}, Available: {4}" -f $cNodeVMSku, $cNodevCPUCount, $cNodeSKUFamilyQuota.Limit, $cNodeSKUFamilyQuota.CurrentValue, ($cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue)), $quotaErrorMessage
                                         Write-Warning $quotaErrorMessage
                                         $insufficientQuota = $true
                                     } `
                                 else
                                     {
-                                        Write-Verbose -Message $("Sufficient vCPU quota available for CNode SKU: {0}{1}{2}. Required: {3} -> Limit: {4}, Consumed: {5}, Available: {6}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix, $cNodevCPUCount, $cNodeSKUFamilyQuota.Limit, $cNodeSKUFamilyQuota.CurrentValue, ($cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue))
+                                        Write-Verbose -Message $("Sufficient vCPU quota available for CNode SKU: {0}. Required: {1} -> Limit: {2}, Consumed: {3}, Available: {4}" -f $cNodeVMSku, $cNodevCPUCount, $cNodeSKUFamilyQuota.Limit, $cNodeSKUFamilyQuota.CurrentValue, ($cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue))
                                     }
                             }
 
@@ -1660,7 +1661,6 @@ function Test-SilkResourceDeployment
                         # Add CNode SKU if cnodes will be deployed
                         if ($cNodeObject)
                             {
-                                $cNodeVMSku = "{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix
                                 $vmSizes += $cNodeVMSku
                             }
 
@@ -1772,7 +1772,7 @@ function Test-SilkResourceDeployment
                         for ($cNode = 1; $cNode -le $CNodeCount; $cNode++)
                             {
                                 # Calculate CNode SKU for display
-                                $currentCNodeSku = "{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix
+                                $currentCNodeSku = "{0}" -f $CNodeSku
 
                                 # Update sub-progress for CNode creation
                                 Write-Progress `
@@ -1796,7 +1796,7 @@ function Test-SilkResourceDeployment
                                 # Use availability sets when not using zones
                                 $cNodeConfig = New-AzVMConfig `
                                                 -VMName $("{0}-cnode-{1:D2}" -f $ResourceNamePrefix, $cNode) `
-                                                -VMSize $("{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix) `
+                                                -VMSize $cNodeVMSku `
                                                 -AvailabilitySetId $cNodeAvailabilitySet.Id
 
                                 # set operating system details
@@ -1857,7 +1857,7 @@ function Test-SilkResourceDeployment
                                         # Track job-to-VM mapping for meaningful error reporting
                                         $vmJobMapping[$cNodeJob.Id] = @{
                                             VMName = $("{0}-cnode-{1:D2}" -f $ResourceNamePrefix, $cNode)
-                                            VMSku = $("{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix)
+                                            VMSku = $cNodeVMSku
                                             NodeType = "CNode"
                                             NodeNumber = $cNode
                                         }
@@ -2296,9 +2296,6 @@ function Test-SilkResourceDeployment
                         $vm = $deployedVMs | Where-Object { $_.Name -eq $expectedVMName }
                         $nic = $deployedNICs | Where-Object { $_.Name -eq $expectedNICName }
 
-                        # Calculate CNode SKU for reporting
-                        $reportCNodeSku = "{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix
-
                         # Determine availability set status
                         $cNodeAvSetName = "$ResourceNamePrefix-cnode-avset"
                         $avSetStatus = if ($vm -and $vm.AvailabilitySetReference) { "CNode AvSet" } else { "Not Assigned" }
@@ -2345,7 +2342,7 @@ function Test-SilkResourceDeployment
                                                                     GroupNumber = "CNode Group"
                                                                     NodeNumber = $cNode
                                                                     VMName = $expectedVMName
-                                                                    ExpectedSKU = $reportCNodeSku
+                                                                    ExpectedSKU = $cNodeVMSku
                                                                     DeployedSKU = if ($vm) { $vm.HardwareProfile.VmSize } else { "Not Found" }
                                                                     VMStatus = $vmStatus
                                                                     ProvisioningState = if ($vm) { $vm.ProvisioningState } else { "Not Found" }
@@ -2453,8 +2450,7 @@ function Test-SilkResourceDeployment
                 # CNode SKU Support Analysis
                 if($cNodeObject)
                     {
-                        $cNodeSkuName = "{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix
-                        $cNodeSupportedSKU = $locationSupportedSKU | Where-Object { $_.Name -eq $cNodeSkuName }
+                        $cNodeSupportedSKU = $locationSupportedSKU | Where-Object { $_.Name -eq $cNodeVMSku }
                         $cNodevCPUCount = $cNodeObject.vCPU * $CNodeCount
                         $cNodeSKUFamilyQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $cNodeObject.QuotaFamily }
 
@@ -2485,7 +2481,7 @@ function Test-SilkResourceDeployment
 
                         $skuSupportData += [PSCustomObject]@{
                             ComponentType = "CNode"
-                            SKUName = $cNodeSkuName
+                            SKUName = $cNodeVMSku
                             SupportedSKU = $cNodeSupportedSKU
                             ZoneSupport = $cNodeZoneSupport
                             ZoneSupportStatus = $cNodeZoneSupportStatus

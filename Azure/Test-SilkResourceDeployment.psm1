@@ -2707,7 +2707,7 @@ function Test-SilkResourceDeployment
                                                         DeployedCount = $successfulCNodes
                                                         ExpectedCount = $CNodeCount
                                                         SKU = $cNodeSummaryLabel
-                                                        Status = if ($successfulCNodes -eq $CNodeCount) { "✓ Complete" } else { "⚠ Partial" }
+                                                        Status = if ($successfulCNodes -eq $CNodeCount) { "✓ Complete" } elseif ($successfulCNodes -eq 0) { "✗ Failed" } else { "⚠ Partial" }
                                                     }
 
                 # Add MNode/DNode summary for each group
@@ -2723,7 +2723,7 @@ function Test-SilkResourceDeployment
                                                                 DeployedCount = $groupSuccessful
                                                                 ExpectedCount = $groupExpected
                                                                 SKU = $groupSku
-                                                                Status = if ($groupSuccessful -eq $groupExpected) { "✓ Complete" } else { "⚠ Partial" }
+                                                                Status = if ($groupSuccessful -eq $groupExpected) { "✓ Complete" } elseif ($groupSuccessful -eq 0) { "✗ Failed" } else { "⚠ Partial" }
                                                             }
                     }
 

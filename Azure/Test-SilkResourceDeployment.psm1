@@ -985,9 +985,9 @@ function Test-SilkResourceDeployment
                 # Production CNode SKU Configuration
                 # Actual production deployments use 64 vCPU SKUs for high performance
                 $cNodeSizeObject = @(
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "_v5"; QuotaFamily = "Standard Dsv5 Family vCPUs"; cNodeFriendlyName = "No_Increased_Logical_Capacity"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "_v3"; QuotaFamily = "Standard Lsv3 Family vCPUs"; cNodeFriendlyName = "Read_Cache_Enabled"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "_v5"; QuotaFamily = "Standard Esv5 Family vCPUs"; cNodeFriendlyName = "Increased_Logical_Capacity"}
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "s_v5"; QuotaFamily = "Standard Dsv5 Family vCPUs"; cNodeFriendlyName = "No_Increased_Logical_Capacity"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "s_v3"; QuotaFamily = "Standard Lsv3 Family vCPUs"; cNodeFriendlyName = "Read_Cache_Enabled"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "s_v5"; QuotaFamily = "Standard Esv5 Family vCPUs"; cNodeFriendlyName = "Increased_Logical_Capacity"}
                                     )
 
                 if ($Testing)

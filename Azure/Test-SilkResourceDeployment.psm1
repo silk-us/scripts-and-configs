@@ -1230,7 +1230,6 @@ function Test-SilkResourceDeployment
                     {
                         $computeQuotaUsage = Get-AzVMUsage -Location $Region -ErrorAction SilentlyContinue
 
-                        $availabilitySetCount = 0
                         $totalVMCount = 0
                         $totalvCPUCount = 0
 
@@ -1240,7 +1239,6 @@ function Test-SilkResourceDeployment
                         if($cNodeObject)
                             {
                                 # increment for generic quota checks
-                                $availabilitySetCount += 1
                                 $totalVMCount += $CNodeCount
                                 $cNodevCPUCount = $cNodeObject.vCPU * $CNodeCount
                                 $totalvCPUCount += $cNodevCPUCount
@@ -1262,13 +1260,6 @@ function Test-SilkResourceDeployment
                         # check for quota for mnodes
                         if($MNodeSize)
                             {
-
-                                # increment the number of availability sets for MNodes
-                                foreach($mNodeAvailablitySet in $mNodeObject)
-                                    {
-                                        $availabilitySetCount += 1
-                                    }
-
                                 $mNodeFamilyCount = $mNodeObject | Group-Object -Property QuotaFamily
                                 $mNodeInstanceCount = $MNodeSize | Group-Object | Select-Object Name, Count
 

@@ -1712,6 +1712,8 @@ function Test-SilkResourceDeployment
                         Get-Job | Remove-Job -Force
                         Write-Verbose -Message "All existing jobs have been removed."
 
+                        # Initialize job-to-VM mapping for meaningful error reporting
+                        $vmJobMapping = @{}
 
                         # Calculate total VMs for progress tracking
                         $totalDNodes = ($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum
@@ -1847,6 +1849,14 @@ function Test-SilkResourceDeployment
                                                         -VM $cNodeConfig `
                                                         -AsJob `
                                                         -WarningAction SilentlyContinue
+
+                                        # Track job-to-VM mapping for meaningful error reporting
+                                        $vmJobMapping[$cNodeJob.Id] = @{
+                                            VMName = $("{0}-cnode-{1:D2}" -f $ResourceNamePrefix, $cNode)
+                                            VMSku = $("{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix)
+                                            NodeType = "CNode"
+                                            NodeNumber = $cNode
+                                        }
 
                                         Write-Verbose -Message $("✓ CNode {0} VM creation job started successfully" -f $cNode)
                                     } `
@@ -1994,6 +2004,16 @@ function Test-SilkResourceDeployment
                                                                 -AsJob `
                                                                 -WarningAction SilentlyContinue
 
+                                                # Track job-to-VM mapping for meaningful error reporting
+                                                $vmJobMapping[$dNodeJob.Id] =  @{
+                                                                                    VMName = $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNodeNumber)
+                                                                                    VMSku = $("{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix)
+                                                                                    NodeType = "DNode"
+                                                                                    NodeNumber = $dNodeNumber
+                                                                                    MNodeGroup = $currentMNode
+                                                                                    MNodePhysicalSize = $currentMNodePhysicalSize
+                                                                                }
+
                                                 Write-Verbose -Message $("✓ DNode {0} VM creation job started successfully" -f $dNodeNumber)
                                             } `
                                         catch
@@ -2008,6 +2028,11 @@ function Test-SilkResourceDeployment
                                 $dNodeStartCount += $mNode.dNodeCount
                             }
 
+                        # ========================================================================================================
+                        # begin vm creation job monitoring
+                        # ========================================================================================================
+                        # Initialize deployment validation tracking for reporting
+                        $deploymentValidationResults = @()
 
                         # Validate all network interfaces were created successfully
                         Write-Verbose -Message $("✓ All network interfaces created successfully: {0} total NICs" -f (Get-AzNetworkInterface -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }).Count)
@@ -2034,8 +2059,8 @@ function Test-SilkResourceDeployment
 
                         # Initial status check to show immediate progress
                         $currentVMJobs = Get-Job
-                        $completedJobs = $currentVMJobs | Where-Object { $_.State -ne 'Running' }
-                        $runningJobs = $currentVMJobs | Where-Object { $_.State -eq 'Running' }
+                        $completedJobs = $currentVMJobs | Where-Object { $_.State -in @('Completed', 'Failed', 'Stopped') }
+                        $runningJobs = $currentVMJobs | Where-Object { $_.State -in @('Running', 'NotStarted') }
                         $initialCompletionPercent = [Math]::Round(($completedJobs.Count / $allVMJobs.Count) * 100)
 
                         # Update sub-progress immediately with current status
@@ -2052,20 +2077,9 @@ function Test-SilkResourceDeployment
                                 # Regular monitoring interval
                                 Start-Sleep -Seconds 3
                                 $currentVMJobs = Get-Job
-                                $completedJobs = $currentVMJobs | Where-Object { $_.State -ne 'Running' }
-                                $runningJobs = $currentVMJobs | Where-Object { $_.State -eq 'Running' }
-                                $failedJobs = $currentVMJobs | Where-Object { $_.State -eq 'Failed' }
+                                $completedJobs = $currentVMJobs | Where-Object { $_.State -in @('Completed', 'Failed', 'Stopped') }
+                                $runningJobs = $currentVMJobs | Where-Object { $_.State -in @('Running', 'NotStarted') }
                                 $completionPercent = [Math]::Round(($completedJobs.Count / $allVMJobs.Count) * 100)
-
-                                # Check for failed jobs and display their errors
-                                if ($failedJobs.Count -gt 0)
-                                    {
-                                        foreach ($failedJob in $failedJobs)
-                                            {
-                                                $jobError = Receive-Job -Job $failedJob 2>&1 | Out-String
-                                                Write-Error $("VM Creation Job Failed: {0} - Error: {1}" -f $failedJob.Name, $jobError)
-                                            }
-                                    }
 
                                 # Update sub-progress for VM deployment
                                 Write-Progress `
@@ -2078,7 +2092,7 @@ function Test-SilkResourceDeployment
                             } `
                         while
                             (
-                                $currentVMJobs.State -contains 'Running'
+                                $runningJobs.Count -gt 0
                             )
 
                         # Final progress updates
@@ -2104,6 +2118,142 @@ function Test-SilkResourceDeployment
                             -Activity "VM Deployment Monitoring" `
                             -Id 4 `
                             -Completed
+
+                        # Analyze failed jobs AFTER monitoring is complete
+                        $finalVMJobs = Get-Job
+                        $failedJobs = $finalVMJobs | Where-Object { $_.State -eq 'Failed' }
+
+                        if ($failedJobs.Count -gt 0)
+                            {
+                                foreach ($failedJob in $failedJobs)
+                                    {
+                                        # Get the job error details and categorize the failure
+                                        $jobErrorRaw = Receive-Job -Job $failedJob 2>&1
+                                        $jobErrorString = $jobErrorRaw | Out-String
+
+                                        # Extract VM details from job mapping
+                                        $vmDetails = $vmJobMapping[$failedJob.Id]
+                                        $vmName = if ($vmDetails) { $vmDetails.VMName } else { "Unknown VM" }
+                                        $vmSku = if ($vmDetails) { $vmDetails.VMSku } else { "Unknown SKU" }
+
+                                        # Extract meaningful deployment validation information
+                                        $errorCode = ""
+                                        $errorMessage = ""
+                                        $failureCategory = "Unknown"
+                                        $alternativeZones = @()
+
+                                        if ($jobErrorString)
+                                            {
+                                                # Look for specific Azure error patterns
+                                                if ($jobErrorString -match "ErrorCode[:\s]*([^\s,\r\n]+)")
+                                                    {
+                                                        $errorCode = $matches[1]
+                                                    }
+                                                if ($jobErrorString -match "ErrorMessage[:\s]*([^\r\n]+)")
+                                                    {
+                                                        $errorMessage = $matches[1].Trim()
+                                                        # Clean up common Azure error suffixes
+                                                        $errorMessage = $errorMessage -replace "\s*Read more about.*$", ""
+                                                        $errorMessage = $errorMessage -replace "\s*For more information.*$", ""
+                                                    }
+
+                                                # Also look for allocation failure patterns
+                                                if ($jobErrorString -match "AllocationFailed" -or $jobErrorString -match "allocation.*failed")
+                                                    {
+                                                        $errorCode = "AllocationFailed"
+                                                        if ([string]::IsNullOrWhiteSpace($errorMessage))
+                                                            {
+                                                                $errorMessage = "VM allocation failed due to insufficient capacity"
+                                                            }
+                                                    }
+
+                                                # Categorize the failure type for better reporting
+                                                if ($errorCode -eq "AllocationFailed" -or $errorMessage -match "sufficient capacity|allocation failed")
+                                                    {
+                                                        $failureCategory = "Capacity"
+                                                    } `
+                                                elseif ($errorCode -match "Quota|quota" -or $errorMessage -match "quota|limit")
+                                                    {
+                                                        $failureCategory = "Quota"
+                                                    } `
+                                                elseif ($errorCode -match "SKU|sku" -or $errorMessage -match "sku|size")
+                                                    {
+                                                        $failureCategory = "SKU Availability"
+
+                                                        # For SKU availability issues, check if SKU is available in other zones within the region
+                                                        if ($vmSku)
+                                                            {
+                                                                $skuInfo = Get-AzComputeResourceSku | Where-Object { $_.Name -eq $vmSku -and $_.LocationInfo.Location -eq $Region }
+                                                                if ($skuInfo -and $skuInfo.LocationInfo.Zones -and $skuInfo.LocationInfo.Zones.Count -gt 0)
+                                                                    {
+                                                                        $alternativeZones = $skuInfo.LocationInfo.Zones | Where-Object { $_ -ne $Zone }
+                                                                    }
+                                                            }
+                                                    } `
+                                                else
+                                                    {
+                                                        $failureCategory = "Other"
+                                                    }
+
+                                                # Fallback to extract any error message if specific patterns not found
+                                                if ([string]::IsNullOrWhiteSpace($errorMessage))
+                                                    {
+                                                        # Try to find any meaningful error text
+                                                        $errorLines = $jobErrorString -split "`n" | Where-Object { $_ -match "error|failed|exception" -and $_ -notmatch "^VERBOSE:|^DEBUG:" } | Select-Object -First 3
+                                                        if ($errorLines)
+                                                            {
+                                                                $errorMessage = ($errorLines -join "; ").Trim()
+                                                                # Limit error message length for readability
+                                                                if ($errorMessage.Length -gt 300)
+                                                                    {
+                                                                        $errorMessage = $errorMessage.Substring(0, 300) + "..."
+                                                                    }
+                                                            }
+                                                        else
+                                                            {
+                                                                $errorMessage = "Deployment failed - check Azure portal for detailed error information"
+                                                            }
+                                                    }
+                                            } `
+                                        else
+                                            {
+                                                $errorMessage = "Deployment failed without detailed information"
+                                                $failureCategory = "Unknown"
+                                            }
+
+                                        # Store deployment validation result for reporting
+                                        $deploymentValidationResults += [PSCustomObject]@{
+                                            VMName = $vmName
+                                            VMSku = $vmSku
+                                            JobName = $failedJob.Name
+                                            ErrorCode = $errorCode
+                                            ErrorMessage = $errorMessage
+                                            FailureCategory = $failureCategory
+                                            AlternativeZones = $alternativeZones
+                                            TestedZone = $Zone
+                                            TestedRegion = $Region
+                                            Timestamp = Get-Date
+                                        }
+
+                                        # Log deployment validation findings appropriately based on failure type
+                                        if ($failureCategory -eq "Capacity")
+                                            {
+                                                Write-Verbose -Message $("⚠ Capacity constraint detected for VM {0} ({1}): {2}" -f $vmName, $vmSku, $errorMessage)
+                                            } `
+                                        elseif ($failureCategory -eq "Quota")
+                                            {
+                                                Write-Warning -Message $("Quota limitation detected for VM {0} ({1}): {2}" -f $vmName, $vmSku, $errorMessage)
+                                            } `
+                                        elseif ($failureCategory -eq "SKU Availability")
+                                            {
+                                                Write-Warning -Message $("SKU availability issue detected for VM {0} ({1}): {2}" -f $vmName, $vmSku, $errorMessage)
+                                            } `
+                                        else
+                                            {
+                                                Write-Warning -Message $("Deployment validation finding for VM {0} ({1}): {2}" -f $vmName, $vmSku, $errorMessage)
+                                            }
+                                    }
+                            }
 
                     }
                 catch
@@ -2149,10 +2299,18 @@ function Test-SilkResourceDeployment
                         $cNodeAvSetName = "$ResourceNamePrefix-cnode-avset"
                         $avSetStatus = if ($vm -and $vm.AvailabilitySetReference) { "CNode AvSet" } else { "Not Assigned" }
 
-                        # Determine VM provisioning status
+                        # Determine VM provisioning status and check for validation findings
+                        $vmValidationFinding = $deploymentValidationResults | Where-Object { $_.VMName -eq $expectedVMName -or $_.VMName -like "*$expectedVMName*" }
                         $vmStatus = if (-not $vm)
                                         {
-                                            "✗ Not Found"
+                                            if ($vmValidationFinding)
+                                                {
+                                                    "✗ Not Found ($($vmValidationFinding.FailureCategory))"
+                                                }
+                                            else
+                                                {
+                                                    "✗ Not Found"
+                                                }
                                         }
                                     elseif ($vm.ProvisioningState -eq "Succeeded")
                                         {
@@ -2160,7 +2318,14 @@ function Test-SilkResourceDeployment
                                         }
                                     elseif ($vm.ProvisioningState -eq "Failed")
                                         {
-                                            "✗ Failed"
+                                            if ($vmValidationFinding)
+                                                {
+                                                    "✗ Failed ($($vmValidationFinding.FailureCategory))"
+                                                }
+                                            else
+                                                {
+                                                    "✗ Failed"
+                                                }
                                         }
                                     elseif ($vm.ProvisioningState -eq "Creating" -or $vm.ProvisioningState -eq "Running")
                                         {
@@ -2182,6 +2347,8 @@ function Test-SilkResourceDeployment
                                                                     ProvisioningState = if ($vm) { $vm.ProvisioningState } else { "Not Found" }
                                                                     NICStatus = if ($nic) { "✓ Created" } else { "✗ Failed" }
                                                                     AvailabilitySet = $avSetStatus
+                                                                    ValidationFinding = if ($vmValidationFinding) { $vmValidationFinding.ErrorMessage } else { "" }
+                                                                    FailureCategory = if ($vmValidationFinding) { $vmValidationFinding.FailureCategory } else { "" }
                                                                 }
                     }
 
@@ -2207,10 +2374,18 @@ function Test-SilkResourceDeployment
                                 $mNodeAvSetName = "$ResourceNamePrefix-mNode-$currentMNode-avset"
                                 $avSetStatus = if ($vm -and $vm.AvailabilitySetReference) { "MNode $currentMNode AvSet" } else { "Not Assigned" }
 
-                                # Determine VM provisioning status
+                                # Determine VM provisioning status and check for validation findings
+                                $vmValidationFinding = $deploymentValidationResults | Where-Object { $_.VMName -eq $expectedVMName -or $_.VMName -like "*$expectedVMName*" }
                                 $vmStatus = if (-not $vm)
                                                 {
-                                                    "✗ Not Found"
+                                                    if ($vmValidationFinding)
+                                                        {
+                                                            "✗ Not Found ($($vmValidationFinding.FailureCategory))"
+                                                        }
+                                                    else
+                                                        {
+                                                            "✗ Not Found"
+                                                        }
                                                 }
                                             elseif ($vm.ProvisioningState -eq "Succeeded")
                                                 {
@@ -2218,7 +2393,14 @@ function Test-SilkResourceDeployment
                                                 }
                                             elseif ($vm.ProvisioningState -eq "Failed")
                                                 {
-                                                    "✗ Failed"
+                                                    if ($vmValidationFinding)
+                                                        {
+                                                            "✗ Failed ($($vmValidationFinding.FailureCategory))"
+                                                        }
+                                                    else
+                                                        {
+                                                            "✗ Failed"
+                                                        }
                                                 }
                                             elseif ($vm.ProvisioningState -eq "Creating" -or $vm.ProvisioningState -eq "Running")
                                                 {
@@ -2240,6 +2422,8 @@ function Test-SilkResourceDeployment
                                                                             ProvisioningState = if ($vm) { $vm.ProvisioningState } else { "Not Found" }
                                                                             NICStatus = if ($nic) { "✓ Created" } else { "✗ Failed" }
                                                                             AvailabilitySet = $avSetStatus
+                                                                            ValidationFinding = if ($vmValidationFinding) { $vmValidationFinding.ErrorMessage } else { "" }
+                                                                            FailureCategory = if ($vmValidationFinding) { $vmValidationFinding.FailureCategory } else { "" }
                                                                         }
                             }
 
@@ -2568,6 +2752,49 @@ function Test-SilkResourceDeployment
                         $nonSuccessfulVMs | ForEach-Object { Write-Host "  $($_.VMName): $($_.ProvisioningState)" -ForegroundColor Yellow }
                     }
 
+                # Display deployment validation findings if available
+                if ($deploymentValidationResults -and $deploymentValidationResults.Count -gt 0)
+                    {
+                        Write-Host "`nDeployment Validation Findings:" -ForegroundColor Yellow
+
+                        # Group validation results by failure category for summary
+                        $capacityIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Capacity" }
+                        $quotaIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Quota" }
+                        $skuIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "SKU Availability" }
+                        $otherIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Other" }
+
+                        if ($capacityIssues.Count -gt 0)
+                            {
+                                $affectedSkus = $capacityIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                                Write-Host $("  🏗️ Capacity Constraints: {0} VM(s) affected ({1})" -f $capacityIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                            }
+
+                        if ($quotaIssues.Count -gt 0)
+                            {
+                                $affectedSkus = $quotaIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                                Write-Host $("  📊 Quota Limitations: {0} VM(s) affected ({1})" -f $quotaIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                            }
+
+                        if ($skuIssues.Count -gt 0)
+                            {
+                                $affectedSkus = $skuIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                                Write-Host $("  🔧 SKU Availability: {0} VM(s) affected ({1})" -f $skuIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+
+                                # Show zone-specific information for SKU availability issues
+                                $skuIssuesWithAlternatives = $skuIssues | Where-Object { $_.AlternativeZones -and $_.AlternativeZones.Count -gt 0 }
+                                if ($skuIssuesWithAlternatives.Count -gt 0)
+                                    {
+                                        Write-Host $("      Alternative zones available within {0} for affected SKUs" -f $Region) -ForegroundColor Gray
+                                    }
+                            }
+
+                        if ($otherIssues.Count -gt 0)
+                            {
+                                $affectedSkus = $otherIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                                Write-Host $("  ⚙️ Other Constraints: {0} VM(s) affected ({1})" -f $otherIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                            }
+                    }
+
                 Write-Host "Virtual Network: " -NoNewline
                 if ($deployedVNet)
                     {
@@ -2631,16 +2858,38 @@ function Test-SilkResourceDeployment
 
                 Write-Host $("Total Network Interfaces: {0}" -f $deployedNICs.Count)
 
-                # Overall Status
-                Write-Host "`n=== Overall Deployment Status ===" -ForegroundColor Cyan
+                # Deployment Results Status
+                Write-Host "`n=== Deployment Results Status ===" -ForegroundColor Cyan
+
+                # Get unique SKUs that failed for more accurate reporting
+                $uniqueFailedSkus = @()
+                if ($deploymentValidationResults -and $deploymentValidationResults.Count -gt 0)
+                    {
+                        $uniqueFailedSkus = $deploymentValidationResults | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                    }
 
                 if ($successfulVMs -eq $totalExpectedVMs -and $deployedVNet -and $deployedNSG)
                     {
-                        Write-Host "✓ DEPLOYMENT SUCCESSFUL - All resources deployed correctly!" -ForegroundColor Green
+                        Write-Host $("✓ DEPLOYMENT VALIDATION COMPLETE - All SKUs successfully deployed in target region: {0} zone: {1}" -f $Region, $Zone) -ForegroundColor Green
+                        Write-Host $("📊 Deployment Readiness: Excellent - No capacity or availability constraints detected") -ForegroundColor Green
+                    } `
+                elseif ($successfulVMs -gt 0)
+                    {
+                        if ($uniqueFailedSkus.Count -gt 0)
+                            {
+                                Write-Host $("⚠ DEPLOYMENT VALIDATION COMPLETE - Specific SKU constraints detected") -ForegroundColor Yellow
+                                Write-Host $("📊 Deployment Readiness: Partial - {0} SKU(s) affected: {1}" -f $uniqueFailedSkus.Count, ($uniqueFailedSkus -join ", ")) -ForegroundColor Yellow
+                            }
+                        else
+                            {
+                                Write-Host $("⚠ DEPLOYMENT VALIDATION COMPLETE - Mixed results detected") -ForegroundColor Yellow
+                                Write-Host $("📊 Deployment Readiness: Partial - {0}/{1} VMs successfully validated" -f $successfulVMs, $totalExpectedVMs) -ForegroundColor Yellow
+                            }
                     } `
                 else
                     {
-                        Write-Host "⚠ DEPLOYMENT ISSUES DETECTED - Review the report above for details" -ForegroundColor Yellow
+                        Write-Host $("⚠ DEPLOYMENT VALIDATION COMPLETE - Significant constraints detected") -ForegroundColor Red
+                        Write-Host $("📊 Deployment Readiness: Limited - Review validation findings in summary") -ForegroundColor Red
                     }
 
                 Write-Progress -Id 1 -Completed
@@ -3170,6 +3419,73 @@ function Test-SilkResourceDeployment
                 <strong>Network Resources:</strong> $($(if($deployedVNet){1}else{0}) + $(if($deployedNSG){1}else{0}))<br>
                 <strong>Placement Resources:</strong> $($(if($deployedPPG){1}else{0}) + $deployedAvailabilitySets.Count)
             </div>
+"@
+
+                                # Add deployment validation findings if available
+                                if ($deploymentValidationResults -and $deploymentValidationResults.Count -gt 0)
+                                    {
+                                        $htmlContent += @"
+            <div class="info-card">
+                <h4>⚠️ Deployment Validation Findings</h4>
+"@
+
+                                        # Group validation results by failure category for HTML summary
+                                        $capacityIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Capacity" }
+                                        $quotaIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Quota" }
+                                        $skuIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "SKU Availability" }
+                                        $otherIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Other" }
+
+                                        if ($capacityIssues.Count -gt 0)
+                                            {
+                                                $affectedSkus = $capacityIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                                                $htmlContent += @"
+                <strong>🏗️ Capacity Constraints:</strong> <span class="status-warning">$($capacityIssues.Count) VM(s) affected</span><br>
+                <strong>Affected SKUs:</strong> $($affectedSkus -join ", ")<br>
+"@
+                                            }
+
+                                        if ($quotaIssues.Count -gt 0)
+                                            {
+                                                $affectedSkus = $quotaIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                                                $htmlContent += @"
+                <strong>📊 Quota Limitations:</strong> <span class="status-warning">$($quotaIssues.Count) VM(s) affected</span><br>
+                <strong>Affected SKUs:</strong> $($affectedSkus -join ", ")<br>
+"@
+                                            }
+
+                                        if ($skuIssues.Count -gt 0)
+                                            {
+                                                $affectedSkus = $skuIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                                                $htmlContent += @"
+                <strong>🔧 SKU Availability:</strong> <span class="status-warning">$($skuIssues.Count) VM(s) affected</span><br>
+                <strong>Affected SKUs:</strong> $($affectedSkus -join ", ")<br>
+"@
+
+                                                # Show zone-specific information for SKU availability issues
+                                                $skuIssuesWithAlternatives = $skuIssues | Where-Object { $_.AlternativeZones -and $_.AlternativeZones.Count -gt 0 }
+                                                if ($skuIssuesWithAlternatives.Count -gt 0)
+                                                    {
+                                                        $htmlContent += @"
+                <strong>Alternative Zones:</strong> Available within $Region for affected SKUs<br>
+"@
+                                                    }
+                                            }
+
+                                        if ($otherIssues.Count -gt 0)
+                                            {
+                                                $affectedSkus = $otherIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                                                $htmlContent += @"
+                <strong>⚙️ Other Constraints:</strong> <span class="status-warning">$($otherIssues.Count) VM(s) affected</span><br>
+                <strong>Affected SKUs:</strong> $($affectedSkus -join ", ")
+"@
+                                            }
+
+                                        $htmlContent += @"
+            </div>
+"@
+                                    }
+
+                                $htmlContent += @"
         </div>
 
         <div class="timestamp">

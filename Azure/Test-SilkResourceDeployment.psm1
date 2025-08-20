@@ -1568,7 +1568,7 @@ function Test-SilkResourceDeployment
                         return
                     }
 
-                $DeploymentStarted = $true
+                $deploymentStarted = $true
                 # ===============================================================================
                 # Virtual Network Infrastructure Creation
                 # ===============================================================================
@@ -3622,7 +3622,7 @@ function Test-SilkResourceDeployment
                         Write-Verbose -Message "Note: Could not restore original warning preference."
                     }
 
-                if ( $RunCleanupOnly -or (!$DisableCleanup -and $DeploymentStarted))
+                if ( $RunCleanupOnly -or (!$DisableCleanup -and $deploymentStarted))
                     {
                         # Start main cleanup progress
                         Write-Progress `

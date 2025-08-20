@@ -635,6 +635,14 @@ function Test-SilkResourceDeployment
         begin
             {
 
+                # Define required Azure PowerShell modules
+                # Import only the specific modules needed instead of the entire Az module for faster loading
+                $requiredModules = @(
+                                        'Az.Accounts',      # Authentication & Context
+                                        'Az.Resources',     # Resource Groups
+                                        'Az.Compute',       # VMs, SKUs, Quota
+                                        'Az.Network'        # Networking
+                                    )
 
                 # ===============================================================================
                 # Azure Authentication and Module Validation
@@ -643,13 +651,23 @@ function Test-SilkResourceDeployment
                 # Ensures Az module is installed, imported, and user is properly authenticated
                 try
                     {
-                        Write-Verbose -Message "=== Azure PowerShell Module Validation ==="
+                        Write-Verbose -Message $("=== Azure PowerShell Module Validation ===")
 
-                        # Check if Az module is available and install if necessary
-                        $azModuleAvailable = Get-Module -Name Az -ListAvailable
-                        if (-not $azModuleAvailable)
+                        # Check for required Azure PowerShell modules (specific modules instead of entire Az)
+                        $missingModules = @()
+
+                        foreach ($module in $requiredModules)
                             {
-                                Write-Warning -Message "Azure PowerShell (Az) module is not installed. Attempting to install..."
+                                $moduleAvailable = Get-Module -ListAvailable -Name $module
+                                if (-not $moduleAvailable)
+                                    {
+                                        $missingModules += $module
+                                    }
+                            }
+
+                        if ($missingModules.Count -gt 0)
+                            {
+                                Write-Warning -Message $("Missing Azure PowerShell modules: {0}. Attempting to install..." -f ($missingModules -join ', '))
 
                                 # Check if running as administrator for module installation
                                 $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
@@ -657,47 +675,57 @@ function Test-SilkResourceDeployment
 
                                 try
                                     {
-                                        if ($isAdmin)
+                                        foreach ($module in $missingModules)
                                             {
-                                                Write-Verbose -Message "Installing Az module for all users (administrator privileges detected)..."
-                                                Install-Module -Name Az -Repository PSGallery -Scope AllUsers -Force -AllowClobber -Confirm:$false
-                                            }
-                                        else
-                                            {
-                                                Write-Verbose -Message "Installing Az module for current user (no administrator privileges)..."
-                                                Install-Module -Name Az -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -Confirm:$false
+                                                if ($isAdmin)
+                                                    {
+                                                        Write-Verbose -Message $("Installing {0} for all users (administrator privileges detected)..." -f $module)
+                                                        Install-Module -Name $module -Repository PSGallery -Scope AllUsers -Force -AllowClobber -Confirm:$false
+                                                    }
+                                                else
+                                                    {
+                                                        Write-Verbose -Message $("Installing {0} for current user (no administrator privileges)..." -f $module)
+                                                        Install-Module -Name $module -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -Confirm:$false
+                                                    }
                                             }
 
-                                        Write-Verbose -Message "✓ Azure PowerShell (Az) module installed successfully."
+                                        Write-Verbose -Message $("✓ Required Azure PowerShell modules installed successfully.")
                                     }
                                 catch
                                     {
-                                        Write-Error -Message $("Failed to install Azure PowerShell (Az) module: {0}. Please install manually using 'Install-Module -Name Az -Repository PSGallery -Scope CurrentUser'" -f $_.Exception.Message)
+                                        Write-Error -Message $("Failed to install Azure PowerShell modules: {0}. Please install manually using 'Install-Module -Name {1} -Repository PSGallery -Scope CurrentUser'" -f $_.Exception.Message, ($missingModules -join ', '))
                                         return
                                     }
                             }
                         else
                             {
-                                $azModuleVersion = ($azModuleAvailable | Sort-Object Version -Descending | Select-Object -First 1).Version
-                                Write-Verbose -Message $("✓ Azure PowerShell (Az) module is available (version {0})" -f $azModuleVersion)
+                                Write-Verbose -Message $("✓ All required Azure PowerShell modules {0} are available." -f ($requiredModules -join ', '))
                             }
 
                         # Check if any Az modules are already imported to avoid assembly conflicts
                         $azModulesImported = Get-Module -Name Az*
                         if ($azModulesImported.Count -eq 0)
                             {
-                                Write-Verbose -Message "Importing Azure PowerShell (Az) module..."
+                                Write-Verbose -Message $("Importing required Azure PowerShell modules {0}" -f ($requiredModules -join ', '))
                                 try
                                     {
-                                        $importedModule = Import-Module Az -PassThru -ErrorAction Stop
-                                        if ($importedModule)
+
+                                        $importedModules = @()
+                                        foreach ($module in $requiredModules)
                                             {
-                                                Write-Verbose -Message "✓ Azure PowerShell (Az) module imported successfully."
+                                                Write-Verbose -Message $("Importing {0}..." -f $module)
+                                                $importedModule = Import-Module $module -PassThru -ErrorAction Stop
+                                                $importedModules += $importedModule
+                                            }
+
+                                        if ($importedModules.Count -eq $requiredModules.Count)
+                                            {
+                                                Write-Verbose -Message $("✓ Required Azure PowerShell modules imported successfully.")
                                             }
                                     }
                                 catch
                                     {
-                                        Write-Error -Message $("Failed to import Azure PowerShell (Az) module: {0}. Please restart PowerShell and try again." -f $_.Exception.Message)
+                                        Write-Error -Message $("Failed to import Azure PowerShell modules: {0}. Please restart PowerShell and try again." -f $_.Exception.Message)
                                         return
                                     }
                             }
@@ -2124,6 +2152,28 @@ function Test-SilkResourceDeployment
                         $cNodeAvSetName = "$ResourceNamePrefix-cnode-avset"
                         $avSetStatus = if ($vm -and $vm.AvailabilitySetReference) { "CNode AvSet" } else { "Not Assigned" }
 
+                        # Determine VM provisioning status
+                        $vmStatus = if (-not $vm)
+                                        {
+                                            "✗ Not Found"
+                                        }
+                                    elseif ($vm.ProvisioningState -eq "Succeeded")
+                                        {
+                                            "✓ Deployed"
+                                        }
+                                    elseif ($vm.ProvisioningState -eq "Failed")
+                                        {
+                                            "✗ Failed"
+                                        }
+                                    elseif ($vm.ProvisioningState -eq "Creating" -or $vm.ProvisioningState -eq "Running")
+                                        {
+                                            "⚠ In Progress"
+                                        }
+                                    else
+                                        {
+                                            "⚠ $($vm.ProvisioningState)"
+                                        }
+
                         $deploymentReport +=  [PSCustomObject]@{
                                                                     ResourceType = "CNode"
                                                                     GroupNumber = "CNode Group"
@@ -2131,7 +2181,8 @@ function Test-SilkResourceDeployment
                                                                     VMName = $expectedVMName
                                                                     ExpectedSKU = $reportCNodeSku
                                                                     DeployedSKU = if ($vm) { $vm.HardwareProfile.VmSize } else { "Not Found" }
-                                                                    VMStatus = if ($vm) { "✓ Deployed" } else { "✗ Failed" }
+                                                                    VMStatus = $vmStatus
+                                                                    ProvisioningState = if ($vm) { $vm.ProvisioningState } else { "Not Found" }
                                                                     NICStatus = if ($nic) { "✓ Created" } else { "✗ Failed" }
                                                                     AvailabilitySet = $avSetStatus
                                                                 }
@@ -2159,6 +2210,28 @@ function Test-SilkResourceDeployment
                                 $mNodeAvSetName = "$ResourceNamePrefix-mNode-$currentMNode-avset"
                                 $avSetStatus = if ($vm -and $vm.AvailabilitySetReference) { "MNode $currentMNode AvSet" } else { "Not Assigned" }
 
+                                # Determine VM provisioning status
+                                $vmStatus = if (-not $vm)
+                                                {
+                                                    "✗ Not Found"
+                                                }
+                                            elseif ($vm.ProvisioningState -eq "Succeeded")
+                                                {
+                                                    "✓ Deployed"
+                                                }
+                                            elseif ($vm.ProvisioningState -eq "Failed")
+                                                {
+                                                    "✗ Failed"
+                                                }
+                                            elseif ($vm.ProvisioningState -eq "Creating" -or $vm.ProvisioningState -eq "Running")
+                                                {
+                                                    "⚠ In Progress"
+                                                }
+                                            else
+                                                {
+                                                    "⚠ $($vm.ProvisioningState)"
+                                                }
+
                                 $deploymentReport +=   [PSCustomObject]@{
                                                                             ResourceType = "DNode"
                                                                             GroupNumber = $("MNode {0} ({1} TiB)" -f $currentMNode, $currentMNodePhysicalSize)
@@ -2166,7 +2239,8 @@ function Test-SilkResourceDeployment
                                                                             VMName = $expectedVMName
                                                                             ExpectedSKU = $reportMNodeSku
                                                                             DeployedSKU = if ($vm) { $vm.HardwareProfile.VmSize } else { "Not Found" }
-                                                                            VMStatus = if ($vm) { "✓ Deployed" } else { "✗ Failed" }
+                                                                            VMStatus = $vmStatus
+                                                                            ProvisioningState = if ($vm) { $vm.ProvisioningState } else { "Not Found" }
                                                                             NICStatus = if ($nic) { "✓ Created" } else { "✗ Failed" }
                                                                             AvailabilitySet = $avSetStatus
                                                                         }
@@ -2399,7 +2473,8 @@ function Test-SilkResourceDeployment
                                                                     @{Label="Node"; Expression={$("CNode {0}" -f $_.NodeNumber)}; Width=12},
                                                                     @{Label="VM Name"; Expression={$_.VMName}; Width=25},
                                                                     @{Label="Deployed SKU"; Expression={$_.DeployedSKU}; Width=18},
-                                                                    @{Label="VM Status"; Expression={$_.VMStatus}; Width=12},
+                                                                    @{Label="VM Status"; Expression={$_.VMStatus}; Width=15},
+                                                                    @{Label="Provisioned State"; Expression={$_.ProvisioningState}; Width=15},
                                                                     @{Label="NIC Status"; Expression={$_.NICStatus}; Width=12},
                                                                     @{Label="Availability Set"; Expression={$_.AvailabilitySet}; Width=18}
                                                                 ) -AutoSize
@@ -2416,7 +2491,8 @@ function Test-SilkResourceDeployment
                                                                     @{Label="Node"; Expression={$("DNode {0}" -f $_.NodeNumber)}; Width=12},
                                                                     @{Label="VM Name"; Expression={$_.VMName}; Width=25},
                                                                     @{Label="Deployed SKU"; Expression={$_.DeployedSKU}; Width=18},
-                                                                    @{Label="VM Status"; Expression={$_.VMStatus}; Width=12},
+                                                                    @{Label="VM Status"; Expression={$_.VMStatus}; Width=15},
+                                                                    @{Label="Provisioned State"; Expression={$_.ProvisioningState}; Width=15},
                                                                     @{Label="NIC Status"; Expression={$_.NICStatus}; Width=12},
                                                                     @{Label="Availability Set"; Expression={$_.AvailabilitySet}; Width=18}
                                                                 ) -AutoSize
@@ -2485,6 +2561,15 @@ function Test-SilkResourceDeployment
                 $totalExpectedVMs = $CNodeCount + ($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum
                 $successfulVMs = ($deploymentReport | Where-Object { $_.VMStatus -eq "✓ Deployed" }).Count
                 $failedVMs = ($deploymentReport | Where-Object { $_.VMStatus -eq "✗ Failed" }).Count
+                $inProgressVMs = ($deploymentReport | Where-Object { $_.VMStatus -like "⚠*" }).Count
+
+                # Show any VMs with non-successful provisioning states
+                $nonSuccessfulVMs = $deploymentReport | Where-Object { $_.ProvisioningState -ne "Succeeded" -and $_.ProvisioningState -ne "Not Found" }
+                if ($nonSuccessfulVMs.Count -gt 0)
+                    {
+                        Write-Host "`nVMs with Non-Successful Provisioning States:" -ForegroundColor Yellow
+                        $nonSuccessfulVMs | ForEach-Object { Write-Host "  $($_.VMName): $($_.ProvisioningState)" -ForegroundColor Yellow }
+                    }
 
                 Write-Host "Virtual Network: " -NoNewline
                 if ($deployedVNet)
@@ -2681,6 +2766,7 @@ function Test-SilkResourceDeployment
                     <th>VM Name</th>
                     <th>Deployed SKU</th>
                     <th>VM Status</th>
+                    <th>Provisioned State</th>
                     <th>NIC Status</th>
                     <th>Availability Set</th>
                 </tr>
@@ -2691,6 +2777,7 @@ function Test-SilkResourceDeployment
                                             {
                                                 $vmStatusClass = if ($cNode.VMStatus -like "*Deployed*") { "checkmark" } else { "error-mark" }
                                                 $nicStatusClass = if ($cNode.NICStatus -like "*Created*") { "checkmark" } else { "error-mark" }
+                                                $provisioningClass = if ($cNode.ProvisioningState -eq "Succeeded") { "checkmark" } elseif ($cNode.ProvisioningState -eq "Failed") { "error-mark" } else { "warning" }
 
                                                 $htmlContent += @"
                 <tr>
@@ -2698,6 +2785,7 @@ function Test-SilkResourceDeployment
                     <td>$($cNode.VMName)</td>
                     <td>$($cNode.DeployedSKU)</td>
                     <td><span class="$vmStatusClass">$($cNode.VMStatus)</span></td>
+                    <td><span class="$provisioningClass">$($cNode.ProvisioningState)</span></td>
                     <td><span class="$nicStatusClass">$($cNode.NICStatus)</span></td>
                     <td>$($cNode.AvailabilitySet)</td>
                 </tr>
@@ -2728,6 +2816,7 @@ function Test-SilkResourceDeployment
                     <th>VM Name</th>
                     <th>Deployed SKU</th>
                     <th>VM Status</th>
+                    <th>Provisioned State</th>
                     <th>NIC Status</th>
                     <th>Availability Set</th>
                 </tr>
@@ -2738,6 +2827,7 @@ function Test-SilkResourceDeployment
                                                     {
                                                         $vmStatusClass = if ($dNode.VMStatus -like "*Deployed*") { "checkmark" } else { "error-mark" }
                                                         $nicStatusClass = if ($dNode.NICStatus -like "*Created*") { "checkmark" } else { "error-mark" }
+                                                        $provisioningClass = if ($dNode.ProvisioningState -eq "Succeeded") { "checkmark" } elseif ($dNode.ProvisioningState -eq "Failed") { "error-mark" } else { "warning" }
 
                                                         $htmlContent += @"
                 <tr>
@@ -2745,6 +2835,7 @@ function Test-SilkResourceDeployment
                     <td>$($dNode.VMName)</td>
                     <td>$($dNode.DeployedSKU)</td>
                     <td><span class="$vmStatusClass">$($dNode.VMStatus)</span></td>
+                    <td><span class="$provisioningClass">$($dNode.ProvisioningState)</span></td>
                     <td><span class="$nicStatusClass">$($dNode.NICStatus)</span></td>
                     <td>$($dNode.AvailabilitySet)</td>
                 </tr>

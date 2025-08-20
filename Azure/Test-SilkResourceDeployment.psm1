@@ -1652,54 +1652,6 @@ function Test-SilkResourceDeployment
                         Write-Verbose -Message "✓ Network isolation configured: All VMs will be deployed with NO network access"
 
                         $mGMTSubnetID = $vNET.Subnets | Where-Object { $_.Name -eq $mGMTSubnet.Name } | Select-Object -ExpandProperty Id
-
-                        # create proximity placement group to add created availablity sets to
-                        # Collect all VM SKUs that will be deployed for PPG intent
-                        $vmSizes = @()
-
-                        # Add CNode SKU if cnodes will be deployed
-                        if ($cNodeObject)
-                            {
-                                $vmSizes += $cNodeVMSku
-                            }
-
-                        # Add MNode SKUs if MNodes will be deployed
-                        if($mNodeSize)
-                            {
-                                foreach ($mNode in $mNodeObject)
-                                    {
-                                        $mNodeVMSku = "{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix
-                                        if ($vmSizes -notcontains $mNodeVMSku)
-                                            {
-                                                $vmSizes += $mNodeVMSku
-                                            }
-                                    }
-                            }
-
-                        # create proximity placement group including VMsizes if Zoneless
-                        if($Zone -ne "Zoneless")
-                            {
-                                Write-Verbose -Message $("Creating Proximity Placement Group in region '{0}' with zone '{1}' and VM sizes: {2}" -f $Region, $Zone, ($vmSizes -join ", "))
-                                $proximityPlacementGroup = New-AzProximityPlacementGroup `
-                                                            -ResourceGroupName $ResourceGroupName `
-                                                            -Location $Region `
-                                                            -Zone $Zone `
-                                                            -Name $("{0}-ppg" -f $ResourceNamePrefix) `
-                                                            -ProximityPlacementGroupType "Standard" `
-                                                            -IntentVMSize $vmSizes
-                            } `
-                        else
-                            {
-                                Write-Verbose -Message $("Creating Proximity Placement Group in region '{0}' without zones" -f $Region)
-                                $proximityPlacementGroup = New-AzProximityPlacementGroup `
-                                                            -ResourceGroupName $ResourceGroupName `
-                                                            -Location $Region `
-                                                            -Name $("{0}-ppg" -f $ResourceNamePrefix) `
-                                                            -ProximityPlacementGroupType "Standard"
-                            }
-
-                        Write-Verbose -Message $("✓ Proximity Placement Group '{0}' created" -f $proximityPlacementGroup.Name)
-
                     }
                 catch
                     {
@@ -1747,12 +1699,36 @@ function Test-SilkResourceDeployment
                                     -Activity "VM Deployment" `
                                     -Id 1
 
+                                # create cnode proximity placement group including VMsizes if Zoneless
+                                if($Zone -ne "Zoneless")
+                                    {
+                                        Write-Verbose -Message $("Creating CNode Proximity Placement Group in region '{0}' with zone '{1}' and VM size: {2}" -f $Region, $Zone, $cNodeVMSku)
+                                        $cNodeProximityPlacementGroup = New-AzProximityPlacementGroup `
+                                                                    -ResourceGroupName $ResourceGroupName `
+                                                                    -Location $Region `
+                                                                    -Zone $Zone `
+                                                                    -Name $("{0}-cnode-ppg" -f $ResourceNamePrefix) `
+                                                                    -ProximityPlacementGroupType "Standard" `
+                                                                    -IntentVMSize $cNodeVMSku
+                                    } `
+                                else
+                                    {
+                                        Write-Verbose -Message $("Creating CNode Proximity Placement Group in region '{0}' without zones" -f $Region)
+                                        $cNodeProximityPlacementGroup = New-AzProximityPlacementGroup `
+                                                                    -ResourceGroupName $ResourceGroupName `
+                                                                    -Location $Region `
+                                                                    -Name $("{0}-cnode-ppg" -f $ResourceNamePrefix) `
+                                                                    -ProximityPlacementGroupType "Standard"
+                                    }
+
+                                Write-Verbose -Message $("✓ CNode Proximity Placement Group '{0}' created" -f $cNodeProximityPlacementGroup.Name)
+
                                 # create an availability set for the c-node group
                                 $cNodeAvailabilitySet = New-AzAvailabilitySet `
                                                             -ResourceGroupName $ResourceGroupName `
                                                             -Name $("{0}-cnode-avset" -f $ResourceNamePrefix) `
                                                             -Location $Region `
-                                                            -ProximityPlacementGroupId $proximityPlacementGroup.Id `
+                                                            -ProximityPlacementGroupId $cNodeProximityPlacementGroup.Id `
                                                             -Sku "Aligned" `
                                                             -PlatformFaultDomainCount 3 `
                                                             -PlatformUpdateDomainCount 20
@@ -1874,7 +1850,7 @@ function Test-SilkResourceDeployment
                                 # get the cnode availability set to assess its state
                                 $cNodeAvailabilitySetComplete = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -Name $("{0}-cNode-avset" -f $ResourceNamePrefix)
                                 Write-Verbose -Message $("✓ CNode availability set '{0}' created with {1} CNodes." -f $cNodeAvailabilitySetComplete.Name, $cNodeAvailabilitySetComplete)
-                                Write-Verbose -Message $("✓ CNode availability set '{0}' is assigned to proximity placement group '{1}'." -f $cNodeAvailabilitySetComplete.Name, $proximityPlacementGroup.Name)
+                                Write-Verbose -Message $("✓ CNode availability set '{0}' is assigned to proximity placement group '{1}'." -f $cNodeAvailabilitySetComplete.Name, $cNodeProximityPlacementGroup.Name)
                            }
 
                         # Clean up CNode creation sub-progress bar as this phase is complete
@@ -1890,11 +1866,36 @@ function Test-SilkResourceDeployment
                                 $currentMNodeSku = "{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix
                                 $currentMNodePhysicalSize = $mNode.PhysicalSize
 
+                                # create mnode proximity placement group including VMsizes if Zoneless
+                                if($Zone -ne "Zoneless")
+                                    {
+                                        Write-Verbose -Message $("Creating Proximity Placement Group in region '{0}' with zone '{1}' and VM sizes: {2}" -f $Region, $Zone, $currentMNodeSku)
+                                        $mNodeProximityPlacementGroup = New-AzProximityPlacementGroup `
+                                                                        -ResourceGroupName $ResourceGroupName `
+                                                                        -Location $Region `
+                                                                        -Zone $Zone `
+                                                                        -Name $("{0}-mNode-{1}-ppg" -f $ResourceNamePrefix, $currentMNode) `
+                                                                        -ProximityPlacementGroupType "Standard" `
+                                                                        -IntentVMSize $currentMNodeSku
+                                    } `
+                                else
+                                    {
+                                        Write-Verbose -Message $("Creating Proximity Placement Group in region '{0}' without zones" -f $Region)
+                                        $mNodeProximityPlacementGroup = New-AzProximityPlacementGroup `
+                                                                        -ResourceGroupName $ResourceGroupName `
+                                                                        -Location $Region `
+                                                                        -Name $("{0}-mNode-{1}-ppg" -f $ResourceNamePrefix, $currentMNode) `
+                                                                        -ProximityPlacementGroupType "Standard"
+                                    }
+
+                                Write-Verbose -Message $("✓ Proximity Placement Group '{0}' created" -f $mNodeProximityPlacementGroup.Name)
+
                                 # create availability set for current mNode
                                 $mNodeAvailabilitySet = New-AzAvailabilitySet `
                                                             -ResourceGroupName $ResourceGroupName `
                                                             -Location $Region `
                                                             -Name $("{0}-mNode-{1}-avset" -f $ResourceNamePrefix, $currentMNode) `
+                                                            -ProximityPlacementGroupId $mNodeProximityPlacementGroup.Id `
                                                             -Sku "Aligned" `
                                                             -PlatformFaultDomainCount 3 `
                                                             -PlatformUpdateDomainCount 20
@@ -2025,10 +2026,19 @@ function Test-SilkResourceDeployment
                                             }
                                     }
 
+                                if ($mNodeAvailabilitySet)
+                                    {
+                                        # get the mnode availability set to assess its state
+                                        $mNodeAvailabilitySetComplete = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -Name $mNodeAvailabilitySet.Name
+                                        Write-Verbose -Message $("✓ MNode availability set '{0}' created with {1} MNodes." -f $mNodeAvailabilitySetComplete.Name, $mNodeAvailabilitySetComplete)
+                                        Write-Verbose -Message $("✓ MNode availability set '{0}' is assigned to proximity placement group '{1}'." -f $mNodeAvailabilitySetComplete.Name, $mNodeProximityPlacementGroup.Name)
+                                    }
+
+                                $mNodeProximityPlacementGroup = $null
+                                $dNodeStartCount += $mNode.dNodeCount
+
                                 # Clean up this MNode group's sub-progress bar as it's complete
                                 Write-Progress -Activity $("MNode Group {0} DNode Creation" -f $currentMNode) -Id 3 -Completed
-
-                                $dNodeStartCount += $mNode.dNodeCount
                             }
 
                         # ========================================================================================================
@@ -2606,7 +2616,7 @@ function Test-SilkResourceDeployment
                     }
 
                 # Infrastructure Resources Data
-                $deployedPPG = Get-AzProximityPlacementGroup -ResourceGroupName $ResourceGroupName -Name "$ResourceNamePrefix-ppg" -ErrorAction SilentlyContinue
+                $deployedPPG = Get-AzProximityPlacementGroup -ResourceGroupName $ResourceGroupName -Name $("{0}*-ppg" -f $ResourceNamePrefix) -ErrorAction SilentlyContinue
                 $deployedAvailabilitySets = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $ResourceNamePrefix }
                 $totalResourcesCreated = $deployedVMs.Count + $deployedNICs.Count + $(if($deployedPPG){1}else{0}) + $deployedAvailabilitySets.Count + $(if($deployedVNet){1}else{0}) + $(if($deployedNSG){1}else{0})
 
@@ -2910,7 +2920,7 @@ function Test-SilkResourceDeployment
                 Write-Host "Proximity Placement Group: " -NoNewline
                 if ($deployedPPG)
                     {
-                        Write-Host $("✓ {0} (Standard)" -f $deployedPPG.Name) -ForegroundColor Green
+                        Write-Host $("✓ {0}" -f ($deployedPPG.Name -join ", ")) -ForegroundColor Green
                     } `
                 else
                     {

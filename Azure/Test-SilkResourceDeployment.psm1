@@ -2957,6 +2957,7 @@ function Test-SilkResourceDeployment
                     }
 
                 Write-Host $("Total Network Interfaces: {0}" -f $deployedNICs.Count)
+                Write-Host $("Total Resources Created: {0}" -f $totalResourcesCreated)
 
                 # Deployment Results Status
                 Write-Host "`n=== Deployment Results Status ===" -ForegroundColor Cyan
@@ -3474,7 +3475,7 @@ function Test-SilkResourceDeployment
                 <h4>📈 Resource Summary</h4>
                 <strong>Resource Group:</strong> $ResourceGroupName<br>
                 <strong>Resource Name Prefix:</strong> $ResourceNamePrefix<br>
-                <strong>Total Resources Created:</strong> $(($deployedVMs.Count + $deployedNICs.Count + $(if($deployedPPG){1}else{0}) + $deployedAvailabilitySets.Count + $(if($deployedVNet){1}else{0}) + $(if($deployedNSG){1}else{0})))<br>
+                <strong>Total Resources Created:</strong> $totalResourcesCreated<br>
                 <strong>Virtual Machines:</strong> $($deployedVMs.Count)<br>
                 <strong>Network Interfaces:</strong> $($deployedNICs.Count)<br>
                 <strong>Network Resources:</strong> $($(if($deployedVNet){1}else{0}) + $(if($deployedNSG){1}else{0}))<br>

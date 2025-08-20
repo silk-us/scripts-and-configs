@@ -2997,6 +2997,39 @@ function Test-SilkResourceDeployment
                 <strong>Overall Status:</strong> <span class="$(if($successfulVMs -eq $totalExpectedVMs -and $deployedVNet -and $deployedNSG){'status-success'}else{'status-warning'})">$(if($successfulVMs -eq $totalExpectedVMs -and $deployedVNet -and $deployedNSG){'✓ SUCCESSFUL'}else{'⚠ ISSUES DETECTED'})</span>
             </div>
         </div>
+
+        <h2>🏗️ Silk Component Summary</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Silk Component</th>
+                    <th>Deployed</th>
+                    <th>Expected</th>
+                    <th>VM SKU</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+"@
+
+                                # Add CNode summary row to HTML
+                                foreach ($component in $silkSummary)
+                                    {
+                                        $statusClass = if ($component.Status -like "*Complete*") { "status-success" } elseif ($component.Status -like "*Failed*") { "status-error" } else { "status-warning" }
+                                        $htmlContent += @"
+                <tr>
+                    <td>$($component.Component)</td>
+                    <td>$($component.DeployedCount)</td>
+                    <td>$($component.ExpectedCount)</td>
+                    <td>$($component.SKU)</td>
+                    <td><span class="$statusClass">$($component.Status)</span></td>
+                </tr>
+"@
+                                    }
+
+                                $htmlContent += @"
+            </tbody>
+        </table>
 "@
 
                                 # Add CNode deployment table if present

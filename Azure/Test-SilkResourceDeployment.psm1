@@ -2431,6 +2431,195 @@ function Test-SilkResourceDeployment
                     }
 
                 # ===============================================================================
+                # Report Data Processing and Analysis
+                # ===============================================================================
+                # Centralized data processing for both console and HTML reports
+                # This section calculates all report data once to ensure consistency
+
+                # Infrastructure Summary Data
+                $totalExpectedVMs = $CNodeCount + ($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum
+                $successfulVMs = ($deploymentReport | Where-Object { $_.VMStatus -eq "✓ Deployed" }).Count
+                $failedVMs = ($deploymentReport | Where-Object { $_.VMStatus -like "*Failed*" }).Count
+                $inProgressVMs = ($deploymentReport | Where-Object { $_.VMStatus -like "⚠*" }).Count
+                $nonSuccessfulVMs = $deploymentReport | Where-Object { $_.ProvisioningState -ne "Succeeded" -and $_.ProvisioningState -ne "Not Found" }
+
+                # SKU Support Analysis Data
+                $skuSupportData = @()
+
+                # CNode SKU Support Analysis
+                if($cNodeObject)
+                    {
+                        $cNodeSkuName = "{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix
+                        $cNodeSupportedSKU = $locationSupportedSKU | Where-Object { $_.Name -eq $cNodeSkuName }
+                        $cNodevCPUCount = $cNodeObject.vCPU * $CNodeCount
+                        $cNodeSKUFamilyQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $cNodeObject.QuotaFamily }
+
+                        # Determine zone support status
+                        if ($cNodeSupportedSKU)
+                            {
+                                if ($Zone -eq "Zoneless")
+                                    {
+                                        $cNodeZoneSupport = "✓ Supported (Zoneless deployment)"
+                                        $cNodeZoneSupportStatus = "Success"
+                                    }
+                                elseif ($cNodeSupportedSKU.LocationInfo.Zones -contains $Zone)
+                                    {
+                                        $cNodeZoneSupport = "✓ Supported in target zone $Zone"
+                                        $cNodeZoneSupportStatus = "Success"
+                                    }
+                                else
+                                    {
+                                        $cNodeZoneSupport = "⚠ Not supported in target zone $Zone"
+                                        $cNodeZoneSupportStatus = "Warning"
+                                    }
+                            }
+                        else
+                            {
+                                $cNodeZoneSupport = "✗ Not supported in region"
+                                $cNodeZoneSupportStatus = "Error"
+                            }
+
+                        $skuSupportData += [PSCustomObject]@{
+                            ComponentType = "CNode"
+                            SKUName = $cNodeSkuName
+                            SupportedSKU = $cNodeSupportedSKU
+                            ZoneSupport = $cNodeZoneSupport
+                            ZoneSupportStatus = $cNodeZoneSupportStatus
+                            vCPUCount = $cNodevCPUCount
+                            SKUFamilyQuota = $cNodeSKUFamilyQuota
+                            AvailableZones = if ($cNodeSupportedSKU.LocationInfo.Zones) { $cNodeSupportedSKU.LocationInfo.Zones } else { @() }
+                        }
+                    }
+
+                # MNode SKU Support Analysis
+                if($MNodeSize -and $mNodeObjectUnique)
+                    {
+                        foreach ($mNodeType in $mNodeObjectUnique)
+                            {
+                                $mNodeSkuName = "{0}{1}{2}" -f $mNodeType.vmSkuPrefix, $mNodeType.vCPU, $mNodeType.vmSkuSuffix
+                                $mNodeSupportedSKU = $locationSupportedSKU | Where-Object { $_.Name -eq $mNodeSkuName }
+                                $mNodeInstanceCount = $MNodeSize | Group-Object | Select-Object Name, Count
+                                $mNodevCPUCount = $mNodeType.vCPU * $mNodeType.dNodeCount * ($mNodeInstanceCount | Where-Object { $_.Name -eq $mNodeType.PhysicalSize }).Count
+                                $mNodeSKUFamilyQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $mNodeType.QuotaFamily }
+
+                                # Determine zone support status
+                                if ($mNodeSupportedSKU)
+                                    {
+                                        if ($Zone -eq "Zoneless")
+                                            {
+                                                $mNodeZoneSupport = "✓ Supported (Zoneless deployment)"
+                                                $mNodeZoneSupportStatus = "Success"
+                                            }
+                                        elseif ($mNodeSupportedSKU.LocationInfo.Zones -contains $Zone)
+                                            {
+                                                $mNodeZoneSupport = "✓ Supported in target zone $Zone"
+                                                $mNodeZoneSupportStatus = "Success"
+                                            }
+                                        else
+                                            {
+                                                $mNodeZoneSupport = "⚠ Not supported in target zone $Zone"
+                                                $mNodeZoneSupportStatus = "Warning"
+                                            }
+                                    }
+                                else
+                                    {
+                                        $mNodeZoneSupport = "✗ Not supported in region"
+                                        $mNodeZoneSupportStatus = "Error"
+                                    }
+
+                                $instanceCount = ($mNodeInstanceCount | Where-Object { $_.Name -eq $mNodeType.PhysicalSize }).Count
+                                $skuSupportData += [PSCustomObject]@{
+                                    ComponentType = "MNode"
+                                    SKUName = $mNodeSkuName
+                                    SupportedSKU = $mNodeSupportedSKU
+                                    ZoneSupport = $mNodeZoneSupport
+                                    ZoneSupportStatus = $mNodeZoneSupportStatus
+                                    vCPUCount = $mNodevCPUCount
+                                    SKUFamilyQuota = $mNodeSKUFamilyQuota
+                                    InstanceCount = $instanceCount
+                                    PhysicalSize = $mNodeType.PhysicalSize
+                                    AvailableZones = if ($mNodeSupportedSKU.LocationInfo.Zones) { $mNodeSupportedSKU.LocationInfo.Zones } else { @() }
+                                }
+                            }
+                    }
+
+                # Quota Analysis Data
+                $quotaAnalysisData = @()
+
+                # Virtual Machine Quota
+                $totalVMQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Virtual Machines" }
+                if ($totalVMQuota)
+                    {
+                        $availableVMQuota = $totalVMQuota.Limit - $totalVMQuota.CurrentValue
+                        $vmQuotaStatus = if ($availableVMQuota -ge $totalExpectedVMs) { "✓ Sufficient" } else { "✗ Insufficient" }
+                        $vmQuotaStatusLevel = if ($availableVMQuota -ge $totalExpectedVMs) { "Success" } else { "Error" }
+
+                        $quotaAnalysisData += [PSCustomObject]@{
+                            QuotaType = "Virtual Machines"
+                            Required = $totalExpectedVMs
+                            Available = $availableVMQuota
+                            Limit = $totalVMQuota.Limit
+                            Status = $vmQuotaStatus
+                            StatusLevel = $vmQuotaStatusLevel
+                        }
+                    }
+
+                # Total Regional vCPU Quota
+                $totalVCPUQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Total Regional vCPUs" }
+                if ($totalVCPUQuota)
+                    {
+                        $totalvCPUCount = 0
+                        if ($cNodeObject) { $totalvCPUCount += $cNodeObject.vCPU * $CNodeCount }
+                        if ($mNodeObject) { $totalvCPUCount += ($mNodeObject | ForEach-Object { $_.vCPU * $_.dNodeCount } | Measure-Object -Sum).Sum }
+                        $availableVCPUQuota = $totalVCPUQuota.Limit - $totalVCPUQuota.CurrentValue
+                        $vcpuQuotaStatus = if ($availableVCPUQuota -ge $totalvCPUCount) { "✓ Sufficient" } else { "✗ Insufficient" }
+                        $vcpuQuotaStatusLevel = if ($availableVCPUQuota -ge $totalvCPUCount) { "Success" } else { "Error" }
+
+                        $quotaAnalysisData += [PSCustomObject]@{
+                            QuotaType = "Regional vCPUs"
+                            Required = $totalvCPUCount
+                            Available = $availableVCPUQuota
+                            Limit = $totalVCPUQuota.Limit
+                            Status = $vcpuQuotaStatus
+                            StatusLevel = $vcpuQuotaStatusLevel
+                        }
+                    }
+
+                # Availability Sets Quota
+                $totalAvailabilitySetQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Availability Sets" }
+                if ($totalAvailabilitySetQuota)
+                    {
+                        $totalAvailabilitySetCount = 0
+                        if ($cNodeObject) { $totalAvailabilitySetCount += 1 }
+                        if ($mNodeObjectUnique) { $totalAvailabilitySetCount += $mNodeObjectUnique.Count }
+                        $availableAvSetQuota = $totalAvailabilitySetQuota.Limit - $totalAvailabilitySetQuota.CurrentValue
+                        $avsetQuotaStatus = if ($availableAvSetQuota -ge $totalAvailabilitySetCount) { "✓ Sufficient" } else { "✗ Insufficient" }
+                        $avsetQuotaStatusLevel = if ($availableAvSetQuota -ge $totalAvailabilitySetCount) { "Success" } else { "Error" }
+
+                        $quotaAnalysisData += [PSCustomObject]@{
+                            QuotaType = "Availability Sets"
+                            Required = $totalAvailabilitySetCount
+                            Available = $availableAvSetQuota
+                            Limit = $totalAvailabilitySetQuota.Limit
+                            Status = $avsetQuotaStatus
+                            StatusLevel = $avsetQuotaStatusLevel
+                        }
+                    }
+
+                # Infrastructure Resources Data
+                $deployedPPG = Get-AzProximityPlacementGroup -ResourceGroupName $ResourceGroupName -Name "$ResourceNamePrefix-ppg" -ErrorAction SilentlyContinue
+                $deployedAvailabilitySets = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $ResourceNamePrefix }
+                $totalResourcesCreated = $deployedVMs.Count + $deployedNICs.Count + $(if($deployedPPG){1}else{0}) + $deployedAvailabilitySets.Count + $(if($deployedVNet){1}else{0}) + $(if($deployedNSG){1}else{0})
+
+                # Deployment Validation Findings Analysis
+                $validationFindings = @{
+                    CapacityIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Capacity" }
+                    QuotaIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Quota" }
+                    SKUIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "SKU Availability" }
+                    OtherIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Other" }
+                }
+
+                # ===============================================================================
                 # SKU Support and Quota Availability Report
                 # ===============================================================================
                 Write-Host "`n=== SKU Support and Quota Availability Report ===" -ForegroundColor Cyan
@@ -2438,74 +2627,45 @@ function Test-SilkResourceDeployment
                 # CNode SKU Support Report
                 if($cNodeObject)
                     {
-                        $cNodeSkuName = "{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix
-                        $cNodeSupportedSKU = $locationSupportedSKU | Where-Object { $_.Name -eq $cNodeSkuName }
+                        $cNodeData = $skuSupportData | Where-Object { $_.ComponentType -eq "CNode" }
 
                         Write-Host "`nCNode SKU Support:" -ForegroundColor Yellow
-                        Write-Host $("  SKU: {0}" -f $cNodeSkuName)
+                        Write-Host $("  SKU: {0}" -f $cNodeData.SKUName)
                         Write-Host $("  Region: {0}" -f $Region)
-                        if ($cNodeSupportedSKU)
+
+                        switch ($cNodeData.ZoneSupportStatus)
                             {
-                                if ($Zone -eq "Zoneless")
-                                    {
-                                        Write-Host "  Zone Support: ✓ Supported (Zoneless deployment)" -ForegroundColor Green
-                                    }
-                                elseif ($cNodeSupportedSKU.LocationInfo.Zones -contains $Zone)
-                                    {
-                                        Write-Host $("  Zone Support: ✓ Supported in target zone {0}" -f $Zone) -ForegroundColor Green
-                                        Write-Host $("  All Available Zones: {0}" -f ($cNodeSupportedSKU.LocationInfo.Zones -join ", "))
-                                    }
-                                elseif ($cNodeSupportedSKU.LocationInfo.Zones -notcontains $Zone)
-                                    {
-                                        Write-Host $("  Zone Support: ⚠ Not supported in target zone {0}" -f $Zone) -ForegroundColor Yellow
-                                        Write-Host $("  Available Zones: {0}" -f ($cNodeSupportedSKU.LocationInfo.Zones -join ", "))
-                                    }
-                                else
-                                    {
-                                        Write-Host "  Zone Support: ⚠ Unable to determine" -ForegroundColor Yellow
-                                    }
+                                "Success" { Write-Host "  Zone Support: $($cNodeData.ZoneSupport)" -ForegroundColor Green }
+                                "Warning" { Write-Host "  Zone Support: $($cNodeData.ZoneSupport)" -ForegroundColor Yellow }
+                                "Error" { Write-Host "  Region Support: $($cNodeData.ZoneSupport)" -ForegroundColor Red }
                             }
-                        else
+
+                        if ($cNodeData.AvailableZones.Count -gt 0 -and $cNodeData.ZoneSupportStatus -ne "Error")
                             {
-                                Write-Host "  Region Support: ✗ Not supported in region" -ForegroundColor Red
+                                Write-Host $("  All Available Zones: {0}" -f ($cNodeData.AvailableZones -join ", "))
                             }
                     }
 
                 # MNode SKU Support Report
                 if($MNodeSize -and $mNodeObjectUnique)
                     {
-                        foreach ($mNodeType in $mNodeObjectUnique)
+                        $mNodeData = $skuSupportData | Where-Object { $_.ComponentType -eq "MNode" }
+                        foreach ($mNodeTypeData in $mNodeData)
                             {
-                                $mNodeSkuName = "{0}{1}{2}" -f $mNodeType.vmSkuPrefix, $mNodeType.vCPU, $mNodeType.vmSkuSuffix
-                                $mNodeSupportedSKU = $locationSupportedSKU | Where-Object { $_.Name -eq $mNodeSkuName }
-
-                                Write-Host $("`n{0} x MNode SKU Support ({1} TiB):" -f $(($mNodeInstanceCount | Where-Object { $_.Name -eq $mNodeType.PhysicalSize }).Count), $mNodeType.PhysicalSize) -ForegroundColor Yellow
-                                Write-Host $("  SKU: {0}" -f $mNodeSkuName)
+                                Write-Host $("`n{0} x MNode SKU Support ({1} TiB):" -f $mNodeTypeData.InstanceCount, $mNodeTypeData.PhysicalSize) -ForegroundColor Yellow
+                                Write-Host $("  SKU: {0}" -f $mNodeTypeData.SKUName)
                                 Write-Host $("  Region: {0}" -f $Region)
-                                if ($mNodeSupportedSKU)
+
+                                switch ($mNodeTypeData.ZoneSupportStatus)
                                     {
-                                        if ($Zone -eq "Zoneless")
-                                            {
-                                                Write-Host "  Zone Support: ✓ Supported (Zoneless deployment)" -ForegroundColor Green
-                                            }
-                                        elseif ($mNodeSupportedSKU.LocationInfo.Zones -contains $Zone)
-                                            {
-                                                Write-Host $("  Zone Support: ✓ Supported in target zone {0}" -f $Zone) -ForegroundColor Green
-                                                Write-Host $("  All Available Zones: {0}" -f ($mNodeSupportedSKU.LocationInfo.Zones -join ", "))
-                                            }
-                                        elseif ($mNodeSupportedSKU.LocationInfo.Zones -notcontains $Zone)
-                                            {
-                                                Write-Host $("  Zone Support: ⚠ Not supported in target zone {0}" -f $Zone) -ForegroundColor Yellow
-                                                Write-Host $("  Available Zones: {0}" -f ($mNodeSupportedSKU.LocationInfo.Zones -join ", "))
-                                            }
-                                        else
-                                            {
-                                                Write-Host "  Zone Support: ⚠ Unable to determine" -ForegroundColor Yellow
-                                            }
+                                        "Success" { Write-Host "  Zone Support: $($mNodeTypeData.ZoneSupport)" -ForegroundColor Green }
+                                        "Warning" { Write-Host "  Zone Support: $($mNodeTypeData.ZoneSupport)" -ForegroundColor Yellow }
+                                        "Error" { Write-Host "  Region Support: $($mNodeTypeData.ZoneSupport)" -ForegroundColor Red }
                                     }
-                                else
+
+                                if ($mNodeTypeData.AvailableZones.Count -gt 0 -and $mNodeTypeData.ZoneSupportStatus -ne "Error")
                                     {
-                                        Write-Host "  Region Support: ✗ Not supported in region" -ForegroundColor Red
+                                        Write-Host $("  All Available Zones: {0}" -f ($mNodeTypeData.AvailableZones -join ", "))
                                     }
                             }
                     }
@@ -2515,46 +2675,32 @@ function Test-SilkResourceDeployment
                     {
                         Write-Host "`nQuota Family Summary:" -ForegroundColor Yellow
 
-                        # Collect all quota families and their vCPU requirements
-                        $quotaFamilyRequirements = @{}
+                        # Display quota family summary using preprocessed data
+                        $quotaFamilies = ($skuSupportData | ForEach-Object {
+                            if ($_.ComponentType -eq "CNode") { $cNodeObject.QuotaFamily }
+                            else { ($mNodeObjectUnique | Where-Object { $_.PhysicalSize -eq $_.PhysicalSize }).QuotaFamily }
+                        }) | Sort-Object -Unique
 
-                        # Add CNode quota family requirements
-                        if ($cNodeObject)
+                        foreach ($quotaFamily in $quotaFamilies)
                             {
-                                $cNodeTotalvCPU = $cNodeObject.vCPU * $CNodeCount
-                                if ($quotaFamilyRequirements.ContainsKey($cNodeObject.QuotaFamily))
-                                    {
-                                        $quotaFamilyRequirements[$cNodeObject.QuotaFamily] += $cNodeTotalvCPU
-                                    }
-                                else
-                                    {
-                                        $quotaFamilyRequirements[$cNodeObject.QuotaFamily] = $cNodeTotalvCPU
-                                    }
-                            }
+                                $requiredvCPU = 0
 
-                        # Add MNode quota family requirements
-                        if ($mNodeObject)
-                            {
-                                foreach ($mNodeType in $mNodeObjectUnique)
-                                    {
-                                        $mNodeInstanceCount = $MNodeSize | Group-Object | Select-Object Name, Count
-                                        $mNodeTotalvCPU = $mNodeType.vCPU * $mNodeType.dNodeCount * ($mNodeInstanceCount | Where-Object { $_.Name -eq $mNodeType.PhysicalSize }).Count
+                                # Calculate total vCPU for this quota family
+                                $skuSupportData | ForEach-Object {
+                                    if ($_.ComponentType -eq "CNode" -and $cNodeObject.QuotaFamily -eq $quotaFamily)
+                                        {
+                                            $requiredvCPU += $_.vCPUCount
+                                        }
+                                    elseif ($_.ComponentType -eq "MNode")
+                                        {
+                                            $mNodeType = $mNodeObjectUnique | Where-Object { $_.PhysicalSize -eq $_.PhysicalSize }
+                                            if ($mNodeType.QuotaFamily -eq $quotaFamily)
+                                                {
+                                                    $requiredvCPU += $_.vCPUCount
+                                                }
+                                        }
+                                }
 
-                                        if ($quotaFamilyRequirements.ContainsKey($mNodeType.QuotaFamily))
-                                            {
-                                                $quotaFamilyRequirements[$mNodeType.QuotaFamily] += $mNodeTotalvCPU
-                                            }
-                                        else
-                                            {
-                                                $quotaFamilyRequirements[$mNodeType.QuotaFamily] = $mNodeTotalvCPU
-                                            }
-                                    }
-                            }
-
-                        # Display quota family summary
-                        foreach ($quotaFamily in $quotaFamilyRequirements.Keys | Sort-Object)
-                            {
-                                $requiredvCPU = $quotaFamilyRequirements[$quotaFamily]
                                 $quotaFamilyInfo = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $quotaFamily }
 
                                 Write-Host $("`n  {0}:" -f $quotaFamily) -ForegroundColor Cyan
@@ -2587,55 +2733,13 @@ function Test-SilkResourceDeployment
                     {
                         Write-Host "`nQuota Summary:" -ForegroundColor Yellow
 
-                        # Total VM Quota
-                        $totalVMQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Virtual Machines" }
-                        if ($totalVMQuota)
+                        # Display quota summary using preprocessed data
+                        foreach ($quotaData in $quotaAnalysisData)
                             {
-                                $totalVMCount = $CNodeCount + (($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum)
-                                $availableVMQuota = $totalVMQuota.Limit - $totalVMQuota.CurrentValue
-                                if ($availableVMQuota -ge $totalVMCount)
+                                switch ($quotaData.StatusLevel)
                                     {
-                                        Write-Host $("  Total VMs: ✓ Sufficient (Required: {0}, Available: {1}/{2})" -f $totalVMCount, $availableVMQuota, $totalVMQuota.Limit) -ForegroundColor Green
-                                    }
-                                else
-                                    {
-                                        Write-Host $("  Total VMs: ✗ Insufficient (Required: {0}, Available: {1}/{2})" -f $totalVMCount, $availableVMQuota, $totalVMQuota.Limit) -ForegroundColor Red
-                                    }
-                            }
-
-                        # Total Regional vCPU Quota
-                        $totalVCPUQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Total Regional vCPUs" }
-                        if ($totalVCPUQuota)
-                            {
-                                $totalvCPUCount = 0
-                                if ($cNodeObject) { $totalvCPUCount += $cNodeObject.vCPU * $CNodeCount }
-                                if ($mNodeObject) { $totalvCPUCount += ($mNodeObject | ForEach-Object { $_.vCPU * $_.dNodeCount } | Measure-Object -Sum).Sum }
-                                $availableVCPUQuota = $totalVCPUQuota.Limit - $totalVCPUQuota.CurrentValue
-                                if ($availableVCPUQuota -ge $totalvCPUCount)
-                                    {
-                                        Write-Host $("  Total vCPUs: ✓ Sufficient (Required: {0}, Available: {1}/{2})" -f $totalvCPUCount, $availableVCPUQuota, $totalVCPUQuota.Limit) -ForegroundColor Green
-                                    }
-                                else
-                                    {
-                                        Write-Host $("  Total vCPUs: ✗ Insufficient (Required: {0}, Available: {1}/{2})" -f $totalvCPUCount, $availableVCPUQuota, $totalVCPUQuota.Limit) -ForegroundColor Red
-                                    }
-                            }
-
-                        # Availability Sets Quota
-                        $totalAvailabilitySetQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Availability Sets" }
-                        if ($totalAvailabilitySetQuota)
-                            {
-                                $totalAvailabilitySetCount = 0
-                                if ($cNodeObject) { $totalAvailabilitySetCount += 1 }
-                                if ($mNodeObjectUnique) { $totalAvailabilitySetCount += $mNodeObjectUnique.Count }
-                                $availableAvSetQuota = $totalAvailabilitySetQuota.Limit - $totalAvailabilitySetQuota.CurrentValue
-                                if ($availableAvSetQuota -ge $totalAvailabilitySetCount)
-                                    {
-                                        Write-Host $("  Availability Sets: ✓ Sufficient (Required: {0}, Available: {1}/{2})" -f $totalAvailabilitySetCount, $availableAvSetQuota, $totalAvailabilitySetQuota.Limit) -ForegroundColor Green
-                                    }
-                                else
-                                    {
-                                        Write-Host $("  Availability Sets: ✗ Insufficient (Required: {0}, Available: {1}/{2})" -f $totalAvailabilitySetCount, $availableAvSetQuota, $totalAvailabilitySetQuota.Limit) -ForegroundColor Red
+                                        "Success" { Write-Host $("  {0}: {1} (Required: {2}, Available: {3}/{4})" -f $quotaData.QuotaType, $quotaData.Status, $quotaData.Required, $quotaData.Available, $quotaData.Limit) -ForegroundColor Green }
+                                        "Error" { Write-Host $("  {0}: {1} (Required: {2}, Available: {3}/{4})" -f $quotaData.QuotaType, $quotaData.Status, $quotaData.Required, $quotaData.Available, $quotaData.Limit) -ForegroundColor Red }
                                     }
                             }
                     }
@@ -2739,13 +2843,6 @@ function Test-SilkResourceDeployment
 
                 # Infrastructure Summary
                 Write-Host "`n=== Infrastructure Summary ===" -ForegroundColor Cyan
-                $totalExpectedVMs = $CNodeCount + ($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum
-                $successfulVMs = ($deploymentReport | Where-Object { $_.VMStatus -eq "✓ Deployed" }).Count
-                $failedVMs = ($deploymentReport | Where-Object { $_.VMStatus -eq "✗ Failed" }).Count
-                $inProgressVMs = ($deploymentReport | Where-Object { $_.VMStatus -like "⚠*" }).Count
-
-                # Show any VMs with non-successful provisioning states
-                $nonSuccessfulVMs = $deploymentReport | Where-Object { $_.ProvisioningState -ne "Succeeded" -and $_.ProvisioningState -ne "Not Found" }
                 if ($nonSuccessfulVMs.Count -gt 0)
                     {
                         Write-Host "`nVMs with Non-Successful Provisioning States:" -ForegroundColor Yellow
@@ -2757,41 +2854,36 @@ function Test-SilkResourceDeployment
                     {
                         Write-Host "`nDeployment Validation Findings:" -ForegroundColor Yellow
 
-                        # Group validation results by failure category for summary
-                        $capacityIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Capacity" }
-                        $quotaIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Quota" }
-                        $skuIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "SKU Availability" }
-                        $otherIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Other" }
-
-                        if ($capacityIssues.Count -gt 0)
+                        # Display deployment validation findings using preprocessed data
+                        if ($validationFindings.CapacityIssues.Count -gt 0)
                             {
-                                $affectedSkus = $capacityIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
-                                Write-Host $("  🏗️ Capacity Constraints: {0} VM(s) affected ({1})" -f $capacityIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                                $affectedSkus = $validationFindings.CapacityIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                                Write-Host $("  🏗️ Capacity Constraints: {0} VM(s) affected ({1})" -f $validationFindings.CapacityIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
                             }
 
-                        if ($quotaIssues.Count -gt 0)
+                        if ($validationFindings.QuotaIssues.Count -gt 0)
                             {
-                                $affectedSkus = $quotaIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
-                                Write-Host $("  📊 Quota Limitations: {0} VM(s) affected ({1})" -f $quotaIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                                $affectedSkus = $validationFindings.QuotaIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                                Write-Host $("  📊 Quota Limitations: {0} VM(s) affected ({1})" -f $validationFindings.QuotaIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
                             }
 
-                        if ($skuIssues.Count -gt 0)
+                        if ($validationFindings.SKUIssues.Count -gt 0)
                             {
-                                $affectedSkus = $skuIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
-                                Write-Host $("  🔧 SKU Availability: {0} VM(s) affected ({1})" -f $skuIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                                $affectedSkus = $validationFindings.SKUIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                                Write-Host $("  🔧 SKU Availability: {0} VM(s) affected ({1})" -f $validationFindings.SKUIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
 
                                 # Show zone-specific information for SKU availability issues
-                                $skuIssuesWithAlternatives = $skuIssues | Where-Object { $_.AlternativeZones -and $_.AlternativeZones.Count -gt 0 }
+                                $skuIssuesWithAlternatives = $validationFindings.SKUIssues | Where-Object { $_.AlternativeZones -and $_.AlternativeZones.Count -gt 0 }
                                 if ($skuIssuesWithAlternatives.Count -gt 0)
                                     {
                                         Write-Host $("      Alternative zones available within {0} for affected SKUs" -f $Region) -ForegroundColor Gray
                                     }
                             }
 
-                        if ($otherIssues.Count -gt 0)
+                        if ($validationFindings.OtherIssues.Count -gt 0)
                             {
-                                $affectedSkus = $otherIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
-                                Write-Host $("  ⚙️ Other Constraints: {0} VM(s) affected ({1})" -f $otherIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                                $affectedSkus = $validationFindings.OtherIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                                Write-Host $("  ⚙️ Other Constraints: {0} VM(s) affected ({1})" -f $validationFindings.OtherIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
                             }
                     }
 
@@ -2816,7 +2908,6 @@ function Test-SilkResourceDeployment
                     }
 
                 # Proximity Placement Group and Availability Sets Summary
-                $deployedPPG = Get-AzProximityPlacementGroup -ResourceGroupName $ResourceGroupName -Name "$ResourceNamePrefix-ppg" -ErrorAction SilentlyContinue
                 Write-Host "Proximity Placement Group: " -NoNewline
                 if ($deployedPPG)
                     {
@@ -2827,7 +2918,6 @@ function Test-SilkResourceDeployment
                         Write-Host "✗ Not Found" -ForegroundColor Red
                     }
 
-                $deployedAvailabilitySets = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $ResourceNamePrefix }
                 Write-Host "Availability Sets: " -NoNewline
                 if ($deployedAvailabilitySets)
                     {
@@ -2861,7 +2951,7 @@ function Test-SilkResourceDeployment
                 # Deployment Results Status
                 Write-Host "`n=== Deployment Results Status ===" -ForegroundColor Cyan
 
-                # Get unique SKUs that failed for more accurate reporting
+                # Get unique SKUs that failed for more accurate reporting using preprocessed data
                 $uniqueFailedSkus = @()
                 if ($deploymentValidationResults -and $deploymentValidationResults.Count -gt 0)
                     {
@@ -3136,44 +3226,24 @@ function Test-SilkResourceDeployment
                                 # Add CNode SKU Support if present
                                 if($cNodeObject)
                                     {
-                                        $cNodeSkuName = "{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix
-                                        $cNodeSupportedSKU = $locationSupportedSKU | Where-Object { $_.Name -eq $cNodeSkuName }
-                                        $cNodevCPUCount = $cNodeObject.vCPU * $CNodeCount
-                                        $cNodeSKUFamilyQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $cNodeObject.QuotaFamily }
+                                        $cNodeData = $skuSupportData | Where-Object { $_.ComponentType -eq "CNode" }
 
-                                        $zoneSupport = ""
-                                        $zoneSupportClass = ""
-                                        if ($cNodeSupportedSKU)
+                                        $zoneSupport = $cNodeData.ZoneSupport
+                                        $zoneSupportClass = switch ($cNodeData.ZoneSupportStatus)
                                             {
-                                                if ($Zone -eq "Zoneless")
-                                                    {
-                                                        $zoneSupport = "✓ Supported (Zoneless deployment)"
-                                                        $zoneSupportClass = "status-success"
-                                                    }
-                                                elseif ($cNodeSupportedSKU.LocationInfo.Zones -contains $Zone)
-                                                    {
-                                                        $zoneSupport = "✓ Supported in target zone $Zone"
-                                                        $zoneSupportClass = "status-success"
-                                                    }
-                                                else
-                                                    {
-                                                        $zoneSupport = "⚠ Not supported in target zone $Zone"
-                                                        $zoneSupportClass = "status-warning"
-                                                    }
-                                            }
-                                        else
-                                            {
-                                                $zoneSupport = "✗ Not supported in region"
-                                                $zoneSupportClass = "status-error"
+                                                "Success" { "status-success" }
+                                                "Warning" { "status-warning" }
+                                                "Error" { "status-error" }
+                                                default { "status-warning" }
                                             }
 
                                         $htmlContent += @"
             <div class="info-card">
                 <h4>🖥️ CNode SKU Support</h4>
-                <strong>SKU:</strong> $cNodeSkuName<br>
+                <strong>SKU:</strong> $($cNodeData.SKUName)<br>
                 <strong>Region:</strong> $Region<br>
                 <strong>Zone Support:</strong> <span class="$zoneSupportClass">$zoneSupport</span><br>
-                $(if($cNodeSupportedSKU -and $cNodeSupportedSKU.LocationInfo.Zones){"<strong>Available Zones:</strong> $($cNodeSupportedSKU.LocationInfo.Zones -join ', ')"})
+                $(if($cNodeData.AvailableZones.Count -gt 0){"<strong>Available Zones:</strong> $($cNodeData.AvailableZones -join ', ')"})
             </div>
 "@
                                     }
@@ -3181,48 +3251,25 @@ function Test-SilkResourceDeployment
                                 # Add MNode SKU Support if present
                                 if($MNodeSize -and $mNodeObjectUnique)
                                     {
-                                        foreach ($mNodeType in $mNodeObjectUnique)
+                                        $mNodeData = $skuSupportData | Where-Object { $_.ComponentType -eq "MNode" }
+                                        foreach ($mNodeTypeData in $mNodeData)
                                             {
-                                                $mNodeSkuName = "{0}{1}{2}" -f $mNodeType.vmSkuPrefix, $mNodeType.vCPU, $mNodeType.vmSkuSuffix
-                                                $mNodeSupportedSKU = $locationSupportedSKU | Where-Object { $_.Name -eq $mNodeSkuName }
-                                                $mNodeInstanceCount = $MNodeSize | Group-Object | Select-Object Name, Count
-                                                $mNodevCPUCount = $mNodeType.vCPU * $mNodeType.dNodeCount * ($mNodeInstanceCount | Where-Object { $_.Name -eq $mNodeType.PhysicalSize }).Count
-                                                $mNodeSKUFamilyQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $mNodeType.QuotaFamily }
-
-                                                $zoneSupport = ""
-                                                $zoneSupportClass = ""
-                                                if ($mNodeSupportedSKU)
+                                                $zoneSupport = $mNodeTypeData.ZoneSupport
+                                                $zoneSupportClass = switch ($mNodeTypeData.ZoneSupportStatus)
                                                     {
-                                                        if ($Zone -eq "Zoneless")
-                                                            {
-                                                                $zoneSupport = "✓ Supported (Zoneless deployment)"
-                                                                $zoneSupportClass = "status-success"
-                                                            }
-                                                        elseif ($mNodeSupportedSKU.LocationInfo.Zones -contains $Zone)
-                                                            {
-                                                                $zoneSupport = "✓ Supported in target zone $Zone"
-                                                                $zoneSupportClass = "status-success"
-                                                            }
-                                                        else
-                                                            {
-                                                                $zoneSupport = "⚠ Not supported in target zone $Zone"
-                                                                $zoneSupportClass = "status-warning"
-                                                            }
-                                                    }
-                                                else
-                                                    {
-                                                        $zoneSupport = "✗ Not supported in region"
-                                                        $zoneSupportClass = "status-error"
+                                                        "Success" { "status-success" }
+                                                        "Warning" { "status-warning" }
+                                                        "Error" { "status-error" }
+                                                        default { "status-warning" }
                                                     }
 
-                                                $instanceCount = ($mNodeInstanceCount | Where-Object { $_.Name -eq $mNodeType.PhysicalSize }).Count
                                                 $htmlContent += @"
             <div class="info-card">
-                <h4>💾 MNode SKU Support ($($instanceCount)x $($mNodeType.PhysicalSize) TiB)</h4>
-                <strong>SKU:</strong> $mNodeSkuName<br>
+                <h4>💾 MNode SKU Support ($($mNodeTypeData.InstanceCount)x $($mNodeTypeData.PhysicalSize) TiB)</h4>
+                <strong>SKU:</strong> $($mNodeTypeData.SKUName)<br>
                 <strong>Region:</strong> $Region<br>
                 <strong>Zone Support:</strong> <span class="$zoneSupportClass">$zoneSupport</span><br>
-                $(if($mNodeSupportedSKU -and $mNodeSupportedSKU.LocationInfo.Zones){"<strong>Available Zones:</strong> $($mNodeSupportedSKU.LocationInfo.Zones -join ', ')"})
+                $(if($mNodeTypeData.AvailableZones.Count -gt 0){"<strong>Available Zones:</strong> $($mNodeTypeData.AvailableZones -join ', ')"})
             </div>
 "@
                                             }
@@ -3238,46 +3285,32 @@ function Test-SilkResourceDeployment
                                 # Add quota family summary if available
                                 if ($computeQuotaUsage)
                                     {
-                                        # Use the same quota family collection logic from console output
-                                        $quotaFamilyRequirements = @{}
+                                        # Display quota family summary using preprocessed data
+                                        $quotaFamilies = ($skuSupportData | ForEach-Object {
+                                            if ($_.ComponentType -eq "CNode") { $cNodeObject.QuotaFamily }
+                                            else { ($mNodeObjectUnique | Where-Object { $_.PhysicalSize -eq $_.PhysicalSize }).QuotaFamily }
+                                        }) | Sort-Object -Unique
 
-                                        # Add CNode quota family requirements
-                                        if ($cNodeObject)
+                                        foreach ($quotaFamily in $quotaFamilies)
                                             {
-                                                $cNodeTotalvCPU = $cNodeObject.vCPU * $CNodeCount
-                                                if ($quotaFamilyRequirements.ContainsKey($cNodeObject.QuotaFamily))
-                                                    {
-                                                        $quotaFamilyRequirements[$cNodeObject.QuotaFamily] += $cNodeTotalvCPU
-                                                    }
-                                                else
-                                                    {
-                                                        $quotaFamilyRequirements[$cNodeObject.QuotaFamily] = $cNodeTotalvCPU
-                                                    }
-                                            }
+                                                $requiredvCPU = 0
 
-                                        # Add MNode quota family requirements
-                                        if ($mNodeObject)
-                                            {
-                                                foreach ($mNodeType in $mNodeObjectUnique)
-                                                    {
-                                                        $mNodeInstanceCount = $MNodeSize | Group-Object | Select-Object Name, Count
-                                                        $mNodeTotalvCPU = $mNodeType.vCPU * $mNodeType.dNodeCount * ($mNodeInstanceCount | Where-Object { $_.Name -eq $mNodeType.PhysicalSize }).Count
+                                                # Calculate total vCPU for this quota family
+                                                $skuSupportData | ForEach-Object {
+                                                    if ($_.ComponentType -eq "CNode" -and $cNodeObject.QuotaFamily -eq $quotaFamily)
+                                                        {
+                                                            $requiredvCPU += $_.vCPUCount
+                                                        }
+                                                    elseif ($_.ComponentType -eq "MNode")
+                                                        {
+                                                            $mNodeType = $mNodeObjectUnique | Where-Object { $_.PhysicalSize -eq $_.PhysicalSize }
+                                                            if ($mNodeType.QuotaFamily -eq $quotaFamily)
+                                                                {
+                                                                    $requiredvCPU += $_.vCPUCount
+                                                                }
+                                                        }
+                                                }
 
-                                                        if ($quotaFamilyRequirements.ContainsKey($mNodeType.QuotaFamily))
-                                                            {
-                                                                $quotaFamilyRequirements[$mNodeType.QuotaFamily] += $mNodeTotalvCPU
-                                                            }
-                                                        else
-                                                            {
-                                                                $quotaFamilyRequirements[$mNodeType.QuotaFamily] = $mNodeTotalvCPU
-                                                            }
-                                                    }
-                                            }
-
-                                        # Generate HTML for each quota family
-                                        foreach ($quotaFamily in $quotaFamilyRequirements.Keys | Sort-Object)
-                                            {
-                                                $requiredvCPU = $quotaFamilyRequirements[$quotaFamily]
                                                 $quotaFamilyInfo = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $quotaFamily }
 
                                                 $quotaStatus = ""
@@ -3324,63 +3357,50 @@ function Test-SilkResourceDeployment
                                 # Add quota summary if available
                                 if ($computeQuotaUsage)
                                     {
-                                        # Total VM Quota
-                                        $totalVMQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Virtual Machines" }
-                                        if ($totalVMQuota)
+                                        # Virtual Machine Quota using preprocessed data
+                                        $vmQuotaData = $quotaAnalysisData | Where-Object { $_.QuotaType -eq "Virtual Machines" }
+                                        if ($vmQuotaData)
                                             {
-                                                $totalVMCount = $CNodeCount + (($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum)
-                                                $availableVMQuota = $totalVMQuota.Limit - $totalVMQuota.CurrentValue
-                                                $vmQuotaStatus = if ($availableVMQuota -ge $totalVMCount) { "✓ Sufficient" } else { "✗ Insufficient" }
-                                                $vmQuotaClass = if ($availableVMQuota -ge $totalVMCount) { "status-success" } else { "status-error" }
+                                                $vmQuotaClass = if ($vmQuotaData.StatusLevel -eq "Success") { "status-success" } else { "status-error" }
 
                                                 $htmlContent += @"
             <div class="info-card">
                 <h4>🖥️ Virtual Machine Quota</h4>
-                <strong>Status:</strong> <span class="$vmQuotaClass">$vmQuotaStatus</span><br>
-                <strong>Required:</strong> $totalVMCount VMs<br>
-                <strong>Available:</strong> $availableVMQuota/$($totalVMQuota.Limit)<br>
+                <strong>Status:</strong> <span class="$vmQuotaClass">$($vmQuotaData.Status)</span><br>
+                <strong>Required:</strong> $($vmQuotaData.Required) VMs<br>
+                <strong>Available:</strong> $($vmQuotaData.Available)/$($vmQuotaData.Limit)<br>
             </div>
 "@
                                             }
 
-                                        # Total Regional vCPU Quota
-                                        $totalVCPUQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Total Regional vCPUs" }
-                                        if ($totalVCPUQuota)
+                                        # Regional vCPU Quota using preprocessed data
+                                        $vcpuQuotaData = $quotaAnalysisData | Where-Object { $_.QuotaType -eq "Regional vCPUs" }
+                                        if ($vcpuQuotaData)
                                             {
-                                                $totalvCPUCount = 0
-                                                if ($cNodeObject) { $totalvCPUCount += $cNodeObject.vCPU * $CNodeCount }
-                                                if ($mNodeObject) { $totalvCPUCount += ($mNodeObject | ForEach-Object { $_.vCPU * $_.dNodeCount } | Measure-Object -Sum).Sum }
-                                                $availableVCPUQuota = $totalVCPUQuota.Limit - $totalVCPUQuota.CurrentValue
-                                                $vcpuQuotaStatus = if ($availableVCPUQuota -ge $totalvCPUCount) { "✓ Sufficient" } else { "✗ Insufficient" }
-                                                $vcpuQuotaClass = if ($availableVCPUQuota -ge $totalvCPUCount) { "status-success" } else { "status-error" }
+                                                $vcpuQuotaClass = if ($vcpuQuotaData.StatusLevel -eq "Success") { "status-success" } else { "status-error" }
 
                                                 $htmlContent += @"
             <div class="info-card">
                 <h4>⚡ Regional vCPU Quota</h4>
-                <strong>Status:</strong> <span class="$vcpuQuotaClass">$vcpuQuotaStatus</span><br>
-                <strong>Required:</strong> $totalvCPUCount vCPUs<br>
-                                <strong>Available:</strong> $availableVCPUQuota/$($totalVCPUQuota.Limit)<br>
+                <strong>Status:</strong> <span class="$vcpuQuotaClass">$($vcpuQuotaData.Status)</span><br>
+                <strong>Required:</strong> $($vcpuQuotaData.Required) vCPUs<br>
+                <strong>Available:</strong> $($vcpuQuotaData.Available)/$($vcpuQuotaData.Limit)<br>
             </div>
 "@
                                             }
 
-                                        # Availability Sets Quota
-                                        $totalAvailabilitySetQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Availability Sets" }
-                                        if ($totalAvailabilitySetQuota)
+                                        # Availability Sets Quota using preprocessed data
+                                        $avsetQuotaData = $quotaAnalysisData | Where-Object { $_.QuotaType -eq "Availability Sets" }
+                                        if ($avsetQuotaData)
                                             {
-                                                $totalAvailabilitySetCount = 0
-                                                if ($cNodeObject) { $totalAvailabilitySetCount += 1 }
-                                                if ($mNodeObjectUnique) { $totalAvailabilitySetCount += $mNodeObjectUnique.Count }
-                                                $availableAvSetQuota = $totalAvailabilitySetQuota.Limit - $totalAvailabilitySetQuota.CurrentValue
-                                                $avsetQuotaStatus = if ($availableAvSetQuota -ge $totalAvailabilitySetCount) { "✓ Sufficient" } else { "✗ Insufficient" }
-                                                $avsetQuotaClass = if ($availableAvSetQuota -ge $totalAvailabilitySetCount) { "status-success" } else { "status-error" }
+                                                $avsetQuotaClass = if ($avsetQuotaData.StatusLevel -eq "Success") { "status-success" } else { "status-error" }
 
                                                 $htmlContent += @"
             <div class="info-card">
-                <h4>📋 Availability Sets Quota</h4>
-                <strong>Status:</strong> <span class="$avsetQuotaClass">$avsetQuotaStatus</span><br>
-                <strong>Required:</strong> $totalAvailabilitySetCount sets<br>
-                <strong>Available:</strong> $availableAvSetQuota/$($totalAvailabilitySetQuota.Limit)<br>
+                <h4>🎯 Availability Sets Quota</h4>
+                <strong>Status:</strong> <span class="$avsetQuotaClass">$($avsetQuotaData.Status)</span><br>
+                <strong>Required:</strong> $($avsetQuotaData.Required) sets<br>
+                <strong>Available:</strong> $($avsetQuotaData.Available)/$($avsetQuotaData.Limit)<br>
             </div>
 "@
                                             }
@@ -3403,8 +3423,7 @@ function Test-SilkResourceDeployment
                 <h4>📍 Placement and Availability</h4>
 "@
 
-                                # Add Proximity Placement Group details
-                                $deployedPPG = Get-AzProximityPlacementGroup -ResourceGroupName $ResourceGroupName -Name "$ResourceNamePrefix-ppg" -ErrorAction SilentlyContinue
+                                # Add Proximity Placement Group details using preprocessed data
                                 if ($deployedPPG)
                                     {
                                         $htmlContent += @"
@@ -3421,8 +3440,7 @@ function Test-SilkResourceDeployment
 "@
                                     }
 
-                                # Add Availability Sets details
-                                $deployedAvailabilitySets = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $ResourceNamePrefix }
+                                # Add Availability Sets details using preprocessed data
                                 if ($deployedAvailabilitySets)
                                     {
                                         $avSetNames = ($deployedAvailabilitySets.Name | Sort-Object) -join ", "

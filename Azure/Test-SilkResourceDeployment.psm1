@@ -610,7 +610,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
                 [Switch]
-                $Testing,
+                $Development,
 
                 # PowerShell credential object for VM local administrator account
                 # Default: Username "azureuser" with secure password for testing purposes
@@ -980,7 +980,7 @@ function Test-SilkResourceDeployment
                                         [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "s_v5"; QuotaFamily = "Standard Esv5 Family vCPUs"; cNodeFriendlyName = "Increased_Logical_Capacity"}
                                     )
 
-                if ($Testing)
+                if ($Development)
                     {
                         Write-Verbose -Message "Running in testing mode, using reduced CNode configuration for faster deployment."
                         $cNodeSizeObject = @(
@@ -1027,7 +1027,7 @@ function Test-SilkResourceDeployment
                                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "aos_v4"; PhysicalSize = 117.35;  QuotaFamily = "Standard Laosv4 Family vCPUs"}
                                     )
 
-                if ($Testing)
+                if ($Development)
                     {
                         Write-Verbose -Message "Running in testing mode, using reduced MNode/DNode configuration for faster deployment."
                         $mNodeSizeObject = @(
@@ -1546,11 +1546,15 @@ function Test-SilkResourceDeployment
                         Write-Verbose -Message $("Total VMs to Deploy: {0} (MNode-only: {1} DNodes)" -f $totalVMs, $totalDNodes)
                     }
 
-                if ($Testing) {
-                    Write-Verbose -Message "Testing Mode: ENABLED (reduced VM sizes for faster deployment)"
-                } else {
-                    Write-Verbose -Message "Testing Mode: DISABLED (production VM sizes)"
-                }
+                if ($Development)
+                    {
+                        Write-Verbose -Message "Development Mode: ENABLED (using smaller VM sizes for faster deployment)"
+                    } `
+                    Write-Verbose -Message "Testing Mode: ENABLED (reduced VM sizes and count for faster deployment)"
+                else
+                    {
+                        Write-Verbose -Message "Testing Mode: DISABLED (deploying production VM SKUs)"
+                    }
                 Write-Verbose -Message "=========================================="
             }
 

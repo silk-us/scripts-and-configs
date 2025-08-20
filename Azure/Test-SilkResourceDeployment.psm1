@@ -594,21 +594,21 @@ function Test-SilkResourceDeployment
                 [string]
                 $ResourceNamePrefix = "sdp-test",
 
-                # Switch to enable testing mode with reduced VM sizes and instance counts
+                # Switch to enable Development Mode with reduced VM sizes and instance counts
                 # When enabled: Uses 2 vCPU SKUs instead of production 64 vCPU, 1 DNode per MNode instead of 16
                 # Significantly reduces deployment time and costs for faster testing iterations
-                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
-                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
-                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
-                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
-                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
-                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = "Enable testing mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Enable Development Mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = "Enable Development Mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = "Enable Development Mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = "Enable Development Mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = "Enable Development Mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = "Enable Development Mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = "Enable Development Mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = "Enable Development Mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = "Enable Development Mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = "Enable Development Mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = "Enable Development Mode with reduced VM sizes and instance counts.")]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = "Enable Development Mode with reduced VM sizes and instance counts.")]
                 [Switch]
                 $Development,
 
@@ -982,7 +982,7 @@ function Test-SilkResourceDeployment
 
                 if ($Development)
                     {
-                        Write-Verbose -Message "Running in testing mode, using reduced CNode configuration for faster deployment."
+                        Write-Verbose -Message "Running in Development Mode, using reduced CNode configuration for faster deployment."
                         $cNodeSizeObject = @(
                                                 [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 2; vmSkuSuffix = "s_v5"; QuotaFamily = "Standard Dsv5 Family vCPUs"; cNodeFriendlyName = "No_Increased_Logical_Capacity"};
                                                 [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 4; vmSkuSuffix = "s_v3"; QuotaFamily = "Standard Lsv3 Family vCPUs"; cNodeFriendlyName = "Read_Cache_Enabled"};
@@ -1029,7 +1029,7 @@ function Test-SilkResourceDeployment
 
                 if ($Development)
                     {
-                        Write-Verbose -Message "Running in testing mode, using reduced MNode/DNode configuration for faster deployment."
+                        Write-Verbose -Message "Running in Development Mode, using reduced MNode/DNode configuration for faster deployment."
                         $mNodeSizeObject = @(
                                                 [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "s_v3";   PhysicalSize = 19.5;     QuotaFamily = "Standard Lsv3 Family vCPUs"};
                                                 [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "s_v3";   PhysicalSize = 39.1;     QuotaFamily = "Standard Lsv3 Family vCPUs"};
@@ -1551,10 +1551,9 @@ function Test-SilkResourceDeployment
                     {
                         Write-Verbose -Message "Development Mode: ENABLED (using smaller VM sizes for faster deployment)"
                     } `
-                    Write-Verbose -Message "Testing Mode: ENABLED (reduced VM sizes and count for faster deployment)"
                 else
                     {
-                        Write-Verbose -Message "Testing Mode: DISABLED (deploying production VM SKUs)"
+                        Write-Verbose -Message "Development Mode: DISABLED (deploying production VM SKUs)"
                     }
                 Write-Verbose -Message "=========================================="
             }

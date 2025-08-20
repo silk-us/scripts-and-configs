@@ -1457,6 +1457,41 @@ function Test-SilkResourceDeployment
                         return
                     }
 
+                # ===============================================================================
+                # HTML Report Configuration
+                # ===============================================================================
+                # Enable HTML report by default unless NoHTMLReport switch is specified
+                if (-not $NoHTMLReport)
+                    {
+                        Write-Verbose -Message $("HTML report generation enabled (default behavior). Use -NoHTMLReport to disable.")
+                    }
+                else
+                    {
+                        Write-Verbose -Message $("HTML report generation disabled by -NoHTMLReport switch.")
+                    }
+
+                # Configure HTML report output file path with timestamp
+                if (-not $NoHTMLReport)
+                    {
+                        # Ensure the output path is valid and create directory if needed
+                        if (-not (Test-Path $ReportOutputPath))
+                            {
+                                try
+                                    {
+                                        New-Item -Path $ReportOutputPath -ItemType Directory -Force | Out-Null
+                                        Write-Verbose -Message $("Created report output directory: {0}" -f $ReportOutputPath)
+                                    }
+                                catch
+                                    {
+                                        Write-Warning -Message $("Failed to create report output directory '{0}': {1}. Using current directory." -f $ReportOutputPath, $_.Exception.Message)
+                                        $ReportOutputPath = (Get-Location).Path
+                                    }
+                            }
+
+                        $ReportFullPath = Join-Path -Path $ReportOutputPath -ChildPath $("SilkDeploymentReport_{0}.html" -f $(Get-Date -Format "yyyyMMdd_HHmmss"))
+                        Write-Verbose -Message $("HTML report will be generated at: {0}" -f $ReportFullPath)
+                    }
+
 
                 # ===============================================================================
                 # Deployment Configuration Summary
@@ -1517,41 +1552,6 @@ function Test-SilkResourceDeployment
                     Write-Verbose -Message "Testing Mode: DISABLED (production VM sizes)"
                 }
                 Write-Verbose -Message "=========================================="
-
-                # ===============================================================================
-                # HTML Report Configuration
-                # ===============================================================================
-                # Enable HTML report by default unless NoHTMLReport switch is specified
-                if (-not $NoHTMLReport)
-                    {
-                        Write-Verbose -Message $("HTML report generation enabled (default behavior). Use -NoHTMLReport to disable.")
-                    }
-                else
-                    {
-                        Write-Verbose -Message $("HTML report generation disabled by -NoHTMLReport switch.")
-                    }
-
-                # Configure HTML report output file path with timestamp
-                if (-not $NoHTMLReport)
-                    {
-                        # Ensure the output path is valid and create directory if needed
-                        if (-not (Test-Path $ReportOutputPath))
-                            {
-                                try
-                                    {
-                                        New-Item -Path $ReportOutputPath -ItemType Directory -Force | Out-Null
-                                        Write-Verbose -Message $("Created report output directory: {0}" -f $ReportOutputPath)
-                                    }
-                                catch
-                                    {
-                                        Write-Warning -Message $("Failed to create report output directory '{0}': {1}. Using current directory." -f $ReportOutputPath, $_.Exception.Message)
-                                        $ReportOutputPath = (Get-Location).Path
-                                    }
-                            }
-
-                        $ReportFullPath = Join-Path -Path $ReportOutputPath -ChildPath $("SilkDeploymentReport_$ReportTimestamp.html" -f $(Get-Date -Format "yyyyMMdd_HHmmss"))
-                        Write-Verbose -Message $("HTML report will be generated at: {0}" -f $ReportFullPath)
-                    }
             }
 
         # This block is used to provide record-by-record processing for the function.

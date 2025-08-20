@@ -1225,6 +1225,7 @@ function Test-SilkResourceDeployment
 
                 # ===============================================================================
                 # quota check
+                # ===============================================================================
                 try
                     {
                         $computeQuotaUsage = Get-AzVMUsage -Location $Region -ErrorAction SilentlyContinue

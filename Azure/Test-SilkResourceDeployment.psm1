@@ -2807,29 +2807,35 @@ function Test-SilkResourceDeployment
                 $silkSummary = @()
 
                 # Add CNode summary
-                $silkSummary +=    [PSCustomObject]@{
-                                                        Component = "CNode"
-                                                        DeployedCount = $successfulCNodes
-                                                        ExpectedCount = $CNodeCount
-                                                        SKU = $cNodeSummaryLabel
-                                                        Status = if ($successfulCNodes -eq $CNodeCount) { "✓ Complete" } elseif ($successfulCNodes -eq 0) { "✗ Failed" } else { "⚠ Partial" }
-                                                    }
+                if ($CNodeCount)
+                    {
+                        $silkSummary +=    [PSCustomObject]@{
+                                                                Component = "CNode"
+                                                                DeployedCount = $successfulCNodes
+                                                                ExpectedCount = $CNodeCount
+                                                                SKU = $cNodeSummaryLabel
+                                                                Status = if ($successfulCNodes -eq $CNodeCount) { "✓ Complete" } elseif ($successfulCNodes -eq 0) { "✗ Failed" } else { "⚠ Partial" }
+                                                            }
+                    }
 
                 # Add MNode/DNode summary for each group
-                foreach ($group in $mNodeGroups)
+                if ($mNodeGroups.Count -gt 0)
                     {
-                        $groupSuccessful = ($group.Group | Where-Object { $_.VMStatus -eq "✓ Deployed" }).Count
-                        $groupExpected = $group.Group.Count
-                        $groupSku = $group.Group[0].ExpectedSKU
-                        $groupName = $group.Name.Replace("MNode ", "M").Replace(" TiB)", "TB)")
+                        foreach ($group in $mNodeGroups)
+                            {
+                                $groupSuccessful = ($group.Group | Where-Object { $_.VMStatus -eq "✓ Deployed" }).Count
+                                $groupExpected = $group.Group.Count
+                                $groupSku = $group.Group[0].ExpectedSKU
+                                $groupName = $group.Name.Replace("MNode ", "M").Replace(" TiB)", "TB)")
 
-                        $silkSummary +=    [PSCustomObject]@{
-                                                                Component = $groupName
-                                                                DeployedCount = $groupSuccessful
-                                                                ExpectedCount = $groupExpected
-                                                                SKU = $groupSku
-                                                                Status = if ($groupSuccessful -eq $groupExpected) { "✓ Complete" } elseif ($groupSuccessful -eq 0) { "✗ Failed" } else { "⚠ Partial" }
-                                                            }
+                                $silkSummary +=    [PSCustomObject]@{
+                                                                        Component = $groupName
+                                                                        DeployedCount = $groupSuccessful
+                                                                        ExpectedCount = $groupExpected
+                                                                        SKU = $groupSku
+                                                                        Status = if ($groupSuccessful -eq $groupExpected) { "✓ Complete" } elseif ($groupSuccessful -eq 0) { "✗ Failed" } else { "⚠ Partial" }
+                                                                    }
+                            }
                     }
 
                 # Display the summary table

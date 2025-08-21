@@ -3646,6 +3646,9 @@ function Test-SilkResourceDeployment
                         # clean up deployed test VMs
                         if (Get-AzVM -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -Match $ResourceNamePrefix })
                             {
+                                # identify cleanup removed resources
+                                $cleanupDidRun = $true
+
                                 # Update main progress for VM cleanup phase (VMs = 50% of total cleanup)
                                 Write-Progress `
                                     -Status "Cleaning Up Virtual Machines" `
@@ -3756,6 +3759,9 @@ function Test-SilkResourceDeployment
 
                         if (Get-AzNetworkInterface -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -Match $ResourceNamePrefix })
                             {
+                                # identify cleanup removed resources
+                                $cleanupDidRun = $true
+
                                 # Update main cleanup progress (NICs = next 15% after VMs)
                                 Write-Progress -Id 5 -Activity "Cleaning up test resources..." -Status "Removing network interfaces..." -PercentComplete 55
 
@@ -3832,6 +3838,9 @@ function Test-SilkResourceDeployment
                         # Start VNet removal job
                         if (Get-AzVirtualNetwork -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $ResourceNamePrefix })
                             {
+                                # identify cleanup removed resources
+                                $cleanupDidRun = $true
+
                                 # Update main cleanup progress (VNet = next 15% after Storage)
                                 Write-Progress `
                                     -Id 5 `
@@ -3900,6 +3909,9 @@ function Test-SilkResourceDeployment
                         $availabilitySets = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $ResourceNamePrefix }
                         if ($availabilitySets)
                             {
+                                # identify cleanup removed resources
+                                $cleanupDidRun = $true
+
                                 # Update main cleanup progress (Availability Sets = 85-90%)
                                 Write-Progress `
                                     -Id 5 `
@@ -3968,6 +3980,9 @@ function Test-SilkResourceDeployment
                         $proximityPlacementGroups = Get-AzProximityPlacementGroup -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $ResourceNamePrefix }
                         if ($proximityPlacementGroups)
                             {
+                                # identify cleanup removed resources
+                                $cleanupDidRun = $true
+
                                 # Update main cleanup progress (PPG = 90-95%)
                                 Write-Progress `
                                     -Id 5 `
@@ -4035,6 +4050,9 @@ function Test-SilkResourceDeployment
                         # Start NSG removal job
                         if (Get-AzNetworkSecurityGroup -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $ResourceNamePrefix })
                             {
+                                # identify cleanup removed resources
+                                $cleanupDidRun = $true
+
                                 # Update main cleanup progress (NSG = final 5% before completion)
                                 Write-Progress `
                                     -Id 5 `
@@ -4152,8 +4170,16 @@ function Test-SilkResourceDeployment
                             -Id 13 `
                             -Activity "Resource Group Cleanup" `
                             -Completed
+
+                        # identify cleanup removed resources
+                        $cleanupDidRun = $true
                     }
-                Write-Host "Cleanup process completed." -ForegroundColor Green
+
+                # notify cleanup complete if it actually cleaned anything up
+                if($cleanupDidRun)
+                    {
+                        Write-Host "Cleanup process completed." -ForegroundColor Green
+                    }
             }
     }
 

@@ -1214,7 +1214,7 @@ function Test-SilkResourceDeployment
                                 elseif ($mNodeSupportedSKU -and $mNodeSupportedSKU.LocationInfo.Zones -notcontains $Zone)
                                     {
                                         Write-Verbose -Message $("MNode SKU: {0} is not supported in the target zone {1} in region: {2}. It is supported in zones: {3}" -f $mNodeSupportedSKU.Name, $Zone, $mNodeSupportedSKU.LocationInfo.Location, ($mNodeSupportedSKU.LocationInfo.Zones -join ", "))
-                                    }
+                                    } `
                                 else
                                     {
                                         Write-Warning "Unable to determine regional support for MNode SKU: {0} in region: {1}." -f $mNodeSupportedSKU.Name, $mNodeSupportedSKU.LocationInfo.Location
@@ -1332,7 +1332,7 @@ function Test-SilkResourceDeployment
                             {
                                 Write-Error $quotaErrorMessage
                                 return
-                            }
+                            } `
                         else
                             {
                                 Write-Verbose "All required quotas are available for the specified CNode and MNode configurations."
@@ -1457,7 +1457,7 @@ function Test-SilkResourceDeployment
                 if (-not $NoHTMLReport)
                     {
                         Write-Verbose -Message $("HTML report generation enabled (default behavior). Use -NoHTMLReport to disable.")
-                    }
+                    } `
                 else
                     {
                         Write-Verbose -Message $("HTML report generation disabled by -NoHTMLReport switch.")
@@ -1473,7 +1473,7 @@ function Test-SilkResourceDeployment
                                     {
                                         New-Item -Path $ReportOutputPath -ItemType Directory -Force | Out-Null
                                         Write-Verbose -Message $("Created report output directory: {0}" -f $ReportOutputPath)
-                                    }
+                                    } `
                                 catch
                                     {
                                         Write-Warning -Message $("Failed to create report output directory '{0}': {1}. Using current directory." -f $ReportOutputPath, $_.Exception.Message)
@@ -1517,7 +1517,7 @@ function Test-SilkResourceDeployment
                 if($mNodeSize)
                     {
                         $totalDNodes = ($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum
-                    }
+                    } `
                 else
                     {
                         $totalDNodes = 0
@@ -1644,7 +1644,7 @@ function Test-SilkResourceDeployment
                         Write-Verbose -Message "✓ Network isolation configured: All VMs will be deployed with NO network access"
 
                         $mGMTSubnetID = $vNET.Subnets | Where-Object { $_.Name -eq $mGMTSubnet.Name } | Select-Object -ExpandProperty Id
-                    }
+                    } `
                 catch
                     {
                         Write-Error $("An error occurred while creating shared resource group infrastructure: {0}" -f $_)
@@ -2213,7 +2213,7 @@ function Test-SilkResourceDeployment
                                                                     {
                                                                         $errorMessage = $errorMessage.Substring(0, 300) + "..."
                                                                     }
-                                                            }
+                                                            } `
                                                         else
                                                             {
                                                                 $errorMessage = "Deployment failed - check Azure portal for detailed error information"
@@ -2260,7 +2260,7 @@ function Test-SilkResourceDeployment
                                     }
                             }
 
-                    }
+                    } `
                 catch
                     {
                         Write-Warning -Message $("Error occurred while creating VMs: {0}" -f $_)
@@ -2313,11 +2313,11 @@ function Test-SilkResourceDeployment
                                                 {
                                                     "✗ Not Found"
                                                 }
-                                        }
+                                        } `
                                     elseif ($vm.ProvisioningState -eq "Succeeded")
                                         {
                                             "✓ Deployed"
-                                        }
+                                        } `
                                     elseif ($vm.ProvisioningState -eq "Failed")
                                         {
                                             if ($vmValidationFinding)
@@ -2328,11 +2328,11 @@ function Test-SilkResourceDeployment
                                                 {
                                                     "✗ Failed"
                                                 }
-                                        }
+                                        } `
                                     elseif ($vm.ProvisioningState -eq "Creating" -or $vm.ProvisioningState -eq "Running")
                                         {
                                             "⚠ In Progress"
-                                        }
+                                        } `
                                     else
                                         {
                                             "⚠ $($vm.ProvisioningState)"
@@ -2383,16 +2383,16 @@ function Test-SilkResourceDeployment
                                                     if ($vmValidationFinding)
                                                         {
                                                             "✗ Not Found ($($vmValidationFinding.FailureCategory))"
-                                                        }
+                                                        } `
                                                     else
                                                         {
                                                             "✗ Not Found"
                                                         }
-                                                }
+                                                } `
                                             elseif ($vm.ProvisioningState -eq "Succeeded")
                                                 {
                                                     "✓ Deployed"
-                                                }
+                                                } `
                                             elseif ($vm.ProvisioningState -eq "Failed")
                                                 {
                                                     if ($vmValidationFinding)
@@ -2403,11 +2403,11 @@ function Test-SilkResourceDeployment
                                                         {
                                                             "✗ Failed"
                                                         }
-                                                }
+                                                } `
                                             elseif ($vm.ProvisioningState -eq "Creating" -or $vm.ProvisioningState -eq "Running")
                                                 {
                                                     "⚠ In Progress"
-                                                }
+                                                } `
                                             else
                                                 {
                                                     "⚠ $($vm.ProvisioningState)"
@@ -2462,18 +2462,18 @@ function Test-SilkResourceDeployment
                                     {
                                         $cNodeZoneSupport = "✓ Supported (Zoneless deployment)"
                                         $cNodeZoneSupportStatus = "Success"
-                                    }
+                                    } `
                                 elseif ($cNodeSupportedSKU.LocationInfo.Zones -contains $Zone)
                                     {
                                         $cNodeZoneSupport = "✓ Supported in target zone $Zone"
                                         $cNodeZoneSupportStatus = "Success"
-                                    }
+                                    } `
                                 else
                                     {
                                         $cNodeZoneSupport = "⚠ Not supported in target zone $Zone"
                                         $cNodeZoneSupportStatus = "Warning"
                                     }
-                            }
+                            } `
                         else
                             {
                                 $cNodeZoneSupport = "✗ Not supported in region"
@@ -2510,18 +2510,18 @@ function Test-SilkResourceDeployment
                                             {
                                                 $mNodeZoneSupport = "✓ Supported (Zoneless deployment)"
                                                 $mNodeZoneSupportStatus = "Success"
-                                            }
+                                            } `
                                         elseif ($mNodeSupportedSKU.LocationInfo.Zones -contains $Zone)
                                             {
                                                 $mNodeZoneSupport = "✓ Supported in target zone $Zone"
                                                 $mNodeZoneSupportStatus = "Success"
-                                            }
+                                            } `
                                         else
                                             {
                                                 $mNodeZoneSupport = "⚠ Not supported in target zone $Zone"
                                                 $mNodeZoneSupportStatus = "Warning"
                                             }
-                                    }
+                                    } `
                                 else
                                     {
                                         $mNodeZoneSupport = "✗ Not supported in region"
@@ -2691,7 +2691,7 @@ function Test-SilkResourceDeployment
                                     if ($_.ComponentType -eq "CNode" -and $cNodeObject.QuotaFamily -eq $quotaFamily)
                                         {
                                             $requiredvCPU += $_.vCPUCount
-                                        }
+                                        } `
                                     elseif ($_.ComponentType -eq "MNode")
                                         {
                                             $mNodeType = $mNodeObjectUnique | Where-Object { $_.PhysicalSize -eq $_.PhysicalSize }
@@ -2713,14 +2713,14 @@ function Test-SilkResourceDeployment
                                                 Write-Host $("    vCPU Required: {0}" -f $requiredvCPU)
                                                 Write-Host $("    vCPU Available: {0}/{1}" -f $availableQuota, $quotaFamilyInfo.Limit)
                                                 Write-Host $("    Status: ✓ Sufficient") -ForegroundColor Green
-                                            }
+                                            } `
                                         else
                                             {
                                                 Write-Host $("    vCPU Required: {0}" -f $requiredvCPU)
                                                 Write-Host $("    vCPU Available: {0}/{1}" -f $availableQuota, $quotaFamilyInfo.Limit)
                                                 Write-Host $("    Status: ✗ Insufficient (Shortfall: {0} vCPU)" -f ($requiredvCPU - $availableQuota)) -ForegroundColor Red
                                             }
-                                    }
+                                    } `
                                 else
                                     {
                                         Write-Host $("    vCPU Required: {0}" -f $requiredvCPU)
@@ -2793,7 +2793,7 @@ function Test-SilkResourceDeployment
                 $cNodeSummaryLabel = if ($cNodeReport)
                                         {
                                             $cNodeReport[0].ExpectedSKU
-                                        }
+                                        } `
                                     else
                                         {
                                             "Unknown"
@@ -2915,10 +2915,10 @@ function Test-SilkResourceDeployment
                     }
 
                 # Proximity Placement Group and Availability Sets Summary
-                Write-Host "Proximity Placement Group: " -NoNewline
+                Write-Host "Proximity Placement Groups: " -NoNewline
                 if ($deployedPPG)
                     {
-                        Write-Host $("✓ {0}" -f ($deployedPPG.Name -join ", ")) -ForegroundColor Green
+                        Write-Host $("✓ {0} groups ({1})" -f $deployedPPG.Count, ($deployedPPG.Name -join ", ")) -ForegroundColor Green
                     } `
                 else
                     {
@@ -2977,7 +2977,7 @@ function Test-SilkResourceDeployment
                             {
                                 Write-Host $("⚠ DEPLOYMENT VALIDATION COMPLETE - Specific SKU constraints detected") -ForegroundColor Yellow
                                 Write-Host $("📊 Deployment Readiness: Partial - {0} SKU(s) affected: {1}" -f $uniqueFailedSkus.Count, ($uniqueFailedSkus -join ", ")) -ForegroundColor Yellow
-                            }
+                            } `
                         else
                             {
                                 Write-Host $("⚠ DEPLOYMENT VALIDATION COMPLETE - Mixed results detected") -ForegroundColor Yellow
@@ -3431,20 +3431,20 @@ function Test-SilkResourceDeployment
                 <h4>📍 Placement and Availability</h4>
 "@
 
-                                # Add Proximity Placement Group details using preprocessed data
+                                # Add Proximity Placement Groups details using preprocessed data
                                 if ($deployedPPG)
                                     {
                                         $htmlContent += @"
-                <strong>Proximity Placement Group:</strong> <span class="checkmark">✓ Created</span><br>
-                <strong>PPG Name:</strong> $($deployedPPG.Name)<br>
+                <strong>Proximity Placement Groups:</strong> <span class="checkmark">✓ $($deployedPPG.Count) Created</span><br>
+                <strong>PPG Names:</strong> $($deployedPPG.Name -join ', ')<br>
                 <strong>PPG Type:</strong> Standard<br>
-                <strong>Location:</strong> $($deployedPPG.Location)<br>
+                <strong>Location:</strong> $(($deployedPPG | Select-Object -ExpandProperty Location -Unique -ErrorAction SilentlyContinue) -join ', ')<br>
 "@
                                     }
                                 else
                                     {
                                         $htmlContent += @"
-                <strong>Proximity Placement Group:</strong> <span class="error-mark">✗ Not Found</span><br>
+                <strong>Proximity Placement Groups:</strong> <span class="error-mark">✗ Not Found</span><br>
 "@
                                     }
 

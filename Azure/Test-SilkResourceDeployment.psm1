@@ -825,6 +825,7 @@ function Test-SilkResourceDeployment
                 catch
                     {
                         Write-Error $("An error occurred during Azure PowerShell module validation or authentication: {0}" -f $_.Exception.Message)
+                        $validationError = $true
                         return
                     }
 
@@ -1126,6 +1127,7 @@ function Test-SilkResourceDeployment
                 else
                     {
                         Write-Error "Configuration is not valid. Please specify either CNode parameters (CNodeFriendlyName/CNodeSku with CNodeCount) or MNode parameters (MnodeSizeLsv3/MnodeSizeLaosv4/MNodeSku), or both."
+                        $validationError = $true
                         return
                     }
 
@@ -1158,6 +1160,7 @@ function Test-SilkResourceDeployment
                 elseif (!$CNodeCount -and !$MnodeSizeLsv3 -and !$MnodeSizeLaosv4 -and !$MNodeSku)
                     {
                         Write-Error "No valid configuration specified. Please specify either CNode parameters (CNodeFriendlyName/CNodeSku with CNodeCount) or MNode parameters (MnodeSizeLsv3/MnodeSizeLaosv4/MNodeSku), or both."
+                        $validationError = $true
                         return
                     }
 
@@ -1459,6 +1462,7 @@ function Test-SilkResourceDeployment
                 if (-not $vMImage)
                     {
                         Write-Error $("The specified VM image '{0}' from publisher '{1}' with SKU '{2}' and version '{3}' is not available in the region '{4}'." -f $VMImageOffer, $VMImagePublisher, $VMImageSku, $VMImageVersion, $Region)
+                        $validationError = $true
                         return
                     }
 

@@ -910,7 +910,8 @@ function Test-SilkResourceDeployment
                                         $CreatedResourceGroup = $false
                                         if(Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction SilentlyContinue)
                                             {
-                                                Write-Verbose -Message $("Do not use '-CreateResourceGroup' switch. Resource group '{0}' already exists in subscription '{1}'." -f $ResourceGroupName, $subscriptionCheck.Name)
+                                                Write-Warning -Message $("Do not use '-CreateResourceGroup' switch. Resource group '{0}' already exists in subscription '{1}'." -f $ResourceGroupName, $subscriptionCheck.Name)
+                                                $validationError = $true
                                                 return
                                             }
                                         Write-Verbose -Message $("Creating resource group '{0}' in subscription '{1}'." -f $ResourceGroupName, $subscriptionCheck.Name)
@@ -919,14 +920,24 @@ function Test-SilkResourceDeployment
                                     }
                                 catch
                                     {
-                                        Write-Verbose -Message $("Failed to create resource group '{0}' in subscription '{1}': {2}" -f $ResourceGroupName, $subscriptionCheck.Name, $_.Exception.Message)
+                                        Write-Error -Message $("Failed to create resource group '{0}' in subscription '{1}': {2}" -f $ResourceGroupName, $subscriptionCheck.Name, $_.Exception.Message)
+                                        $validationError = $true
                                         return
                                     }
                             }
 
-                        # Check for resource group
-                        $resourceGroupCheck = Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction Stop
-                        Write-Verbose -Message $("Resource group '{0}' was identified in the subscription {1}." -f $resourceGroupCheck.ResourceGroupName, $subscriptionCheck.Name)
+                        try
+                            {
+                                # Check for resource group
+                                $resourceGroupCheck = Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction Stop
+                                Write-Verbose -Message $("Resource group '{0}' was identified in the subscription {1}." -f $resourceGroupCheck.ResourceGroupName, $subscriptionCheck.Name)
+                            } `
+                        catch
+                            {
+                                Write-Error -Message $("Resource group '{0}' does not exist in subscription '{1}'. Check the name is correct or use the '-CreateResourceGroup' switch if it should be created for the test.: {2}" -f $ResourceGroupName, $subscriptionCheck.Name, $_.Exception.Message)
+                                $validationError = $true
+                                return
+                            }
 
                         # Check region and get supported SKUs
                         $locationSupportedSKU = Get-AzComputeResourceSku -Location $Region -ErrorAction Stop
@@ -936,16 +947,16 @@ function Test-SilkResourceDeployment
                             {
                                 Write-Error -Message $("The specified zone '{0}' is not available in the region '{1}'." -f $Zone, $Region)
                                 return
-                            }
+                            } `
                         elseif ($Zone -eq "Zoneless" -and $locationSupportedSKU.LocationInfo.Zones.Count -ne 0)
                             {
                                 Write-Error -Message $("The specified region '{0}' has availability zones {1}, but 'Zoneless' was specified." -f ($locationSupportedSKU.LocationInfo.Location | Select-Object -Unique), (($locationSupportedSKU.LocationInfo.Zones | Sort-Object | Select-Object -Unique) -join ", "))
                                 return
-                            }
+                            } `
                         elseif ($Zone -eq "Zoneless")
                             {
                                 Write-Verbose -Message $("Zoneless is a valid zone selection for the specified region '{0}'." -f ($locationSupportedSKU.LocationInfo.Location | Select-Object -Unique))
-                            }
+                            } `
                         else
                             {
                                 Write-Verbose -Message $("The specified zone '{0}' is available in the region '{1}' with zones {2}." -f $Zone, ($locationSupportedSKU.LocationInfo.Location | Select-Object -Unique), (($locationSupportedSKU.LocationInfo.Zones | Sort-Object | Select-Object -Unique) -join ", "))
@@ -954,6 +965,7 @@ function Test-SilkResourceDeployment
                 catch
                     {
                         Write-Error -Message "Failed to validate environment information: $_"
+                        $validationError = $true
                         return
                     }
 
@@ -1553,6 +1565,12 @@ function Test-SilkResourceDeployment
         # This block is used to provide record-by-record processing for the function.
         process
             {
+                # if there is a validtion error skip deployment
+                if ($validationError)
+                    {
+                        Write-Error "Validation failed. Please fix the errors and try again."
+                        return
+                    }
                 # if run cleanup only, skip the process code
                 if($RunCleanupOnly)
                     {

@@ -165,7 +165,7 @@ function Test-SilkResourceDeployment
             .PARAMETER VMInstanceCredential
                 PowerShell credential object containing username and password for VM local administrator account.
                 Default: Username "azureuser" with secure password for testing purposes.
-                Used for VM deployment - SSH key authentication not implemented in test scenarios.
+                Used for VM deployment supplied out of necessity with no expectation to actually use the credential.
 
             .EXAMPLE
                 Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -MnodeSizeLaosv4 @("14.67","29.34") -Verbose
@@ -199,7 +199,10 @@ function Test-SilkResourceDeployment
             .OUTPUTS
                 Console output with comprehensive deployment status information, resource validation results,
                 SKU availability reports, quota validation summaries, and deployment progress tracking.
-                No objects are returned to the pipeline - all output is informational console display.
+                Additionally, an HTML report is generated (unless -NoHTMLReport is specified) summarizing deployment status,
+                quota usage, SKU support, and resource validation results. The report is saved to the path specified by -ReportOutputPath
+                or defaults to the current working directory in the format 'SilkDeploymentReport_[timestamp].html'.
+                No objects are returned to the pipeline; all output is informational console display and/or HTML report file.
 
             .NOTES
                 Function Version: 1.97.9-1.0.1

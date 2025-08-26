@@ -32,7 +32,7 @@
     + In a default Azure Cloud Shell or Local Powershell Session with access to github
         1. Run this command to download and import the [Test-SilkResourceDeployment module](Test-SilkResourceDeployment.psm1)
             >```powershell
-            >Invoke-WebRequest -Uri https://raw.githubusercontent.com/silk-us/scripts-and-configs/refs/heads/main/Azure/Resource%20Availability%20Check/Test-SilkResourceDeployment.psm1 | Select-Object -ExpandProperty Content | Out-File .\Test-SilkResourceDeployment.psm1 -Force; Import-Module -Force .\Test-SilkResourceDeployment.psm1 -Verbose
+            >Invoke-WebRequest -Uri https://raw.githubusercontent.com/silk-us/scripts-and-configs/refs/heads/main/Azure/Resource%20Availability%20Check/Test-SilkResourceDeployment.psm1 | Select-Object -ExpandProperty Content | Out-File .\Test-SilkResourceDeployment.psm1 -Force; if (Get-Item -Path .\Test-SilkResourceDeployment.psm1 -Stream "Zone.Identifier" -ErrorAction SilentlyContinue){ Unblock-File -Path .\Test-SilkResourceDeployment.psm1 }; Import-Module -Force .\Test-SilkResourceDeployment.psm1 -Verbose
             >```
 
     + In an Isolated Azure Cloud Shell or Local Powershell Session without internet access
@@ -41,6 +41,7 @@
             >```powershell
             >Import-Module ".\Test-SilkResourceDeployment.psm1"
             >```
+            >>* You may need to unblock the file: `Unblock-File -Path .\Test-SilkResourceDeployment.psm1`
 1. Run the function with your configuration file:
     >```powershell
     >Test-SilkResourceDeployment -ChecklistJSON ".\silk-checklist.json"

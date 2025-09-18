@@ -854,7 +854,7 @@ function Test-SilkResourceDeployment
                             } `
                         else
                             {
-                                Write-Warning -Message $("Subscription ID parameter is set to '{0}', ignoring subscription ID in JSON configuration." -f $SubscriptionId)
+                                Write-Warning -Message $("Subscription ID parameter is set to '{0}', ignoring subscription ID '{1}' in JSON configuration." -f $SubscriptionId, $ConfigImport.azure_environment.subscription_id)
                             }
 
                         if (!$ResourceGroupName)
@@ -863,7 +863,7 @@ function Test-SilkResourceDeployment
                             } `
                         else
                             {
-                                Write-Warning -Message $("Resource Group Name parameter is set to '{0}', ignoring resource group name in JSON configuration." -f $ResourceGroupName)
+                                Write-Warning -Message $("Resource Group Name parameter is set to '{0}', ignoring resource group name '{1}' in JSON configuration." -f $ResourceGroupName, $ConfigImport.azure_environment.resource_group_name)
                             }
 
                         if(!$Region)
@@ -872,7 +872,7 @@ function Test-SilkResourceDeployment
                             } `
                         else
                             {
-                                Write-Warning -Message $("Region parameter is set to '{0}', ignoring region in JSON configuration." -f $Region)
+                                Write-Warning -Message $("Region parameter is set to '{0}', ignoring region '{1}' in JSON configuration." -f $Region, $ConfigImport.azure_environment.region)
                             }
 
                         if(!$Zone)
@@ -881,7 +881,7 @@ function Test-SilkResourceDeployment
                             } `
                         else
                             {
-                                Write-Warning -Message $("Zone parameter is set to '{0}', ignoring zone in JSON configuration." -f $Zone)
+                                Write-Warning -Message $("Zone parameter is set to '{0}', ignoring zone '{1}' in JSON configuration." -f $Zone, $ConfigImport.azure_environment.zone)
                             }
 
                         # identify cnode count

@@ -851,6 +851,7 @@ function Test-SilkResourceDeployment
                         if (!$SubscriptionId)
                             {
                                 $SubscriptionId = $ConfigImport.azure_environment.subscription_id
+                                Write-Verbose -Message $("Using subscription ID '{0}' from JSON configuration." -f $SubscriptionId)
                             } `
                         else
                             {
@@ -860,6 +861,7 @@ function Test-SilkResourceDeployment
                         if (!$ResourceGroupName)
                             {
                                 $ResourceGroupName = $ConfigImport.azure_environment.resource_group_name
+                                Write-Verbose -Message $("Using resource group name '{0}' from JSON configuration." -f $ResourceGroupName)
                             } `
                         else
                             {
@@ -869,6 +871,7 @@ function Test-SilkResourceDeployment
                         if(!$Region)
                             {
                                 $Region = $ConfigImport.azure_environment.region
+                                Write-Verbose -Message $("Using region '{0}' from JSON configuration." -f $Region)
                             } `
                         else
                             {
@@ -878,6 +881,7 @@ function Test-SilkResourceDeployment
                         if(!$Zone)
                             {
                                 $Zone = $ConfigImport.azure_environment.zone
+                                Write-Verbose -Message $("Using zone '{0}' from JSON configuration." -f $Zone)
                             } `
                         else
                             {

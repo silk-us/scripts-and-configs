@@ -1943,10 +1943,10 @@ function Test-SilkResourceDeployment
                                     -Activity "VM Deployment" `
                                     -Id 1
 
-                                # create cnode proximity placement group including VMsizes if Zoneless
+                                # create cnode proximity placement group including VM SKUs if Zoneless
                                 if($Zone -ne "Zoneless")
                                     {
-                                        Write-Verbose -Message $("Creating CNode Proximity Placement Group in region '{0}' with zone '{1}' and VM size: {2}" -f $Region, $Zone, $cNodeVMSku)
+                                        Write-Verbose -Message $("Creating CNode Proximity Placement Group in region '{0}' with zone '{1}' and VM SKU: {2}" -f $Region, $Zone, $cNodeVMSku)
                                         $cNodeProximityPlacementGroup = New-AzProximityPlacementGroup `
                                                                     -ResourceGroupName $ResourceGroupName `
                                                                     -Location $Region `
@@ -2110,10 +2110,10 @@ function Test-SilkResourceDeployment
                                 $currentMNodeSku = "{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix
                                 $currentMNodePhysicalSize = $mNode.PhysicalSize
 
-                                # create mnode proximity placement group including VMsizes if Zoneless
+                                # create mnode proximity placement group including VM SKUs if Zoneless
                                 if($Zone -ne "Zoneless")
                                     {
-                                        Write-Verbose -Message $("Creating Proximity Placement Group in region '{0}' with zone '{1}' and VM sizes: {2}" -f $Region, $Zone, $currentMNodeSku)
+                                        Write-Verbose -Message $("Creating Proximity Placement Group in region '{0}' with zone '{1}' and VM SKUs: {2}" -f $Region, $Zone, $currentMNodeSku)
                                         $mNodeProximityPlacementGroup = New-AzProximityPlacementGroup `
                                                                         -ResourceGroupName $ResourceGroupName `
                                                                         -Location $Region `
@@ -2427,17 +2427,21 @@ function Test-SilkResourceDeployment
                                                 # Categorize the failure type for better reporting
                                                 if ($errorCode -eq "AllocationFailed" -or $errorMessage -match "sufficient capacity|allocation failed")
                                                     {
-                                                        $failureCategory = "Capacity"
+                                                        $failureCategory = "No SKU Capacity Available"
+                                                        if ([string]::IsNullOrWhiteSpace($errorMessage))
+                                                            {
+                                                                $errorMessage = "No capacity available for this SKU in the zone/region"
+                                                            }
                                                     } `
                                                 elseif ($errorCode -match "Quota|quota" -or $errorMessage -match "quota|limit")
                                                     {
-                                                        $failureCategory = "Quota"
+                                                        $failureCategory = "Quota Exceeded"
                                                     } `
                                                 elseif ($errorCode -match "SKU|sku" -or $errorMessage -match "sku|size")
                                                     {
-                                                        $failureCategory = "SKU Availability"
+                                                        $failureCategory = "SKU Support"
 
-                                                        # For SKU availability issues, check if SKU is available in other zones within the region
+                                                        # For SKU support issues, check if SKU is supported in other zones within the region
                                                         if ($vmSku)
                                                             {
                                                                 $skuInfo = Get-AzComputeResourceSku | Where-Object { $_.Name -eq $vmSku -and $_.LocationInfo.Location -eq $Region }
@@ -2493,17 +2497,17 @@ function Test-SilkResourceDeployment
                                         }
 
                                         # Log deployment validation findings appropriately based on failure type
-                                        if ($failureCategory -eq "Capacity")
+                                        if ($failureCategory -eq "No SKU Capacity Available")
                                             {
-                                                Write-Verbose -Message $("⚠ Capacity constraint detected for VM {0} ({1}): {2}" -f $vmName, $vmSku, $errorMessage)
+                                                Write-Verbose -Message $("⚠ No SKU Capacity available for deployment - VM {0} ({1}): {2}" -f $vmName, $vmSku, $errorMessage)
                                             } `
-                                        elseif ($failureCategory -eq "Quota")
+                                        elseif ($failureCategory -eq "Quota Exceeded")
                                             {
                                                 Write-Warning -Message $("Quota limitation detected for VM {0} ({1}): {2}" -f $vmName, $vmSku, $errorMessage)
                                             } `
-                                        elseif ($failureCategory -eq "SKU Availability")
+                                        elseif ($failureCategory -eq "SKU Support")
                                             {
-                                                Write-Warning -Message $("SKU availability issue detected for VM {0} ({1}): {2}" -f $vmName, $vmSku, $errorMessage)
+                                                Write-Warning -Message $("SKU support issue detected for VM {0} ({1}): {2}" -f $vmName, $vmSku, $errorMessage)
                                             } `
                                         else
                                             {
@@ -2928,9 +2932,9 @@ function Test-SilkResourceDeployment
 
                 # Deployment Validation Findings Analysis
                 $validationFindings = @{
-                    CapacityIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Capacity" }
-                    QuotaIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Quota" }
-                    SKUIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "SKU Availability" }
+                    NoCapacityIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "No SKU Capacity Available" }
+                    QuotaIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Quota Exceeded" }
+                    SKUSupportIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "SKU Support" }
                     OtherIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Other" }
                 }
 
@@ -3176,28 +3180,34 @@ function Test-SilkResourceDeployment
                         Write-Host "`nDeployment Validation Findings:" -ForegroundColor Yellow
 
                         # Display deployment validation findings using preprocessed data
-                        if ($validationFindings.CapacityIssues.Count -gt 0)
+                        if ($validationFindings.NoCapacityIssues.Count -gt 0)
                             {
-                                $affectedSkus = $validationFindings.CapacityIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
-                                Write-Host $("  🏗️ Capacity Constraints: {0} VM(s) affected ({1})" -f $validationFindings.CapacityIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                                $affectedSkus = $validationFindings.NoCapacityIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                                Write-Host $("  ⚠️ No SKU Capacity Available: {0} VM(s) affected ({1})" -f $validationFindings.NoCapacityIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                                Write-Host "      → Azure has no available capacity for these VM SKUs in the target zone/region" -ForegroundColor DarkGray
+                                Write-Host "      → Try: Different availability zone, different region, or wait and retry" -ForegroundColor DarkGray
                             }
 
                         if ($validationFindings.QuotaIssues.Count -gt 0)
                             {
                                 $affectedSkus = $validationFindings.QuotaIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
-                                Write-Host $("  📊 Quota Limitations: {0} VM(s) affected ({1})" -f $validationFindings.QuotaIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                                Write-Host $("  📊 Quota Exceeded: {0} VM(s) affected ({1})" -f $validationFindings.QuotaIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                                Write-Host "      → Subscription has reached limits for these VM families or total vCPUs" -ForegroundColor DarkGray
+                                Write-Host "      → Try: Request quota increase via Azure portal Support tickets" -ForegroundColor DarkGray
                             }
 
-                        if ($validationFindings.SKUIssues.Count -gt 0)
+                        if ($validationFindings.SKUSupportIssues.Count -gt 0)
                             {
-                                $affectedSkus = $validationFindings.SKUIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
-                                Write-Host $("  🔧 SKU Availability: {0} VM(s) affected ({1})" -f $validationFindings.SKUIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                                $affectedSkus = $validationFindings.SKUSupportIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                                Write-Host $("  🔧 SKU Support: {0} VM(s) affected ({1})" -f $validationFindings.SKUSupportIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                                Write-Host "      → These VM SKUs are not supported in the target region/zone" -ForegroundColor DarkGray
+                                Write-Host "      → Try: Different region that supports these SKUs, or use alternative VM SKUs" -ForegroundColor DarkGray
 
-                                # Show zone-specific information for SKU availability issues
-                                $skuIssuesWithAlternatives = $validationFindings.SKUIssues | Where-Object { $_.AlternativeZones -and $_.AlternativeZones.Count -gt 0 }
+                                # Show zone-specific information for SKU support issues
+                                $skuIssuesWithAlternatives = $validationFindings.SKUSupportIssues | Where-Object { $_.AlternativeZones -and $_.AlternativeZones.Count -gt 0 }
                                 if ($skuIssuesWithAlternatives.Count -gt 0)
                                     {
-                                        Write-Host $("      Alternative zones available within {0} for affected SKUs" -f $Region) -ForegroundColor Gray
+                                        Write-Host $("      → Alternative zones available within {0} for affected SKUs" -f $Region) -ForegroundColor DarkGray
                                     }
                             }
 
@@ -3205,6 +3215,8 @@ function Test-SilkResourceDeployment
                             {
                                 $affectedSkus = $validationFindings.OtherIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
                                 Write-Host $("  ⚙️ Other Constraints: {0} VM(s) affected ({1})" -f $validationFindings.OtherIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                                Write-Host "      → Deployment failed due to other Azure constraints or configuration issues" -ForegroundColor DarkGray
+                                Write-Host "      → Try: Review error details in HTML report for specific troubleshooting steps" -ForegroundColor DarkGray
                             }
                     }
 
@@ -3329,7 +3341,7 @@ function Test-SilkResourceDeployment
                 if ($successfulVMs -eq $totalExpectedVMs -and $deployedVNet -and $deployedNSG)
                     {
                         Write-Host $("✓ DEPLOYMENT VALIDATION COMPLETE - All SKUs successfully deployed in target region: {0} zone: {1}" -f $Region, $Zone) -ForegroundColor Green
-                        Write-Host $("📊 Deployment Readiness: Excellent - No capacity or availability constraints detected") -ForegroundColor Green
+                        Write-Host $("📊 Deployment Readiness: Excellent - No SKU Capacity or availability constraints detected") -ForegroundColor Green
                     } `
                 elseif ($successfulVMs -gt 0)
                     {
@@ -3923,17 +3935,19 @@ function Test-SilkResourceDeployment
 "@
 
                                         # Group validation results by failure category for HTML summary
-                                        $capacityIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Capacity" }
-                                        $quotaIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Quota" }
-                                        $skuIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "SKU Availability" }
+                                        $noCapacityIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "No SKU Capacity Available" }
+                                        $quotaIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Quota Exceeded" }
+                                        $skuSupportIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "SKU Support" }
                                         $otherIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Other" }
 
-                                        if ($capacityIssues.Count -gt 0)
+                                        if ($noCapacityIssues.Count -gt 0)
                                             {
-                                                $affectedSkus = $capacityIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                                                $affectedSkus = $noCapacityIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
                                                 $htmlContent += @"
-                <strong>🏗️ Capacity Constraints:</strong> <span class="status-warning">$($capacityIssues.Count) VM(s) affected</span><br>
+                <strong>⚠️ No SKU Capacity Available:</strong> <span class="status-warning">$($noCapacityIssues.Count) VM(s) affected</span><br>
                 <strong>Affected SKUs:</strong> $($affectedSkus -join ", ")<br>
+                <strong>Issue:</strong> Azure has no available capacity for these VM SKUs in the target zone/region<br>
+                <strong>Solutions:</strong> Try different availability zone, different region, or wait and retry<br><br>
 "@
                                             }
 
@@ -3941,27 +3955,32 @@ function Test-SilkResourceDeployment
                                             {
                                                 $affectedSkus = $quotaIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
                                                 $htmlContent += @"
-                <strong>📊 Quota Limitations:</strong> <span class="status-warning">$($quotaIssues.Count) VM(s) affected</span><br>
+                <strong>📊 Quota Exceeded:</strong> <span class="status-warning">$($quotaIssues.Count) VM(s) affected</span><br>
                 <strong>Affected SKUs:</strong> $($affectedSkus -join ", ")<br>
+                <strong>Issue:</strong> Subscription has reached limits for these VM families or total vCPUs<br>
+                <strong>Solutions:</strong> Request quota increase via Azure portal Support tickets<br><br>
 "@
                                             }
 
-                                        if ($skuIssues.Count -gt 0)
+                                        if ($skuSupportIssues.Count -gt 0)
                                             {
-                                                $affectedSkus = $skuIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                                                $affectedSkus = $skuSupportIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
                                                 $htmlContent += @"
-                <strong>🔧 SKU Availability:</strong> <span class="status-warning">$($skuIssues.Count) VM(s) affected</span><br>
+                <strong>🔧 SKU Support:</strong> <span class="status-warning">$($skuSupportIssues.Count) VM(s) affected</span><br>
                 <strong>Affected SKUs:</strong> $($affectedSkus -join ", ")<br>
+                <strong>Issue:</strong> These VM SKUs are not supported in the target region/zone<br>
+                <strong>Solutions:</strong> Use different region that supports these SKUs, or use alternative VM SKUs<br>
 "@
 
-                                                # Show zone-specific information for SKU availability issues
-                                                $skuIssuesWithAlternatives = $skuIssues | Where-Object { $_.AlternativeZones -and $_.AlternativeZones.Count -gt 0 }
+                                                # Show zone-specific information for SKU support issues
+                                                $skuIssuesWithAlternatives = $skuSupportIssues | Where-Object { $_.AlternativeZones -and $_.AlternativeZones.Count -gt 0 }
                                                 if ($skuIssuesWithAlternatives.Count -gt 0)
                                                     {
                                                         $htmlContent += @"
                 <strong>Alternative Zones:</strong> Available within $Region for affected SKUs<br>
 "@
                                                     }
+                                                $htmlContent += "<br>"
                                             }
 
                                         if ($otherIssues.Count -gt 0)
@@ -3969,7 +3988,9 @@ function Test-SilkResourceDeployment
                                                 $affectedSkus = $otherIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
                                                 $htmlContent += @"
                 <strong>⚙️ Other Constraints:</strong> <span class="status-warning">$($otherIssues.Count) VM(s) affected</span><br>
-                <strong>Affected SKUs:</strong> $($affectedSkus -join ", ")
+                <strong>Affected SKUs:</strong> $($affectedSkus -join ", ")<br>
+                <strong>Issue:</strong> Deployment failed due to other Azure constraints or configuration issues<br>
+                <strong>Solutions:</strong> Review detailed error messages below for specific troubleshooting steps<br><br>
 "@
                                             }
 

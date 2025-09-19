@@ -33,8 +33,8 @@ function Test-SilkResourceDeployment
                 - MNodes: Media nodes that coordinate data operations and storage management
                 - DNodes: Data nodes that store and serve data (deployed as part of MNode groups)
 
-                Function Version: 1.97.9-1.0.0
-                Supporting Silk SDP configurations from version 1.97.9
+                Function Version: 1.98.9-1.0.1
+                Supporting Silk SDP configurations from version 1.98.9
 
             .PARAMETER SubscriptionId
                 Azure Subscription ID where resources will be deployed.

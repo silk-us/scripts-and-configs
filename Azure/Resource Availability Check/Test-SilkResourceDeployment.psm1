@@ -1183,14 +1183,22 @@ function Test-SilkResourceDeployment
                 # SKU Configuration Identification and Validation
                 # ===============================================================================
                 # Set MNode size from parameter values when not using JSON configuration
-                if (!$MNodeSize -and $ConfigImport <# DELETE once PV2 Supported>>>#> -and $ConfigImport.sdp.m_node_type -and $ConfigImport.sdp.m_node_type -ne "PV2" <# !<<<< DELETE once PV2 Supported#> )
+                if (!$MNodeSize -and $ConfigImport)
+                    {
                         ##################### !
                         #! No PV2 support presently
                         #! zero out the mnode values if PV2 is selected
                         #! delete once PV2 is supported
                         ##################### !
-                    {
-                        $MNodeSize = $ConfigImport.sdp.m_node_sizes
+                        if(<# DELETE once PV2 Supported>>>#> $ConfigImport.sdp.m_node_type -and $ConfigImport.sdp.m_node_type -eq "PV2" <# !<<<< DELETE once PV2 Supported#> )
+                            {
+                                Write-Error -Message $("PV2 MNode type is not currently supported. Please select Lsv3 or Laosv4 MNode types.")
+                            }
+                        else
+                            {
+                                # ! Keep this Part VVVV
+                                $MNodeSize = $ConfigImport.sdp.m_node_sizes
+                            }
                     } `
                 elseif ($MnodeSizeLsv3)
                     {

@@ -792,7 +792,7 @@ function Test-SilkResourceDeployment
                             }
 
                         # Suppress Azure PowerShell breaking change warnings for cleaner output
-                        Write-Verbose -Message "Configuring Azure PowerShell warning preferences..."
+                        Write-Verbose -Message $("Configuring Azure PowerShell warning preferences...")
                         try
                             {
                                 # Suppress breaking change warnings globally for this session
@@ -805,19 +805,19 @@ function Test-SilkResourceDeployment
                                         $WarningPreference = 'SilentlyContinue'
                                     }
 
-                                Write-Verbose -Message "✓ Azure PowerShell breaking change warnings suppressed for cleaner output."
+                                Write-Verbose -Message $("✓ Azure PowerShell breaking change warnings suppressed for cleaner output.")
                             }
                         catch
                             {
-                                Write-Verbose -Message "Warning: Could not suppress Azure PowerShell breaking change warnings."
+                                Write-Verbose -Message $("Warning: Could not suppress Azure PowerShell breaking change warnings.")
                             }
 
                         # Verify Azure authentication status
-                        Write-Verbose -Message "Checking Azure authentication status..."
+                        Write-Verbose -Message $("Checking Azure authentication status...")
                         $currentAzContext = Get-AzContext
                         if (-not $currentAzContext)
                             {
-                                Write-Warning -Message "You are not authenticated to Azure. Attempting interactive authentication..."
+                                Write-Warning -Message $("You are not authenticated to Azure. Attempting interactive authentication...")
 
                                 try
                                     {
@@ -850,15 +850,15 @@ function Test-SilkResourceDeployment
                                 try
                                     {
                                         $testConnection = Get-AzSubscription -SubscriptionId $currentAzContext.Subscription.Id -ErrorAction Stop
-                                        Write-Verbose -Message "✓ Azure authentication is valid and active."
+                                        Write-Verbose -Message $("✓ Azure authentication is valid and active.")
                                     }
                                 catch
                                     {
-                                        Write-Warning -Message "Current Azure context appears to be expired. Attempting re-authentication..."
+                                        Write-Warning -Message $("Current Azure context appears to be expired. Attempting re-authentication...")
                                         try
                                             {
                                                 $connectResult = Connect-AzAccount -ErrorAction Stop
-                                                Write-Verbose -Message "✓ Azure re-authentication successful."
+                                                Write-Verbose -Message $("✓ Azure re-authentication successful.")
                                             }
                                         catch
                                             {
@@ -868,7 +868,7 @@ function Test-SilkResourceDeployment
                                     }
                             }
 
-                        Write-Verbose -Message "=== Azure PowerShell Prerequisites Complete ==="
+                        Write-Verbose -Message $("=== Azure PowerShell Prerequisites Complete ===")
                     }
                 catch
                     {
@@ -1066,7 +1066,7 @@ function Test-SilkResourceDeployment
 
                 if ($Development)
                     {
-                        Write-Verbose -Message "Running in Development Mode, using reduced CNode configuration for faster deployment."
+                        Write-Verbose -Message $("Running in Development Mode, using reduced CNode configuration for faster deployment.")
                         $cNodeSizeObject = @(
                                                 [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 2; vmSkuSuffix = "s_v5"; QuotaFamily = "Standard Dsv5 Family vCPUs"; cNodeFriendlyName = "No_Increased_Logical_Capacity"};
                                                 [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 4; vmSkuSuffix = "s_v3"; QuotaFamily = "Standard Lsv3 Family vCPUs"; cNodeFriendlyName = "Read_Cache_Enabled"};
@@ -1113,7 +1113,7 @@ function Test-SilkResourceDeployment
 
                 if ($Development)
                     {
-                        Write-Verbose -Message "Running in Development Mode, using reduced MNode/DNode configuration for faster deployment."
+                        Write-Verbose -Message $("Running in Development Mode, using reduced MNode/DNode configuration for faster deployment.")
                         $mNodeSizeObject = @(
                                                 [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "s_v3";   PhysicalSize = 19.5;     QuotaFamily = "Standard Lsv3 Family vCPUs"};
                                                 [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "s_v3";   PhysicalSize = 39.1;     QuotaFamily = "Standard Lsv3 Family vCPUs"};
@@ -1147,7 +1147,7 @@ function Test-SilkResourceDeployment
                         $IPRangeCIDR = "10.0.0.0/24"
                     }
 
-                Write-Verbose -Message "Using IP range: $IPRangeCIDR for VNet and subnet configuration."
+                Write-Verbose -Message $("Using IP range: {0} for VNet and subnet configuration." -f $IPRangeCIDR)
 
 
                 # ===============================================================================
@@ -1181,7 +1181,7 @@ function Test-SilkResourceDeployment
                 if (!$CNodeCount -and !$CNodeFriendlyName -and !$CNodeSku -and $MnodeSize)
                     {
                         # MNode-only deployment scenario - no CNode configuration required
-                        Write-Verbose -Message "MNode-only deployment mode - CNode configuration skipped."
+                        Write-Verbose -Message $("MNode-only deployment mode - CNode configuration skipped.")
                         $cNodeObject = $null
                     } `
                 elseif ($CNodeCount -and ($CNodeFriendlyName -eq "Read_Cache_Enabled" -or $ConfigImport.sdp.read_cache_enabled))
@@ -1202,7 +1202,7 @@ function Test-SilkResourceDeployment
                     } `
                 else
                     {
-                        Write-Error "Configuration is not valid. Please specify either CNode parameters (CNodeFriendlyName/CNodeSku with CNodeCount) or MNode parameters (MnodeSizeLsv3/MnodeSizeLaosv4/MNodeSku), or both."
+                        Write-Error $("Configuration is not valid. Please specify either CNode parameters (CNodeFriendlyName/CNodeSku with CNodeCount) or MNode parameters (MnodeSizeLsv3/MnodeSizeLaosv4/MNodeSku), or both.")
                         $validationError = $true
                         return
                     }
@@ -1210,7 +1210,7 @@ function Test-SilkResourceDeployment
                 if ($cNodeObject)
                     {
                         $cNodeVMSku = "{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix
-                        Write-Verbose -Message ("Identified CNode SKU: {0}" -f $cNodeVMSku)
+                        Write-Verbose -Message $("Identified CNode SKU: {0}" -f $cNodeVMSku)
                     }
 
                 # Initialize MNode object list to hold configuration for each MNode type
@@ -1231,11 +1231,11 @@ function Test-SilkResourceDeployment
                 elseif ($CNodeCount -and !$MnodeSizeLsv3 -and !$MnodeSizeLaosv4 -and !$MNodeSku)
                     {
                         # CNode-only deployment scenario - no MNode configuration required
-                        Write-Verbose -Message "CNode-only deployment mode - no MNode resources will be created."
+                        Write-Verbose -Message $("CNode-only deployment mode - no MNode resources will be created.")
                     } `
                 elseif (!$CNodeCount -and !$MnodeSizeLsv3 -and !$MnodeSizeLaosv4 -and !$MNodeSku)
                     {
-                        Write-Error "No valid configuration specified. Please specify either CNode parameters (CNodeFriendlyName/CNodeSku with CNodeCount) or MNode parameters (MnodeSizeLsv3/MnodeSizeLaosv4/MNodeSku), or both."
+                        Write-Error $("No valid configuration specified. Please specify either CNode parameters (CNodeFriendlyName/CNodeSku with CNodeCount) or MNode parameters (MnodeSizeLsv3/MnodeSizeLaosv4/MNodeSku), or both.")
                         $validationError = $true
                         return
                     }
@@ -1366,7 +1366,7 @@ function Test-SilkResourceDeployment
                         $cNodeSupportedSKU = $locationSupportedSKU | Where-Object Name -eq $cNodeVMSku
                         if (!$cNodeSupportedSKU)
                             {
-                                Write-Error "Unable to identify location for CNode SKU: {0} in region: {1}" -f $cNodeVMSku, $Region
+                                Write-Error $("Unable to identify location for CNode SKU: {0} in region: {1}" -f $cNodeVMSku, $Region)
                                 return
                             } `
                         elseif ($cNodeSupportedSKU -and $Zone -eq "Zoneless")
@@ -1529,13 +1529,13 @@ function Test-SilkResourceDeployment
                             } `
                         else
                             {
-                                Write-Verbose "All required quotas are available for the specified CNode and MNode configurations."
+                                Write-Verbose $("All required quotas are available for the specified CNode and MNode configurations.")
                             }
 
                     } `
                 catch
                     {
-                        Write-Error "Error occurred while checking compute quota: $_"
+                        Write-Error $("Error occurred while checking compute quota: {0}" -f $_)
                     }
 
 
@@ -1684,7 +1684,7 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 # Deployment Configuration Summary
                 # ===============================================================================
-                Write-Verbose -Message "=== Silk Azure Deployment Configuration ==="
+                Write-Verbose -Message $("=== Silk Azure Deployment Configuration ===")
                 Write-Verbose -Message $("Subscription ID: {0}" -f $SubscriptionId)
                 Write-Verbose -Message $("Resource Group: {0}" -f $ResourceGroupName)
                 Write-Verbose -Message $("Deployment Region: {0}" -f $Region)
@@ -1699,7 +1699,7 @@ function Test-SilkResourceDeployment
                     } `
                 else
                     {
-                        Write-Verbose -Message "CNode Count: 0 (MNode-only deployment)"
+                        Write-Verbose -Message $("CNode Count: 0 (MNode-only deployment)")
                     }
 
                 if ($mNodeObject -and $mNodeObject.Count -gt 0)
@@ -1736,13 +1736,13 @@ function Test-SilkResourceDeployment
 
                 if ($Development)
                     {
-                        Write-Verbose -Message "Development Mode: ENABLED (using smaller VM sizes for faster deployment)"
+                        Write-Verbose -Message $("Development Mode: ENABLED (using smaller VM sizes for faster deployment)")
                     } `
                 else
                     {
-                        Write-Verbose -Message "Development Mode: DISABLED (deploying production VM SKUs)"
+                        Write-Verbose -Message $("Development Mode: DISABLED (deploying production VM SKUs)")
                     }
-                Write-Verbose -Message "=========================================="
+                Write-Verbose -Message $("==========================================")
             }
 
         # This block is used to provide record-by-record processing for the function.
@@ -1751,7 +1751,7 @@ function Test-SilkResourceDeployment
                 # if there is a validtion error skip deployment
                 if ($validationError)
                     {
-                        Write-Error "Validation failed. Please fix the errors and try again."
+                        Write-Error $("Validation failed. Please fix the errors and try again.")
                         return
                     }
                 # if run cleanup only, skip the process code
@@ -1820,7 +1820,7 @@ function Test-SilkResourceDeployment
                         Write-Verbose -Message $("  - Inbound Rule: '{0}' - {1} traffic from source '{2}' ports '{3}' to destination '{4}' ports '{5}' protocol '{6}' [Priority: {7}]" -f $verboseInboundRule.Name, $verboseInboundRule.Access, ($verboseInboundRule.SourceAddressPrefix -join ','), ($verboseInboundRule.SourcePortRange -join ','), ($verboseInboundRule.DestinationAddressPrefix -join ','), ($verboseInboundRule.DestinationPortRange -join ','), $verboseInboundRule.Protocol, $verboseInboundRule.Priority)
                         Write-Verbose -Message $("  - Outbound Rule: '{0}' - {1} traffic from source '{2}' ports '{3}' to destination '{4}' ports '{5}' protocol '{6}' [Priority: {7}]" -f $verboseOutboundRule.Name, $verboseOutboundRule.Access, ($verboseOutboundRule.SourceAddressPrefix -join ','), ($verboseOutboundRule.SourcePortRange -join ','), ($verboseOutboundRule.DestinationAddressPrefix -join ','), ($verboseOutboundRule.DestinationPortRange -join ','), $verboseOutboundRule.Protocol, $verboseOutboundRule.Priority)
 
-                        Write-Verbose -Message "  - Security Impact: Complete network isolation - NO traffic allowed in any direction"
+                        Write-Verbose -Message $("  - Security Impact: Complete network isolation - NO traffic allowed in any direction")
 
                         # -----------------------------------------------------------------------
                         # Subnet Configuration
@@ -1842,7 +1842,7 @@ function Test-SilkResourceDeployment
                                     -Subnet $mGMTSubnet #, $storageSubnet
 
                         Write-Verbose -Message $("✓ Virtual Network '{0}' created with address space {1}" -f $vNET.Name, $IPRangeCIDR)
-                        Write-Verbose -Message "✓ Network isolation configured: All VMs will be deployed with NO network access"
+                        Write-Verbose -Message $("✓ Network isolation configured: All VMs will be deployed with NO network access")
 
                         $mGMTSubnetID = $vNET.Subnets | Where-Object { $_.Name -eq $mGMTSubnet.Name } | Select-Object -ExpandProperty Id
                     } `
@@ -1856,9 +1856,9 @@ function Test-SilkResourceDeployment
                 try
                     {
                         # Clean up any old jobs before starting deployment to better track jobs related to the active run
-                        Write-Verbose -Message "Cleaning up any existing background jobs..."
+                        Write-Verbose -Message $("Cleaning up any existing background jobs...")
                         Get-Job | Remove-Job -Force
-                        Write-Verbose -Message "All existing jobs have been removed."
+                        Write-Verbose -Message $("All existing jobs have been removed.")
 
                         # Initialize job-to-VM mapping for meaningful error reporting
                         $vmJobMapping = @{}
@@ -3767,24 +3767,24 @@ function Test-SilkResourceDeployment
                                         if ($IsWindows -or $PSVersionTable.PSVersion.Major -le 5)
                                             {
                                                 Start-Process $ReportFullPath
-                                                Write-Verbose -Message "HTML report opened in default browser."
+                                                Write-Verbose -Message $("HTML report opened in default browser.")
                                             }
                                         elseif ($IsLinux)
                                             {
                                                 if (Get-Command xdg-open -ErrorAction SilentlyContinue)
                                                     {
                                                         & xdg-open $ReportFullPath
-                                                        Write-Verbose -Message "HTML report opened with xdg-open."
+                                                        Write-Verbose -Message $("HTML report opened with xdg-open.")
                                                     }
                                                 else
                                                     {
-                                                        Write-Verbose -Message "xdg-open not available. Report saved but not opened automatically."
+                                                        Write-Verbose -Message $("xdg-open not available. Report saved but not opened automatically.")
                                                     }
                                             }
                                         elseif ($IsMacOS)
                                             {
                                                 & open $ReportFullPath
-                                                Write-Verbose -Message "HTML report opened with macOS open command."
+                                                Write-Verbose -Message $("HTML report opened with macOS open command.")
                                             }
                                     }
                                 catch
@@ -3824,12 +3824,12 @@ function Test-SilkResourceDeployment
                         if (Get-Variable -Name originalWarningPreference -ErrorAction SilentlyContinue)
                             {
                                 $WarningPreference = $originalWarningPreference
-                                Write-Verbose -Message "✓ Original PowerShell warning preference restored."
+                                Write-Verbose -Message $("✓ Original PowerShell warning preference restored.")
                             }
                     }
                 catch
                     {
-                        Write-Verbose -Message "Note: Could not restore original warning preference."
+                        Write-Verbose -Message $("Note: Could not restore original warning preference.")
                     }
 
                 if ( $RunCleanupOnly -or (!$DisableCleanup -and $deploymentStarted))
@@ -3903,7 +3903,7 @@ function Test-SilkResourceDeployment
                                     -Id 6
 
                                 # Wait for all VM removal jobs to complete
-                                Write-Verbose -Message "Waiting for all virtual machines to be removed..."
+                                Write-Verbose -Message $("Waiting for all virtual machines to be removed...")
 
                                 $vmJobs = Get-Job
 
@@ -3946,7 +3946,7 @@ function Test-SilkResourceDeployment
                                 while ($currentVMJobs.State -contains 'Running')
 
                                 Get-Job | Wait-Job | Out-Null
-                                Write-Verbose -Message "All virtual machines have been removed."
+                                Write-Verbose -Message $("All virtual machines have been removed.")
 
                                 # Complete VM cleanup sub-progress
                                 Write-Progress `
@@ -4013,9 +4013,9 @@ function Test-SilkResourceDeployment
                                     -Status "Waiting for all NIC removal jobs to complete..." `
                                     -PercentComplete 80
 
-                                Write-Verbose -Message "Waiting for all network interfaces to be removed..."
+                                Write-Verbose -Message $("Waiting for all network interfaces to be removed...")
                                 Get-Job | Wait-Job | Out-Null
-                                Write-Verbose -Message "All network interfaces have been removed."
+                                Write-Verbose -Message $("All network interfaces have been removed.")
 
                                 Write-Progress `
                                     -Id 7 `
@@ -4086,7 +4086,7 @@ function Test-SilkResourceDeployment
 
                                 Get-Job | Wait-Job | Out-Null
 
-                                Write-Verbose -Message "Virtual Network resource cleanup completed."
+                                Write-Verbose -Message $("Virtual Network resource cleanup completed.")
 
                                 Write-Progress `
                                     -Id 9 `
@@ -4157,7 +4157,7 @@ function Test-SilkResourceDeployment
                                     Get-Job | Wait-Job | Out-Null
                                 }
 
-                                Write-Verbose -Message "Availability Sets resource cleanup completed."
+                                Write-Verbose -Message $("Availability Sets resource cleanup completed.")
 
                                 Write-Progress `
                                     -Id 11 `
@@ -4228,7 +4228,7 @@ function Test-SilkResourceDeployment
                                     Get-Job | Wait-Job | Out-Null
                                 }
 
-                                Write-Verbose -Message "Proximity Placement Groups resource cleanup completed."
+                                Write-Verbose -Message $("Proximity Placement Groups resource cleanup completed.")
 
                                 Write-Progress `
                                     -Id 12 `
@@ -4298,7 +4298,7 @@ function Test-SilkResourceDeployment
 
                                 Get-Job | Wait-Job | Out-Null
 
-                                Write-Verbose -Message "Network Security Group resource cleanup completed."
+                                Write-Verbose -Message $("Network Security Group resource cleanup completed.")
 
                                 Write-Progress `
                                     -Id 10 `
@@ -4355,7 +4355,7 @@ function Test-SilkResourceDeployment
 
                         Remove-AzResourceGroup -Name $ResourceGroupName -ErrorAction Stop -Confirm:$false
 
-                        Write-Verbose -Message "Resource group removal completed."
+                        Write-Verbose -Message $("Resource group removal completed.")
 
                         # Complete resource group cleanup progress
                         Write-Progress `

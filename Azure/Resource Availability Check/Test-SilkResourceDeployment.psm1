@@ -305,6 +305,7 @@ function Test-SilkResourceDeployment
                 # Azure Availability Zone for resource placement (1, 2, 3, or Zoneless for regions without zones)
                 # Use "Zoneless" for regions that do not support availability zones
                 # Overrides JSON configuration values when specified via command line
+                # if -ZoneAlignmentSubscriptionId specified, zone alignment will occur unless -DisableZoneAlignment is also specified
                 [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support).")]
                 [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON",     Mandatory = $false, HelpMessage = "Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support).")]
                 [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true,  HelpMessage = "Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support).")]
@@ -413,6 +414,46 @@ function Test-SilkResourceDeployment
                 [ValidateNotNullOrEmpty()]
                 [int]
                 $MNodeCount,
+
+                # Subscription ID to compare zone alignment against the deployment subscription *Requires AvailablityZonePeering feature to be registered*
+                # When specified, the script ouputs the deployment region and zone alignment with this given subscription
+                # Useful for validating zone support and alignment across multiple subscriptions
+                # if using the json configuration file, this parameter is assumed to be the subscription in the configuration file
+                # Overrides JSON configuration values when specified via command line
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [ValidatePattern('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')]
+                [ValidateNotNullOrEmpty()]
+                [string]
+                $ZoneAlignmentSubscriptionId,
+
+                # Switch to disable zone alignment, by default  the script  will align the deployment zone with the either the -ZoneAlignmentSubscriptionId or the subscription in the json configuration file
+                # Must provide -ZoneAlignmentSubscriptionId OR
+                # Must provide the -ChecklistJSON configuration and specify a different -SubscriptionId
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Switch]
+                $DisableZoneAlignment,
 
                 # Switch to disable HTML report generation
                 # By default, a comprehensive HTML report is generated summarizing deployment status,
@@ -858,6 +899,21 @@ function Test-SilkResourceDeployment
                                 Write-Warning -Message $("Subscription ID parameter is set to '{0}', ignoring subscription ID '{1}' in JSON configuration." -f $SubscriptionId, $ConfigImport.azure_environment.subscription_id)
                             }
 
+                        # Zone alignment subscription ID is optional - only set if provided in JSON or parameter
+                        if (!$ZoneAlignmentSubscriptionId -and $SubscriptionId)
+                            {
+                                $ZoneAlignmentSubscriptionId = $ConfigImport.azure_environment.subscription_id
+                                Write-Verbose -Message $("Usingsubscription ID '{0}' from JSON configuration for zone alignment comparison." -f $ZoneAlignmentSubscriptionId)
+                            } `
+                        elseif ($ZoneAlignmentSubscriptionId)
+                            {
+                                Write-Warning -Message $("Zone Alignment Subscription ID parameter is set to '{0}'." -f $ZoneAlignmentSubscriptionId)
+                            }
+                        else
+                            {
+                                Write-Verbose -Message $("Zone Alignment Subscription ID is NOT set, and will not be tested.")
+                            }
+
                         if (!$ResourceGroupName)
                             {
                                 $ResourceGroupName = $ConfigImport.azure_environment.resource_group_name
@@ -1245,6 +1301,107 @@ function Test-SilkResourceDeployment
                                         Write-Warning "Unable to determine regional support for MNode SKU: {0} in region: {1}." -f $mNodeSupportedSKU.Name, $mNodeSupportedSKU.LocationInfo.Location
                                     }
                             }
+                    }
+
+
+                # ===============================================================================
+                # Zone Alignment Check
+                # 1. verify the AvailabilityZonePeering Feature is registered for the subscription
+                # 2. Make Az rest call to get the zone alignment information
+                # 3. Align zone if applicable
+                # ===============================================================================
+                $processSection = "Zone Alignment"
+                $sectionStep = ""
+                $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
+                Write-Verbose -Message $("{0}Starting zone alignment check." -f $messagePrefix)
+                if ($ZoneAlignmentSubscriptionId -and $Zone -ne "Zoneless")
+                    {
+                        $sectionStep = "Check AvailabilityZonePeering Feature"
+                        $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
+                       # Check if the 'AvailabilityZonePeering' feature is registered
+                        try
+                            {
+                                $featureCheckAvailabilityZonePeering = Get-AzProviderFeature -ProviderNamespace "Microsoft.Compute" -FeatureName "AvailabilityZonePeering" -ErrorAction Stop
+                                if ($featureCheckAvailabilityZonePeering.RegistrationState -ne "Registered")
+                                    {
+                                        Write-Warning -Message $("{0}The 'AvailabilityZonePeering' feature is '{1}' for subscription '{2}'. Zone alignment check cannot be performed." -f $messagePrefix, $featureCheckAvailabilityZonePeering.RegistrationState, $ZoneAlignmentSubscriptionId)
+                                        Write-Warning -Message $("{0}To enable zone alignment checks you must register the 'AvailabilityZonePeering' feature using the following command: `"Register-AzProviderFeature -FeatureName AvailabilityZonePeering -ProviderNamespace Microsoft.Compute`"" -f $messagePrefix)
+                                    } `
+                                else
+                                    {
+                                        Write-Verbose -Message $("{0}The 'AvailabilityZonePeering' feature is '{1}' for subscription '{2}'." -f $messagePrefix, $featureCheckAvailabilityZonePeering.RegistrationState, $ZoneAlignmentSubscriptionId)
+                                    }
+                            } `
+                        catch
+                            {
+                                Write-Warning -Message $("{0}Failed to check zone alignment support: {1}" -f $messagePrefix, $_.Exception.Message)
+                            }
+
+                        # Get zone alignment information using the REST API
+                        $sectionStep = "Request Zone Alignment Info"
+                        $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
+
+                        # generate request uri
+                        $zoneAlignmentRequestUri = $("https://management.azure.com/subscriptions/{0}/providers/Microsoft.Resources/checkZonePeers?api-version=2022-12-01" -f $SubscriptionId)
+
+                        # generate request body
+                        $zoneAlignmentRequestPayload = @{
+                                                            subscriptionIds = @( $("subscriptions/{0}" -f $ZoneAlignmentSubscriptionId) )
+                                                            location = $Region
+                                                        } | ConvertTo-Json
+
+                        try
+                            {
+                                # Invoke REST method to get zone alignment information
+                                $zoneAlignmentResponse = Invoke-AzRestMethod -Method Post -Uri $zoneAlignmentRequestUri -Payload $zoneAlignmentRequestPayload -ErrorAction Stop | Select-Object -ExpandProperty Content | ConvertFrom-Json -Depth 100
+
+                                # assess zone alignment information and identfy aligned zone
+                                foreach ($peer in $zoneAlignmentResponse.availabilityZonePeers)
+                                    {
+                                        Write-Verbose -Message $("{0}Deployment Subscription: {1} Availability Zone: {2} has Remote Subscription: {3} zone: {4}" -f $messagePrefix, $SubscriptionId, $peer.availabilityZone, $peer.peers.subscriptionId, $peer.peers.availabilityZone)
+                                        if ($peer.peers.availabilityZone -eq $Zone)
+                                            {
+                                                $alignedZone = $peer.availabilityZone
+                                                $remoteZone = $peer.peers.availabilityZone
+                                            }
+                                    }
+
+                                # Determine zone alignment action
+                                $sectionStep = "Assess Zone Alignment"
+                                $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
+                                if ($DisableZoneAlignment)
+                                    {
+                                        Write-Verbose -Message $("{0}Zone Alignment Disabled. For Region: {1} Deployment Subscription: {2} Availability Zone {3} is aligns with Remote Subscription {4} Availability Zone {5}. Using Deployment Subscription: {2} Availability Zone {3}" -f $messagePrefix, $Region, $SubscriptionId, $alignedZone, $ZoneAlignmentSubscriptionId, $remoteZone, $SubscriptionId, $Zone)
+                                    } `
+                                elseif ($alignedZone -and $alignedZone -eq $Zone)
+                                    {
+                                        Write-Verbose -Message $("{0}Zones are aligned in Region: {1}. Deployment Subscription: {2} Availability Zone {3} is aligned with Remote Subscription {4} Availability Zone {5}." -f $messagePrefix, $Region, $SubscriptionId, $Zone, $ZoneAlignmentSubscriptionId, $alignedZone)
+                                    } `
+                                elseif($alignedZone)
+                                    {
+                                        $Zone = $alignedZone
+                                        Write-Verbose -Message $("{0}Aligning Zone in Region: {1}. Setting Deployment Subscription: {2} Availability Zone to {3} aligning with Remote Subscription {4} Availability Zone {5}." -f $messagePrefix, $Region, $SubscriptionId, $Zone, $ZoneAlignmentSubscriptionId, $remoteZone)
+                                    } `
+                                else
+                                    {
+                                        Write-Warning -Message $("{0}Zone alignment information undetermined for region: {1}. Zone Alignment not disabled but proceeding without zone alignment. Using Deployment Subscription: {2} Availability Zone {3}" -f $messagePrefix, $Region, $SubscriptionId, $Zone)
+                                    }
+                            } `
+                        catch
+                            {
+                                Write-Warning -Message $("{0}Failed to acquire zone alignment information: {1}" -f $messagePrefix, $_.Exception.Message)
+                                return
+                            }
+
+
+                    } `
+                elseif ($Zone -eq "Zoneless")
+                    {
+                        Write-Verbose -Message -Message $("{0}Zoneless deployment; zone alignment not possible." -f $messagePrefix)
+                    } `
+                else
+                    {
+                        Write-Verbose -Message $("{0}Zone Alignment Subscription ID is not set; skipping zone alignment check." -f $messagePrefix)
                     }
 
 

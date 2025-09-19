@@ -4056,7 +4056,7 @@ function Test-SilkResourceDeployment
                                 catch
                                     {
                                         Write-Verbose -Message $("Unable to automatically open HTML report (likely headless system): {0}" -f $_.Exception.Message)
-                                        Write-Host -Message $("ℹ️  Report available at: ""{0}""" -f $ReportFullPath) -ForegroundColor Yellow
+                                        Write-Host -Message $("ℹ️  Report available at: `"{0}`"" -f $ReportFullPath) -ForegroundColor Yellow
                                     }
                             }
                         catch

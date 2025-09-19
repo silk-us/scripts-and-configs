@@ -728,12 +728,12 @@ function Test-SilkResourceDeployment
                                                 if ($isAdmin)
                                                     {
                                                         Write-Verbose -Message $("Installing {0} for all users (administrator privileges detected)..." -f $module)
-                                                        Install-Module -Name $module -Repository PSGallery -Scope AllUsers -Force -AllowClobber -Confirm:$false
+                                                        Install-Module -Name $module -Repository PSGallery -Scope AllUsers -Force -AllowClobber -Confirm:$false -Verbose:$false
                                                     }
                                                 else
                                                     {
                                                         Write-Verbose -Message $("Installing {0} for current user (no administrator privileges)..." -f $module)
-                                                        Install-Module -Name $module -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -Confirm:$false
+                                                        Install-Module -Name $module -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -Confirm:$false -Verbose:$false
                                                     }
                                             }
 

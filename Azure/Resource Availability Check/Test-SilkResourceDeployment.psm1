@@ -180,7 +180,7 @@ function Test-SilkResourceDeployment
                 Switch parameter to disable automatic availability zone alignment validation and adjustment.
                 By default, zone alignment is performed when ZoneAlignmentSubscriptionId is specified or when using
                 ChecklistJSON configuration with different deployment subscription. Use this switch to maintain the
-                originally specified zone for production deployment testing accuracy. Availability Zone alignment will still be reported on if available.
+                originally specified zone. Availability Zone alignment will still be reported on if available.
 
             .EXAMPLE
                 Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -MnodeSizeLaosv4 @("14.67","29.34") -Verbose
@@ -2718,7 +2718,7 @@ function Test-SilkResourceDeployment
                             {
                                 $zoneAlignmentInfo.AlignmentPerformed = $true
                                 $zoneAlignmentInfo.OriginalZone = $originalZone
-                                $zoneAlignmentInfo.AlignmentReason = "Zone alignment applied for production deployment testing accuracy"
+                                $zoneAlignmentInfo.AlignmentReason = "Zone alignment applied"
                             } `
                         elseif ($DisableZoneAlignment -and $alignedZone)
                             {

@@ -877,7 +877,7 @@ function Test-SilkResourceDeployment
                                 # Check if the current context is still valid
                                 try
                                     {
-                                        $testConnection = Get-AzSubscription -SubscriptionId $currentAzContext.Subscription.Id -ErrorAction Stop
+                                        $testConnectionNull = Get-AzSubscription -SubscriptionId $currentAzContext.Subscription.Id -ErrorAction Stop
                                         Write-Verbose -Message $("✓ Azure authentication is valid and active.")
                                     }
                                 catch
@@ -2554,7 +2554,6 @@ function Test-SilkResourceDeployment
                         $nic = $deployedNICs | Where-Object { $_.Name -eq $expectedNICName }
 
                         # Determine availability set status
-                        $cNodeAvSetName = "$ResourceNamePrefix-cnode-avset"
                         $avSetStatus = if ($vm -and $vm.AvailabilitySetReference) { "CNode AvSet" } else { "Not Assigned" }
 
                         # Determine VM provisioning status and check for validation findings
@@ -2629,7 +2628,6 @@ function Test-SilkResourceDeployment
                                 $nic = $deployedNICs | Where-Object { $_.Name -eq $expectedNICName }
 
                                 # Determine availability set status for DNode
-                                $mNodeAvSetName = "$ResourceNamePrefix-mNode-$currentMNode-avset"
                                 $avSetStatus = if ($vm -and $vm.AvailabilitySetReference) { "MNode $currentMNode AvSet" } else { "Not Assigned" }
 
                                 # Determine VM provisioning status and check for validation findings
@@ -2698,7 +2696,6 @@ function Test-SilkResourceDeployment
                 $totalExpectedVMs = $CNodeCount + ($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum
                 $successfulVMs = ($deploymentReport | Where-Object { $_.VMStatus -eq "✓ Deployed" }).Count
                 $failedVMs = ($deploymentReport | Where-Object { $_.VMStatus -like "*Failed*" }).Count
-                $inProgressVMs = ($deploymentReport | Where-Object { $_.VMStatus -like "⚠*" }).Count
                 $nonSuccessfulVMs = $deploymentReport | Where-Object { $_.ProvisioningState -ne "Succeeded" -and $_.ProvisioningState -ne "Not Found" }
 
                 # Zone Alignment Reporting Information

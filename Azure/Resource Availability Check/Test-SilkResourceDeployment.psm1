@@ -1318,7 +1318,7 @@ function Test-SilkResourceDeployment
                 $sectionStep = ""
                 $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
                 Write-Verbose -Message $("{0}Starting zone alignment check." -f $messagePrefix)
-                if ($ZoneAlignmentSubscriptionId -and $Zone -ne "Zoneless")
+                if ($ZoneAlignmentSubscriptionId -and $Zone -ne "Zoneless" -and $ZoneAlignmentSubscriptionId -ne $SubscriptionId)
                     {
                         $sectionStep = "Check AvailabilityZonePeering Feature"
                         $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
@@ -1375,25 +1375,25 @@ function Test-SilkResourceDeployment
                                 $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
                                 if ($DisableZoneAlignment)
                                     {
-                                        Write-Verbose -Message $("{0}Zone Alignment Disabled. For Region: {1} Deployment Subscription: {2} Availability Zone {3} is aligns with Remote Subscription {4} Availability Zone {5}. Using Deployment Subscription: {2} Availability Zone {3}" -f $messagePrefix, $Region, $SubscriptionId, $alignedZone, $ZoneAlignmentSubscriptionId, $remoteZone, $SubscriptionId, $Zone)
+                                        Write-Verbose -Message $("{0}Availability Zone Alignment Disabled. For Region: {1} Deployment Subscription: {2} Availability Zone {3} is aligns with Remote Subscription {4} Availability Zone {5}. Using Deployment Subscription: {2} Availability Zone {3}" -f $messagePrefix, $Region, $SubscriptionId, $alignedZone, $ZoneAlignmentSubscriptionId, $remoteZone, $SubscriptionId, $Zone)
                                     } `
                                 elseif ($alignedZone -and $alignedZone -eq $Zone)
                                     {
-                                        Write-Verbose -Message $("{0}Zones are aligned in Region: {1}. Deployment Subscription: {2} Availability Zone {3} is aligned with Remote Subscription {4} Availability Zone {5}." -f $messagePrefix, $Region, $SubscriptionId, $Zone, $ZoneAlignmentSubscriptionId, $alignedZone)
+                                        Write-Verbose -Message $("{0}Availability Zones are aligned in Region: {1}. Deployment Subscription: {2} Availability Zone {3} is aligned with Remote Subscription {4} Availability Zone {5}." -f $messagePrefix, $Region, $SubscriptionId, $Zone, $ZoneAlignmentSubscriptionId, $alignedZone)
                                     } `
                                 elseif($alignedZone)
                                     {
                                         $Zone = $alignedZone
-                                        Write-Verbose -Message $("{0}Aligning Zone in Region: {1}. Setting Deployment Subscription: {2} Availability Zone to {3} aligning with Remote Subscription {4} Availability Zone {5}." -f $messagePrefix, $Region, $SubscriptionId, $Zone, $ZoneAlignmentSubscriptionId, $remoteZone)
+                                        Write-Verbose -Message $("{0}Aligning Availability Zone in Region: {1}. Setting Deployment Subscription: {2} Availability Zone to {3} aligning with Remote Subscription {4} Availability Zone {5}." -f $messagePrefix, $Region, $SubscriptionId, $Zone, $ZoneAlignmentSubscriptionId, $remoteZone)
                                     } `
                                 else
                                     {
-                                        Write-Warning -Message $("{0}Zone alignment information undetermined for region: {1}. Zone Alignment not disabled but proceeding without zone alignment. Using Deployment Subscription: {2} Availability Zone {3}" -f $messagePrefix, $Region, $SubscriptionId, $Zone)
+                                        Write-Warning -Message $("{0}Availability Zone alignment information undetermined for region: {1}. Availability Zone Alignment not disabled but proceeding without zone alignment. Using Deployment Subscription: {2} Availability Zone {3}" -f $messagePrefix, $Region, $SubscriptionId, $Zone)
                                     }
                             } `
                         catch
                             {
-                                Write-Warning -Message $("{0}Failed to acquire zone alignment information: {1}" -f $messagePrefix, $_.Exception.Message)
+                                Write-Warning -Message $("{0}Failed to acquire Availability Zone alignment information: {1}" -f $messagePrefix, $_.Exception.Message)
                                 return
                             }
 

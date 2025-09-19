@@ -710,6 +710,9 @@ function Test-SilkResourceDeployment
         begin
             {
                 $StartTime = Get-Date
+                Write-Verbose -Message $("=== Starting Silk Resource Deployment Test Script ===")
+                Write-Verbose -Message $("Script started at: {0}" -f $StartTime.ToString("yyyy-MM-dd HH:mm:ss"))
+
 
                 # Define required Azure PowerShell modules
                 # Import only the specific modules needed instead of the entire Az module for faster loading
@@ -2540,6 +2543,9 @@ function Test-SilkResourceDeployment
                 Start-Sleep -Milliseconds 250
                 [System.Console]::Out.Flush()
 
+                # get timespan to report on deployment duration
+                $DeploymentTimespan = New-TimeSpan -Start $StartTime -End (Get-Date)
+
                 # Comprehensive resource validation and reporting
                 Write-Host "`n=== Post-Deployment Validation ===" -ForegroundColor Cyan
 
@@ -3367,6 +3373,7 @@ function Test-SilkResourceDeployment
                         Write-Host $("📊 Deployment Readiness: Limited - Review validation findings in summary") -ForegroundColor Red
                     }
 
+                Write-Host $("⏱️ Total Deployment Time: {0}" -f $DeploymentTimespan.ToString("hh\:mm\:ss")) -ForegroundColor Cyan
                 Write-Progress -Id 1 -Completed
 
                 # ===============================================================================
@@ -4008,7 +4015,7 @@ function Test-SilkResourceDeployment
         </div>
 
         <div class="timestamp">
-            Report generated on $($StartTime.ToString("yyyy-MM-dd HH:mm:ss")) by Silk Test-SilkResourceDeployment PowerShell module
+            ⏱️ Total Deployment Time: $($DeploymentTimespan.ToString("hh\:mm\:ss")) | Report generated on $($StartTime.ToString("yyyy-MM-dd HH:mm:ss")) by Silk Test-SilkResourceDeployment PowerShell module
         </div>
     </div>
 </body>
@@ -4017,8 +4024,8 @@ function Test-SilkResourceDeployment
 
                                 # Write HTML content to file
                                 $htmlContent | Out-File -FilePath $ReportFullPath -Encoding UTF8
-                                Write-Host "✓ HTML report generated successfully!" -ForegroundColor Green
-                                Write-Host "📄 Report saved to: $ReportFullPath" -ForegroundColor Cyan
+                                Write-Host -Message $("✓ HTML report generated successfully!") -ForegroundColor Green
+                                Write-Host -Message $("📄 Report saved to: `"{0}`"" -f $ReportFullPath) -ForegroundColor Cyan
 
                                 # Attempt to open the report automatically (with error handling for headless systems)
                                 try
@@ -4049,7 +4056,7 @@ function Test-SilkResourceDeployment
                                 catch
                                     {
                                         Write-Verbose -Message $("Unable to automatically open HTML report (likely headless system): {0}" -f $_.Exception.Message)
-                                        Write-Host "ℹ️  Report available at: $ReportFullPath" -ForegroundColor Yellow
+                                        Write-Host -Message $("ℹ️  Report available at: ""{0}""" -f $ReportFullPath) -ForegroundColor Yellow
                                     }
                             }
                         catch
@@ -4090,6 +4097,13 @@ function Test-SilkResourceDeployment
                     {
                         Write-Verbose -Message $("Note: Could not restore original warning preference.")
                     }
+
+                # ===============================================================================
+                # Cleanup Phase
+                # ===============================================================================
+                $cleanupStartTime = Get-Date
+
+                Write-Host -Message $("Cleanup Started at: {0}" -f $cleanupStartTime.ToString("yyyy-MM-dd HH:mm:ss")) -ForegroundColor Yellow
 
                 if ( $RunCleanupOnly -or (!$DisableCleanup -and $deploymentStarted))
                     {
@@ -4638,8 +4652,11 @@ function Test-SilkResourceDeployment
                 # notify cleanup complete if it actually cleaned anything up
                 if($cleanupDidRun)
                     {
-                        Write-Host "Cleanup process completed." -ForegroundColor Green
+                        Write-Host -Message $("Cleanup process completed ran for {0}" -f  (New-TimeSpan -Start $cleanupStartTime -End (Get-Date)).ToString("hh\:mm\:ss")) -ForegroundColor Green
                     }
+
+                # notify total runtime
+                Write-Host -message $("⏱️ Total Script Runtime: {0}" -f (New-TimeSpan -Start $StartTime -End (Get-Date)).ToString("hh\:mm\:ss")) -ForegroundColor Cyan
             }
     }
 

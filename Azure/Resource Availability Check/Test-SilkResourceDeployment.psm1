@@ -1044,19 +1044,21 @@ function Test-SilkResourceDeployment
                         $locationSupportedSKU = Get-AzComputeResourceSku -Location $Region -ErrorAction Stop
 
                         # Check zone availability
-                        if ($Zone -notin $locationSupportedSKU.LocationInfo.Zones)
-                            {
-                                Write-Error -Message $("The specified zone '{0}' is not available in the region '{1}'." -f $Zone, $Region)
-                                return
-                            } `
-                        elseif ($Zone -eq "Zoneless" -and $locationSupportedSKU.LocationInfo.Zones.Count -ne 0)
+                        if ($Zone -eq "Zoneless" -and $locationSupportedSKU.LocationInfo.Zones.Count -ne 0)
                             {
                                 Write-Error -Message $("The specified region '{0}' has availability zones {1}, but 'Zoneless' was specified." -f ($locationSupportedSKU.LocationInfo.Location | Select-Object -Unique), (($locationSupportedSKU.LocationInfo.Zones | Sort-Object | Select-Object -Unique) -join ", "))
+                                $validationError = $true
                                 return
                             } `
                         elseif ($Zone -eq "Zoneless")
                             {
                                 Write-Verbose -Message $("Zoneless is a valid zone selection for the specified region '{0}'." -f ($locationSupportedSKU.LocationInfo.Location | Select-Object -Unique))
+                            } `
+                        elseif ($Zone -notin $locationSupportedSKU.LocationInfo.Zones)
+                            {
+                                Write-Error -Message $("The specified zone '{0}' is not available in the region '{1}'." -f $Zone, $Region)
+                                $validationError = $true
+                                return
                             } `
                         else
                             {

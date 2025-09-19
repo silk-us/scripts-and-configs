@@ -167,6 +167,21 @@ function Test-SilkResourceDeployment
                 Default: Username "azureuser" with secure password for testing purposes.
                 Used for VM deployment supplied out of necessity with no expectation to actually use the credential.
 
+            .PARAMETER ZoneAlignmentSubscriptionId
+                Azure Subscription ID for cross-subscription availability zone alignment comparison.
+                When specified, the function identifies zone alignment between the deployment subscription and this
+                given subscription, automatically adjusting deployment zone to ensure the closest representation of a production deployment that can be tested.
+                Requires AvailabilityZonePeering Azure feature registration in both subscriptions.
+                When using ChecklistJSON with different deployment subscription, this is automatically populated.
+                This will always be reported on if available but will not align the deployment zone if the -DisableZoneAlignment switch parameter is specified.
+                Example: "87654321-4321-4321-4321-210987654321"
+
+            .PARAMETER DisableZoneAlignment
+                Switch parameter to disable automatic availability zone alignment validation and adjustment.
+                By default, zone alignment is performed when ZoneAlignmentSubscriptionId is specified or when using
+                ChecklistJSON configuration with different deployment subscription. Use this switch to maintain the
+                originally specified zone for production deployment testing accuracy. Availability Zone alignment will still be reported on if available.
+
             .EXAMPLE
                 Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -MnodeSizeLaosv4 @("14.67","29.34") -Verbose
 
@@ -191,6 +206,19 @@ function Test-SilkResourceDeployment
 
                 Advanced deployment using explicit SKUs: 4 CNodes with E64s_v5 SKU and 2 MNode groups with mixed L-series SKUs.
                 Disables automatic cleanup so resources remain for extended testing or manual validation.
+
+            .EXAMPLE
+                Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -ZoneAlignmentSubscriptionId "87654321-4321-4321-4321-210987654321" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -Verbose
+
+                Tests deployment with cross-subscription zone alignment validation between deployment subscription and alignment subscription.
+                Automatically adjusts deployment zone to ensure the closest representation of a production deployment that can be tested.
+                Requires AvailabilityZonePeering feature registration in both subscriptions.
+
+            .EXAMPLE
+                Test-SilkResourceDeployment -ChecklistJSON "C:\configs\silk-deployment.json" -SubscriptionId "12345678-1234-1234-1234-123456789012" -DisableZoneAlignment -Verbose
+
+                Loads configuration from JSON file but uses a different deployment subscription than specified in the JSON.
+                Explicitly disables zone alignment to maintain original zone settings despite cross-subscription deployment scenario.
 
             .INPUTS
                 Command line parameters or JSON configuration file containing deployment specifications.

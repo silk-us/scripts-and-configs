@@ -899,19 +899,23 @@ function Test-SilkResourceDeployment
                                 Write-Warning -Message $("Subscription ID parameter is set to '{0}', ignoring subscription ID '{1}' in JSON configuration." -f $SubscriptionId, $ConfigImport.azure_environment.subscription_id)
                             }
 
-                        # Zone alignment subscription ID is optional - only set if provided in JSON or parameter
-                        if (!$ZoneAlignmentSubscriptionId -and $SubscriptionId)
+                        # Availability Zone alignment subscription ID is optional - only set if provided in JSON or parameter
+                        if (!$ZoneAlignmentSubscriptionId -and $SubscriptionId -ne $ConfigImport.azure_environment.subscription_id)
                             {
                                 $ZoneAlignmentSubscriptionId = $ConfigImport.azure_environment.subscription_id
-                                Write-Verbose -Message $("Usingsubscription ID '{0}' from JSON configuration for zone alignment comparison." -f $ZoneAlignmentSubscriptionId)
+                                Write-Verbose -Message $("Using Subscription ID '{0}' from JSON configuration for Availability Zone alignment comparison." -f $ZoneAlignmentSubscriptionId)
                             } `
+                        elseif (!$ZoneAlignmentSubscriptionId -and $SubscriptionId -eq $ConfigImport.azure_environment.subscription_id)
+                            {
+                                Write-Warning -Message $("Subscription ID parameter is: '{0}' matchint the Checklist Imported Subscription ID is: '{1}'. No Availability Zone alignment required." -f $ZoneAlignmentSubscriptionId, $ConfigImport.azure_environment.subscription_id)
+                            }
                         elseif ($ZoneAlignmentSubscriptionId)
                             {
-                                Write-Warning -Message $("Zone Alignment Subscription ID parameter is set to '{0}'." -f $ZoneAlignmentSubscriptionId)
+                                Write-Warning -Message $("Availability Zone Alignment Subscription ID parameter is set to '{0}'." -f $ZoneAlignmentSubscriptionId)
                             }
                         else
                             {
-                                Write-Verbose -Message $("Zone Alignment Subscription ID is NOT set, and will not be tested.")
+                                Write-Verbose -Message $("Availability Zone Alignment Subscription ID is NOT set, and will not be tested.")
                             }
 
                         if (!$ResourceGroupName)

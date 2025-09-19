@@ -928,23 +928,24 @@ function Test-SilkResourceDeployment
                                 Write-Warning -Message $("Subscription ID parameter is set to '{0}', ignoring subscription ID '{1}' in JSON configuration." -f $SubscriptionId, $ConfigImport.azure_environment.subscription_id)
                             }
 
-                        # Availability Zone alignment subscription ID is optional - only set if provided in JSON or parameter
+                        # Zone Alignment Configuration - Determines cross-subscription alignment requirements
+                        # When deployment and JSON subscriptions differ, unless disabled will inherantly align availablity zones between deployment subscriptions and the identified or given zone alignment subscription
                         if (!$ZoneAlignmentSubscriptionId -and $SubscriptionId -ne $ConfigImport.azure_environment.subscription_id)
                             {
                                 $ZoneAlignmentSubscriptionId = $ConfigImport.azure_environment.subscription_id
-                                Write-Verbose -Message $("Using Subscription ID '{0}' from JSON configuration for Availability Zone alignment comparison." -f $ZoneAlignmentSubscriptionId)
+                                Write-Verbose -Message $("Availability Zone alignment check enabled: Using JSON subscription '{0}' for zone alignment comparison against deployment subscription '{1}'." -f $ZoneAlignmentSubscriptionId, $SubscriptionId)
                             } `
                         elseif (!$ZoneAlignmentSubscriptionId -and $SubscriptionId -eq $ConfigImport.azure_environment.subscription_id)
                             {
-                                Write-Warning -Message $("Subscription ID parameter is: '{0}' matchint the Checklist Imported Subscription ID is: '{1}'. No Availability Zone alignment required." -f $ZoneAlignmentSubscriptionId, $ConfigImport.azure_environment.subscription_id)
+                                Write-Warning -Message $("Availability Zone alignment not required: Subscription ID parameter is: '{0}' matching the Checklist Imported Subscription ID: '{1}'." -f $ZoneAlignmentSubscriptionId, $ConfigImport.azure_environment.subscription_id)
                             }
                         elseif ($ZoneAlignmentSubscriptionId)
                             {
-                                Write-Warning -Message $("Availability Zone Alignment Subscription ID parameter is set to '{0}'." -f $ZoneAlignmentSubscriptionId)
+                                Write-Verbose -Message $("Availability Zone alignment check enabled: Using explicitly provided alignment subscription '{0}' for Availability Zone alignment comparison against deployment subscription '{1}'." -f $ZoneAlignmentSubscriptionId, $SubscriptionId)
                             }
                         else
                             {
-                                Write-Verbose -Message $("Availability Zone Alignment Subscription ID is NOT set, and will not be tested.")
+                                Write-Verbose -Message $("Availability Zone alignment check skipped: No alignment subscription specified - deployment will use original zone '{0}' in region '{1}'." -f $Zone, $Region)
                             }
 
                         if (!$ResourceGroupName)
@@ -1283,12 +1284,14 @@ function Test-SilkResourceDeployment
 
 
                 # ===============================================================================
-                # Zone Alignment Check
-                # 1. verify the AvailabilityZonePeering Feature is registered for the subscription
-                # 2. Make Az rest call to get the zone alignment information
-                # 3. Align zone if applicable
+                # Cross-Subscription Availability Zone Alignment Validation and Assignment
                 # ===============================================================================
-                $processSection = "Zone Alignment"
+                # Ensures Availability Zone Alignment testing a deployments across different Azure subscriptions
+                # Process: 1. Verify AvailabilityZonePeering feature registration in deployment subscription
+                #          2. Query Azure checkZonePeers REST API for Availabiity Zone mapping between subscriptions
+                #          3. Analyze Availability Zone peer relationships and ensure alignment unless disabled with -DisableZoneAlignment switch
+                # ===============================================================================
+                $processSection = "Availability Zone Alignment"
                 $sectionStep = ""
                 $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
                 Write-Verbose -Message $("{0}Starting zone alignment check." -f $messagePrefix)
@@ -1296,33 +1299,37 @@ function Test-SilkResourceDeployment
                     {
                         $sectionStep = "Check AvailabilityZonePeering Feature"
                         $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
-                       # Check if the 'AvailabilityZonePeering' feature is registered
+                        # Validate AvailabilityZonePeering feature registration - required for cross-subscription zone querying
+                        Write-Verbose -Message $("{0}Validating AvailabilityZonePeering feature registration for zone alignment capabilities..." -f $messagePrefix)
                         try
                             {
                                 $featureCheckAvailabilityZonePeering = Get-AzProviderFeature -ProviderNamespace "Microsoft.Compute" -FeatureName "AvailabilityZonePeering" -ErrorAction Stop
                                 if ($featureCheckAvailabilityZonePeering.RegistrationState -ne "Registered")
                                     {
-                                        Write-Warning -Message $("{0}The 'AvailabilityZonePeering' feature is '{1}' for subscription '{2}'. Zone alignment check cannot be performed." -f $messagePrefix, $featureCheckAvailabilityZonePeering.RegistrationState, $ZoneAlignmentSubscriptionId)
-                                        Write-Warning -Message $("{0}To enable zone alignment checks you must register the 'AvailabilityZonePeering' feature using the following command: `"Register-AzProviderFeature -FeatureName AvailabilityZonePeering -ProviderNamespace Microsoft.Compute`"" -f $messagePrefix)
+                                        Write-Warning -Message $("{0}AvailabilityZonePeering feature status: '{1}' in deployment subscription '{2}' - zone alignment cannot be performed." -f $messagePrefix, $featureCheckAvailabilityZonePeering.RegistrationState, $SubscriptionId)
+                                        Write-Warning -Message $("{0}To enable zone alignment, register the feature using: Register-AzProviderFeature -FeatureName AvailabilityZonePeering -ProviderNamespace Microsoft.Compute" -f $messagePrefix)
+                                        Write-Verbose -Message $("{0}Proceeding without zone alignment due to missing feature registration." -f $messagePrefix)
                                     } `
                                 else
                                     {
-                                        Write-Verbose -Message $("{0}The 'AvailabilityZonePeering' feature is '{1}' for subscription '{2}'." -f $messagePrefix, $featureCheckAvailabilityZonePeering.RegistrationState, $ZoneAlignmentSubscriptionId)
+                                        Write-Verbose -Message $("{0}AvailabilityZonePeering feature status: '{1}' and available for zone alignment operations." -f $messagePrefix, $featureCheckAvailabilityZonePeering.RegistrationState)
                                     }
                             } `
                         catch
                             {
-                                Write-Warning -Message $("{0}Failed to check zone alignment support: {1}" -f $messagePrefix, $_.Exception.Message)
+                                Write-Warning -Message $("{0}Failed to validate AvailabilityZonePeering feature status: {1}" -f $messagePrefix, $_.Exception.Message)
+                                Write-Verbose -Message $("{0}Proceeding without Availability Zone alignment due to feature validation error." -f $messagePrefix)
                             }
 
-                        # Get zone alignment information using the REST API
+                        # Query Azure checkZonePeers REST API for cross-subscription zone mapping data
                         $sectionStep = "Request Zone Alignment Info"
                         $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
+                        Write-Verbose -Message $("{0}Requesting availablity zone peer mappings between deployment subscription '{1}' and alignment subscription '{2}' in region '{3}'..." -f $messagePrefix, $SubscriptionId, $ZoneAlignmentSubscriptionId, $Region)
 
-                        # generate request uri
+                        # Generate REST API request URI for checkZonePeers endpoint
                         $zoneAlignmentRequestUri = $("https://management.azure.com/subscriptions/{0}/providers/Microsoft.Resources/checkZonePeers?api-version=2022-12-01" -f $SubscriptionId)
 
-                        # generate request body
+                        # Generate request payload with alignment subscription and target region
                         $zoneAlignmentRequestPayload = @{
                                                             subscriptionIds = @( $("subscriptions/{0}" -f $ZoneAlignmentSubscriptionId) )
                                                             location = $Region
@@ -1330,58 +1337,66 @@ function Test-SilkResourceDeployment
 
                         try
                             {
-                                # Invoke REST method to get zone alignment information
+                                # Call Azure REST API to retrieve zone peer relationship data
+                                Write-Verbose -Message $("{0}Calling checkZonePeers REST API endpoint..." -f $messagePrefix)
                                 $zoneAlignmentResponse = Invoke-AzRestMethod -Method Post -Uri $zoneAlignmentRequestUri -Payload $zoneAlignmentRequestPayload -ErrorAction Stop | Select-Object -ExpandProperty Content | ConvertFrom-Json -Depth 100
 
-                                # assess zone alignment information and identfy aligned zone
+                                $sectionStep = "Mapping"
+                                $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
+
+                                # Parse zone peer mappings to identify cross subscription Availability Zone alignment
+                                Write-Verbose -Message $("{0}Analyzing Availability Zone peer relationships for production deployment testing accuracy..." -f $messagePrefix)
                                 foreach ($peer in $zoneAlignmentResponse.availabilityZonePeers)
                                     {
-                                        Write-Verbose -Message $("{0}Deployment Subscription: {1} Availability Zone: {2} has Remote Subscription: {3} zone: {4}" -f $messagePrefix, $SubscriptionId, $peer.availabilityZone, $peer.peers.subscriptionId, $peer.peers.availabilityZone)
+                                        Write-Verbose -Message $("{0}Deployment Subscription Availability Zone '{1}' corresponds to Alignment Subscription Availability Zone '{2}'" -f $messagePrefix, $peer.availabilityZone, $peer.peers.availabilityZone)
+                                        # Find the deployment zone that aligns with the current zone in the alignment subscription
                                         if ($peer.peers.availabilityZone -eq $Zone)
                                             {
                                                 $alignedZone = $peer.availabilityZone
                                                 $remoteZone = $peer.peers.availabilityZone
+                                                Write-Verbose -Message $("{0}Found alignment match: Deployment Subscription Availability Zone '{1}' aligns with Alignment Subscription Availability Zone '{2}'" -f $messagePrefix, $alignedZone, $remoteZone)
                                             }
                                     }
 
-                                # Determine zone alignment action
-                                $sectionStep = "Assess Zone Alignment"
+                                # Apply zone alignment decision based on analysis results
+                                $sectionStep = "Apply Alignment"
                                 $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
                                 if ($DisableZoneAlignment)
                                     {
-                                        Write-Verbose -Message $("{0}Availability Zone Alignment Disabled. For Region: {1} Deployment Subscription: {2} Availability Zone {3} is aligns with Remote Subscription {4} Availability Zone {5}. Using Deployment Subscription: {2} Availability Zone {3}" -f $messagePrefix, $Region, $SubscriptionId, $alignedZone, $ZoneAlignmentSubscriptionId, $remoteZone, $SubscriptionId, $Zone)
+                                        Write-Verbose -Message $("{0}Zone alignment disabled by parameter - maintaining original Availability Zone '{1}' (Alignment would be Availability Zone '{2}' with Alignment Subscription '{3}')" -f $messagePrefix, $Zone, $alignedZone, $ZoneAlignmentSubscriptionId)
                                     } `
                                 elseif ($alignedZone -and $alignedZone -eq $Zone)
                                     {
-                                        Write-Verbose -Message $("{0}Availability Zones are aligned in Region: {1}. Deployment Subscription: {2} Availability Zone {3} is aligned with Remote Subscription {4} Availability Zone {5}." -f $messagePrefix, $Region, $SubscriptionId, $Zone, $ZoneAlignmentSubscriptionId, $alignedZone)
+                                        Write-Verbose -Message $("{0}Zone Aligned: Current Deployment Availability Zone '{1}' is already aligned with  Alignment Subscription Availability Zone '{2}' in Region '{3}'" -f $messagePrefix, $Zone, $alignedZone, $Region)
                                     } `
                                 elseif($alignedZone)
                                     {
+                                        $originalZone = $Zone
                                         $Zone = $alignedZone
-                                        Write-Verbose -Message $("{0}Aligning Availability Zone in Region: {1}. Setting Deployment Subscription: {2} Availability Zone to {3} aligning with Remote Subscription {4} Availability Zone {5}." -f $messagePrefix, $Region, $SubscriptionId, $Zone, $ZoneAlignmentSubscriptionId, $remoteZone)
+                                        Write-Verbose -Message $("{0}Zone alignment applied: Changed Deployment Availability Zone from '{1}' to '{2}' for alignment with Subscription '{3}' Availability Zone '{4}' in Region '{5}'" -f $messagePrefix, $originalZone, $Zone, $ZoneAlignmentSubscriptionId, $remoteZone, $Region)
                                     } `
                                 else
                                     {
-                                        Write-Warning -Message $("{0}Availability Zone alignment information undetermined for region: {1}. Availability Zone Alignment not disabled but proceeding without zone alignment. Using Deployment Subscription: {2} Availability Zone {3}" -f $messagePrefix, $Region, $SubscriptionId, $Zone)
+                                        Write-Warning -Message $("{0}Alignment data inconclusive: Unable to determine Availability Zone mapping for Region '{1}'. Proceeding with original Availability Zone '{2}' in Deployment Subscription '{3}'" -f $messagePrefix, $Region, $Zone, $SubscriptionId)
                                     }
                             } `
                         catch
                             {
-                                Write-Warning -Message $("{0}Failed to acquire Availability Zone alignment information: {1}" -f $messagePrefix, $_.Exception.Message)
+                                Write-Warning -Message $("{0}Alignment API call failed: {1}. Proceeding with original Availability Zone '{2}' in Deployment Subscription '{3}'" -f $messagePrefix, $_.Exception.Message, $Zone, $SubscriptionId)
                                 return
                             }
                     } `
                 elseif ($Zone -eq "Zoneless")
                     {
-                        Write-Verbose -Message $("{0}Deployment Availability Zone is : '{1}' Availability Zone alignment not possible." -f $messagePrefix, $Zone)
+                        Write-Verbose -Message $("{0}Alignment skipped: Deployment configured for 'Zoneless' Region - cross-subscription Zone optimization not applicable" -f $messagePrefix)
                     } `
                 elseif ($ZoneAlignmentSubscriptionId -eq $SubscriptionId)
                     {
-                        Write-Verbose -Message $("{0}Deployment Subscription : '{1}' is the same as Availability Zone Alignment Subscription ID: '{2}'. Availability Zone alignment not necessary." -f $messagePrefix, $Zone)
+                        Write-Verbose -Message $("{0}Deployment Subscription : '{1}' is identical to Availability Zone Alignment Subscription ID: '{2}'. Availability Zone alignment not necessary." -f $messagePrefix, $Zone)
                     } `
                 else
                     {
-                        Write-Verbose -Message $("{0}Availability Zone Alignment Subscription ID is not set; skipping Availability Zone alignment check." -f $messagePrefix)
+                        Write-Verbose -Message $("{0}Alignment skipped: No Alignment Subscription specified - using original Availability Zone '{1}' in Region '{2}'" -f $messagePrefix, $Zone, $Region)
                     }
 
 

@@ -681,6 +681,7 @@ function Test-SilkResourceDeployment
 
         begin
             {
+                $StartTime = Get-Date
 
                 # Define required Azure PowerShell modules
                 # Import only the specific modules needed instead of the entire Az module for faster loading
@@ -1675,7 +1676,7 @@ function Test-SilkResourceDeployment
                                     }
                             }
 
-                        $ReportFullPath = Join-Path -Path $ReportOutputPath -ChildPath $("SilkDeploymentReport_{0}.html" -f $(Get-Date -Format "yyyyMMdd_HHmmss"))
+                        $ReportFullPath = Join-Path -Path $ReportOutputPath -ChildPath $("SilkDeploymentReport_{0}.html" -f $StartTime.ToString("yyyyMMdd_HHmmss"))
                         Write-Verbose -Message $("HTML report will be generated at: {0}" -f $ReportFullPath)
                     }
 
@@ -2437,7 +2438,7 @@ function Test-SilkResourceDeployment
                                             AlternativeZones = $alternativeZones
                                             TestedZone = $Zone
                                             TestedRegion = $Region
-                                            Timestamp = Get-Date
+                                            Timestamp = $StartTime
                                         }
 
                                         # Log deployment validation findings appropriately based on failure type
@@ -3227,7 +3228,7 @@ function Test-SilkResourceDeployment
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Silk Azure Deployment Report - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')</title>
+    <title>Silk Azure Deployment Report - $($StartTime.ToString("yyyy-MM-dd HH:mm:ss"))</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; line-height: 1.6; }
         .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -3748,7 +3749,7 @@ function Test-SilkResourceDeployment
         </div>
 
         <div class="timestamp">
-            Report generated on $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') by Test-SilkResourceDeployment PowerShell module
+            Report generated on $($StartTime.ToString("yyyy-MM-dd HH:mm:ss")) by Silk Test-SilkResourceDeployment PowerShell module
         </div>
     </div>
 </body>

@@ -1396,16 +1396,18 @@ function Test-SilkResourceDeployment
                                 Write-Warning -Message $("{0}Failed to acquire Availability Zone alignment information: {1}" -f $messagePrefix, $_.Exception.Message)
                                 return
                             }
-
-
                     } `
                 elseif ($Zone -eq "Zoneless")
                     {
-                        Write-Verbose -Message -Message $("{0}Zoneless deployment; zone alignment not possible." -f $messagePrefix)
+                        Write-Verbose -Message $("{0}Deployment Availability Zone is : '{1}' Availability Zone alignment not possible." -f $messagePrefix, $Zone)
+                    } `
+                elseif ($ZoneAlignmentSubscriptionId -eq $SubscriptionId)
+                    {
+                        Write-Verbose -Message $("{0}Deployment Subscription : '{1}' is the same as Availability Zone Alignment Subscription ID: '{2}'. Availability Zone alignment not necessary." -f $messagePrefix, $Zone)
                     } `
                 else
                     {
-                        Write-Verbose -Message $("{0}Zone Alignment Subscription ID is not set; skipping zone alignment check." -f $messagePrefix)
+                        Write-Verbose -Message $("{0}Availability Zone Alignment Subscription ID is not set; skipping Availability Zone alignment check." -f $messagePrefix)
                     }
 
 

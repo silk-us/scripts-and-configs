@@ -1254,66 +1254,6 @@ function Test-SilkResourceDeployment
 
 
                 # ===============================================================================
-                # Compute SKU Location and Zone Support Validation
-                # ===============================================================================
-                # Verify that selected SKUs are supported in the target region and availability zone
-                if ($cNodeObject)
-                    {
-                        $cNodeSupportedSKU = $locationSupportedSKU | Where-Object Name -eq $cNodeVMSku
-                        if (!$cNodeSupportedSKU)
-                            {
-                                Write-Error "Unable to identify location for CNode SKU: {0} in region: {1}" -f $cNodeVMSku, $Region
-                                return
-                            } `
-                        elseif ($cNodeSupportedSKU -and $Zone -eq "Zoneless")
-                            {
-                                Write-Verbose -Message $("CNode SKU: {0} is supported in region: {1} without zones." -f $cNodeSupportedSKU.Name, $cNodeSupportedSKU.LocationInfo.Location)
-                            } `
-                        elseif ($cNodeSupportedSKU -and $cNodeSupportedSKU.LocationInfo.Zones -contains $Zone)
-                            {
-                                Write-Verbose -Message $("CNode SKU: {0} is supported in the target zone {1} in region: {2}. All supported zones: {3}" -f $cNodeSupportedSKU.Name, $Zone, $cNodeSupportedSKU.LocationInfo.Location, ($cNodeSupportedSKU.LocationInfo.Zones -join ", "))
-                            } `
-                        elseif ($cNodeSupportedSKU -and $cNodeSupportedSKU.LocationInfo.Zones -notcontains $Zone)
-                            {
-                                Write-Verbose -Message $("CNode SKU: {0} is not supported in the target zone {1} in region: {2}. It is supported in zones: {3}" -f $cNodeSupportedSKU.Name, $Zone, $cNodeSupportedSKU.LocationInfo.Location, ($cNodeSupportedSKU.LocationInfo.Zones -join ", "))
-                            } `
-                        else
-                            {
-                                Write-Warning -Message $("Unable to determine regional support for CNode SKU: {0} in region: {1}." -f $cNodeSupportedSKU.Name, $cNodeSupportedSKU.LocationInfo.Location)
-                            }
-                    }
-
-                if ($MNodeSize)
-                    {
-                        foreach ($supportedMNodeSKU in $mNodeObjectUnique)
-                            {
-                                $mNodeSupportedSKU = $locationSupportedSKU | Where-Object Name -eq $("{0}{1}{2}" -f $supportedMNodeSKU.vmSkuPrefix, $supportedMNodeSKU.vCPU, $supportedMNodeSKU.vmSkuSuffix)
-                                if (!$mNodeSupportedSKU)
-                                    {
-                                        Write-Error "Unable to identify regional support for MNode SKU: {0}{1}{2} in region: {3}" -f $supportedMNodeSKU.vmSkuPrefix, $supportedMNodeSKU.vCPU, $supportedMNodeSKU.vmSkuSuffix, $Region
-                                        return
-                                    } `
-                                elseif ($mNodeSupportedSKU -and $Zone -eq "Zoneless")
-                                    {
-                                        Write-Verbose -Message $("MNode SKU: {0} is supported in region: {1} without zones." -f $mNodeSupportedSKU.Name, $mNodeSupportedSKU.LocationInfo.Location)
-                                    } `
-                                elseif ($mNodeSupportedSKU -and $mNodeSupportedSKU.LocationInfo.Zones -contains $Zone)
-                                    {
-                                        Write-Verbose -Message $("MNode SKU: {0} is supported in the target zone {1} in region: {2}. All supported zones: {3}" -f $mNodeSupportedSKU.Name, $Zone, $mNodeSupportedSKU.LocationInfo.Location, ($mNodeSupportedSKU.LocationInfo.Zones -join ", "))
-                                    } `
-                                elseif ($mNodeSupportedSKU -and $mNodeSupportedSKU.LocationInfo.Zones -notcontains $Zone)
-                                    {
-                                        Write-Verbose -Message $("MNode SKU: {0} is not supported in the target zone {1} in region: {2}. It is supported in zones: {3}" -f $mNodeSupportedSKU.Name, $Zone, $mNodeSupportedSKU.LocationInfo.Location, ($mNodeSupportedSKU.LocationInfo.Zones -join ", "))
-                                    } `
-                                else
-                                    {
-                                        Write-Warning "Unable to determine regional support for MNode SKU: {0} in region: {1}." -f $mNodeSupportedSKU.Name, $mNodeSupportedSKU.LocationInfo.Location
-                                    }
-                            }
-                    }
-
-
-                # ===============================================================================
                 # Zone Alignment Check
                 # 1. verify the AvailabilityZonePeering Feature is registered for the subscription
                 # 2. Make Az rest call to get the zone alignment information
@@ -1413,6 +1353,66 @@ function Test-SilkResourceDeployment
                 else
                     {
                         Write-Verbose -Message $("{0}Availability Zone Alignment Subscription ID is not set; skipping Availability Zone alignment check." -f $messagePrefix)
+                    }
+
+
+                # ===============================================================================
+                # Compute SKU Location and Zone Support Validation
+                # ===============================================================================
+                # Verify that selected SKUs are supported in the target region and availability zone
+                if ($cNodeObject)
+                    {
+                        $cNodeSupportedSKU = $locationSupportedSKU | Where-Object Name -eq $cNodeVMSku
+                        if (!$cNodeSupportedSKU)
+                            {
+                                Write-Error "Unable to identify location for CNode SKU: {0} in region: {1}" -f $cNodeVMSku, $Region
+                                return
+                            } `
+                        elseif ($cNodeSupportedSKU -and $Zone -eq "Zoneless")
+                            {
+                                Write-Verbose -Message $("CNode SKU: {0} is supported in region: {1} without zones." -f $cNodeSupportedSKU.Name, $cNodeSupportedSKU.LocationInfo.Location)
+                            } `
+                        elseif ($cNodeSupportedSKU -and $cNodeSupportedSKU.LocationInfo.Zones -contains $Zone)
+                            {
+                                Write-Verbose -Message $("CNode SKU: {0} is supported in the target zone {1} in region: {2}. All supported zones: {3}" -f $cNodeSupportedSKU.Name, $Zone, $cNodeSupportedSKU.LocationInfo.Location, ($cNodeSupportedSKU.LocationInfo.Zones -join ", "))
+                            } `
+                        elseif ($cNodeSupportedSKU -and $cNodeSupportedSKU.LocationInfo.Zones -notcontains $Zone)
+                            {
+                                Write-Verbose -Message $("CNode SKU: {0} is not supported in the target zone {1} in region: {2}. It is supported in zones: {3}" -f $cNodeSupportedSKU.Name, $Zone, $cNodeSupportedSKU.LocationInfo.Location, ($cNodeSupportedSKU.LocationInfo.Zones -join ", "))
+                            } `
+                        else
+                            {
+                                Write-Warning -Message $("Unable to determine regional support for CNode SKU: {0} in region: {1}." -f $cNodeSupportedSKU.Name, $cNodeSupportedSKU.LocationInfo.Location)
+                            }
+                    }
+
+                if ($MNodeSize)
+                    {
+                        foreach ($supportedMNodeSKU in $mNodeObjectUnique)
+                            {
+                                $mNodeSupportedSKU = $locationSupportedSKU | Where-Object Name -eq $("{0}{1}{2}" -f $supportedMNodeSKU.vmSkuPrefix, $supportedMNodeSKU.vCPU, $supportedMNodeSKU.vmSkuSuffix)
+                                if (!$mNodeSupportedSKU)
+                                    {
+                                        Write-Error $("Unable to identify regional support for MNode SKU: {0}{1}{2} in region: {3}" -f $supportedMNodeSKU.vmSkuPrefix, $supportedMNodeSKU.vCPU, $supportedMNodeSKU.vmSkuSuffix, $Region)
+                                        return
+                                    } `
+                                elseif ($mNodeSupportedSKU -and $Zone -eq "Zoneless")
+                                    {
+                                        Write-Verbose -Message $("MNode SKU: {0} is supported in region: {1} without zones." -f $mNodeSupportedSKU.Name, $mNodeSupportedSKU.LocationInfo.Location)
+                                    } `
+                                elseif ($mNodeSupportedSKU -and $mNodeSupportedSKU.LocationInfo.Zones -contains $Zone)
+                                    {
+                                        Write-Verbose -Message $("MNode SKU: {0} is supported in the target zone {1} in region: {2}. All supported zones: {3}" -f $mNodeSupportedSKU.Name, $Zone, $mNodeSupportedSKU.LocationInfo.Location, ($mNodeSupportedSKU.LocationInfo.Zones -join ", "))
+                                    } `
+                                elseif ($mNodeSupportedSKU -and $mNodeSupportedSKU.LocationInfo.Zones -notcontains $Zone)
+                                    {
+                                        Write-Verbose -Message $("MNode SKU: {0} is not supported in the target zone {1} in region: {2}. It is supported in zones: {3}" -f $mNodeSupportedSKU.Name, $Zone, $mNodeSupportedSKU.LocationInfo.Location, ($mNodeSupportedSKU.LocationInfo.Zones -join ", "))
+                                    } `
+                                else
+                                    {
+                                        Write-Warning $("Unable to determine regional support for MNode SKU: {0} in region: {1}." -f $mNodeSupportedSKU.Name, $mNodeSupportedSKU.LocationInfo.Location)
+                                    }
+                            }
                     }
 
 

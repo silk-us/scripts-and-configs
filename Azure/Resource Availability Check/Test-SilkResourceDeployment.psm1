@@ -3323,7 +3323,7 @@ function Test-SilkResourceDeployment
                 else
                     {
                         Write-Host "Zone Alignment: " -NoNewline
-                        Write-Host $("- Not configured") -ForegroundColor Gray
+                        Write-Host $("- Not Applicable") -ForegroundColor Gray
                         Write-Host $("Reason: {0}" -f $zoneAlignmentInfo.AlignmentReason) -ForegroundColor Gray
                     }
 
@@ -3884,7 +3884,7 @@ function Test-SilkResourceDeployment
                                 else
                                     {
                                         $htmlContent += @"
-                <strong>Zone Alignment:</strong> <span class="status-success">- Not configured</span><br>
+                <strong>Zone Alignment:</strong> <span class="status-success">- Not Applicable</span><br>
 "@
                                     }
 

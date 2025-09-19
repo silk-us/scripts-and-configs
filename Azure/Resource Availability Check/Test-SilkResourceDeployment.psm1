@@ -1153,7 +1153,12 @@ function Test-SilkResourceDeployment
                 # SKU Configuration Identification and Validation
                 # ===============================================================================
                 # Set MNode size from parameter values when not using JSON configuration
-                if (!$MNodeSize -and $ConfigImport)
+                if (!$MNodeSize -and $ConfigImport <# DELETE once PV2 Supported>>>#> -and $ConfigImport.sdp.m_node_type -and $ConfigImport.sdp.m_node_type -ne "PV2" <# !<<<< DELETE once PV2 Supported#> )
+                        ##################### !
+                        #! No PV2 support presently
+                        #! zero out the mnode values if PV2 is selected
+                        #! delete once PV2 is supported
+                        ##################### !
                     {
                         $MNodeSize = $ConfigImport.sdp.m_node_sizes
                     } `

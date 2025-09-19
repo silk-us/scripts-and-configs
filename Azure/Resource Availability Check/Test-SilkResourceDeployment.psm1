@@ -2697,6 +2697,68 @@ function Test-SilkResourceDeployment
                 $inProgressVMs = ($deploymentReport | Where-Object { $_.VMStatus -like "⚠*" }).Count
                 $nonSuccessfulVMs = $deploymentReport | Where-Object { $_.ProvisioningState -ne "Succeeded" -and $_.ProvisioningState -ne "Not Found" }
 
+                # Zone Alignment Reporting Information
+                # Capture zone alignment details for console and HTML reporting
+                $zoneAlignmentInfo = @{
+                    AlignmentPerformed = $false
+                    AlignmentDisabled = $DisableZoneAlignment
+                    AlignmentSubscription = $ZoneAlignmentSubscriptionId
+                    OriginalZone = ""
+                    FinalZone = $Zone
+                    ZoneMappings = @()
+                    AlignmentReason = "Not applicable"
+                }
+
+                # Determine alignment status and populate reporting information
+                if ($ZoneAlignmentSubscriptionId -and $Zone -ne "Zoneless" -and $ZoneAlignmentSubscriptionId -ne $SubscriptionId)
+                    {
+                        $zoneAlignmentInfo.AlignmentSubscription = $ZoneAlignmentSubscriptionId
+
+                        if ($originalZone)
+                            {
+                                $zoneAlignmentInfo.AlignmentPerformed = $true
+                                $zoneAlignmentInfo.OriginalZone = $originalZone
+                                $zoneAlignmentInfo.AlignmentReason = "Zone alignment applied for production deployment testing accuracy"
+                            } `
+                        elseif ($DisableZoneAlignment -and $alignedZone)
+                            {
+                                $zoneAlignmentInfo.AlignmentReason = "Zone alignment available but disabled by parameter"
+                                $zoneAlignmentInfo.OriginalZone = $Zone
+                            } `
+                        elseif ($alignedZone -eq $Zone)
+                            {
+                                $zoneAlignmentInfo.AlignmentReason = "Zone already aligned - no adjustment needed"
+                            } `
+                        else
+                            {
+                                $zoneAlignmentInfo.AlignmentReason = "Zone alignment data unavailable or inconclusive"
+                            }
+
+                        # Capture zone mappings for reporting if available
+                        if ($zoneAlignmentResponse -and $zoneAlignmentResponse.availabilityZonePeers)
+                            {
+                                foreach ($peer in $zoneAlignmentResponse.availabilityZonePeers)
+                                    {
+                                        $zoneAlignmentInfo.ZoneMappings += [PSCustomObject]@{
+                                            DeploymentZone = $peer.availabilityZone
+                                            AlignmentZone = $peer.peers.availabilityZone
+                                        }
+                                    }
+                            }
+                    } `
+                elseif ($Zone -eq "Zoneless")
+                    {
+                        $zoneAlignmentInfo.AlignmentReason = "Zoneless deployment - alignment not applicable"
+                    } `
+                elseif ($ZoneAlignmentSubscriptionId -eq $SubscriptionId)
+                    {
+                        $zoneAlignmentInfo.AlignmentReason = "Same subscription deployment - alignment not necessary"
+                    } `
+                else
+                    {
+                        $zoneAlignmentInfo.AlignmentReason = "No alignment subscription specified"
+                    }
+
                 # SKU Support Analysis Data
                 $skuSupportData = @()
 
@@ -3207,6 +3269,52 @@ function Test-SilkResourceDeployment
 
                 Write-Host $("Total Network Interfaces: {0}" -f $deployedNICs.Count)
                 Write-Host $("Total Resources Created: {0}" -f $totalResourcesCreated)
+
+                # Zone Alignment Information
+                Write-Host "`n=== Zone Alignment Information ===" -ForegroundColor Cyan
+                Write-Host "Deployment Zone: " -NoNewline
+                Write-Host $("{0}" -f $zoneAlignmentInfo.FinalZone) -ForegroundColor Green
+
+                if ($zoneAlignmentInfo.AlignmentSubscription)
+                    {
+                        Write-Host "Alignment Subscription: " -NoNewline
+                        Write-Host $("{0}" -f $zoneAlignmentInfo.AlignmentSubscription) -ForegroundColor Yellow
+
+                        if ($zoneAlignmentInfo.AlignmentPerformed)
+                            {
+                                Write-Host "Zone Alignment: " -NoNewline
+                                Write-Host $("✓ Applied") -ForegroundColor Green
+                                Write-Host $("  Original Zone: {0} → Final Zone: {1}" -f $zoneAlignmentInfo.OriginalZone, $zoneAlignmentInfo.FinalZone) -ForegroundColor Gray
+                            } `
+                        elseif ($zoneAlignmentInfo.AlignmentDisabled)
+                            {
+                                Write-Host "Zone Alignment: " -NoNewline
+                                Write-Host $("⚠ Disabled by parameter") -ForegroundColor Yellow
+                            } `
+                        else
+                            {
+                                Write-Host "Zone Alignment: " -NoNewline
+                                Write-Host $("- No adjustment needed") -ForegroundColor Gray
+                            }
+
+                        Write-Host $("Reason: {0}" -f $zoneAlignmentInfo.AlignmentReason) -ForegroundColor Gray
+
+                        # Display zone mappings if available
+                        if ($zoneAlignmentInfo.ZoneMappings.Count -gt 0)
+                            {
+                                Write-Host "Zone Mappings:" -ForegroundColor Gray
+                                foreach ($mapping in $zoneAlignmentInfo.ZoneMappings)
+                                    {
+                                        Write-Host $("  Deployment Zone {0} ↔ Alignment Zone {1}" -f $mapping.DeploymentZone, $mapping.AlignmentZone) -ForegroundColor DarkGray
+                                    }
+                            }
+                    } `
+                else
+                    {
+                        Write-Host "Zone Alignment: " -NoNewline
+                        Write-Host $("- Not configured") -ForegroundColor Gray
+                        Write-Host $("Reason: {0}" -f $zoneAlignmentInfo.AlignmentReason) -ForegroundColor Gray
+                    }
 
                 # Deployment Results Status
                 Write-Host "`n=== Deployment Results Status ===" -ForegroundColor Cyan
@@ -3729,6 +3837,80 @@ function Test-SilkResourceDeployment
                 <strong>Network Interfaces:</strong> $($deployedNICs.Count)<br>
                 <strong>Network Resources:</strong> $($(if($deployedVNet){1}else{0}) + $(if($deployedNSG){1}else{0}))<br>
                 <strong>Placement Resources:</strong> $($(if($deployedPPG){1}else{0}) + $deployedAvailabilitySets.Count)
+            </div>
+            <div class="info-card">
+                <h4>🔄 Zone Alignment Information</h4>
+                <strong>Deployment Zone:</strong> <span class="status-success">$($zoneAlignmentInfo.FinalZone)</span><br>
+"@
+
+                                # Add alignment subscription information if available
+                                if ($zoneAlignmentInfo.AlignmentSubscription)
+                                    {
+                                        $htmlContent += @"
+                <strong>Alignment Subscription:</strong> $($zoneAlignmentInfo.AlignmentSubscription)<br>
+"@
+
+                                        if ($zoneAlignmentInfo.AlignmentPerformed)
+                                            {
+                                                $htmlContent += @"
+                <strong>Zone Alignment:</strong> <span class="status-success">✓ Applied</span><br>
+                <strong>Zone Change:</strong> $($zoneAlignmentInfo.OriginalZone) → $($zoneAlignmentInfo.FinalZone)<br>
+"@
+                                            } `
+                                        elseif ($zoneAlignmentInfo.AlignmentDisabled)
+                                            {
+                                                $htmlContent += @"
+                <strong>Zone Alignment:</strong> <span class="status-warning">⚠ Disabled by parameter</span><br>
+"@
+                                            } `
+                                        else
+                                            {
+                                                $htmlContent += @"
+                <strong>Zone Alignment:</strong> <span class="status-success">- No adjustment needed</span><br>
+"@
+                                            }
+                                    } `
+                                else
+                                    {
+                                        $htmlContent += @"
+                <strong>Zone Alignment:</strong> <span class="status-success">- Not configured</span><br>
+"@
+                                    }
+
+                                $htmlContent += @"
+                <strong>Reason:</strong> $($zoneAlignmentInfo.AlignmentReason)<br>
+"@
+
+                                # Add zone mappings table if available
+                                if ($zoneAlignmentInfo.ZoneMappings.Count -gt 0)
+                                    {
+                                        $htmlContent += @"
+                <br><strong>Zone Mappings:</strong><br>
+                <table style="margin: 5px 0; width: 100%;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 5px; font-size: 0.9em;">Deployment Zone</th>
+                            <th style="padding: 5px; font-size: 0.9em;">Alignment Zone</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+"@
+                                        foreach ($mapping in $zoneAlignmentInfo.ZoneMappings)
+                                            {
+                                                $htmlContent += @"
+                        <tr>
+                            <td style="padding: 5px; font-size: 0.9em;">$($mapping.DeploymentZone)</td>
+                            <td style="padding: 5px; font-size: 0.9em;">$($mapping.AlignmentZone)</td>
+                        </tr>
+"@
+                                            }
+                                        $htmlContent += @"
+                    </tbody>
+                </table>
+"@
+                                    }
+
+                                $htmlContent += @"
             </div>
 "@
 

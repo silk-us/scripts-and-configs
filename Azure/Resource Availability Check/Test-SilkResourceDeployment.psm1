@@ -1050,6 +1050,12 @@ function Test-SilkResourceDeployment
                                 $validationError = $true
                                 return
                             } `
+                        elseif ($locationSupportedSKU.LocationInfo.Zones.Count -eq 0 -and $Zone -ne "Zoneless")
+                            {
+                                Write-Warning -Message $("The specified region '{0}' has no Availability Zones, but Zone value {1} was specified instead of 'Zoneless'." -f ($locationSupportedSKU.LocationInfo.Location | Select-Object -Unique), $Zone)
+                                Write-Warning -Message $("Changing deployment Zone selection from '{0}' to 'Zoneless' and deploying in Region {1}." -f $Zone, $Region)
+                                $Zone = "Zoneless"
+                            } `
                         elseif ($Zone -eq "Zoneless")
                             {
                                 Write-Verbose -Message $("Zoneless is a valid zone selection for the specified region '{0}'." -f ($locationSupportedSKU.LocationInfo.Location | Select-Object -Unique))

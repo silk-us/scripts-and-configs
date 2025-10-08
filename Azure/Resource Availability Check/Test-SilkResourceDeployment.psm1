@@ -33,8 +33,8 @@ function Test-SilkResourceDeployment
                 - MNodes: Media nodes that coordinate data operations and storage management
                 - DNodes: Data nodes that store and serve data (deployed as part of MNode groups)
 
-                Function Version: 1.97.9-1.0.0
-                Supporting Silk SDP configurations from version 1.97.9
+                Function Version: 1.98.10-1.0.1
+                Supporting Silk SDP configurations from version 1.98.10
 
             .PARAMETER SubscriptionId
                 Azure Subscription ID where resources will be deployed.
@@ -167,6 +167,21 @@ function Test-SilkResourceDeployment
                 Default: Username "azureuser" with secure password for testing purposes.
                 Used for VM deployment supplied out of necessity with no expectation to actually use the credential.
 
+            .PARAMETER ZoneAlignmentSubscriptionId
+                Azure Subscription ID for cross-subscription availability zone alignment comparison.
+                When specified, the function identifies zone alignment between the deployment subscription and this
+                given subscription, automatically adjusting deployment zone to ensure the closest representation of a production deployment that can be tested.
+                Requires AvailabilityZonePeering Azure feature registration in both subscriptions.
+                When using ChecklistJSON with different deployment subscription, this is automatically populated.
+                This will always be reported on if available but will not align the deployment zone if the -DisableZoneAlignment switch parameter is specified.
+                Example: "87654321-4321-4321-4321-210987654321"
+
+            .PARAMETER DisableZoneAlignment
+                Switch parameter to disable automatic availability zone alignment validation and adjustment.
+                By default, zone alignment is performed when ZoneAlignmentSubscriptionId is specified or when using
+                ChecklistJSON configuration with different deployment subscription. Use this switch to maintain the
+                originally specified zone. Availability Zone alignment will still be reported on if available.
+
             .EXAMPLE
                 Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -MnodeSizeLaosv4 @("14.67","29.34") -Verbose
 
@@ -191,6 +206,19 @@ function Test-SilkResourceDeployment
 
                 Advanced deployment using explicit SKUs: 4 CNodes with E64s_v5 SKU and 2 MNode groups with mixed L-series SKUs.
                 Disables automatic cleanup so resources remain for extended testing or manual validation.
+
+            .EXAMPLE
+                Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -ZoneAlignmentSubscriptionId "87654321-4321-4321-4321-210987654321" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -Verbose
+
+                Tests deployment with cross-subscription zone alignment validation between deployment subscription and alignment subscription.
+                Automatically adjusts deployment zone to ensure the closest representation of a production deployment that can be tested.
+                Requires AvailabilityZonePeering feature registration in both subscriptions.
+
+            .EXAMPLE
+                Test-SilkResourceDeployment -ChecklistJSON "C:\configs\silk-deployment.json" -SubscriptionId "12345678-1234-1234-1234-123456789012" -DisableZoneAlignment -Verbose
+
+                Loads configuration from JSON file but uses a different deployment subscription than specified in the JSON.
+                Explicitly disables zone alignment to maintain original zone settings despite cross-subscription deployment scenario.
 
             .INPUTS
                 Command line parameters or JSON configuration file containing deployment specifications.
@@ -253,6 +281,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $true,  HelpMessage = "Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012")]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $true,  HelpMessage = "Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012")]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true,  HelpMessage = "Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012")]
+                [ValidatePattern('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')]
                 [ValidateNotNullOrEmpty()]
                 [string]
                 $SubscriptionId,
@@ -274,6 +303,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $true,  HelpMessage = "Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg")]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $true,  HelpMessage = "Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg")]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true,  HelpMessage = "Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg")]
+                [ValidatePattern('^[a-z][a-z0-9\-]{1,61}[a-z0-9]$')]
                 [ValidateNotNullOrEmpty()]
                 [string]
                 $ResourceGroupName,
@@ -303,6 +333,7 @@ function Test-SilkResourceDeployment
                 # Azure Availability Zone for resource placement (1, 2, 3, or Zoneless for regions without zones)
                 # Use "Zoneless" for regions that do not support availability zones
                 # Overrides JSON configuration values when specified via command line
+                # if -ZoneAlignmentSubscriptionId specified, zone alignment will occur unless -DisableZoneAlignment is also specified
                 [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support).")]
                 [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON",     Mandatory = $false, HelpMessage = "Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support).")]
                 [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true,  HelpMessage = "Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support).")]
@@ -412,6 +443,46 @@ function Test-SilkResourceDeployment
                 [int]
                 $MNodeCount,
 
+                # Subscription ID to compare zone alignment against the deployment subscription *Requires AvailablityZonePeering feature to be registered*
+                # When specified, the script ouputs the deployment region and zone alignment with this given subscription
+                # Useful for validating zone support and alignment across multiple subscriptions
+                # if using the json configuration file, this parameter is assumed to be the subscription in the configuration file
+                # Overrides JSON configuration values when specified via command line
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = "Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012")]
+                [ValidatePattern('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')]
+                [ValidateNotNullOrEmpty()]
+                [string]
+                $ZoneAlignmentSubscriptionId,
+
+                # Switch to disable zone alignment, by default  the script  will align the deployment zone with the either the -ZoneAlignmentSubscriptionId or the subscription in the json configuration file
+                # Must provide -ZoneAlignmentSubscriptionId OR
+                # Must provide the -ChecklistJSON configuration and specify a different -SubscriptionId
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = "Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided.")]
+                [Switch]
+                $DisableZoneAlignment,
+
                 # Switch to disable HTML report generation
                 # By default, a comprehensive HTML report is generated summarizing deployment status,
                 # quota usage, SKU support, and resource validation results
@@ -491,6 +562,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = "Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24")]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = "Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24")]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = "Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24")]
+                [ValidatePattern('^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(3[0-2]|[1-2][0-9]|[0-9]))$')]
                 [ValidateNotNullOrEmpty()]
                 [string]
                 $IPRangeCIDR,
@@ -637,6 +709,10 @@ function Test-SilkResourceDeployment
 
         begin
             {
+                $StartTime = Get-Date
+                Write-Verbose -Message $("=== Starting Silk Resource Deployment Test Script ===")
+                Write-Verbose -Message $("Script started at: {0}" -f $StartTime.ToString("yyyy-MM-dd HH:mm:ss"))
+
 
                 # Define required Azure PowerShell modules
                 # Import only the specific modules needed instead of the entire Az module for faster loading
@@ -683,12 +759,12 @@ function Test-SilkResourceDeployment
                                                 if ($isAdmin)
                                                     {
                                                         Write-Verbose -Message $("Installing {0} for all users (administrator privileges detected)..." -f $module)
-                                                        Install-Module -Name $module -Repository PSGallery -Scope AllUsers -Force -AllowClobber -Confirm:$false
+                                                        Install-Module -Name $module -Repository PSGallery -Scope AllUsers -Force -AllowClobber -Confirm:$false -Verbose:$false
                                                     }
                                                 else
                                                     {
                                                         Write-Verbose -Message $("Installing {0} for current user (no administrator privileges)..." -f $module)
-                                                        Install-Module -Name $module -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -Confirm:$false
+                                                        Install-Module -Name $module -Repository PSGallery -Scope CurrentUser -Force -AllowClobber -Confirm:$false -Verbose:$false
                                                     }
                                             }
 
@@ -747,7 +823,7 @@ function Test-SilkResourceDeployment
                             }
 
                         # Suppress Azure PowerShell breaking change warnings for cleaner output
-                        Write-Verbose -Message "Configuring Azure PowerShell warning preferences..."
+                        Write-Verbose -Message $("Configuring Azure PowerShell warning preferences...")
                         try
                             {
                                 # Suppress breaking change warnings globally for this session
@@ -760,19 +836,19 @@ function Test-SilkResourceDeployment
                                         $WarningPreference = 'SilentlyContinue'
                                     }
 
-                                Write-Verbose -Message "✓ Azure PowerShell breaking change warnings suppressed for cleaner output."
+                                Write-Verbose -Message $("✓ Azure PowerShell breaking change warnings suppressed for cleaner output.")
                             }
                         catch
                             {
-                                Write-Verbose -Message "Warning: Could not suppress Azure PowerShell breaking change warnings."
+                                Write-Verbose -Message $("Warning: Could not suppress Azure PowerShell breaking change warnings.")
                             }
 
                         # Verify Azure authentication status
-                        Write-Verbose -Message "Checking Azure authentication status..."
+                        Write-Verbose -Message $("Checking Azure authentication status...")
                         $currentAzContext = Get-AzContext
                         if (-not $currentAzContext)
                             {
-                                Write-Warning -Message "You are not authenticated to Azure. Attempting interactive authentication..."
+                                Write-Warning -Message $("You are not authenticated to Azure. Attempting interactive authentication...")
 
                                 try
                                     {
@@ -804,16 +880,16 @@ function Test-SilkResourceDeployment
                                 # Check if the current context is still valid
                                 try
                                     {
-                                        $testConnection = Get-AzSubscription -SubscriptionId $currentAzContext.Subscription.Id -ErrorAction Stop
-                                        Write-Verbose -Message "✓ Azure authentication is valid and active."
+                                        $testConnectionNull = Get-AzSubscription -SubscriptionId $currentAzContext.Subscription.Id -ErrorAction Stop
+                                        Write-Verbose -Message $("✓ Azure authentication is valid and active.")
                                     }
                                 catch
                                     {
-                                        Write-Warning -Message "Current Azure context appears to be expired. Attempting re-authentication..."
+                                        Write-Warning -Message $("Current Azure context appears to be expired. Attempting re-authentication...")
                                         try
                                             {
                                                 $connectResult = Connect-AzAccount -ErrorAction Stop
-                                                Write-Verbose -Message "✓ Azure re-authentication successful."
+                                                Write-Verbose -Message $("✓ Azure re-authentication successful.")
                                             }
                                         catch
                                             {
@@ -823,7 +899,7 @@ function Test-SilkResourceDeployment
                                     }
                             }
 
-                        Write-Verbose -Message "=== Azure PowerShell Prerequisites Complete ==="
+                        Write-Verbose -Message $("=== Azure PowerShell Prerequisites Complete ===")
                     }
                 catch
                     {
@@ -848,37 +924,61 @@ function Test-SilkResourceDeployment
                         if (!$SubscriptionId)
                             {
                                 $SubscriptionId = $ConfigImport.azure_environment.subscription_id
+                                Write-Verbose -Message $("Using subscription ID '{0}' from JSON configuration." -f $SubscriptionId)
                             } `
                         else
                             {
-                                Write-Warning -Message $("Subscription ID parameter is set to '{0}', ignoring subscription ID in JSON configuration." -f $SubscriptionId)
+                                Write-Warning -Message $("Subscription ID parameter is set to '{0}', ignoring subscription ID '{1}' in JSON configuration." -f $SubscriptionId, $ConfigImport.azure_environment.subscription_id)
+                            }
+
+                        # Zone Alignment Configuration - Determines cross-subscription alignment requirements
+                        # When deployment and JSON subscriptions differ, unless disabled will inherantly align availablity zones between deployment subscriptions and the identified or given zone alignment subscription
+                        if (!$ZoneAlignmentSubscriptionId -and $SubscriptionId -ne $ConfigImport.azure_environment.subscription_id)
+                            {
+                                $ZoneAlignmentSubscriptionId = $ConfigImport.azure_environment.subscription_id
+                                Write-Verbose -Message $("Availability Zone alignment check enabled: Using JSON subscription '{0}' for zone alignment comparison against deployment subscription '{1}'." -f $ZoneAlignmentSubscriptionId, $SubscriptionId)
+                            } `
+                        elseif (!$ZoneAlignmentSubscriptionId -and $SubscriptionId -eq $ConfigImport.azure_environment.subscription_id)
+                            {
+                                Write-Warning -Message $("Availability Zone alignment not required: Subscription ID parameter is: '{0}' matching the Checklist Imported Subscription ID: '{1}'." -f $ZoneAlignmentSubscriptionId, $ConfigImport.azure_environment.subscription_id)
+                            }
+                        elseif ($ZoneAlignmentSubscriptionId)
+                            {
+                                Write-Verbose -Message $("Availability Zone alignment check enabled: Using explicitly provided alignment subscription '{0}' for Availability Zone alignment comparison against deployment subscription '{1}'." -f $ZoneAlignmentSubscriptionId, $SubscriptionId)
+                            }
+                        else
+                            {
+                                Write-Verbose -Message $("Availability Zone alignment check skipped: No alignment subscription specified - deployment will use original zone '{0}' in region '{1}'." -f $Zone, $Region)
                             }
 
                         if (!$ResourceGroupName)
                             {
                                 $ResourceGroupName = $ConfigImport.azure_environment.resource_group_name
+                                Write-Verbose -Message $("Using resource group name '{0}' from JSON configuration." -f $ResourceGroupName)
                             } `
                         else
                             {
-                                Write-Warning -Message $("Resource Group Name parameter is set to '{0}', ignoring resource group name in JSON configuration." -f $ResourceGroupName)
+                                Write-Warning -Message $("Resource Group Name parameter is set to '{0}', ignoring resource group name '{1}' in JSON configuration." -f $ResourceGroupName, $ConfigImport.azure_environment.resource_group_name)
                             }
 
                         if(!$Region)
                             {
                                 $Region = $ConfigImport.azure_environment.region
+                                Write-Verbose -Message $("Using region '{0}' from JSON configuration." -f $Region)
                             } `
                         else
                             {
-                                Write-Warning -Message $("Region parameter is set to '{0}', ignoring region in JSON configuration." -f $Region)
+                                Write-Warning -Message $("Region parameter is set to '{0}', ignoring region '{1}' in JSON configuration." -f $Region, $ConfigImport.azure_environment.region)
                             }
 
                         if(!$Zone)
                             {
                                 $Zone = $ConfigImport.azure_environment.zone
+                                Write-Verbose -Message $("Using zone '{0}' from JSON configuration." -f $Zone)
                             } `
                         else
                             {
-                                Write-Warning -Message $("Zone parameter is set to '{0}', ignoring zone in JSON configuration." -f $Zone)
+                                Write-Warning -Message $("Zone parameter is set to '{0}', ignoring zone '{1}' in JSON configuration." -f $Zone, $ConfigImport.azure_environment.zone)
                             }
 
                         # identify cnode count
@@ -947,19 +1047,27 @@ function Test-SilkResourceDeployment
                         $locationSupportedSKU = Get-AzComputeResourceSku -Location $Region -ErrorAction Stop
 
                         # Check zone availability
-                        if ($Zone -notin $locationSupportedSKU.LocationInfo.Zones)
-                            {
-                                Write-Error -Message $("The specified zone '{0}' is not available in the region '{1}'." -f $Zone, $Region)
-                                return
-                            } `
-                        elseif ($Zone -eq "Zoneless" -and $locationSupportedSKU.LocationInfo.Zones.Count -ne 0)
+                        if ($Zone -eq "Zoneless" -and $locationSupportedSKU.LocationInfo.Zones.Count -ne 0)
                             {
                                 Write-Error -Message $("The specified region '{0}' has availability zones {1}, but 'Zoneless' was specified." -f ($locationSupportedSKU.LocationInfo.Location | Select-Object -Unique), (($locationSupportedSKU.LocationInfo.Zones | Sort-Object | Select-Object -Unique) -join ", "))
+                                $validationError = $true
                                 return
+                            } `
+                        elseif ($locationSupportedSKU.LocationInfo.Zones.Count -eq 0 -and $Zone -ne "Zoneless")
+                            {
+                                Write-Warning -Message $("The specified region '{0}' has no Availability Zones, but Zone value {1} was specified instead of 'Zoneless'." -f ($locationSupportedSKU.LocationInfo.Location | Select-Object -Unique), $Zone)
+                                Write-Warning -Message $("Changing deployment Zone selection from '{0}' to 'Zoneless' and deploying in Region {1}." -f $Zone, $Region)
+                                $Zone = "Zoneless"
                             } `
                         elseif ($Zone -eq "Zoneless")
                             {
                                 Write-Verbose -Message $("Zoneless is a valid zone selection for the specified region '{0}'." -f ($locationSupportedSKU.LocationInfo.Location | Select-Object -Unique))
+                            } `
+                        elseif ($Zone -notin $locationSupportedSKU.LocationInfo.Zones)
+                            {
+                                Write-Error -Message $("The specified zone '{0}' is not available in the region '{1}'." -f $Zone, $Region)
+                                $validationError = $true
+                                return
                             } `
                         else
                             {
@@ -998,10 +1106,10 @@ function Test-SilkResourceDeployment
 
                 if ($Development)
                     {
-                        Write-Verbose -Message "Running in Development Mode, using reduced CNode configuration for faster deployment."
+                        Write-Verbose -Message $("Running in Development Mode, using reduced CNode configuration for faster deployment.")
                         $cNodeSizeObject = @(
                                                 [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 2; vmSkuSuffix = "s_v5"; QuotaFamily = "Standard Dsv5 Family vCPUs"; cNodeFriendlyName = "No_Increased_Logical_Capacity"};
-                                                [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 4; vmSkuSuffix = "s_v3"; QuotaFamily = "Standard Lsv3 Family vCPUs"; cNodeFriendlyName = "Read_Cache_Enabled"};
+                                                [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 8; vmSkuSuffix = "s_v3"; QuotaFamily = "Standard Lsv3 Family vCPUs"; cNodeFriendlyName = "Read_Cache_Enabled"};
                                                 [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 2; vmSkuSuffix = "s_v5"; QuotaFamily = "Standard Esv5 Family vCPUs"; cNodeFriendlyName = "Increased_Logical_Capacity"}
                                             )
                     }
@@ -1045,16 +1153,16 @@ function Test-SilkResourceDeployment
 
                 if ($Development)
                     {
-                        Write-Verbose -Message "Running in Development Mode, using reduced MNode/DNode configuration for faster deployment."
+                        Write-Verbose -Message $("Running in Development Mode, using reduced MNode/DNode configuration for faster deployment.")
                         $mNodeSizeObject = @(
                                                 [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "s_v3";   PhysicalSize = 19.5;     QuotaFamily = "Standard Lsv3 Family vCPUs"};
-                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "s_v3";   PhysicalSize = 39.1;     QuotaFamily = "Standard Lsv3 Family vCPUs"};
-                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 32;   vmSkuSuffix = "s_v3";   PhysicalSize = 78.2;     QuotaFamily = "Standard Lsv3 Family vCPUs"};
+                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 8;   vmSkuSuffix = "s_v3";   PhysicalSize = 39.1;     QuotaFamily = "Standard Lsv3 Family vCPUs"};
+                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 8;   vmSkuSuffix = "s_v3";   PhysicalSize = 78.2;     QuotaFamily = "Standard Lsv3 Family vCPUs"};
                                                 [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 2;    vmSkuSuffix = "aos_v4"; PhysicalSize = 14.67;    QuotaFamily = "Standard Laosv4 Family vCPUs"};
-                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 4;    vmSkuSuffix = "aos_v4"; PhysicalSize = 29.34;    QuotaFamily = "Standard Laosv4 Family vCPUs"};
-                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "aos_v4"; PhysicalSize = 58.67;    QuotaFamily = "Standard Laosv4 Family vCPUs"};
-                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 12;   vmSkuSuffix = "aos_v4"; PhysicalSize = 88.01;    QuotaFamily = "Standard Laosv4 Family vCPUs"};
-                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "aos_v4"; PhysicalSize = 117.35;   QuotaFamily = "Standard Laosv4 Family vCPUs"}
+                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 2;    vmSkuSuffix = "aos_v4"; PhysicalSize = 29.34;    QuotaFamily = "Standard Laosv4 Family vCPUs"};
+                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 2;    vmSkuSuffix = "aos_v4"; PhysicalSize = 58.67;    QuotaFamily = "Standard Laosv4 Family vCPUs"};
+                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 2;   vmSkuSuffix = "aos_v4"; PhysicalSize = 88.01;    QuotaFamily = "Standard Laosv4 Family vCPUs"};
+                                                [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 2;   vmSkuSuffix = "aos_v4"; PhysicalSize = 117.35;   QuotaFamily = "Standard Laosv4 Family vCPUs"}
                                             )
                     }
 
@@ -1079,7 +1187,7 @@ function Test-SilkResourceDeployment
                         $IPRangeCIDR = "10.0.0.0/24"
                     }
 
-                Write-Verbose -Message "Using IP range: $IPRangeCIDR for VNet and subnet configuration."
+                Write-Verbose -Message $("Using IP range: {0} for VNet and subnet configuration." -f $IPRangeCIDR)
 
 
                 # ===============================================================================
@@ -1088,7 +1196,20 @@ function Test-SilkResourceDeployment
                 # Set MNode size from parameter values when not using JSON configuration
                 if (!$MNodeSize -and $ConfigImport)
                     {
-                        $MNodeSize = $ConfigImport.sdp.m_node_sizes
+                        ##################### !
+                        #! No PV2 support presently
+                        #! zero out the mnode values if PV2 is selected
+                        #! delete once PV2 is supported
+                        ##################### !
+                        if(<# DELETE once PV2 Supported>>>#> $ConfigImport.sdp.m_node_type -and $ConfigImport.sdp.m_node_type -eq "PV2" <# !<<<< DELETE once PV2 Supported#> )
+                            {
+                                Write-Error -Message $("PV2 MNode type is not currently supported. Please select Lsv3 or Laosv4 MNode types.")
+                            }
+                        else
+                            {
+                                # ! Keep this Part VVVV
+                                $MNodeSize = $ConfigImport.sdp.m_node_sizes
+                            }
                     } `
                 elseif ($MnodeSizeLsv3)
                     {
@@ -1108,7 +1229,7 @@ function Test-SilkResourceDeployment
                 if (!$CNodeCount -and !$CNodeFriendlyName -and !$CNodeSku -and $MnodeSize)
                     {
                         # MNode-only deployment scenario - no CNode configuration required
-                        Write-Verbose -Message "MNode-only deployment mode - CNode configuration skipped."
+                        Write-Verbose -Message $("MNode-only deployment mode - CNode configuration skipped.")
                         $cNodeObject = $null
                     } `
                 elseif ($CNodeCount -and ($CNodeFriendlyName -eq "Read_Cache_Enabled" -or $ConfigImport.sdp.read_cache_enabled))
@@ -1129,7 +1250,7 @@ function Test-SilkResourceDeployment
                     } `
                 else
                     {
-                        Write-Error "Configuration is not valid. Please specify either CNode parameters (CNodeFriendlyName/CNodeSku with CNodeCount) or MNode parameters (MnodeSizeLsv3/MnodeSizeLaosv4/MNodeSku), or both."
+                        Write-Error $("Configuration is not valid. Please specify either CNode parameters (CNodeFriendlyName/CNodeSku with CNodeCount) or MNode parameters (MnodeSizeLsv3/MnodeSizeLaosv4/MNodeSku), or both.")
                         $validationError = $true
                         return
                     }
@@ -1137,7 +1258,7 @@ function Test-SilkResourceDeployment
                 if ($cNodeObject)
                     {
                         $cNodeVMSku = "{0}{1}{2}" -f $cNodeObject.vmSkuPrefix, $cNodeObject.vCPU, $cNodeObject.vmSkuSuffix
-                        Write-Verbose -Message ("Identified CNode SKU: {0}" -f $cNodeVMSku)
+                        Write-Verbose -Message $("Identified CNode SKU: {0}" -f $cNodeVMSku)
                     }
 
                 # Initialize MNode object list to hold configuration for each MNode type
@@ -1158,11 +1279,11 @@ function Test-SilkResourceDeployment
                 elseif ($CNodeCount -and !$MnodeSizeLsv3 -and !$MnodeSizeLaosv4 -and !$MNodeSku)
                     {
                         # CNode-only deployment scenario - no MNode configuration required
-                        Write-Verbose -Message "CNode-only deployment mode - no MNode resources will be created."
+                        Write-Verbose -Message $("CNode-only deployment mode - no MNode resources will be created.")
                     } `
                 elseif (!$CNodeCount -and !$MnodeSizeLsv3 -and !$MnodeSizeLaosv4 -and !$MNodeSku)
                     {
-                        Write-Error "No valid configuration specified. Please specify either CNode parameters (CNodeFriendlyName/CNodeSku with CNodeCount) or MNode parameters (MnodeSizeLsv3/MnodeSizeLaosv4/MNodeSku), or both."
+                        Write-Error $("No valid configuration specified. Please specify either CNode parameters (CNodeFriendlyName/CNodeSku with CNodeCount) or MNode parameters (MnodeSizeLsv3/MnodeSizeLaosv4/MNodeSku), or both.")
                         $validationError = $true
                         return
                     }
@@ -1182,6 +1303,123 @@ function Test-SilkResourceDeployment
 
 
                 # ===============================================================================
+                # Cross-Subscription Availability Zone Alignment Validation and Assignment
+                # ===============================================================================
+                # Ensures Availability Zone Alignment testing a deployments across different Azure subscriptions
+                # Process: 1. Verify AvailabilityZonePeering feature registration in deployment subscription
+                #          2. Query Azure checkZonePeers REST API for Availabiity Zone mapping between subscriptions
+                #          3. Analyze Availability Zone peer relationships and ensure alignment unless disabled with -DisableZoneAlignment switch
+                # ===============================================================================
+                $processSection = "Availability Zone Alignment"
+                $sectionStep = ""
+                $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
+                Write-Verbose -Message $("{0}Starting zone alignment check." -f $messagePrefix)
+                if ($ZoneAlignmentSubscriptionId -and $Zone -ne "Zoneless" -and $ZoneAlignmentSubscriptionId -ne $SubscriptionId)
+                    {
+                        $sectionStep = "Check AvailabilityZonePeering Feature"
+                        $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
+                        # Validate AvailabilityZonePeering feature registration - required for cross-subscription zone querying
+                        Write-Verbose -Message $("{0}Validating AvailabilityZonePeering feature registration for zone alignment capabilities..." -f $messagePrefix)
+                        try
+                            {
+                                $featureCheckAvailabilityZonePeering = Get-AzProviderFeature -ProviderNamespace "Microsoft.Compute" -FeatureName "AvailabilityZonePeering" -ErrorAction Stop
+                                if ($featureCheckAvailabilityZonePeering.RegistrationState -ne "Registered")
+                                    {
+                                        Write-Warning -Message $("{0}AvailabilityZonePeering feature status: '{1}' in deployment subscription '{2}' - zone alignment cannot be performed." -f $messagePrefix, $featureCheckAvailabilityZonePeering.RegistrationState, $SubscriptionId)
+                                        Write-Warning -Message $("{0}To enable zone alignment, register the feature using: Register-AzProviderFeature -FeatureName AvailabilityZonePeering -ProviderNamespace Microsoft.Compute" -f $messagePrefix)
+                                        Write-Verbose -Message $("{0}Proceeding without zone alignment due to missing feature registration." -f $messagePrefix)
+                                    } `
+                                else
+                                    {
+                                        Write-Verbose -Message $("{0}AvailabilityZonePeering feature status: '{1}' and available for zone alignment operations." -f $messagePrefix, $featureCheckAvailabilityZonePeering.RegistrationState)
+                                    }
+                            } `
+                        catch
+                            {
+                                Write-Warning -Message $("{0}Failed to validate AvailabilityZonePeering feature status: {1}" -f $messagePrefix, $_.Exception.Message)
+                                Write-Verbose -Message $("{0}Proceeding without Availability Zone alignment due to feature validation error." -f $messagePrefix)
+                            }
+
+                        # Query Azure checkZonePeers REST API for cross-subscription zone mapping data
+                        $sectionStep = "Request Zone Alignment Info"
+                        $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
+                        Write-Verbose -Message $("{0}Requesting availablity zone peer mappings between deployment subscription '{1}' and alignment subscription '{2}' in region '{3}'..." -f $messagePrefix, $SubscriptionId, $ZoneAlignmentSubscriptionId, $Region)
+
+                        # Generate REST API request URI for checkZonePeers endpoint
+                        $zoneAlignmentRequestUri = $("https://management.azure.com/subscriptions/{0}/providers/Microsoft.Resources/checkZonePeers?api-version=2022-12-01" -f $SubscriptionId)
+
+                        # Generate request payload with alignment subscription and target region
+                        $zoneAlignmentRequestPayload = @{
+                                                            subscriptionIds = @( $("subscriptions/{0}" -f $ZoneAlignmentSubscriptionId) )
+                                                            location = $Region
+                                                        } | ConvertTo-Json
+
+                        try
+                            {
+                                # Call Azure REST API to retrieve zone peer relationship data
+                                Write-Verbose -Message $("{0}Calling checkZonePeers REST API endpoint..." -f $messagePrefix)
+                                $zoneAlignmentResponse = Invoke-AzRestMethod -Method Post -Uri $zoneAlignmentRequestUri -Payload $zoneAlignmentRequestPayload -ErrorAction Stop | Select-Object -ExpandProperty Content | ConvertFrom-Json -Depth 100
+
+                                $sectionStep = "Mapping"
+                                $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
+
+                                # Parse zone peer mappings to identify cross subscription Availability Zone alignment
+                                Write-Verbose -Message $("{0}Analyzing Availability Zone peer relationships for production deployment testing accuracy..." -f $messagePrefix)
+                                foreach ($peer in $zoneAlignmentResponse.availabilityZonePeers)
+                                    {
+                                        Write-Verbose -Message $("{0}Deployment Subscription Availability Zone '{1}' corresponds to Alignment Subscription Availability Zone '{2}'" -f $messagePrefix, $peer.availabilityZone, $peer.peers.availabilityZone)
+                                        # Find the deployment zone that aligns with the current zone in the alignment subscription
+                                        if ($peer.peers.availabilityZone -eq $Zone)
+                                            {
+                                                $alignedZone = $peer.availabilityZone
+                                                $remoteZone = $peer.peers.availabilityZone
+                                                Write-Verbose -Message $("{0}Found alignment match: Deployment Subscription Availability Zone '{1}' aligns with Alignment Subscription Availability Zone '{2}'" -f $messagePrefix, $alignedZone, $remoteZone)
+                                            }
+                                    }
+
+                                # Apply zone alignment decision based on analysis results
+                                $sectionStep = "Apply Alignment"
+                                $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
+                                if ($DisableZoneAlignment)
+                                    {
+                                        Write-Verbose -Message $("{0}Zone alignment disabled by parameter - maintaining original Availability Zone '{1}' (Alignment would be Availability Zone '{2}' with Alignment Subscription '{3}')" -f $messagePrefix, $Zone, $alignedZone, $ZoneAlignmentSubscriptionId)
+                                    } `
+                                elseif ($alignedZone -and $alignedZone -eq $Zone)
+                                    {
+                                        Write-Verbose -Message $("{0}Zone Aligned: Current Deployment Availability Zone '{1}' is already aligned with  Alignment Subscription Availability Zone '{2}' in Region '{3}'" -f $messagePrefix, $Zone, $alignedZone, $Region)
+                                    } `
+                                elseif($alignedZone)
+                                    {
+                                        $originalZone = $Zone
+                                        $Zone = $alignedZone
+                                        Write-Verbose -Message $("{0}Zone alignment applied: Changed Deployment Availability Zone from '{1}' to '{2}' for alignment with Subscription '{3}' Availability Zone '{4}' in Region '{5}'" -f $messagePrefix, $originalZone, $Zone, $ZoneAlignmentSubscriptionId, $remoteZone, $Region)
+                                    } `
+                                else
+                                    {
+                                        Write-Warning -Message $("{0}Alignment data inconclusive: Unable to determine Availability Zone mapping for Region '{1}'. Proceeding with original Availability Zone '{2}' in Deployment Subscription '{3}'" -f $messagePrefix, $Region, $Zone, $SubscriptionId)
+                                    }
+                            } `
+                        catch
+                            {
+                                Write-Warning -Message $("{0}Alignment API call failed: {1}. Proceeding with original Availability Zone '{2}' in Deployment Subscription '{3}'" -f $messagePrefix, $_.Exception.Message, $Zone, $SubscriptionId)
+                                return
+                            }
+                    } `
+                elseif ($Zone -eq "Zoneless")
+                    {
+                        Write-Verbose -Message $("{0}Alignment skipped: Deployment configured for 'Zoneless' Region - cross-subscription Zone optimization not applicable" -f $messagePrefix)
+                    } `
+                elseif ($ZoneAlignmentSubscriptionId -eq $SubscriptionId)
+                    {
+                        Write-Verbose -Message $("{0}Deployment Subscription : '{1}' is identical to Availability Zone Alignment Subscription ID: '{2}'. Availability Zone alignment not necessary." -f $messagePrefix, $Zone)
+                    } `
+                else
+                    {
+                        Write-Verbose -Message $("{0}Alignment skipped: No Alignment Subscription specified - using original Availability Zone '{1}' in Region '{2}'" -f $messagePrefix, $Zone, $Region)
+                    }
+
+
+                # ===============================================================================
                 # Compute SKU Location and Zone Support Validation
                 # ===============================================================================
                 # Verify that selected SKUs are supported in the target region and availability zone
@@ -1190,7 +1428,7 @@ function Test-SilkResourceDeployment
                         $cNodeSupportedSKU = $locationSupportedSKU | Where-Object Name -eq $cNodeVMSku
                         if (!$cNodeSupportedSKU)
                             {
-                                Write-Error "Unable to identify location for CNode SKU: {0} in region: {1}" -f $cNodeVMSku, $Region
+                                Write-Error $("Unable to identify location for CNode SKU: {0} in region: {1}" -f $cNodeVMSku, $Region)
                                 return
                             } `
                         elseif ($cNodeSupportedSKU -and $Zone -eq "Zoneless")
@@ -1218,7 +1456,7 @@ function Test-SilkResourceDeployment
                                 $mNodeSupportedSKU = $locationSupportedSKU | Where-Object Name -eq $("{0}{1}{2}" -f $supportedMNodeSKU.vmSkuPrefix, $supportedMNodeSKU.vCPU, $supportedMNodeSKU.vmSkuSuffix)
                                 if (!$mNodeSupportedSKU)
                                     {
-                                        Write-Error "Unable to identify regional support for MNode SKU: {0}{1}{2} in region: {3}" -f $supportedMNodeSKU.vmSkuPrefix, $supportedMNodeSKU.vCPU, $supportedMNodeSKU.vmSkuSuffix, $Region
+                                        Write-Error $("Unable to identify regional support for MNode SKU: {0}{1}{2} in region: {3}" -f $supportedMNodeSKU.vmSkuPrefix, $supportedMNodeSKU.vCPU, $supportedMNodeSKU.vmSkuSuffix, $Region)
                                         return
                                     } `
                                 elseif ($mNodeSupportedSKU -and $Zone -eq "Zoneless")
@@ -1235,7 +1473,7 @@ function Test-SilkResourceDeployment
                                     } `
                                 else
                                     {
-                                        Write-Warning "Unable to determine regional support for MNode SKU: {0} in region: {1}." -f $mNodeSupportedSKU.Name, $mNodeSupportedSKU.LocationInfo.Location
+                                        Write-Warning $("Unable to determine regional support for MNode SKU: {0} in region: {1}." -f $mNodeSupportedSKU.Name, $mNodeSupportedSKU.LocationInfo.Location)
                                     }
                             }
                     }
@@ -1353,13 +1591,13 @@ function Test-SilkResourceDeployment
                             } `
                         else
                             {
-                                Write-Verbose "All required quotas are available for the specified CNode and MNode configurations."
+                                Write-Verbose $("All required quotas are available for the specified CNode and MNode configurations.")
                             }
 
                     } `
                 catch
                     {
-                        Write-Error "Error occurred while checking compute quota: $_"
+                        Write-Error $("Error occurred while checking compute quota: {0}" -f $_)
                     }
 
 
@@ -1500,7 +1738,7 @@ function Test-SilkResourceDeployment
                                     }
                             }
 
-                        $ReportFullPath = Join-Path -Path $ReportOutputPath -ChildPath $("SilkDeploymentReport_{0}.html" -f $(Get-Date -Format "yyyyMMdd_HHmmss"))
+                        $ReportFullPath = Join-Path -Path $ReportOutputPath -ChildPath $("SilkDeploymentReport_{0}.html" -f $StartTime.ToString("yyyyMMdd_HHmmss"))
                         Write-Verbose -Message $("HTML report will be generated at: {0}" -f $ReportFullPath)
                     }
 
@@ -1508,7 +1746,7 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 # Deployment Configuration Summary
                 # ===============================================================================
-                Write-Verbose -Message "=== Silk Azure Deployment Configuration ==="
+                Write-Verbose -Message $("=== Silk Azure Deployment Configuration ===")
                 Write-Verbose -Message $("Subscription ID: {0}" -f $SubscriptionId)
                 Write-Verbose -Message $("Resource Group: {0}" -f $ResourceGroupName)
                 Write-Verbose -Message $("Deployment Region: {0}" -f $Region)
@@ -1523,7 +1761,7 @@ function Test-SilkResourceDeployment
                     } `
                 else
                     {
-                        Write-Verbose -Message "CNode Count: 0 (MNode-only deployment)"
+                        Write-Verbose -Message $("CNode Count: 0 (MNode-only deployment)")
                     }
 
                 if ($mNodeObject -and $mNodeObject.Count -gt 0)
@@ -1560,13 +1798,13 @@ function Test-SilkResourceDeployment
 
                 if ($Development)
                     {
-                        Write-Verbose -Message "Development Mode: ENABLED (using smaller VM sizes for faster deployment)"
+                        Write-Verbose -Message $("Development Mode: ENABLED (using smaller VM sizes for faster deployment)")
                     } `
                 else
                     {
-                        Write-Verbose -Message "Development Mode: DISABLED (deploying production VM SKUs)"
+                        Write-Verbose -Message $("Development Mode: DISABLED (deploying production VM SKUs)")
                     }
-                Write-Verbose -Message "=========================================="
+                Write-Verbose -Message $("==========================================")
             }
 
         # This block is used to provide record-by-record processing for the function.
@@ -1575,7 +1813,7 @@ function Test-SilkResourceDeployment
                 # if there is a validtion error skip deployment
                 if ($validationError)
                     {
-                        Write-Error "Validation failed. Please fix the errors and try again."
+                        Write-Error $("Validation failed. Please fix the errors and try again.")
                         return
                     }
                 # if run cleanup only, skip the process code
@@ -1644,7 +1882,7 @@ function Test-SilkResourceDeployment
                         Write-Verbose -Message $("  - Inbound Rule: '{0}' - {1} traffic from source '{2}' ports '{3}' to destination '{4}' ports '{5}' protocol '{6}' [Priority: {7}]" -f $verboseInboundRule.Name, $verboseInboundRule.Access, ($verboseInboundRule.SourceAddressPrefix -join ','), ($verboseInboundRule.SourcePortRange -join ','), ($verboseInboundRule.DestinationAddressPrefix -join ','), ($verboseInboundRule.DestinationPortRange -join ','), $verboseInboundRule.Protocol, $verboseInboundRule.Priority)
                         Write-Verbose -Message $("  - Outbound Rule: '{0}' - {1} traffic from source '{2}' ports '{3}' to destination '{4}' ports '{5}' protocol '{6}' [Priority: {7}]" -f $verboseOutboundRule.Name, $verboseOutboundRule.Access, ($verboseOutboundRule.SourceAddressPrefix -join ','), ($verboseOutboundRule.SourcePortRange -join ','), ($verboseOutboundRule.DestinationAddressPrefix -join ','), ($verboseOutboundRule.DestinationPortRange -join ','), $verboseOutboundRule.Protocol, $verboseOutboundRule.Priority)
 
-                        Write-Verbose -Message "  - Security Impact: Complete network isolation - NO traffic allowed in any direction"
+                        Write-Verbose -Message $("  - Security Impact: Complete network isolation - NO traffic allowed in any direction")
 
                         # -----------------------------------------------------------------------
                         # Subnet Configuration
@@ -1666,7 +1904,7 @@ function Test-SilkResourceDeployment
                                     -Subnet $mGMTSubnet #, $storageSubnet
 
                         Write-Verbose -Message $("✓ Virtual Network '{0}' created with address space {1}" -f $vNET.Name, $IPRangeCIDR)
-                        Write-Verbose -Message "✓ Network isolation configured: All VMs will be deployed with NO network access"
+                        Write-Verbose -Message $("✓ Network isolation configured: All VMs will be deployed with NO network access")
 
                         $mGMTSubnetID = $vNET.Subnets | Where-Object { $_.Name -eq $mGMTSubnet.Name } | Select-Object -ExpandProperty Id
                     } `
@@ -1680,9 +1918,9 @@ function Test-SilkResourceDeployment
                 try
                     {
                         # Clean up any old jobs before starting deployment to better track jobs related to the active run
-                        Write-Verbose -Message "Cleaning up any existing background jobs..."
+                        Write-Verbose -Message $("Cleaning up any existing background jobs...")
                         Get-Job | Remove-Job -Force
-                        Write-Verbose -Message "All existing jobs have been removed."
+                        Write-Verbose -Message $("All existing jobs have been removed.")
 
                         # Initialize job-to-VM mapping for meaningful error reporting
                         $vmJobMapping = @{}
@@ -1716,10 +1954,10 @@ function Test-SilkResourceDeployment
                                     -Activity "VM Deployment" `
                                     -Id 1
 
-                                # create cnode proximity placement group including VMsizes if Zoneless
+                                # create cnode proximity placement group including VM SKUs if Zoneless
                                 if($Zone -ne "Zoneless")
                                     {
-                                        Write-Verbose -Message $("Creating CNode Proximity Placement Group in region '{0}' with zone '{1}' and VM size: {2}" -f $Region, $Zone, $cNodeVMSku)
+                                        Write-Verbose -Message $("Creating CNode Proximity Placement Group in region '{0}' with zone '{1}' and VM SKU: {2}" -f $Region, $Zone, $cNodeVMSku)
                                         $cNodeProximityPlacementGroup = New-AzProximityPlacementGroup `
                                                                     -ResourceGroupName $ResourceGroupName `
                                                                     -Location $Region `
@@ -1883,10 +2121,10 @@ function Test-SilkResourceDeployment
                                 $currentMNodeSku = "{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix
                                 $currentMNodePhysicalSize = $mNode.PhysicalSize
 
-                                # create mnode proximity placement group including VMsizes if Zoneless
+                                # create mnode proximity placement group including VM SKUs if Zoneless
                                 if($Zone -ne "Zoneless")
                                     {
-                                        Write-Verbose -Message $("Creating Proximity Placement Group in region '{0}' with zone '{1}' and VM sizes: {2}" -f $Region, $Zone, $currentMNodeSku)
+                                        Write-Verbose -Message $("Creating Proximity Placement Group in region '{0}' with zone '{1}' and VM SKUs: {2}" -f $Region, $Zone, $currentMNodeSku)
                                         $mNodeProximityPlacementGroup = New-AzProximityPlacementGroup `
                                                                         -ResourceGroupName $ResourceGroupName `
                                                                         -Location $Region `
@@ -2200,17 +2438,21 @@ function Test-SilkResourceDeployment
                                                 # Categorize the failure type for better reporting
                                                 if ($errorCode -eq "AllocationFailed" -or $errorMessage -match "sufficient capacity|allocation failed")
                                                     {
-                                                        $failureCategory = "Capacity"
+                                                        $failureCategory = "No SKU Capacity Available"
+                                                        if ([string]::IsNullOrWhiteSpace($errorMessage))
+                                                            {
+                                                                $errorMessage = "No capacity available for this SKU in the zone/region"
+                                                            }
                                                     } `
                                                 elseif ($errorCode -match "Quota|quota" -or $errorMessage -match "quota|limit")
                                                     {
-                                                        $failureCategory = "Quota"
+                                                        $failureCategory = "Quota Exceeded"
                                                     } `
                                                 elseif ($errorCode -match "SKU|sku" -or $errorMessage -match "sku|size")
                                                     {
-                                                        $failureCategory = "SKU Availability"
+                                                        $failureCategory = "SKU Support"
 
-                                                        # For SKU availability issues, check if SKU is available in other zones within the region
+                                                        # For SKU support issues, check if SKU is supported in other zones within the region
                                                         if ($vmSku)
                                                             {
                                                                 $skuInfo = Get-AzComputeResourceSku | Where-Object { $_.Name -eq $vmSku -and $_.LocationInfo.Location -eq $Region }
@@ -2262,21 +2504,21 @@ function Test-SilkResourceDeployment
                                             AlternativeZones = $alternativeZones
                                             TestedZone = $Zone
                                             TestedRegion = $Region
-                                            Timestamp = Get-Date
+                                            Timestamp = $StartTime
                                         }
 
                                         # Log deployment validation findings appropriately based on failure type
-                                        if ($failureCategory -eq "Capacity")
+                                        if ($failureCategory -eq "No SKU Capacity Available")
                                             {
-                                                Write-Verbose -Message $("⚠ Capacity constraint detected for VM {0} ({1}): {2}" -f $vmName, $vmSku, $errorMessage)
+                                                Write-Verbose -Message $("⚠ No SKU Capacity available for deployment - VM {0} ({1}): {2}" -f $vmName, $vmSku, $errorMessage)
                                             } `
-                                        elseif ($failureCategory -eq "Quota")
+                                        elseif ($failureCategory -eq "Quota Exceeded")
                                             {
                                                 Write-Warning -Message $("Quota limitation detected for VM {0} ({1}): {2}" -f $vmName, $vmSku, $errorMessage)
                                             } `
-                                        elseif ($failureCategory -eq "SKU Availability")
+                                        elseif ($failureCategory -eq "SKU Support")
                                             {
-                                                Write-Warning -Message $("SKU availability issue detected for VM {0} ({1}): {2}" -f $vmName, $vmSku, $errorMessage)
+                                                Write-Warning -Message $("SKU support issue detected for VM {0} ({1}): {2}" -f $vmName, $vmSku, $errorMessage)
                                             } `
                                         else
                                             {
@@ -2301,6 +2543,9 @@ function Test-SilkResourceDeployment
                 Start-Sleep -Milliseconds 250
                 [System.Console]::Out.Flush()
 
+                # get timespan to report on deployment duration
+                $DeploymentTimespan = New-TimeSpan -Start $StartTime -End (Get-Date)
+
                 # Comprehensive resource validation and reporting
                 Write-Host "`n=== Post-Deployment Validation ===" -ForegroundColor Cyan
 
@@ -2323,7 +2568,6 @@ function Test-SilkResourceDeployment
                         $nic = $deployedNICs | Where-Object { $_.Name -eq $expectedNICName }
 
                         # Determine availability set status
-                        $cNodeAvSetName = "$ResourceNamePrefix-cnode-avset"
                         $avSetStatus = if ($vm -and $vm.AvailabilitySetReference) { "CNode AvSet" } else { "Not Assigned" }
 
                         # Determine VM provisioning status and check for validation findings
@@ -2398,7 +2642,6 @@ function Test-SilkResourceDeployment
                                 $nic = $deployedNICs | Where-Object { $_.Name -eq $expectedNICName }
 
                                 # Determine availability set status for DNode
-                                $mNodeAvSetName = "$ResourceNamePrefix-mNode-$currentMNode-avset"
                                 $avSetStatus = if ($vm -and $vm.AvailabilitySetReference) { "MNode $currentMNode AvSet" } else { "Not Assigned" }
 
                                 # Determine VM provisioning status and check for validation findings
@@ -2467,8 +2710,69 @@ function Test-SilkResourceDeployment
                 $totalExpectedVMs = $CNodeCount + ($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum
                 $successfulVMs = ($deploymentReport | Where-Object { $_.VMStatus -eq "✓ Deployed" }).Count
                 $failedVMs = ($deploymentReport | Where-Object { $_.VMStatus -like "*Failed*" }).Count
-                $inProgressVMs = ($deploymentReport | Where-Object { $_.VMStatus -like "⚠*" }).Count
                 $nonSuccessfulVMs = $deploymentReport | Where-Object { $_.ProvisioningState -ne "Succeeded" -and $_.ProvisioningState -ne "Not Found" }
+
+                # Zone Alignment Reporting Information
+                # Capture zone alignment details for console and HTML reporting
+                $zoneAlignmentInfo = @{
+                    AlignmentPerformed = $false
+                    AlignmentDisabled = $DisableZoneAlignment
+                    AlignmentSubscription = $ZoneAlignmentSubscriptionId
+                    OriginalZone = ""
+                    FinalZone = $Zone
+                    ZoneMappings = @()
+                    AlignmentReason = "Not applicable"
+                }
+
+                # Determine alignment status and populate reporting information
+                if ($ZoneAlignmentSubscriptionId -and $Zone -ne "Zoneless" -and $ZoneAlignmentSubscriptionId -ne $SubscriptionId)
+                    {
+                        $zoneAlignmentInfo.AlignmentSubscription = $ZoneAlignmentSubscriptionId
+
+                        if ($originalZone)
+                            {
+                                $zoneAlignmentInfo.AlignmentPerformed = $true
+                                $zoneAlignmentInfo.OriginalZone = $originalZone
+                                $zoneAlignmentInfo.AlignmentReason = "Zone alignment applied"
+                            } `
+                        elseif ($DisableZoneAlignment -and $alignedZone)
+                            {
+                                $zoneAlignmentInfo.AlignmentReason = "Zone alignment available but disabled by parameter"
+                                $zoneAlignmentInfo.OriginalZone = $Zone
+                            } `
+                        elseif ($alignedZone -eq $Zone)
+                            {
+                                $zoneAlignmentInfo.AlignmentReason = "Zone already aligned - no adjustment needed"
+                            } `
+                        else
+                            {
+                                $zoneAlignmentInfo.AlignmentReason = "Zone alignment data unavailable or inconclusive"
+                            }
+
+                        # Capture zone mappings for reporting if available
+                        if ($zoneAlignmentResponse -and $zoneAlignmentResponse.availabilityZonePeers)
+                            {
+                                foreach ($peer in $zoneAlignmentResponse.availabilityZonePeers)
+                                    {
+                                        $zoneAlignmentInfo.ZoneMappings += [PSCustomObject]@{
+                                            DeploymentZone = $peer.availabilityZone
+                                            AlignmentZone = $peer.peers.availabilityZone
+                                        }
+                                    }
+                            }
+                    } `
+                elseif ($Zone -eq "Zoneless")
+                    {
+                        $zoneAlignmentInfo.AlignmentReason = "Zoneless deployment - alignment not applicable"
+                    } `
+                elseif ($ZoneAlignmentSubscriptionId -eq $SubscriptionId)
+                    {
+                        $zoneAlignmentInfo.AlignmentReason = "Same subscription deployment - alignment not necessary"
+                    } `
+                else
+                    {
+                        $zoneAlignmentInfo.AlignmentReason = "No alignment subscription specified"
+                    }
 
                 # SKU Support Analysis Data
                 $skuSupportData = @()
@@ -2639,9 +2943,9 @@ function Test-SilkResourceDeployment
 
                 # Deployment Validation Findings Analysis
                 $validationFindings = @{
-                    CapacityIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Capacity" }
-                    QuotaIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Quota" }
-                    SKUIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "SKU Availability" }
+                    NoCapacityIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "No SKU Capacity Available" }
+                    QuotaIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Quota Exceeded" }
+                    SKUSupportIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "SKU Support" }
                     OtherIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Other" }
                 }
 
@@ -2887,28 +3191,34 @@ function Test-SilkResourceDeployment
                         Write-Host "`nDeployment Validation Findings:" -ForegroundColor Yellow
 
                         # Display deployment validation findings using preprocessed data
-                        if ($validationFindings.CapacityIssues.Count -gt 0)
+                        if ($validationFindings.NoCapacityIssues.Count -gt 0)
                             {
-                                $affectedSkus = $validationFindings.CapacityIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
-                                Write-Host $("  🏗️ Capacity Constraints: {0} VM(s) affected ({1})" -f $validationFindings.CapacityIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                                $affectedSkus = $validationFindings.NoCapacityIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                                Write-Host $("  ⚠️ No SKU Capacity Available: {0} VM(s) affected ({1})" -f $validationFindings.NoCapacityIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                                Write-Host "      → Azure has no available capacity for these VM SKUs in the target zone/region" -ForegroundColor DarkGray
+                                Write-Host "      → Try: Different availability zone, different region, or wait and retry" -ForegroundColor DarkGray
                             }
 
                         if ($validationFindings.QuotaIssues.Count -gt 0)
                             {
                                 $affectedSkus = $validationFindings.QuotaIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
-                                Write-Host $("  📊 Quota Limitations: {0} VM(s) affected ({1})" -f $validationFindings.QuotaIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                                Write-Host $("  📊 Quota Exceeded: {0} VM(s) affected ({1})" -f $validationFindings.QuotaIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                                Write-Host "      → Subscription has reached limits for these VM families or total vCPUs" -ForegroundColor DarkGray
+                                Write-Host "      → Try: Request quota increase via Azure portal Support tickets" -ForegroundColor DarkGray
                             }
 
-                        if ($validationFindings.SKUIssues.Count -gt 0)
+                        if ($validationFindings.SKUSupportIssues.Count -gt 0)
                             {
-                                $affectedSkus = $validationFindings.SKUIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
-                                Write-Host $("  🔧 SKU Availability: {0} VM(s) affected ({1})" -f $validationFindings.SKUIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                                $affectedSkus = $validationFindings.SKUSupportIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                                Write-Host $("  🔧 SKU Support: {0} VM(s) affected ({1})" -f $validationFindings.SKUSupportIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                                Write-Host "      → These VM SKUs are not supported in the target region/zone" -ForegroundColor DarkGray
+                                Write-Host "      → Try: Different region that supports these SKUs, or use alternative VM SKUs" -ForegroundColor DarkGray
 
-                                # Show zone-specific information for SKU availability issues
-                                $skuIssuesWithAlternatives = $validationFindings.SKUIssues | Where-Object { $_.AlternativeZones -and $_.AlternativeZones.Count -gt 0 }
+                                # Show zone-specific information for SKU support issues
+                                $skuIssuesWithAlternatives = $validationFindings.SKUSupportIssues | Where-Object { $_.AlternativeZones -and $_.AlternativeZones.Count -gt 0 }
                                 if ($skuIssuesWithAlternatives.Count -gt 0)
                                     {
-                                        Write-Host $("      Alternative zones available within {0} for affected SKUs" -f $Region) -ForegroundColor Gray
+                                        Write-Host $("      → Alternative zones available within {0} for affected SKUs" -f $Region) -ForegroundColor DarkGray
                                     }
                             }
 
@@ -2916,6 +3226,8 @@ function Test-SilkResourceDeployment
                             {
                                 $affectedSkus = $validationFindings.OtherIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
                                 Write-Host $("  ⚙️ Other Constraints: {0} VM(s) affected ({1})" -f $validationFindings.OtherIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
+                                Write-Host "      → Deployment failed due to other Azure constraints or configuration issues" -ForegroundColor DarkGray
+                                Write-Host "      → Try: Review error details in HTML report for specific troubleshooting steps" -ForegroundColor DarkGray
                             }
                     }
 
@@ -2981,6 +3293,52 @@ function Test-SilkResourceDeployment
                 Write-Host $("Total Network Interfaces: {0}" -f $deployedNICs.Count)
                 Write-Host $("Total Resources Created: {0}" -f $totalResourcesCreated)
 
+                # Zone Alignment Information
+                Write-Host "`n=== Zone Alignment Information ===" -ForegroundColor Cyan
+                Write-Host "Deployment Zone: " -NoNewline
+                Write-Host $("{0}" -f $zoneAlignmentInfo.FinalZone) -ForegroundColor Green
+
+                if ($zoneAlignmentInfo.AlignmentSubscription)
+                    {
+                        Write-Host "Alignment Subscription: " -NoNewline
+                        Write-Host $("{0}" -f $zoneAlignmentInfo.AlignmentSubscription) -ForegroundColor Yellow
+
+                        if ($zoneAlignmentInfo.AlignmentPerformed)
+                            {
+                                Write-Host "Zone Alignment: " -NoNewline
+                                Write-Host $("✓ Applied") -ForegroundColor Green
+                                Write-Host $("  Original Zone: {0} → Final Zone: {1}" -f $zoneAlignmentInfo.OriginalZone, $zoneAlignmentInfo.FinalZone) -ForegroundColor Gray
+                            } `
+                        elseif ($zoneAlignmentInfo.AlignmentDisabled)
+                            {
+                                Write-Host "Zone Alignment: " -NoNewline
+                                Write-Host $("⚠ Disabled by parameter") -ForegroundColor Yellow
+                            } `
+                        else
+                            {
+                                Write-Host "Zone Alignment: " -NoNewline
+                                Write-Host $("- No adjustment needed") -ForegroundColor Gray
+                            }
+
+                        Write-Host $("Reason: {0}" -f $zoneAlignmentInfo.AlignmentReason) -ForegroundColor Gray
+
+                        # Display zone mappings if available
+                        if ($zoneAlignmentInfo.ZoneMappings.Count -gt 0)
+                            {
+                                Write-Host "Zone Mappings:" -ForegroundColor Gray
+                                foreach ($mapping in $zoneAlignmentInfo.ZoneMappings)
+                                    {
+                                        Write-Host $("  Deployment Zone {0} ↔ Alignment Zone {1}" -f $mapping.DeploymentZone, $mapping.AlignmentZone) -ForegroundColor DarkGray
+                                    }
+                            }
+                    } `
+                else
+                    {
+                        Write-Host "Zone Alignment: " -NoNewline
+                        Write-Host $("- Not Applicable") -ForegroundColor Gray
+                        Write-Host $("Reason: {0}" -f $zoneAlignmentInfo.AlignmentReason) -ForegroundColor Gray
+                    }
+
                 # Deployment Results Status
                 Write-Host "`n=== Deployment Results Status ===" -ForegroundColor Cyan
 
@@ -2994,7 +3352,7 @@ function Test-SilkResourceDeployment
                 if ($successfulVMs -eq $totalExpectedVMs -and $deployedVNet -and $deployedNSG)
                     {
                         Write-Host $("✓ DEPLOYMENT VALIDATION COMPLETE - All SKUs successfully deployed in target region: {0} zone: {1}" -f $Region, $Zone) -ForegroundColor Green
-                        Write-Host $("📊 Deployment Readiness: Excellent - No capacity or availability constraints detected") -ForegroundColor Green
+                        Write-Host $("📊 Deployment Readiness: Excellent - No SKU Capacity or availability constraints detected") -ForegroundColor Green
                     } `
                 elseif ($successfulVMs -gt 0)
                     {
@@ -3015,6 +3373,7 @@ function Test-SilkResourceDeployment
                         Write-Host $("📊 Deployment Readiness: Limited - Review validation findings in summary") -ForegroundColor Red
                     }
 
+                Write-Host $("⏱️ Total Deployment Time: {0}" -f $DeploymentTimespan.ToString("hh\:mm\:ss")) -ForegroundColor Cyan
                 Write-Progress -Id 1 -Completed
 
                 # ===============================================================================
@@ -3052,7 +3411,7 @@ function Test-SilkResourceDeployment
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Silk Azure Deployment Report - $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')</title>
+    <title>Silk Azure Deployment Report - $($StartTime.ToString("yyyy-MM-dd HH:mm:ss"))</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; line-height: 1.6; }
         .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -3503,6 +3862,80 @@ function Test-SilkResourceDeployment
                 <strong>Network Resources:</strong> $($(if($deployedVNet){1}else{0}) + $(if($deployedNSG){1}else{0}))<br>
                 <strong>Placement Resources:</strong> $($(if($deployedPPG){1}else{0}) + $deployedAvailabilitySets.Count)
             </div>
+            <div class="info-card">
+                <h4>🔄 Zone Alignment Information</h4>
+                <strong>Deployment Zone:</strong> <span class="status-success">$($zoneAlignmentInfo.FinalZone)</span><br>
+"@
+
+                                # Add alignment subscription information if available
+                                if ($zoneAlignmentInfo.AlignmentSubscription)
+                                    {
+                                        $htmlContent += @"
+                <strong>Alignment Subscription:</strong> $($zoneAlignmentInfo.AlignmentSubscription)<br>
+"@
+
+                                        if ($zoneAlignmentInfo.AlignmentPerformed)
+                                            {
+                                                $htmlContent += @"
+                <strong>Zone Alignment:</strong> <span class="status-success">✓ Applied</span><br>
+                <strong>Zone Change:</strong> $($zoneAlignmentInfo.OriginalZone) → $($zoneAlignmentInfo.FinalZone)<br>
+"@
+                                            } `
+                                        elseif ($zoneAlignmentInfo.AlignmentDisabled)
+                                            {
+                                                $htmlContent += @"
+                <strong>Zone Alignment:</strong> <span class="status-warning">⚠ Disabled by parameter</span><br>
+"@
+                                            } `
+                                        else
+                                            {
+                                                $htmlContent += @"
+                <strong>Zone Alignment:</strong> <span class="status-success">- No adjustment needed</span><br>
+"@
+                                            }
+                                    } `
+                                else
+                                    {
+                                        $htmlContent += @"
+                <strong>Zone Alignment:</strong> <span class="status-success">- Not Applicable</span><br>
+"@
+                                    }
+
+                                $htmlContent += @"
+                <strong>Reason:</strong> $($zoneAlignmentInfo.AlignmentReason)<br>
+"@
+
+                                # Add zone mappings table if available
+                                if ($zoneAlignmentInfo.ZoneMappings.Count -gt 0)
+                                    {
+                                        $htmlContent += @"
+                <br><strong>Zone Mappings:</strong><br>
+                <table style="margin: 5px 0; width: 100%;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 5px; font-size: 0.9em;">Deployment Zone</th>
+                            <th style="padding: 5px; font-size: 0.9em;">Alignment Zone</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+"@
+                                        foreach ($mapping in $zoneAlignmentInfo.ZoneMappings)
+                                            {
+                                                $htmlContent += @"
+                        <tr>
+                            <td style="padding: 5px; font-size: 0.9em;">$($mapping.DeploymentZone)</td>
+                            <td style="padding: 5px; font-size: 0.9em;">$($mapping.AlignmentZone)</td>
+                        </tr>
+"@
+                                            }
+                                        $htmlContent += @"
+                    </tbody>
+                </table>
+"@
+                                    }
+
+                                $htmlContent += @"
+            </div>
 "@
 
                                 # Add deployment validation findings if available
@@ -3514,17 +3947,19 @@ function Test-SilkResourceDeployment
 "@
 
                                         # Group validation results by failure category for HTML summary
-                                        $capacityIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Capacity" }
-                                        $quotaIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Quota" }
-                                        $skuIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "SKU Availability" }
+                                        $noCapacityIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "No SKU Capacity Available" }
+                                        $quotaIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Quota Exceeded" }
+                                        $skuSupportIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "SKU Support" }
                                         $otherIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Other" }
 
-                                        if ($capacityIssues.Count -gt 0)
+                                        if ($noCapacityIssues.Count -gt 0)
                                             {
-                                                $affectedSkus = $capacityIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                                                $affectedSkus = $noCapacityIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
                                                 $htmlContent += @"
-                <strong>🏗️ Capacity Constraints:</strong> <span class="status-warning">$($capacityIssues.Count) VM(s) affected</span><br>
+                <strong>⚠️ No SKU Capacity Available:</strong> <span class="status-warning">$($noCapacityIssues.Count) VM(s) affected</span><br>
                 <strong>Affected SKUs:</strong> $($affectedSkus -join ", ")<br>
+                <strong>Issue:</strong> Azure has no available capacity for these VM SKUs in the target zone/region<br>
+                <strong>Solutions:</strong> Try different availability zone, different region, or wait and retry<br><br>
 "@
                                             }
 
@@ -3532,27 +3967,32 @@ function Test-SilkResourceDeployment
                                             {
                                                 $affectedSkus = $quotaIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
                                                 $htmlContent += @"
-                <strong>📊 Quota Limitations:</strong> <span class="status-warning">$($quotaIssues.Count) VM(s) affected</span><br>
+                <strong>📊 Quota Exceeded:</strong> <span class="status-warning">$($quotaIssues.Count) VM(s) affected</span><br>
                 <strong>Affected SKUs:</strong> $($affectedSkus -join ", ")<br>
+                <strong>Issue:</strong> Subscription has reached limits for these VM families or total vCPUs<br>
+                <strong>Solutions:</strong> Request quota increase via Azure portal Support tickets<br><br>
 "@
                                             }
 
-                                        if ($skuIssues.Count -gt 0)
+                                        if ($skuSupportIssues.Count -gt 0)
                                             {
-                                                $affectedSkus = $skuIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
+                                                $affectedSkus = $skuSupportIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
                                                 $htmlContent += @"
-                <strong>🔧 SKU Availability:</strong> <span class="status-warning">$($skuIssues.Count) VM(s) affected</span><br>
+                <strong>🔧 SKU Support:</strong> <span class="status-warning">$($skuSupportIssues.Count) VM(s) affected</span><br>
                 <strong>Affected SKUs:</strong> $($affectedSkus -join ", ")<br>
+                <strong>Issue:</strong> These VM SKUs are not supported in the target region/zone<br>
+                <strong>Solutions:</strong> Use different region that supports these SKUs, or use alternative VM SKUs<br>
 "@
 
-                                                # Show zone-specific information for SKU availability issues
-                                                $skuIssuesWithAlternatives = $skuIssues | Where-Object { $_.AlternativeZones -and $_.AlternativeZones.Count -gt 0 }
+                                                # Show zone-specific information for SKU support issues
+                                                $skuIssuesWithAlternatives = $skuSupportIssues | Where-Object { $_.AlternativeZones -and $_.AlternativeZones.Count -gt 0 }
                                                 if ($skuIssuesWithAlternatives.Count -gt 0)
                                                     {
                                                         $htmlContent += @"
                 <strong>Alternative Zones:</strong> Available within $Region for affected SKUs<br>
 "@
                                                     }
+                                                $htmlContent += "<br>"
                                             }
 
                                         if ($otherIssues.Count -gt 0)
@@ -3560,7 +4000,9 @@ function Test-SilkResourceDeployment
                                                 $affectedSkus = $otherIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
                                                 $htmlContent += @"
                 <strong>⚙️ Other Constraints:</strong> <span class="status-warning">$($otherIssues.Count) VM(s) affected</span><br>
-                <strong>Affected SKUs:</strong> $($affectedSkus -join ", ")
+                <strong>Affected SKUs:</strong> $($affectedSkus -join ", ")<br>
+                <strong>Issue:</strong> Deployment failed due to other Azure constraints or configuration issues<br>
+                <strong>Solutions:</strong> Review detailed error messages below for specific troubleshooting steps<br><br>
 "@
                                             }
 
@@ -3573,7 +4015,7 @@ function Test-SilkResourceDeployment
         </div>
 
         <div class="timestamp">
-            Report generated on $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') by Test-SilkResourceDeployment PowerShell module
+            ⏱️ Total Deployment Time: $($DeploymentTimespan.ToString("hh\:mm\:ss")) | Report generated on $($StartTime.ToString("yyyy-MM-dd HH:mm:ss")) by Silk Test-SilkResourceDeployment PowerShell module
         </div>
     </div>
 </body>
@@ -3582,8 +4024,8 @@ function Test-SilkResourceDeployment
 
                                 # Write HTML content to file
                                 $htmlContent | Out-File -FilePath $ReportFullPath -Encoding UTF8
-                                Write-Host "✓ HTML report generated successfully!" -ForegroundColor Green
-                                Write-Host "📄 Report saved to: $ReportFullPath" -ForegroundColor Cyan
+                                Write-Host -Message $("✓ HTML report generated successfully!") -ForegroundColor Green
+                                Write-Host -Message $("📄 Report saved to: `"{0}`"" -f $ReportFullPath) -ForegroundColor Cyan
 
                                 # Attempt to open the report automatically (with error handling for headless systems)
                                 try
@@ -3591,30 +4033,30 @@ function Test-SilkResourceDeployment
                                         if ($IsWindows -or $PSVersionTable.PSVersion.Major -le 5)
                                             {
                                                 Start-Process $ReportFullPath
-                                                Write-Verbose -Message "HTML report opened in default browser."
+                                                Write-Verbose -Message $("HTML report opened in default browser.")
                                             }
                                         elseif ($IsLinux)
                                             {
                                                 if (Get-Command xdg-open -ErrorAction SilentlyContinue)
                                                     {
                                                         & xdg-open $ReportFullPath
-                                                        Write-Verbose -Message "HTML report opened with xdg-open."
+                                                        Write-Verbose -Message $("HTML report opened with xdg-open.")
                                                     }
                                                 else
                                                     {
-                                                        Write-Verbose -Message "xdg-open not available. Report saved but not opened automatically."
+                                                        Write-Verbose -Message $("xdg-open not available. Report saved but not opened automatically.")
                                                     }
                                             }
                                         elseif ($IsMacOS)
                                             {
                                                 & open $ReportFullPath
-                                                Write-Verbose -Message "HTML report opened with macOS open command."
+                                                Write-Verbose -Message $("HTML report opened with macOS open command.")
                                             }
                                     }
                                 catch
                                     {
                                         Write-Verbose -Message $("Unable to automatically open HTML report (likely headless system): {0}" -f $_.Exception.Message)
-                                        Write-Host "ℹ️  Report available at: $ReportFullPath" -ForegroundColor Yellow
+                                        Write-Host -Message $("ℹ️  Report available at: `"{0}`"" -f $ReportFullPath) -ForegroundColor Yellow
                                     }
                             }
                         catch
@@ -3648,13 +4090,20 @@ function Test-SilkResourceDeployment
                         if (Get-Variable -Name originalWarningPreference -ErrorAction SilentlyContinue)
                             {
                                 $WarningPreference = $originalWarningPreference
-                                Write-Verbose -Message "✓ Original PowerShell warning preference restored."
+                                Write-Verbose -Message $("✓ Original PowerShell warning preference restored.")
                             }
                     }
                 catch
                     {
-                        Write-Verbose -Message "Note: Could not restore original warning preference."
+                        Write-Verbose -Message $("Note: Could not restore original warning preference.")
                     }
+
+                # ===============================================================================
+                # Cleanup Phase
+                # ===============================================================================
+                $cleanupStartTime = Get-Date
+
+                Write-Host -Message $("Cleanup Started at: {0}" -f $cleanupStartTime.ToString("yyyy-MM-dd HH:mm:ss")) -ForegroundColor Yellow
 
                 if ( $RunCleanupOnly -or (!$DisableCleanup -and $deploymentStarted))
                     {
@@ -3727,7 +4176,7 @@ function Test-SilkResourceDeployment
                                     -Id 6
 
                                 # Wait for all VM removal jobs to complete
-                                Write-Verbose -Message "Waiting for all virtual machines to be removed..."
+                                Write-Verbose -Message $("Waiting for all virtual machines to be removed...")
 
                                 $vmJobs = Get-Job
 
@@ -3770,7 +4219,7 @@ function Test-SilkResourceDeployment
                                 while ($currentVMJobs.State -contains 'Running')
 
                                 Get-Job | Wait-Job | Out-Null
-                                Write-Verbose -Message "All virtual machines have been removed."
+                                Write-Verbose -Message $("All virtual machines have been removed.")
 
                                 # Complete VM cleanup sub-progress
                                 Write-Progress `
@@ -3837,9 +4286,9 @@ function Test-SilkResourceDeployment
                                     -Status "Waiting for all NIC removal jobs to complete..." `
                                     -PercentComplete 80
 
-                                Write-Verbose -Message "Waiting for all network interfaces to be removed..."
+                                Write-Verbose -Message $("Waiting for all network interfaces to be removed...")
                                 Get-Job | Wait-Job | Out-Null
-                                Write-Verbose -Message "All network interfaces have been removed."
+                                Write-Verbose -Message $("All network interfaces have been removed.")
 
                                 Write-Progress `
                                     -Id 7 `
@@ -3910,7 +4359,7 @@ function Test-SilkResourceDeployment
 
                                 Get-Job | Wait-Job | Out-Null
 
-                                Write-Verbose -Message "Virtual Network resource cleanup completed."
+                                Write-Verbose -Message $("Virtual Network resource cleanup completed.")
 
                                 Write-Progress `
                                     -Id 9 `
@@ -3981,7 +4430,7 @@ function Test-SilkResourceDeployment
                                     Get-Job | Wait-Job | Out-Null
                                 }
 
-                                Write-Verbose -Message "Availability Sets resource cleanup completed."
+                                Write-Verbose -Message $("Availability Sets resource cleanup completed.")
 
                                 Write-Progress `
                                     -Id 11 `
@@ -4052,7 +4501,7 @@ function Test-SilkResourceDeployment
                                     Get-Job | Wait-Job | Out-Null
                                 }
 
-                                Write-Verbose -Message "Proximity Placement Groups resource cleanup completed."
+                                Write-Verbose -Message $("Proximity Placement Groups resource cleanup completed.")
 
                                 Write-Progress `
                                     -Id 12 `
@@ -4122,7 +4571,7 @@ function Test-SilkResourceDeployment
 
                                 Get-Job | Wait-Job | Out-Null
 
-                                Write-Verbose -Message "Network Security Group resource cleanup completed."
+                                Write-Verbose -Message $("Network Security Group resource cleanup completed.")
 
                                 Write-Progress `
                                     -Id 10 `
@@ -4179,7 +4628,7 @@ function Test-SilkResourceDeployment
 
                         Remove-AzResourceGroup -Name $ResourceGroupName -ErrorAction Stop -Confirm:$false
 
-                        Write-Verbose -Message "Resource group removal completed."
+                        Write-Verbose -Message $("Resource group removal completed.")
 
                         # Complete resource group cleanup progress
                         Write-Progress `
@@ -4203,8 +4652,11 @@ function Test-SilkResourceDeployment
                 # notify cleanup complete if it actually cleaned anything up
                 if($cleanupDidRun)
                     {
-                        Write-Host "Cleanup process completed." -ForegroundColor Green
+                        Write-Host -Message $("Cleanup process completed ran for {0}" -f  (New-TimeSpan -Start $cleanupStartTime -End (Get-Date)).ToString("hh\:mm\:ss")) -ForegroundColor Green
                     }
+
+                # notify total runtime
+                Write-Host -message $("⏱️ Total Script Runtime: {0}" -f (New-TimeSpan -Start $StartTime -End (Get-Date)).ToString("hh\:mm\:ss")) -ForegroundColor Cyan
             }
     }
 

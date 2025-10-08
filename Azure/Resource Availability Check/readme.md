@@ -158,23 +158,25 @@ Test-SilkResourceDeployment -ChecklistJSON "C:\configs\silk-deployment.json" -Re
 
 ### Advanced Parameters
 
-| Parameter               | Description | Valid Input | Example | Overrides ChecklistJSON |
-|-------------------------|-------------|-------------|---------|-------------------------|
-| `-CNodeSku`             | Explicit CNode VM SKU selection for advanced control.<br><br>Valid options:<br> &nbsp;Increased_Logical_Capacity (Standard_E64s_v5)<br> &nbsp;Read_Cache_Enabled (Standard_L64s_v3)<br> &nbsp;No_Increased_Logical_Capacity (Standard_D64s_v5)<br>Use for scenarios requiring specific SKU control. | <br>"Standard_E64s_v5"<br>"Standard_L64s_v3"<br>"Standard_D64s_v5" | "Standard_E64s_v5" | ⬜️ |
-| `-MNodeSku`             | Array of explicit Azure VM SKUs for MNode/DNode VMs.<br><br>Lsv3 SKUs:<br> &nbsp;Standard_L8s_v3 (19.5 TiB)<br> &nbsp;Standard_L16s_v3 (39.1 TiB)<br> &nbsp;Standard_L32s_v3 (78.2 TiB)<br>Laosv4 SKUs:<br> &nbsp;Standard_L2aos_v4 (14.67 TiB)<br> &nbsp;Standard_L4aos_v4 (29.34 TiB)<br> &nbsp;Standard_L8aos_v4 (58.67 TiB)<br> &nbsp;Standard_L12aos_v4 (88.01 TiB)<br> &nbsp;Standard_L16aos_v4 (117.35 TiB)<br>Use for advanced scenarios requiring specific SKU control. | "Standard_L8s_v3"<br>"Standard_L16s_v3"<br>"Standard_L32s_v3"<br>"Standard_L2aos_v4"<br>"Standard_L4aos_v4"<br>"Standard_L8aos_v4"<br>"Standard_L12aos_v4"<br>"Standard_L16aos_v4" | @("Standard_L16s_v3", "Standard_L32s_v3") | ⬜️ |
-| `-MNodeCount`           | Number of MNode instances to deploy when using explicit SKU selection. | Minimum of 1 -> Maximum of 4 | 2 | ⬜️ |
-| `-NoHTMLReport`         | Disable HTML report generation.<br><br>By default, a comprehensive HTML report is generated summarizing deployment status, quota usage, SKU support, and resource validation results. | Switch<br>(present or not) | `-NoHTMLReport` | ⬜️ |
-| `-ReportOutputPath`     | Path to save the HTML report.<br><br>Default: Current working directory | <br>".\\valid\\ouput\\path\\" | "C:\\results\\ouput\\" | ⬜️ |
-| `-DisableCleanup`       | Prevent automatic cleanup of test resources after validation.<br><br>When specified, test resources remain in Azure for manual inspection or extended testing. | Switch<br>(present or not) | `-DisableCleanup` | ⬜️ |
-| `-RunCleanupOnly`       | Only perform cleanup operations, removing all previously created test resources based on <br>`-ResourceNamePrefix`<br> naming.<br><br>Use to clean up resources from failed deployments or when cleanup was disabled. | Switch<br>(present or not) | `-RunCleanupOnly` | ⬜️ |
-| `-IPRangeCIDR`          | CIDR notation for VNet and subnet IP address range.<br><br>Default: "10.0.0.0/24" (provides 254 usable IP addresses) | <br>"10.0.0.0/24"<br>"192.168.1.0/24" | "10.0.0.0/24" | ☑️ |
-| `-CreateResourceGroup`  | Create resource group by the given name.  It will only be created and deployed to if it does not exist.  It will only be removed by manual confirmation<br><br>Requires elevated Subscription level role assignment. | Switch<br>(present or not) | `-CreateResourceGroup` | ⬜️ |
-| `-VMImageOffer`         | Azure Marketplace image offer for VM operating system.<br><br>Default: "0001-com-ubuntu-server-jammy" (Ubuntu 22.04 LTS) | <br>"0001-com-ubuntu-server-jammy"<br>"0001-com-ubuntu-server-focal" | "0001-com-ubuntu-server-jammy" | ⬜️ |
-| `-VMImagePublisher`     | Azure Marketplace image publisher for VM operating system.<br><br>Default: "Canonical" (official Ubuntu publisher) | <br>"Canonical"<br>"MicrosoftWindowsServer" | "Canonical" | ⬜️ |
-| `-VMImageSku`           | Azure Marketplace image SKU for VM operating system.<br><br>If not specified, automatically selects the latest available SKU with Gen2 preference. | <br>"22_04-lts-gen2"<br>"2019-datacenter" | "22_04-lts-gen2" | ⬜️ |
-| `-VMImageVersion`       | Azure Marketplace image version for VM operating system.<br><br>Default: "latest" (automatically uses most recent image version) | <br>"latest"<br>"2023.08.15" | "latest" | ⬜️ |
-| `-ResourceNamePrefix`   | Prefix string used for all created Azure resource names to enable easy identification and cleanup.<br><br>Default: "sdp-test" | string [a-zA-Z][a-zA-Z0-9-]{14} | "sdp-test" | ⬜️ |
-| `-VMInstanceCredential` | PowerShell credential object containing username and password for VM local administrator account. | <br>PSCredential object<br> | $VMInstanceCredential | ⬜️ |
+| Parameter                     | Description | Valid Input | Example | Overrides ChecklistJSON |
+|-------------------------------|-------------|-------------|---------|-------------------------|
+| `-CNodeSku`                   | Explicit CNode VM SKU selection for advanced control.<br><br>Valid options:<br> &nbsp;Increased_Logical_Capacity (Standard_E64s_v5)<br> &nbsp;Read_Cache_Enabled (Standard_L64s_v3)<br> &nbsp;No_Increased_Logical_Capacity (Standard_D64s_v5)<br>Use for scenarios requiring specific SKU control. | <br>"Standard_E64s_v5"<br>"Standard_L64s_v3"<br>"Standard_D64s_v5" | "Standard_E64s_v5" | ⬜️ |
+| `-MNodeSku`                   | Array of explicit Azure VM SKUs for MNode/DNode VMs.<br><br>Lsv3 SKUs:<br> &nbsp;Standard_L8s_v3 (19.5 TiB)<br> &nbsp;Standard_L16s_v3 (39.1 TiB)<br> &nbsp;Standard_L32s_v3 (78.2 TiB)<br>Laosv4 SKUs:<br> &nbsp;Standard_L2aos_v4 (14.67 TiB)<br> &nbsp;Standard_L4aos_v4 (29.34 TiB)<br> &nbsp;Standard_L8aos_v4 (58.67 TiB)<br> &nbsp;Standard_L12aos_v4 (88.01 TiB)<br> &nbsp;Standard_L16aos_v4 (117.35 TiB)<br>Use for advanced scenarios requiring specific SKU control. | "Standard_L8s_v3"<br>"Standard_L16s_v3"<br>"Standard_L32s_v3"<br>"Standard_L2aos_v4"<br>"Standard_L4aos_v4"<br>"Standard_L8aos_v4"<br>"Standard_L12aos_v4"<br>"Standard_L16aos_v4" | @("Standard_L16s_v3", "Standard_L32s_v3") | ⬜️ |
+| `-MNodeCount`                 | Number of MNode instances to deploy when using explicit SKU selection. | Minimum of 1 -> Maximum of 4 | 2 | ⬜️ |
+| `-NoHTMLReport`               | Disable HTML report generation.<br><br>By default, a comprehensive HTML report is generated summarizing deployment status, quota usage, SKU support, and resource validation results. | Switch<br>(present or not) | `-NoHTMLReport` | ⬜️ |
+| `-ReportOutputPath`           | Path to save the HTML report.<br><br>Default: Current working directory | <br>".\\valid\\ouput\\path\\" | "C:\\results\\ouput\\" | ⬜️ |
+| `-DisableCleanup`             | Prevent automatic cleanup of test resources after validation.<br><br>When specified, test resources remain in Azure for manual inspection or extended testing. | Switch<br>(present or not) | `-DisableCleanup` | ⬜️ |
+| `-RunCleanupOnly`             | Only perform cleanup operations, removing all previously created test resources based on <br>`-ResourceNamePrefix`<br> naming.<br><br>Use to clean up resources from failed deployments or when cleanup was disabled. | Switch<br>(present or not) | `-RunCleanupOnly` | ⬜️ |
+| `-IPRangeCIDR`                | CIDR notation for VNet and subnet IP address range.<br><br>Default: "10.0.0.0/24" (provides 254 usable IP addresses) | <br>"10.0.0.0/24"<br>"192.168.1.0/24" | "10.0.0.0/24" | ☑️ |
+| `-CreateResourceGroup`        | Create resource group by the given name.  It will only be created and deployed to if it does not exist.  It will only be removed by manual confirmation<br><br>Requires elevated Subscription level role assignment. | Switch<br>(present or not) | `-CreateResourceGroup` | ⬜️ |
+| `-VMImageOffer`               | Azure Marketplace image offer for VM operating system.<br><br>Default: "0001-com-ubuntu-server-jammy" (Ubuntu 22.04 LTS) | <br>"0001-com-ubuntu-server-jammy"<br>"0001-com-ubuntu-server-focal" | "0001-com-ubuntu-server-jammy" | ⬜️ |
+| `-VMImagePublisher`           | Azure Marketplace image publisher for VM operating system.<br><br>Default: "Canonical" (official Ubuntu publisher) | <br>"Canonical"<br>"MicrosoftWindowsServer" | "Canonical" | ⬜️ |
+| `-VMImageSku`                 | Azure Marketplace image SKU for VM operating system.<br><br>If not specified, automatically selects the latest available SKU with Gen2 preference. | <br>"22_04-lts-gen2"<br>"2019-datacenter" | "22_04-lts-gen2" | ⬜️ |
+| `-VMImageVersion`             | Azure Marketplace image version for VM operating system.<br><br>Default: "latest" (automatically uses most recent image version) | <br>"latest"<br>"2023.08.15" | "latest" | ⬜️ |
+| `-ResourceNamePrefix`         | Prefix string used for all created Azure resource names to enable easy identification and cleanup.<br><br>Default: "sdp-test" | string [a-zA-Z][a-zA-Z0-9-]{14} | "sdp-test" | ⬜️ |
+| `-VMInstanceCredential`       | PowerShell credential object containing username and password for VM local administrator account. | <br>PSCredential object<br> | $VMInstanceCredential | ⬜️ |
+| `-ZoneAlignmentSubscriptionId`| Azure Subscription ID for cross-subscription availability zone alignment validation.<br><br>Enables zone alignment to ensure the closest representation of a production deployment that can be tested when deploying across multiple subscriptions by comparing zone mappings between the deployment subscription and this alignment subscription. Requires AvailabilityZonePeering Azure feature registration in both subscriptions.<br><br>When using ChecklistJSON with specified -Subscription parameter, this parameter is automatically populated from the Checklist JSON if not specified. | GUID format subscription ID | "87654321-4321-4321-4321-210987654321" | ☑️ |
+| `-DisableZoneAlignment`       | Disable automatic cross-subscription availability zone alignment.<br><br>By default, zone alignment is performed when ZoneAlignmentSubscriptionId is provided or when using ChecklistJSON configuration with a different deployment subscription specified. Use this switch to maintain original zone settings without alignment adjustments for production deployment testing accuracy. | Switch<br>(present or not) | `-DisableZoneAlignment` | ⬜️ |
 
 ---
 
@@ -214,4 +216,23 @@ Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-12345678901
 Test-SilkResourceDeployment  -ChecklistJSON "C:\configs\silk-deployment.json" -ResourceGroupName "silk-test-rg" -RunCleanupOnly -ResourceNamePrefix "custom-name"
 ```
    >Removes all test resources created in the given Subscription (imported from JSON) Resource Group (overriding JSON Resource Group Value) based on the value of `-ResourceNamePrefix` (Default: "sdp-test").
+
+#### 4.1 Advanced: Cross-Subscription Zone Alignment with Explicit Parameters
+```powershell
+Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -ZoneAlignmentSubscriptionId "87654321-4321-4321-4321-210987654321" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -MnodeSizeLaosv4 @("14.67","29.34") -Verbose
+```
+   >Tests deployment with explicit zone alignment between deployment subscription and alignment subscription. Automatically adjusts deployment zone to ensure the closest representation of a production deployment that can be tested. Requires AvailabilityZonePeering feature registration in both subscriptions.
+
+#### 4.2 Advanced: JSON Configuration with Zone Alignment Disabled
+```powershell
+Test-SilkResourceDeployment -ChecklistJSON "C:\configs\silk-deployment.json" -SubscriptionId "12345678-1234-1234-1234-123456789012" -DisableZoneAlignment -Verbose
+```
+   >Uses JSON configuration but deploys to a different subscription than specified in JSON. Explicitly disables automatic zone alignment to maintain original zone settings despite cross-subscription deployment scenario.
+
+#### 4.3 Advanced: Automatic Zone Alignment via JSON Configuration
+```powershell
+Test-SilkResourceDeployment -ChecklistJSON "C:\configs\silk-deployment.json" -SubscriptionId "12345678-1234-1234-1234-123456789012" -Verbose
+```
+   >Uses JSON configuration with automatic zone alignment enabled. When deployment subscription differs from JSON subscription, zone alignment is automatically applied using the JSON subscription as the alignment reference to ensure the closest representation of a production deployment that can be tested.
+
 ---

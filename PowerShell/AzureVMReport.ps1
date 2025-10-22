@@ -3,6 +3,10 @@ param(
     [string] $subscriptionName,
     [Parameter()]  
     [string] $inputFile,
+    [Parameter()]  
+    [array] $resourceGroupNames,
+    [Parameter()] 
+    [array] $zones,
     [Parameter()] 
     [string] $outputFile,
     [Parameter()] 
@@ -26,6 +30,16 @@ param(
     ./AzureVMReportInput.ps1 -inputFile vmlist.txt
 
     This generates a report based on a strict list of VMs specified in a file called `vmlist.txt`.
+
+    .EXAMPLE    
+    ./AzureVMReportInput.ps1 -zones 1,3
+
+    This generates a report for objects contained in zones 1 and 3.
+
+    .EXAMPLE    
+    ./AzureVMReportInput.ps1 -resourceGroupNames RG1,RG2
+
+    This generates a report for objects contained in the resource groups named RG1 and RG2.
 
     .EXAMPLE    
     ./AzureVMReportInput.ps1 -days 0 -hours 8
@@ -59,6 +73,20 @@ if ($inputFile) {
 } else {
     $vmlist = Get-AzVM
 }
+
+if ($resourceGroupNames) {
+    $vmlist = foreach ($r in $resourceGroupNames) {
+        $vmlist | Where-Object {$_.ResourceGroupName -contains $r}
+    }
+}
+
+if ($zones) {
+    $vmlist = foreach ($z in $zones) {    
+        $vmlist | Where-Object {$_.Zones -contains $z}
+    }
+}
+
+$vmlist | Select-Object name,ResourceGroupName,zones[0] | Write-Verbose -Verbose
 
 # Set up some of the output table and vars
 $thelist = @()
@@ -95,7 +123,7 @@ foreach ($i in $vmlist) {
 
             # Collect desired info from VM and Disk queries
             $o | Add-Member -MemberType NoteProperty -Name "VM name" -Value $i.Name
-            $o | Add-Member -MemberType NoteProperty -Name "VM Zone" -Value $i.Zones
+            $o | Add-Member -MemberType NoteProperty -Name "VM Zone" -Value $i.Zones[0]
             $o | Add-Member -MemberType NoteProperty -Name "VM size" -Value $i.HardwareProfile.VmSize
 
             $statavg = Get-AzMetric -ResourceId $i.Id -TimeGrain $timegrain -StartTime $date.AddHours(-$hours).AddDays(-$days).AddMinutes(-$minutes) -EndTime $date -MetricName 'Available Memory Bytes' -AggregationType Average -WarningAction SilentlyContinue
@@ -156,3 +184,4 @@ if ($outputFile) {
     $thelist | Export-Csv -NoTypeInformation -Path $outputFile
     return $thelist
 }
+

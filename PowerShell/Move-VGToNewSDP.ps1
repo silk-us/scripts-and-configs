@@ -1,8 +1,3 @@
-param(
-    [parameter(Mandatory)]
-    $volumeGroupName
-)
-
 <#
     .SYNOPSIS
     This script is for moving volume groups, host objects, and mapping concerns to a remote SDP. 
@@ -23,6 +18,11 @@ param(
     Authored by J.R. Phillips (GitHub: JayAreP)
 
 #>
+
+param(
+    [parameter(Mandatory)]
+    $volumeGroupName
+)
 
 Write-Verbose "-- This operation is disruptive to any hosts mapped to volumes in this volume group." -Verbose
 Write-Verbose "-- Please ensure the host has offlined or unmounted the volumes." -Verbose
@@ -235,12 +235,18 @@ $rvg | Set-SDPVolumeGroup -name $volumeGroupName -k2context remote
 Write-Verbose 'TARGET > Mapping target volumes to new target host object.' -Verbose
 
 foreach ($hm in $hostMapArray) {
-    New-SDPHostMapping -hostName $hm.host -volumeName $hm.volume -k2context remote | Out-Null
+    $hn = $hm.host
+    $hv = $hm.volume
+    Write-Verbose "TARGET --> Mapping $hv volume to $hn." -Verbose
+    New-SDPHostMapping -hostName $hn -volumeName $hv -k2context remote | Out-Null
     $hm
 }
 
 foreach ($hm in $hostGroupMapArray) {
-    New-SDPHostGroupMapping -hostGroupName $hm.host -volumeName $hm.volume -k2context remote | Out-Null
+    $hn = $hm.host
+    $hv = $hm.volume
+    Write-Verbose "TARGET --> Mapping $hv volume to $hn." -Verbose
+    New-SDPHostGroupMapping -hostGroupName $hn -volumeName $hv -k2context remote | Out-Null
     $hm
 }
 

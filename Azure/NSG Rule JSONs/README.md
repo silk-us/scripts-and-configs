@@ -11,12 +11,14 @@ It's assumed you've established an authenticated powershell session to azure and
 The first three values from the [example-flex-nsg-configuration](example-flex-nsg-configuration.json) can be updated according to your environment.
 Update "resource_group_name", "azure_region", and the "name" of the NSG as needed.
 
-`    "resource_group_name": "flex-example",`
-`    "azure_region": "eastus",`
-`    "nsg": [`
-`        {`
-`            "name": "flex-example-nsg",`
-`...`
+```
+    "resource_group_name": "flex-example",
+    "azure_region": "eastus",
+    "nsg": [
+        {
+            "name": "flex-example-nsg",
+...
+```
 
 ### example Silk Cluster NSG configuration changes
 The first three values from the [example-silk-cluster-nsg-configuration](example-silk-cluster-nsg-configuration.json) can be updated according to your environment.
@@ -33,6 +35,7 @@ Update "resource_group_name", "azure_region", "cluster_number", and each of the 
       {"string": "external_data_1_cidr","cidr": "10.0.4.0/25"},
       {"string": "external_data_2_cidr","cidr": "10.0.4.128/25"}
     ],
+...
 ```
 
 

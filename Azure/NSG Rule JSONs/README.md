@@ -7,16 +7,17 @@ This readme offers a method to deploy an NSG and configure it's rules to prepare
 It's assumed you've established an authenticated powershell session to azure and are operating in that session for the entirety of this process. You can use `Connect-AzAccount` to establish that connection and would need to do this in each powershell session you operate out of.
 
 
-## example configuration changes
+## example flex nsg configuration changes
 The first three values from the [example-flex-nsg-configuration](example-flex-nsg-configuration.json) can be updated according to your environment.
 
 
-`    "resource_group_name": "flex-example",`  
-`    "location": "eastus",`  
-`    "nsg_name": "flex-example-nsg",`  
+`    "resource_group_name": "flex-example",`
+`    "azure_region": "eastus",`
+`    "nsg_name": "flex-example-nsg",`
 
 
-## powershell deployment
+# powershell deployment
+## Flex Subnet NSG
 ### import the modified example-flex-nsg-configuration.json configuration into a powershell object
 This assumes the modified json file is in your working directory.  Update the `-Path` accordingly.
 ```powershell
@@ -28,7 +29,7 @@ $config = Get-Content -Path .\example-flex-nsg-configuration.json -Raw | Convert
 New-AzNetworkSecurityGroup `
   -Name $config.nsg_name `
   -ResourceGroupName $config.resource_group_name `
-  -Location $config.location
+  -Location $config.azure_region
 ```
 
 ### add rules to the new nsg
@@ -42,15 +43,71 @@ $config.securityRules | % {
   $nsg |
     Add-AzNetworkSecurityRuleConfig `
       -Name $azrule.name `
-      -Description $azrule.properties.description `
-      -Protocol $azrule.properties.protocol `
-      -SourcePortRange $azrule.properties.sourcePortRange `
-      -DestinationPortRange $azrule.properties.destinationPortRange `
-      -SourceAddressPrefix $azrule.properties.sourceAddressPrefix `
-      -DestinationAddressPrefix $azrule.properties.destinationAddressPrefix `
-      -Access $azrule.properties.access `
-      -Priority $azrule.properties.priority `
-      -Direction $azrule.properties.direction
-      };
+      -Description $azrule.description `
+      -Protocol $azrule.protocol `
+      -SourcePortRange $azrule.sourcePortRange `
+      -DestinationPortRange $azrule.destinationPortRange `
+      -SourceAddressPrefix $azrule.sourceAddressPrefix `
+      -DestinationAddressPrefix $azrule.destinationAddressPrefix `
+      -Access $azrule.access `
+      -Priority $azrule.priority `
+      -Direction $azrule.direction
+      }; `
   $nsg | Set-AzNetworkSecurityGroup
+```
+
+
+
+## Silk Cluster Subnet NSGs
+
+## example Silk Cluster NSG configuration changes
+The first three values from the [example-silk-cluster-nsg-configuration](example-silk-cluster-nsg-configuration.json) can be updated according to your environment.
+
+```json
+    "resource_group_name": "flex-example",
+    "azure_region": "eastus",
+    "cluster_number": "1234",
+    "subnet_config":[
+      {"string": "flex_subnet_cidr","cidr": "10.0.5.128/28"},
+      {"string": "external_mgmt_cidr","cidr": "10.0.5.0/25"},
+      {"string": "internal_1_cidr","cidr": "10.0.0.0/23"},
+      {"string": "internal_2_cidr","cidr": "10.0.2.0/23"},
+      {"string": "external_data_1_cidr","cidr": "10.0.4.0/25"},
+      {"string": "external_data_2_cidr","cidr": "10.0.4.128/25"}
+    ],
+```
+
+### import the modified example-silk-cluster-nsg-configuration.json configuration into a powershell object
+This assumes the modified json file is in your working directory.  Update the `-Path` accordingly.
+```powershell
+$config = Get-Content -Path .\example-silk-cluster-nsg-configuration.json -Raw | ConvertFrom-Json -Depth 100
+```
+
+### create the new network security groups (nsg) and rules
+```powershell
+foreach ($nsg in $config.nsg_config)
+    {
+        New-AzNetworkSecurityGroup `
+        -Name $($nsg.nsg_name -replace "XXXX", $config.cluster_number)`
+        -ResourceGroupName $config.resource_group_name `
+        -Location $config.azure_region `
+        -OutVariable nsgObject
+
+        $nsg.securityRules | % {
+        $azrule = $_;
+        $nsgObject |
+            Add-AzNetworkSecurityRuleConfig `
+            -Name $($azrule.name -replace "XXXX", $config.cluster_number)`
+            -Description $(if($azrule.description){$azrule.description}else{$azrule.name -replace ".*XXXX-network(.*)", '$1' -replace '-', ' '}) `
+            -Protocol $azrule.protocol `
+            -SourcePortRange $azrule.sourcePortRange `
+            -DestinationPortRange $azrule.destinationPortRange `
+            -SourceAddressPrefix $(foreach($prefix in $azrule.SourceAddressPrefix){if($prefix -in $config.subnet_config.string){$($config.subnet_config | ? string -eq $prefix).cidr}else{$prefix}}) `
+            -DestinationAddressPrefix $(foreach($prefix in $azrule.DestinationAddressPrefix){if($prefix -in $config.subnet_config.string){$($config.subnet_config | ? string -eq $prefix).cidr}else{$prefix}}) `
+            -Access $azrule.access `
+            -Priority $azrule.priority `
+            -Direction $azrule.direction
+            };
+        $nsgObject | Set-AzNetworkSecurityGroup
+    }
 ```

@@ -1,6 +1,6 @@
 {
-"azure_region": "eastus",
 "resource_group_name": "flex-example",
+"azure_region": "eastus",
 "cluster_number": "1234",
 "subnet_config":[
   {"string": "flex_subnet_cidr","cidr": "10.0.5.128/28"},
@@ -10,9 +10,9 @@
   {"string": "external_data_1_cidr","cidr": "10.0.4.0/25"},
   {"string": "external_data_2_cidr","cidr": "10.0.4.128/25"}
 ],
-"nsg_config": [
+"nsg": [
   {
-    "nsg_name": "flex-cluster-XXXX-network-external-data1-nsg",
+    "name": "flex-cluster-XXXX-network-external-data1-nsg",
     "securityRules": [
       {
         "Description":  "",
@@ -217,7 +217,7 @@
     ]
   },
   {
-    "nsg_name": "flex-cluster-XXXX-network-external-data2-nsg",
+    "name": "flex-cluster-XXXX-network-external-data2-nsg",
     "securityRules": [
       {
         "Description":  "",
@@ -422,7 +422,7 @@
     ]
   },
   {
-    "nsg_name": "flex-cluster-XXXX-network-external-mgmt-nsg",
+    "name": "flex-cluster-XXXX-network-external-mgmt-nsg",
     "securityRules": [
       {
         "Description":  "",
@@ -1167,7 +1167,7 @@
     ]
   },
   {
-    "nsg_name": "flex-cluster-XXXX-network-internal1-nsg",
+    "name": "flex-cluster-XXXX-network-internal1-nsg",
     "securityRules": [
       {
         "Description":  "",
@@ -1632,7 +1632,7 @@
     ]
   },
   {
-    "nsg_name": "flex-cluster-XXXX-network-internal2-nsg",
+    "name": "flex-cluster-XXXX-network-internal2-nsg",
     "securityRules": [
       {
         "Description":  "",

@@ -21,39 +21,51 @@ Besure sure to set your desired Azure subscription context.
 Set-AzContext -Subscription "Subscription Name"
 ```
 
-## How to run
+## Parameters
 
-If you wish to simply run the script without any patameters, it will gather all VM and disk information for the entire subscription and dump it out to a date-stamped CSV file. To do this, simply execute the script without any parameters:
+### -subscriptionName 
+
+Specify a specific subscription by name. 
 ```PowerShell
-./AzureVMReport.ps1
+./AzureVMReport.ps1 -subscriptionName ProdSubscription
 ```
 
-Otherwise here are some runtime examples:
+### -inputFile
 
-This generates the results and loads them into a simple CSV file named report.csv.
+This can be a simple text list of VM names. You could, for example, compile a list of VMs in any resource group that contains the string `SQL` like so:
 ```PowerShell
-./AzureVMReport.ps1 -outputFile report.csv
+(Get-AzVM -ResourceGroupName *sql*).name | Out-File vmlist.txt
 ```
 
-This generates a report based on a strict list of VMs specified in a file called `vmlist.txt`.
+And then run the script against that list:
 ```PowerShell
 ./AzureVMReport.ps1 -inputFile vmlist.txt
 ```
 
-This generates a report for objects contained in zones 1 and 3.
-```PowerShell 
-./AzureVMReport.ps1 -zones 1,3
-```
+### -resourceGroupNames
 
-This generates a report for objects contained in the resource groups named RG1 and RG2.
+This can be a list of resource group names. 
 ```PowerShell
 ./AzureVMReport.ps1 -resourceGroupNames RG1,RG2
 ```
 
-This generates a report based on the last 8 hours of performance statistics. It auto-generates a datestamped output file, and also shows results in the console output. 
+### -zones
+This can be a list of zones. 
+```PowerShell 
+./AzureVMReport.ps1 -zones 1,3
+```
+
+### -outputFile
+
+Specify a specific output file name. If you do not specify an output file name, the script will simply create a time-stamp generated file name. The output is always in a CSV format. 
+```PowerShell
+./AzureVMReport.ps1 -outputFile report.csv
+```
+
+### -days -hours -minutes
+
+Allows you to specify a narrow time window for performance statistics. By default this script gathers for the last 24 hours. 
 ```PowerShell
 ./AzureVMReport.ps1 -days 0 -hours 8
 ```
-
-
 

@@ -54,14 +54,16 @@ $ErrorActionPreference = "Stop"
 
 try {
     Import-Module Az.Monitor -ErrorAction SilentlyContinue
-} catch {
+}
+catch {
     $errormsg = "Az.Monitor module not available, please install the module."
     return $errormsg | Write-Error
 }
 
 try {
     Import-Module azp -ErrorAction SilentlyContinue
-} catch {
+}
+catch {
     $errormsg = "Azure Price Calc module (azp) module not available, please install the module."
     return $errormsg | Write-Error
 }
@@ -76,24 +78,25 @@ if ($subscriptionName) {
 
 # Generate list of VMs with intake or query
 if ($inputFile) {
-    $vmlist = Get-Content $inputFile | ForEach-Object {Get-AzVM -Name $_}
-} else {
+    $vmlist = Get-Content $inputFile | ForEach-Object { Get-AzVM -Name $_ }
+}
+else {
     $vmlist = Get-AzVM
 }
 
 if ($resourceGroupNames) {
     $vmlist = foreach ($r in $resourceGroupNames) {
-        $vmlist | Where-Object {$_.ResourceGroupName -contains $r}
+        $vmlist | Where-Object { $_.ResourceGroupName -contains $r }
     }
 }
 
 if ($zones) {
     $vmlist = foreach ($z in $zones) {    
-        $vmlist | Where-Object {$_.Zones -contains $z}
+        $vmlist | Where-Object { $_.Zones -contains $z }
     }
 }
 
-$vmlist | Select-Object name,ResourceGroupName,zones[0] | Write-Verbose -Verbose
+$vmlist | Select-Object name, ResourceGroupName, zones[0] | Write-Verbose -Verbose
 
 # Set up some of the output table and vars
 $thelist = @()
@@ -117,7 +120,7 @@ $metrics = (
 
 # Set up the total vars for each disk metric. 
 foreach ($m in $metrics) {
-    New-Variable -Name ($m.replace(' ',$null) + '-avg-total') -Value 0 -force
+    New-Variable -Name ($m.replace(' ', $null) + '-avg-total') -Value 0 -force
 }
 
 # loop through each VM
@@ -169,9 +172,9 @@ foreach ($i in $vmlist) {
             foreach ($m in $metrics) {
                 Write-Verbose "-- Gathering $m for $diskname --" -Verbose
                 $statavg = Get-AzMetric -ResourceId $diskInfo.Id -TimeGrain $timegrain -StartTime $date.AddHours(-$hours).AddDays(-$days).AddMinutes(-$minutes) -EndTime $date -MetricName $m -AggregationType Average -WarningAction SilentlyContinue
-                $o | Add-Member -MemberType NoteProperty -Name ($m.replace(' ',$null) + '-avg') -Value $statavg.data.Average
+                $o | Add-Member -MemberType NoteProperty -Name ($m.replace(' ', $null) + '-avg') -Value $statavg.data.Average
                 if ($statavg.data.Average) {
-                    New-Variable -Name ($m.replace(' ',$null) + '-avg-total') -Value ((Get-Variable -Name ($m.replace(' ',$null) + '-avg-total')).Value + $statavg.data.Average) -force
+                    New-Variable -Name ($m.replace(' ', $null) + '-avg-total') -Value ((Get-Variable -Name ($m.replace(' ', $null) + '-avg-total')).Value + $statavg.data.Average) -force
                 }
             }
             
@@ -197,14 +200,15 @@ $o | Add-Member -MemberType NoteProperty -Name "Disk MBps" -Value $totalDiskMBps
 $o | Add-Member -MemberType NoteProperty -Name "ResourceGroup" -Value $null
 $o | Add-Member -MemberType NoteProperty -Name "Region" -Value $null
 foreach ($m in $metrics) {
-    $o | Add-Member -MemberType NoteProperty -Name ($m.replace(' ',$null) + '-avg') -Value (Get-Variable -Name ($m.replace(' ',$null) + '-avg-total')).Value
+    $o | Add-Member -MemberType NoteProperty -Name ($m.replace(' ', $null) + '-avg') -Value (Get-Variable -Name ($m.replace(' ', $null) + '-avg-total')).Value
 }
 
 $thelist += $o
 
 if ($outputFile) {
     $thelist | Export-Csv -NoTypeInformation -Path $outputFile
-} else {
+}
+else {
     [string]$outputFile = ([DateTimeOffset]$Date).ToUnixTimeSeconds().tostring() + ".csv"
     $thelist | Export-Csv -NoTypeInformation -Path $outputFile
     return $thelist

@@ -1,4 +1,4 @@
-# Silk TOC Calculator Script
+# Silk TCO Calculator Script
 
 ## Installation
 

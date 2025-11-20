@@ -44,7 +44,7 @@ And then run the script against that list:
 
 ### -resourceGroupNames
 
-This can be a list of resource group names. 
+This can be a list of resource group names.  
 ```PowerShell
 ./AzureVMReport.ps1 -resourceGroupNames RG1,RG2
 ```

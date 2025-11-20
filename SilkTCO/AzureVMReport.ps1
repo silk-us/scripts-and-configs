@@ -8,8 +8,6 @@ param(
     [Parameter()] 
     [array] $zones,
     [Parameter()] 
-    [string] $outputFile,
-    [Parameter()] 
     [string] $days = "1",
     [Parameter()] 
     [string] $hours = "00",
@@ -48,6 +46,91 @@ param(
     and also shows results in the console output. 
 
 #>
+
+function makePretty {
+    param (
+        [Parameter(Mandatory)]
+        [array]$object
+    )
+
+    $data = $object
+
+    $style = @"
+<style>
+    body {
+        font-family: Helvetica, Arial, sans-serif;
+        margin: 12px;
+        font-size: 12px;
+    }
+    h1 {
+        text-align: center;
+        color: #0d0725ff;
+    }
+    table {
+        border-collapse: collapse;
+        width: auto;
+        margin-top: 20px;
+        table-layout: auto;
+        white-space: nowrap;
+    }
+    th, td {
+        border: 1px solid #000000ff;
+        padding: 8px;
+        text-align: left;
+        font-size: 12px;
+    }
+    th {
+        background-color: #000000ff;
+        color: white;
+    }
+    tr:nth-child(even) {
+        background-color: #ffe5efff;
+    }
+    tr:nth-child(odd) {
+        background-color: #ffa8c9ff;
+    }
+    tr:hover {
+        background-color: #ff0062ff;
+    }
+</style>
+"@
+
+    $html = @"
+<html>
+<head>
+<meta charset='UTF-8'>
+<title>CSV Report</title>
+    $style
+</head>
+<body>
+<h1>Silk TCO Report</h1>
+<table>
+<tr>
+"@
+
+    foreach ($header in $data[0].PSObject.Properties.Name) {
+        $html += "<th>$header</th>"
+    }
+    $html += "</tr>"
+
+    foreach ($row in $data) {
+        $html += "<tr>"
+        foreach ($header in $data[0].PSObject.Properties.Name) {
+            $html += "<td>$($row.$header)</td>"
+        }
+        $html += "</tr>"
+    }
+
+    $html += @"
+</table>
+</body>
+</html>
+"@
+
+    return $html
+
+}
+
 
 $ErrorActionPreference = "Stop"
 # -- Check for the required Az.Monitor module
@@ -205,12 +288,11 @@ foreach ($m in $metrics) {
 
 $thelist += $o
 
-if ($outputFile) {
-    $thelist | Export-Csv -NoTypeInformation -Path $outputFile
-}
-else {
-    [string]$outputFile = ([DateTimeOffset]$Date).ToUnixTimeSeconds().tostring() + ".csv"
-    $thelist | Export-Csv -NoTypeInformation -Path $outputFile
-    return $thelist
-}
+$html = makePretty -object $thelist
+
+[string]$outputFile = ([DateTimeOffset]$Date).ToUnixTimeSeconds().tostring() + ".csv"
+$thelist | Export-Csv -NoTypeInformation -Path $outputFile
+$html | Out-File -FilePath ($outputFile.replace('.csv', '.html')) -Encoding UTF8
+return $thelist
+
 

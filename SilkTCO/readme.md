@@ -55,13 +55,6 @@ This can be a list of zones.
 ./AzureVMReport.ps1 -zones 1,3
 ```
 
-### -outputFile
-
-Specify a specific output file name. If you do not specify an output file name, the script will simply create a time-stamp generated file name. The output is always in a CSV format. 
-```PowerShell
-./AzureVMReport.ps1 -outputFile report.csv
-```
-
 ### -days -hours -minutes
 
 Allows you to specify a narrow time window for performance statistics. By default this script gathers for the last 24 hours. 

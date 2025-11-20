@@ -13,15 +13,15 @@ This configuration example specifies all required elements for a flex subnet, in
 ### example values to change
 The following values from the [example-flex-subnet-configuration](example-flex-subnet-configuration.json) can be updated according to your environment.
 
-`    "resource_group_name": "flex-example",`
-`    "vnet_name": "flex-example-vnet",`
-`    "subnet_name": "flex-example-subnet",`
-`    "subnet_ip_range": "10.0.5.0/28",`
-`    "nsg_name": "flex-example-nsg",`
-`    "nsg_resource_group_name": "flex-example-nsg-rg",`
+`    "resource_group_name": "flex-example",`<br>
+`    "vnet_name": "flex-example-vnet",`<br>
+`    "subnet_name": "flex-example-subnet",`<br>
+`    "subnet_ip_range": "10.0.5.0/28",`<br>
+`    "nsg_name": "flex-example-nsg",`<br>
+`    "nsg_resource_group_name": "flex-example-nsg-rg",`<br>
 
 ### static example values
-The following values from the [example-flex-subnet-configuration](example-flex-subnet-configuration.json) are constant for any Azure flex subnet deployment.
+The following values from the [example-flex-subnet-configuration](example-flex-subnet-configuration.json) are constant for any Azure flex subnet deployment.<br>
 `    "subnet_service_endpoint": ["Microsoft.Storage.Global", "Microsoft.ContainerRegistry"]`
 
 

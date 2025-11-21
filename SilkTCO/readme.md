@@ -1,5 +1,9 @@
 # Silk TCO Calculator Script
 
+This script generates a rough costing calculation for VMs and Disk objects that fall within the desired scope. 
+
+It will output both a .csv file as well as an .html table. 
+
 ## Installation
 
 This script requires:

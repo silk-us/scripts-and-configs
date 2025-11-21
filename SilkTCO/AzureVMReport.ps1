@@ -12,7 +12,9 @@ param(
     [Parameter()] 
     [string] $hours = "00",
     [Parameter()] 
-    [string] $minutes = "00"
+    [string] $minutes = "00",
+    [Parameter()]
+    [switch] $allVMs
 )
 
 <#
@@ -132,7 +134,7 @@ $html += @"
 
 
 $ErrorActionPreference = "Stop"
-# -- Check for the required Az.Monitor module
+# -- Check for the required Az.Monitor and AZP modules.
 
 try {
     Import-Module Az.Monitor -ErrorAction SilentlyContinue
@@ -160,10 +162,10 @@ if ($subscriptionName) {
 
 # Generate list of VMs with intake or query
 if ($inputFile) {
-    $vmlist = Get-Content $inputFile | ForEach-Object { Get-AzVM -Name $_ }
+    $vmlist = Get-Content $inputFile | ForEach-Object { Get-AzVM -Name $_ -Status }
 }
 else {
-    $vmlist = Get-AzVM
+    $vmlist = Get-AzVM -Status
 }
 
 if ($resourceGroupNames) {
@@ -205,8 +207,13 @@ foreach ($m in $metrics) {
     New-Variable -Name ($m.replace(' ', $null) + '-avg-total') -Value 0 -force
 }
 
+if (!$allVMs) {
+    $vmlist = $vmlist | Where-Object { $_.PowerState -eq 'VM running' }
+}
+
 # loop through each VM
 foreach ($i in $vmlist) {
+    Write-Verbose "-> Gathering info for VM - $($i.Name)" -Verbose
 
     $cost = $i | Get-AZPVMCost
     $vmcost = [Math]::Round(($cost.retailPrice * 24) , 2)
@@ -238,7 +245,11 @@ foreach ($i in $vmlist) {
             # Collect desired info from VM and Disk queries
             $o | Add-Member -MemberType NoteProperty -Name "VM name" -Value $i.Name
             $o | Add-Member -MemberType NoteProperty -Name "VM cost 1Day" -Value $vmcost
-            $o | Add-Member -MemberType NoteProperty -Name "VM Zone" -Value $i.Zones[0]
+            try {
+                $o | Add-Member -MemberType NoteProperty -Name "VM Zone" -Value $i.Zones[0]
+            } catch {
+                $o | Add-Member -MemberType NoteProperty -Name "VM Zone" -Value 'N/A'            
+            }
             $o | Add-Member -MemberType NoteProperty -Name "VM size" -Value $i.HardwareProfile.VmSize
             $o | Add-Member -MemberType NoteProperty -Name 'AvailableMemoryBytesGB' -Value ([Math]::Round(($vmstatavg.data.Average / 1GB) , 2))
             $o | Add-Member -MemberType NoteProperty -Name "Disk Name" -Value $diskInfo.Name
@@ -271,7 +282,11 @@ foreach ($i in $vmlist) {
         $o = New-Object psobject
         $o | Add-Member -MemberType NoteProperty -Name "VM name" -Value $i.Name
         $o | Add-Member -MemberType NoteProperty -Name "VM cost 1Day" -Value $vmcost
-        $o | Add-Member -MemberType NoteProperty -Name "VM Zone" -Value $i.Zones[0]
+        try {
+            $o | Add-Member -MemberType NoteProperty -Name "VM Zone" -Value $i.Zones[0]
+        } catch {
+            $o | Add-Member -MemberType NoteProperty -Name "VM Zone" -Value 'N/A'            
+        }
         $o | Add-Member -MemberType NoteProperty -Name "VM size" -Value $i.HardwareProfile.VmSize
         $o | Add-Member -MemberType NoteProperty -Name 'AvailableMemoryBytesGB' -Value ([Math]::Round(($vmstatavg.data.Average / 1GB) , 2))
         $o | Add-Member -MemberType NoteProperty -Name "Disk Name" -Value 'N/A'

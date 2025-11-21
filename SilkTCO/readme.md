@@ -50,6 +50,7 @@ This can be a list of resource group names.
 ```
 
 ### -zones
+
 This can be a list of zones. 
 ```PowerShell 
 ./AzureVMReport.ps1 -zones 1,3
@@ -62,3 +63,6 @@ Allows you to specify a narrow time window for performance statistics. By defaul
 ./AzureVMReport.ps1 -days 0 -hours 8
 ```
 
+### -allVMs
+
+Include all VMs, and not just the VMs that are powered on. 

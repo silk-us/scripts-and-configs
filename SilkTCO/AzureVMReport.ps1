@@ -254,6 +254,7 @@ foreach ($i in $vmlist) {
             $o | Add-Member -MemberType NoteProperty -Name 'AvailableMemoryBytesGB' -Value ([Math]::Round(($vmstatavg.data.Average / 1GB) , 2))
             $o | Add-Member -MemberType NoteProperty -Name "Disk Name" -Value $diskInfo.Name
             $o | Add-Member -MemberType NoteProperty -Name "DiskSKU" -Value $diskInfo.Sku.name
+            $o | Add-Member -MemberType NoteProperty -Name "armSkuName" -Value $cost.armSkuName
             $o | Add-Member -MemberType NoteProperty -Name "DiskSizeGB" -Value $diskInfo.DiskSizeGB
             $o | Add-Member -MemberType NoteProperty -Name "Disk Cost 1Day" -Value $diskcost
             $o | Add-Member -MemberType NoteProperty -Name "Disk Tier" -Value $diskInfo.Tier
@@ -291,6 +292,7 @@ foreach ($i in $vmlist) {
         $o | Add-Member -MemberType NoteProperty -Name 'AvailableMemoryBytesGB' -Value ([Math]::Round(($vmstatavg.data.Average / 1GB) , 2))
         $o | Add-Member -MemberType NoteProperty -Name "Disk Name" -Value 'N/A'
         $o | Add-Member -MemberType NoteProperty -Name "DiskSKU" -Value 'N/A'
+        $o | Add-Member -MemberType NoteProperty -Name "armSkuName" -Value 'N/A'
         $o | Add-Member -MemberType NoteProperty -Name "DiskSizeGB" -Value 'N/A'
         $o | Add-Member -MemberType NoteProperty -Name "Disk Cost 1Day" -Value 'N/A'
         $o | Add-Member -MemberType NoteProperty -Name "Disk Tier" -Value 'N/A'
@@ -312,6 +314,7 @@ $o | Add-Member -MemberType NoteProperty -Name "VM size" -Value $null
 $o | Add-Member -MemberType NoteProperty -Name 'AvailableMemoryBytesGB' -Value $null
 $o | Add-Member -MemberType NoteProperty -Name "Disk Name" -Value $null
 $o | Add-Member -MemberType NoteProperty -Name "DiskSKU" -Value $null
+$o | Add-Member -MemberType NoteProperty -Name "armSkuName" -Value $null
 $o | Add-Member -MemberType NoteProperty -Name "DiskSizeGB" -Value $totalDiskSizeGB
 $o | Add-Member -MemberType NoteProperty -Name "Disk Cost 1Day" -Value ([Math]::Round($totalDiskCost, 2))
 $o | Add-Member -MemberType NoteProperty -Name "Disk Tier" -Value $null

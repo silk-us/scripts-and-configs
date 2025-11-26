@@ -8,7 +8,7 @@
     Get-AzDisk -Name SQL01-data -ResourceGroupName sql-rg | Get-AZPDiskCost
 
     .PARAMETER diskObject 
-    This is a [Microsoft.Azure.Commands.Compute.Automation.Models.PSDiskList] object that is accepted via pipe. 
+    This is a [System.Object] object that is accepted via pipe. 
 
     .PARAMETER priceType 
     This is a [string] value for the 3 supported pricing types supported by the Azure Retail Pricing API. By default it is set for 

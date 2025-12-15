@@ -1093,9 +1093,9 @@ function Test-SilkResourceDeployment
                 $processSection = $("Environment Information Collection")
                 $sectionStep = $("Maximum Fault Domains")
                 $messagePrefix = $("{0}{1}" -f $(if($processSection){$("[{0}] " -f $processSection)}else{$("")}), $(if($sectionStep){$("[{0}] " -f $sectionStep)}else{$("")}))
-                
+
                 Write-Verbose -Message $("{0}Querying Azure Resource SKU API to identify maximum availability set fault domains for region '{1}'." -f $messagePrefix, $Region)
-                
+
                 # Query Azure Resource SKU API to determine maximum fault domains supported by the region
                 # Fault domains define the number of physical hardware failure boundaries within an availability set
                 # Most Azure regions support 3 fault domains, but some regions only support 2

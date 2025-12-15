@@ -1081,6 +1081,12 @@ function Test-SilkResourceDeployment
                         return
                     }
 
+                # Do not run the rest of begin block if cleanup only
+                if ($RunCleanupOnly)
+                    {
+                        return
+                    }
+
                 # ===============================================================================
                 # Enviornment Information Collection
                 # ===============================================================================
@@ -1109,11 +1115,6 @@ function Test-SilkResourceDeployment
                         $maximumFaultDomains = 3
                     }
 
-                # Do not run the rest of begin block if cleanup only
-                if ($RunCleanupOnly)
-                    {
-                        return
-                    }
 
                 # ===============================================================================
                 # CNode SKU Configuration Object

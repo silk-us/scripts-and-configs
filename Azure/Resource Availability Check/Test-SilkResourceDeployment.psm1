@@ -900,9 +900,23 @@ function Test-SilkResourceDeployment
                             }
 
                         Write-Verbose -Message $("=== Azure PowerShell Prerequisites Complete ===")
-                    }
+
+                        # Restore warning preference now that Azure module imports are complete
+                        # This ensures script warnings (e.g., validation errors) are displayed properly
+                        if (Get-Variable -Name originalWarningPreference -ErrorAction SilentlyContinue)
+                            {
+                                $WarningPreference = $originalWarningPreference
+                                Write-Verbose -Message $("✓ PowerShell warning preference restored after Azure module initialization.")
+                            }
+                    } `
                 catch
                     {
+                        # Restore warning preference in case of error
+                        if (Get-Variable -Name originalWarningPreference -ErrorAction SilentlyContinue)
+                            {
+                                $WarningPreference = $originalWarningPreference
+                            }
+
                         Write-Error $("An error occurred during Azure PowerShell module validation or authentication: {0}" -f $_.Exception.Message)
                         $validationError = $true
                         return

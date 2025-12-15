@@ -4156,13 +4156,18 @@ function Test-SilkResourceDeployment
             }
         end
             {
-                # Restore original warning preference if it was changed
+                # Restore original warning preference if it was changed and not already restored
+                # Note: Warning preference is typically restored after Azure module initialization
+                # This serves as a safety net in case script execution was interrupted
                 try
                     {
                         if (Get-Variable -Name originalWarningPreference -ErrorAction SilentlyContinue)
                             {
-                                $WarningPreference = $originalWarningPreference
-                                Write-Verbose -Message $("✓ Original PowerShell warning preference restored.")
+                                if ($WarningPreference -eq 'SilentlyContinue')
+                                    {
+                                        $WarningPreference = $originalWarningPreference
+                                        Write-Verbose -Message $("✓ Original PowerShell warning preference restored in cleanup.")
+                                    }
                             }
                     }
                 catch

@@ -1088,31 +1088,45 @@ function Test-SilkResourceDeployment
                     }
 
                 # ===============================================================================
-                # Enviornment Information Collection
+                # Environment Information Collection
                 # ===============================================================================
-                # identify the maximum availability set fault domains for given region via API call for sku information
+                $processSection = $("Environment Information Collection")
+                $sectionStep = $("Maximum Fault Domains")
+                $messagePrefix = $("{0}{1}" -f $(if($processSection){$("[{0}] " -f $processSection)}else{$("")}), $(if($sectionStep){$("[{0}] " -f $sectionStep)}else{$("")}))
+                
+                Write-Verbose -Message $("{0}Querying Azure Resource SKU API to identify maximum availability set fault domains for region '{1}'." -f $messagePrefix, $Region)
+                
+                # Query Azure Resource SKU API to determine maximum fault domains supported by the region
+                # Fault domains define the number of physical hardware failure boundaries within an availability set
+                # Most Azure regions support 3 fault domains, but some regions only support 2
                 try
                     {
-                        # azure api version for sku info check
-                        $azureSKUApiVersion = "2025-04-01"
+                        # Define Azure Resource SKU API version for querying compute SKU information
+                        $azureSKUApiVersion = $("2025-04-01")
 
-                        # generate header for api call to collect sku informatoin
-                        $azureSKUApiRequestHeaders = @{ Authorization = $("Bearer {0}" -f $(ConvertFrom-SecureString -SecureString $(Get-AzAccessToken -ResourceUrl "https://management.azure.com/").Token -AsPlainText)) }
+                        # Generate authorization header using current Azure access token for Management API
+                        $azureSKUApiRequestHeaders =   @{
+                                                            Authorization = $("Bearer {0}" -f $(ConvertFrom-SecureString -SecureString $(Get-AzAccessToken -ResourceUrl $("https://management.azure.com/")).Token -AsPlainText))
+                                                        }
 
-                        # generate uri for api call collecting sku information
-                        $azureSKUApiUri = "https://management.azure.com/subscriptions/{0}/providers/Microsoft.Compute/skus?api-version={1}" -f $SubscriptionId, $azureSKUApiVersion
+                        # Construct API URI to query compute SKUs for the target subscription
+                        $azureSKUApiUri = $("https://management.azure.com/subscriptions/{0}/providers/Microsoft.Compute/skus?api-version={1}" -f $SubscriptionId, $azureSKUApiVersion)
 
-                        # make request for sku information
+                        # Execute REST API call to retrieve SKU information
                         $regionAvailabilitySetSKU = $(Invoke-RestMethod -Method Get -Uri $azureSKUApiUri -Headers $azureSKUApiRequestHeaders).value
 
-                        # filter returned sku information to identify maximum fault domains
-                        $maximumFaultDomains = $regionAvailabilitySetSKU | Where-Object -FilterScript {$_.resourceType -eq "availabilitySets" -and $_.locations -eq $Region} | Select-Object -First 1 | Select-Object -ExpandProperty capabilities | Select-Object -ExpandProperty value
+                        # Filter SKU response to extract maximum fault domains capability for availability sets in the target region
+                        $maximumFaultDomains = $regionAvailabilitySetSKU | Where-Object -FilterScript {$_.resourceType -eq $("availabilitySets") -and $_.locations -eq $Region} | Select-Object -First 1 | Select-Object -ExpandProperty capabilities | Select-Object -ExpandProperty value
 
-                    }
+                        Write-Verbose -Message $("{0}Successfully identified maximum fault domains for region '{1}': {2}" -f $messagePrefix, $Region, $maximumFaultDomains)
+                    } `
                 catch
                     {
-                        # if unable to collect fault domain count set the value to 3 as only a few regions only support 2
+                        # Default to 3 fault domains if API query fails
+                        # Conservative default as majority of Azure regions support 3 fault domains
+                        # Only a small subset of regions (e.g., some government or specialized regions) support only 2
                         $maximumFaultDomains = 3
+                        Write-Warning -Message $("{0}Failed to query Azure Resource SKU API for fault domain information. Defaulting to {1} fault domains. Error: {2}" -f $messagePrefix, $maximumFaultDomains, $_.Exception.Message)
                     }
 
 

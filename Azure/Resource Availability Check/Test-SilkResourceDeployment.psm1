@@ -1556,27 +1556,52 @@ function Test-SilkResourceDeployment
                         $totalvCPUCount = 0
 
                         $insufficientQuota = $false
+                        $originalCNodeCount = $CNodeCount
+                        $adjustedCNodeCount = $CNodeCount
+                        $cNodeQuotaAdjusted = $false
 
                         # Check if CNodeSize is within the available quota
                         if($cNodeObject)
                             {
-                                # increment for generic quota checks
-                                $totalVMCount += $CNodeCount
-                                $cNodevCPUCount = $cNodeObject.vCPU * $CNodeCount
-                                $totalvCPUCount += $cNodevCPUCount
-
                                 # Check if CNodeSize is within the available quota
                                 $cNodeSKUFamilyQuota = $ComputeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $cNodeObject.QuotaFamily }
-                                if (($cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue) -lt $cNodevCPUCount)
+                                $availableVCPUs = $cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue
+                                $cNodevCPUCount = $cNodeObject.vCPU * $CNodeCount
+
+                                if ($availableVCPUs -lt $cNodevCPUCount)
                                     {
-                                        $quotaErrorMessage = "{0} {1}" -f $("Insufficient vCPU quota available for CNode SKU: {0}. Required: {1} -> Limit: {2}, Consumed: {3}, Available: {4}" -f $cNodeVMSku, $cNodevCPUCount, $cNodeSKUFamilyQuota.Limit, $cNodeSKUFamilyQuota.CurrentValue, ($cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue)), $quotaErrorMessage
-                                        Write-Warning $quotaErrorMessage
-                                        $insufficientQuota = $true
+                                        # Calculate how many CNodes we can actually deploy
+                                        $maxCNodesFromQuota = [Math]::Floor($availableVCPUs / $cNodeObject.vCPU)
+
+                                        if ($maxCNodesFromQuota -gt 0)
+                                            {
+                                                $adjustedCNodeCount = $maxCNodesFromQuota
+                                                $cNodeQuotaAdjusted = $true
+                                                $insufficientQuota = $true
+                                                $quotaErrorMessage = "{0} {1}" -f $("Partial CNode quota available for SKU: {0}. Requested: {1} CNodes ({2} vCPU), Available quota: {3} vCPU, Deploying: {4} CNode(s)" -f $cNodeVMSku, $CNodeCount, $cNodevCPUCount, $availableVCPUs, $maxCNodesFromQuota), $quotaErrorMessage
+                                                Write-Warning $quotaErrorMessage
+
+                                                # Recalculate with adjusted count
+                                                $cNodevCPUCount = $cNodeObject.vCPU * $adjustedCNodeCount
+                                            } `
+                                        else
+                                            {
+                                                $adjustedCNodeCount = 0
+                                                $cNodeQuotaAdjusted = $true
+                                                $insufficientQuota = $true
+                                                $quotaErrorMessage = "{0} {1}" -f $("Insufficient vCPU quota for CNode SKU: {0}. Required: {1} vCPU per CNode, Available: {2} vCPU. CNode deployment will be skipped." -f $cNodeVMSku, $cNodeObject.vCPU, $availableVCPUs), $quotaErrorMessage
+                                                Write-Warning $quotaErrorMessage
+                                                $cNodevCPUCount = 0
+                                            }
                                     } `
                                 else
                                     {
-                                        Write-Verbose -Message $("Sufficient vCPU quota available for CNode SKU: {0}. Required: {1} -> Limit: {2}, Consumed: {3}, Available: {4}" -f $cNodeVMSku, $cNodevCPUCount, $cNodeSKUFamilyQuota.Limit, $cNodeSKUFamilyQuota.CurrentValue, ($cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue))
+                                        Write-Verbose -Message $("Sufficient vCPU quota available for CNode SKU: {0}. Required: {1} -> Limit: {2}, Consumed: {3}, Available: {4}" -f $cNodeVMSku, $cNodevCPUCount, $cNodeSKUFamilyQuota.Limit, $cNodeSKUFamilyQuota.CurrentValue, $availableVCPUs)
                                     }
+
+                                # increment for generic quota checks
+                                $totalVMCount += $adjustedCNodeCount
+                                $totalvCPUCount += $cNodevCPUCount
                             }
 
                         # check for quota for mnodes
@@ -1584,28 +1609,77 @@ function Test-SilkResourceDeployment
                             {
                                 $mNodeFamilyCount = $mNodeObject | Group-Object -Property QuotaFamily
                                 $mNodeInstanceCount = $MNodeSize | Group-Object | Select-Object Name, Count
+                                $mNodeQuotaAdjustments =   @{}
 
                                 foreach ($mNodeFamily in $mNodeFamilyCount)
                                     {
-                                        # total mnode vcpu count
+                                        $mNodeFamilyvCPUCount = 0
+
+                                        # total mnode vcpu count for this family
                                         foreach ($mNodeType in $mNodeObjectUnique)
                                             {
-                                                $totalVMCount += $mNodeType.dNodeCount * $($mNodeInstanceCount | ? Name -eq $mNodeType.PhysicalSize).Count
-                                                $mNodeFamilyvCPUCount += $mNodeType.vCPU * $mNodeType.dNodeCount * $($mNodeInstanceCount | ? Name -eq $mNodeType.PhysicalSize).Count
-                                                $totalvCPUCount += $mNodeFamilyvCPUCount
+                                                if ($mNodeType.QuotaFamily -eq $mNodeFamily.Name)
+                                                    {
+                                                        $mNodeFamilyvCPUCount += $mNodeType.vCPU * $mNodeType.dNodeCount * $($mNodeInstanceCount | ? Name -eq $mNodeType.PhysicalSize).Count
+                                                    }
                                             }
 
                                         # Check if MNodeSize is within the available quota
                                         $mNodeSKUFamilyQuota = $ComputeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $mNodeFamily.Name }
-                                        if (($mNodeSKUFamilyQuota.Limit - $mNodeSKUFamilyQuota.CurrentValue) -lt $mNodeFamilyvCPUCount)
+                                        $availableMNodeVCPUs = $mNodeSKUFamilyQuota.Limit - $mNodeSKUFamilyQuota.CurrentValue
+
+                                        if ($availableMNodeVCPUs -lt $mNodeFamilyvCPUCount)
                                             {
-                                                $quotaErrorMessage = "{0} {1}" -f $("Insufficient vCPU quota available for MNode SKU: {0} of SKU Family: {1}. Required: {2} -> Limit: {3}, Consumed: {4}, Available: {5}" -f $(($mNodeFamily.group | % { "{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix }) -join ', '), $mNodeFamily.Name, $mNodeFamilyvCPUCount, $mNodeSKUFamilyQuota.Limit, $mNodeSKUFamilyQuota.CurrentValue, ($mNodeSKUFamilyQuota.Limit - $mNodeSKUFamilyQuota.CurrentValue)), $quotaErrorMessage
-                                                Write-Warning $quotaErrorMessage
                                                 $insufficientQuota = $true
+
+                                                # For each MNode type in this family, calculate partial deployment
+                                                foreach ($mNodeType in $mNodeFamily.Group)
+                                                    {
+                                                        $requestedDNodes = $mNodeType.dNodeCount
+                                                        $vCPUPerDNode = $mNodeType.vCPU
+                                                        $maxDNodesFromQuota = [Math]::Floor($availableMNodeVCPUs / $vCPUPerDNode)
+
+                                                        if ($maxDNodesFromQuota -gt 0 -and $maxDNodesFromQuota -lt $requestedDNodes)
+                                                            {
+                                                                $mNodeQuotaAdjustments[$mNodeType.PhysicalSize] =   @{
+                                                                                                                        OriginalCount = $requestedDNodes
+                                                                                                                        AdjustedCount = $maxDNodesFromQuota
+                                                                                                                        SKU = $("{0}{1}{2}" -f $mNodeType.vmSkuPrefix, $mNodeType.vCPU, $mNodeType.vmSkuSuffix)
+                                                                                                                    }
+                                                                $quotaErrorMessage = "{0} {1}" -f $("Partial MNode quota available for {2} TiB ({3}). Requested: {4} DNodes, Available quota: {5} vCPU, Deploying: {6} DNode(s)" -f $mNodeType.PhysicalSize, $mNodeType.vmSkuPrefix, $mNodeType.vCPU, $mNodeType.vmSkuSuffix, $requestedDNodes, $availableMNodeVCPUs, $maxDNodesFromQuota), $quotaErrorMessage
+                                                                Write-Warning $quotaErrorMessage
+
+                                                                $totalVMCount += $maxDNodesFromQuota
+                                                                $totalvCPUCount += ($maxDNodesFromQuota * $vCPUPerDNode)
+                                                            } `
+                                                        elseif ($maxDNodesFromQuota -eq 0)
+                                                            {
+                                                                $mNodeQuotaAdjustments[$mNodeType.PhysicalSize] =   @{
+                                                                                                                        OriginalCount = $requestedDNodes
+                                                                                                                        AdjustedCount = 0
+                                                                                                                        SKU = $("{0}{1}{2}" -f $mNodeType.vmSkuPrefix, $mNodeType.vCPU, $mNodeType.vmSkuSuffix)
+                                                                                                                    }
+                                                                $quotaErrorMessage = "{0} {1}" -f $("Insufficient vCPU quota for MNode {2} TiB ({3}). Required: {4} vCPU per DNode, Available: {5} vCPU. MNode group will be skipped." -f $mNodeType.PhysicalSize, $mNodeType.vmSkuPrefix, $mNodeType.vCPU, $mNodeType.vmSkuSuffix, $vCPUPerDNode, $availableMNodeVCPUs), $quotaErrorMessage
+                                                                Write-Warning $quotaErrorMessage
+                                                            } `
+                                                        else
+                                                            {
+                                                                # Full quota available for this MNode type
+                                                                $totalVMCount += $requestedDNodes
+                                                                $totalvCPUCount += ($requestedDNodes * $vCPUPerDNode)
+                                                            }
+                                                    }
                                             } `
                                         else
                                             {
-                                                Write-Verbose -Message $("Sufficient vCPU quota available for MNode SKU {0} of Family: {1}. Required: {2} -> Limit: {3}, Consumed: {4}, Available: {5}" -f $(($mNodeFamily.group | % { "{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix }) -join ', '), $mNodeFamily.Name, $mNodeFamilyvCPUCount, $mNodeSKUFamilyQuota.Limit, $mNodeSKUFamilyQuota.CurrentValue, ($mNodeSKUFamilyQuota.Limit - $mNodeSKUFamilyQuota.CurrentValue))
+                                                Write-Verbose -Message $("Sufficient vCPU quota available for MNode SKU {0} of Family: {1}. Required: {2} -> Limit: {3}, Consumed: {4}, Available: {5}" -f $(($mNodeFamily.group | % { "{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix }) -join ', '), $mNodeFamily.Name, $mNodeFamilyvCPUCount, $mNodeSKUFamilyQuota.Limit, $mNodeSKUFamilyQuota.CurrentValue, $availableMNodeVCPUs)
+
+                                                # Add full counts
+                                                foreach ($mNodeType in $mNodeFamily.Group)
+                                                    {
+                                                        $totalVMCount += $mNodeType.dNodeCount
+                                                        $totalvCPUCount += ($mNodeType.dNodeCount * $mNodeType.vCPU)
+                                                    }
                                             }
                                     }
                             }
@@ -1650,14 +1724,78 @@ function Test-SilkResourceDeployment
                                 Write-Verbose $("Sufficient Availability Set quota available. Required: {0} -> Limit: {1}, Consumed: {2}, Available: {3}" -f $totalAvailabilitySetCount, $totalAvailabilitySetQuota.Limit, $totalAvailabilitySetQuota.CurrentValue, ($totalAvailabilitySetQuota.Limit - $totalAvailabilitySetQuota.CurrentValue))
                             }
 
-                        if($insufficientQuota)
+                        # Summarize quota adjustments and determine if any deployment is possible
+                        $quotaAdjustmentMessages = @()
+                        $anyDeploymentPossible = $false
+
+                        if($CNodeCount -gt 0)
                             {
-                                Write-Error $quotaErrorMessage
-                                return
+                                if($adjustedCNodeCount -gt 0)
+                                    {
+                                        $anyDeploymentPossible = $true
+                                        if($adjustedCNodeCount -lt $originalCNodeCount)
+                                            {
+                                                $quotaAdjustmentMessages += "  → CNode: Deploying {0} of {1} requested (quota constrained)" -f $adjustedCNodeCount, $originalCNodeCount
+                                            } `
+                                        else
+                                            {
+                                                Write-Verbose $("CNode: All {0} requested VMs can be deployed" -f $adjustedCNodeCount)
+                                            }
+                                    } `
+                                else
+                                    {
+                                        $quotaAdjustmentMessages += "  → CNode: Cannot deploy any VMs due to insufficient quota"
+                                    }
+                            }
+
+                        if($mNodeQuotaAdjustments.Count -gt 0)
+                            {
+                                foreach($physicalSize in $mNodeQuotaAdjustments.Keys)
+                                    {
+                                        $adjustment = $mNodeQuotaAdjustments[$physicalSize]
+                                        if($adjustment.AdjustedCount -gt 0)
+                                            {
+                                                $anyDeploymentPossible = $true
+                                                if($adjustment.AdjustedCount -lt $adjustment.OriginalCount)
+                                                    {
+                                                        $quotaAdjustmentMessages += "  → MNode ({0}): Deploying {1} of {2} requested DNodes (quota constrained)" -f $physicalSize, $adjustment.AdjustedCount, $adjustment.OriginalCount
+                                                    } `
+                                                else
+                                                    {
+                                                        Write-Verbose $("MNode ({0}): All {1} requested DNodes can be deployed" -f $physicalSize, $adjustment.AdjustedCount)
+                                                    }
+                                            } `
+                                        else
+                                            {
+                                                $quotaAdjustmentMessages += "  → MNode ({0}): Cannot deploy any DNodes due to insufficient quota" -f $physicalSize
+                                            }
+                                    }
+                            }
+
+                        # Display quota adjustment summary if any constraints were detected
+                        if($quotaAdjustmentMessages.Count -gt 0)
+                            {
+                                if(-not $anyDeploymentPossible)
+                                    {
+                                        Write-Warning $("⚠ CRITICAL QUOTA CONSTRAINTS - No VMs can be deployed, but proceeding with environment analysis:")
+                                    } `
+                                else
+                                    {
+                                        Write-Warning $("⚠ QUOTA CONSTRAINTS DETECTED - Proceeding with adjusted deployment:")
+                                    }
+                                $quotaAdjustmentMessages | ForEach-Object { Write-Warning $_ }
                             } `
                         else
                             {
                                 Write-Verbose $("All required quotas are available for the specified CNode and MNode configurations.")
+                            }
+
+                        # Track deployment mode for reporting purposes
+                        if(-not $anyDeploymentPossible)
+                            {
+                                Write-Warning $("⚠ Zero VM deployment mode: Function will analyze environment and report quota deficiencies without deploying resources.")
+                                # Set adjusted counts to 0 to ensure no deployment attempts
+                                $adjustedCNodeCount = 0
                             }
 
                     } `
@@ -1762,7 +1900,15 @@ function Test-SilkResourceDeployment
                     } `
                 else
                     {
-                        $vMImage = Get-AzVMImage -Location $Region -PublisherName $VMImagePublisher -Offer $VMImageOffer -Skus $VMImageSku -Version $VMImageVersion
+                        try
+                            {
+                                $vMImage = Get-AzVMImage -Location $Region -PublisherName $VMImagePublisher -Offer $VMImageOffer -Skus $VMImageSku -Version $VMImageVersion -ErrorAction Stop
+                            } `
+                        catch
+                            {
+                                Write-Warning $("Failed to retrieve VM image '{0}' from publisher '{1}' with SKU '{2}': {3}" -f $VMImageOffer, $VMImagePublisher, $VMImageSku, $_.Exception.Message)
+                                $vMImage = $null
+                            }
                     }
 
                 # if !$VMImage
@@ -1823,7 +1969,14 @@ function Test-SilkResourceDeployment
 
                 if ($CNodeCount -gt 0)
                     {
-                        Write-Verbose -Message $("CNode Count: {0}" -f $CNodeCount)
+                        if ($adjustedCNodeCount -lt $originalCNodeCount)
+                            {
+                                Write-Verbose -Message $("CNode Count: {0} (adjusted to {1} due to quota constraints)" -f $originalCNodeCount, $adjustedCNodeCount)
+                            } `
+                        else
+                            {
+                                Write-Verbose -Message $("CNode Count: {0}" -f $adjustedCNodeCount)
+                            }
                     } `
                 else
                     {
@@ -1834,27 +1987,46 @@ function Test-SilkResourceDeployment
                     {
                         $mNodeSizeDisplay = ($mNodeObject | ForEach-Object { $_.PhysicalSize }) -join ", "
                         Write-Verbose -Message $("MNode Configuration: {0} TiB" -f $mNodeSizeDisplay)
+
+                        # Show quota adjustments for MNode groups
+                        foreach ($physicalSize in $mNodeQuotaAdjustments.Keys)
+                            {
+                                $adjustment = $mNodeQuotaAdjustments[$physicalSize]
+                                if ($adjustment.AdjustedCount -lt $adjustment.OriginalCount)
+                                    {
+                                        Write-Verbose -Message $("  → {0} TiB: {1} DNodes (adjusted to {2} due to quota constraints)" -f $physicalSize, $adjustment.OriginalCount, $adjustment.AdjustedCount)
+                                    }
+                            }
                     }
 
-                # identify total dnodes
+                # identify total dnodes using adjusted counts
                 if($mNodeSize)
                     {
-                        $totalDNodes = ($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum
+                        $totalDNodes = 0
+                        foreach ($mNode in $mNodeObject)
+                            {
+                                $dNodeCount = $mNode.dNodeCount
+                                if ($mNodeQuotaAdjustments.ContainsKey($mNode.PhysicalSize))
+                                    {
+                                        $dNodeCount = $mNodeQuotaAdjustments[$mNode.PhysicalSize].AdjustedCount
+                                    }
+                                $totalDNodes += $dNodeCount
+                            }
                     } `
                 else
                     {
                         $totalDNodes = 0
                     }
 
-                if ($CNodeCount -gt 0 -and $totalDNodes -gt 0)
+                if ($adjustedCNodeCount -gt 0 -and $totalDNodes -gt 0)
                     {
-                        $totalVMs = $CNodeCount + $totalDNodes
-                        Write-Verbose -Message $("Total VMs to Deploy: {0} ({1} CNodes + {2} DNodes)" -f $totalVMs, $CNodeCount, $totalDNodes)
+                        $totalVMs = $adjustedCNodeCount + $totalDNodes
+                        Write-Verbose -Message $("Total VMs to Deploy: {0} ({1} CNodes + {2} DNodes)" -f $totalVMs, $adjustedCNodeCount, $totalDNodes)
                     } `
-                elseif ($CNodeCount -gt 0 -and $totalDNodes -eq 0)
+                elseif ($adjustedCNodeCount -gt 0 -and $totalDNodes -eq 0)
                     {
-                        $totalVMs = $CNodeCount
-                        Write-Verbose -Message $("Total VMs to Deploy: {0} (CNode-only: {1})" -f $totalVMs, $CNodeCount)
+                        $totalVMs = $adjustedCNodeCount
+                        Write-Verbose -Message $("Total VMs to Deploy: {0} (CNode-only: {1})" -f $totalVMs, $adjustedCNodeCount)
                     } `
                 else
                     {
@@ -1886,6 +2058,28 @@ function Test-SilkResourceDeployment
                 if($RunCleanupOnly)
                     {
                         # If we're only running cleanup, we can skip the rest of the process code
+                        return
+                    }
+
+                # Check if any VM deployment is possible - skip infrastructure creation if not
+                $totalDeployableVMs = $adjustedCNodeCount
+                foreach ($mNode in $mNodeObject)
+                    {
+                        if ($mNodeQuotaAdjustments.ContainsKey($mNode.PhysicalSize))
+                            {
+                                $totalDeployableVMs += $mNodeQuotaAdjustments[$mNode.PhysicalSize].AdjustedCount
+                            } `
+                        else
+                            {
+                                $totalDeployableVMs += $mNode.dNodeCount
+                            }
+                    }
+
+                if ($totalDeployableVMs -eq 0)
+                    {
+                        Write-Warning $("⚠ Zero VM deployment scenario detected - Skipping infrastructure creation")
+                        Write-Warning $("   No VMs can be deployed due to insufficient quota for all requested node types")
+                        Write-Warning $("   Function will complete with quota analysis report only")
                         return
                     }
 
@@ -2010,7 +2204,7 @@ function Test-SilkResourceDeployment
                             -Activity "VM Deployment" `
                             -Id 1
 
-                        if($CNodeCount)
+                        if($adjustedCNodeCount -gt 0)
                             {
                                 # Update progress for availability set creation
                                 Write-Progress `
@@ -2055,26 +2249,25 @@ function Test-SilkResourceDeployment
                                                             -PlatformUpdateDomainCount 20
 
                                 Write-Verbose -Message $("✓ CNode availability set '{0}' created." -f $cNodeAvailabilitySet.Name)
-                            }
 
-                        # CNode creation phase with updated progress
-                        Write-Progress `
-                            -Status "Creating CNodes" `
-                            -CurrentOperation $("Preparing to create {0} CNode VMs..." -f $CNodeCount) `
-                            -PercentComplete 5 `
-                            -Activity "VM Deployment" `
-                            -Id 1
+                                # CNode creation phase with updated progress
+                                Write-Progress `
+                                    -Status "Creating CNodes" `
+                                    -CurrentOperation $("Preparing to create {0} CNode VMs..." -f $adjustedCNodeCount) `
+                                    -PercentComplete 5 `
+                                    -Activity "VM Deployment" `
+                                    -Id 1
 
-                        for ($cNode = 1; $cNode -le $CNodeCount; $cNode++)
-                            {
+                                for ($cNode = 1; $cNode -le $adjustedCNodeCount; $cNode++)
+                                    {
                                 # Calculate CNode SKU for display
                                 $currentCNodeSku = "{0}" -f $CNodeSku
 
                                 # Update sub-progress for CNode creation
                                 Write-Progress `
-                                    -Status $("Creating CNode {0} of {1} ({2})" -f $cNode, $CNodeCount, $currentCNodeSku) `
+                                    -Status $("Creating CNode {0} of {1} ({2})" -f $cNode, $adjustedCNodeCount, $currentCNodeSku) `
                                     -CurrentOperation $("Configuring CNode {0} with SKU {1}..." -f $cNode, $currentCNodeSku) `
-                                    -PercentComplete $(($cNode / $CNodeCount) * 100) `
+                                    -PercentComplete $(($cNode / $adjustedCNodeCount) * 100) `
                                     -Activity "CNode Creation" `
                                     -ParentId 1 `
                                     -Id 2
@@ -2164,28 +2357,44 @@ function Test-SilkResourceDeployment
                                     {
                                         Write-Error $("✗ Failed to start CNode {0} VM creation: {1}" -f $cNode, $_.Exception.Message)
                                     }
+                                    }
+
+                                if ($cNodeAvailabilitySet)
+                                    {
+                                        # get the cnode availability set to assess its state
+                                        $cNodeAvailabilitySetComplete = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -Name $("{0}-cNode-avset" -f $ResourceNamePrefix)
+                                        Write-Verbose -Message $("✓ CNode availability set '{0}' created with {1} CNodes." -f $cNodeAvailabilitySetComplete.Name, $cNodeAvailabilitySetComplete)
+                                        Write-Verbose -Message $("✓ CNode availability set '{0}' is assigned to proximity placement group '{1}'." -f $cNodeAvailabilitySetComplete.Name, $cNodeProximityPlacementGroup.Name)
+                                    }
+
+                                # Clean up CNode creation sub-progress bar as this phase is complete
+                                Write-Progress -Activity "CNode Creation" -Id 2 -Completed
                             }
 
-                        if ($cNodeAvailabilitySet)
+                        # Skip MNode deployment if quota is insufficient
+                        if ($mNodeObject)
                             {
-                                # get the cnode availability set to assess its state
-                                $cNodeAvailabilitySetComplete = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -Name $("{0}-cNode-avset" -f $ResourceNamePrefix)
-                                Write-Verbose -Message $("✓ CNode availability set '{0}' created with {1} CNodes." -f $cNodeAvailabilitySetComplete.Name, $cNodeAvailabilitySetComplete)
-                                Write-Verbose -Message $("✓ CNode availability set '{0}' is assigned to proximity placement group '{1}'." -f $cNodeAvailabilitySetComplete.Name, $cNodeProximityPlacementGroup.Name)
-                           }
-
-                        # Clean up CNode creation sub-progress bar as this phase is complete
-                        Write-Progress -Activity "CNode Creation" -Id 2 -Completed
-
-                        $dNodeStartCount = 0
-                        $currentMNode = 0
-                        foreach ($mNode in $mNodeObject)
-                            {
+                                $dNodeStartCount = 0
+                                $currentMNode = 0
+                                foreach ($mNode in $mNodeObject)
+                                    {
                                 $currentMNode++
 
                                 # Calculate MNode SKU and physical size for display
                                 $currentMNodeSku = "{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix
                                 $currentMNodePhysicalSize = $mNode.PhysicalSize
+
+                                # Check if this MNode group has quota adjustments
+                                $currentDNodeCount = $mNode.dNodeCount
+                                if ($mNodeQuotaAdjustments.ContainsKey($currentMNodePhysicalSize))
+                                    {
+                                        $currentDNodeCount = $mNodeQuotaAdjustments[$currentMNodePhysicalSize].AdjustedCount
+                                        if ($currentDNodeCount -eq 0)
+                                            {
+                                                Write-Warning $("⚠ Skipping MNode group {0} ({1} TiB) - No quota available for deployment" -f $currentMNode, $currentMNodePhysicalSize)
+                                                continue
+                                            }
+                                    }
 
                                 # create mnode proximity placement group including VM SKUs if Zoneless
                                 if($Zone -ne "Zoneless")
@@ -2224,25 +2433,25 @@ function Test-SilkResourceDeployment
                                 Write-Verbose -Message $("✓ Availability Set '{0}' created" -f $mNodeAvailabilitySet.Name)
 
                                 # Update main progress for MNode group
-                                $processedCNodes = $CNodeCount
+                                $processedCNodes = $adjustedCNodeCount
                                 $processedDNodes = $dNodeStartCount
                                 $totalProcessed = $processedCNodes + $processedDNodes
                                 $mainPercentComplete = [Math]::Min([Math]::Round(($totalProcessed / $totalVMs) * 100), 90)
 
                                 Write-Progress `
                                     -Status $("Processing MNode Group {0} of {1} - {2} TiB ({3})" -f $currentMNode, $mNodeObject.Count, $currentMNodePhysicalSize, $currentMNodeSku) `
-                                    -CurrentOperation $("Creating {0} DNodes for {1} TiB MNode..." -f $mNode.dNodeCount, $currentMNodePhysicalSize) `
+                                    -CurrentOperation $("Creating {0} DNodes for {1} TiB MNode..." -f $currentDNodeCount, $currentMNodePhysicalSize) `
                                     -PercentComplete $mainPercentComplete `
                                     -Activity "VM Deployment" `
                                     -Id 1
 
-                                for ($dNode = 1; $dNode -le $mNode.dNodeCount; $dNode++)
+                                for ($dNode = 1; $dNode -le $currentDNodeCount; $dNode++)
                                     {
                                         # Update sub-progress for DNode creation
                                         Write-Progress `
-                                            -Status $("Creating DNode {0} of {1} - {2} TiB ({3})" -f $dNode, $mNode.dNodeCount, $currentMNodePhysicalSize, $currentMNodeSku) `
+                                            -Status $("Creating DNode {0} of {1} - {2} TiB ({3})" -f $dNode, $currentDNodeCount, $currentMNodePhysicalSize, $currentMNodeSku) `
                                             -CurrentOperation $("Configuring DNode {0} with SKU {1}..." -f ($dNode + $dNodeStartCount), $currentMNodeSku) `
-                                            -PercentComplete $(($dNode / $mNode.dNodeCount) * 100) `
+                                            -PercentComplete $(($dNode / $currentDNodeCount) * 100) `
                                             -Activity $("MNode Group {0} DNode Creation" -f $currentMNode) `
                                             -ParentId 1 `
                                             -Id 3
@@ -2356,10 +2565,11 @@ function Test-SilkResourceDeployment
                                     }
 
                                 $mNodeProximityPlacementGroup = $null
-                                $dNodeStartCount += $mNode.dNodeCount
+                                $dNodeStartCount += $currentDNodeCount
 
                                 # Clean up this MNode group's sub-progress bar as it's complete
                                 Write-Progress -Activity $("MNode Group {0} DNode Creation" -f $currentMNode) -Id 3 -Completed
+                            }
                             }
 
                         # ========================================================================================================
@@ -2631,7 +2841,7 @@ function Test-SilkResourceDeployment
                 $deploymentReport = @()
 
                 # Build CNode deployment report
-                for ($cNode = 1; $cNode -le $CNodeCount; $cNode++)
+                for ($cNode = 1; $cNode -le $adjustedCNodeCount; $cNode++)
                     {
                         $expectedVMName = "$ResourceNamePrefix-cnode-{0:D2}" -f $cNode
                         $expectedNICName = "$ResourceNamePrefix-cnode-mgmt-nic-{0:D2}" -f $cNode
@@ -2704,7 +2914,14 @@ function Test-SilkResourceDeployment
                         $currentMNodePhysicalSize = $mNode.PhysicalSize
                         $reportMNodeSku = "{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix
 
-                        for ($dNode = 1; $dNode -le $mNode.dNodeCount; $dNode++)
+                        # Check if this MNode group has quota adjustments
+                        $reportDNodeCount = $mNode.dNodeCount
+                        if ($mNodeQuotaAdjustments.ContainsKey($currentMNodePhysicalSize))
+                            {
+                                $reportDNodeCount = $mNodeQuotaAdjustments[$currentMNodePhysicalSize].AdjustedCount
+                            }
+
+                        for ($dNode = 1; $dNode -le $reportDNodeCount; $dNode++)
                             {
                                 $dNodeNumber = $dNode + $dNodeStartCount
                                 $expectedVMName = "$ResourceNamePrefix-dnode-{0:D2}" -f $dNodeNumber
@@ -2769,7 +2986,7 @@ function Test-SilkResourceDeployment
                                                                         }
                             }
 
-                        $dNodeStartCount += $mNode.dNodeCount
+                        $dNodeStartCount += $reportDNodeCount
                     }
 
                 # ===============================================================================
@@ -3426,6 +3643,12 @@ function Test-SilkResourceDeployment
                         Write-Host $("✓ DEPLOYMENT VALIDATION COMPLETE - All SKUs successfully deployed in target region: {0} zone: {1}" -f $Region, $Zone) -ForegroundColor Green
                         Write-Host $("📊 Deployment Readiness: Excellent - No SKU Capacity or availability constraints detected") -ForegroundColor Green
                     } `
+                elseif ($totalExpectedVMs -eq 0)
+                    {
+                        Write-Host $("⚠ ENVIRONMENT ANALYSIS COMPLETE - No VMs could be deployed due to quota constraints") -ForegroundColor Red
+                        Write-Host $("📊 Quota Status: Insufficient - All requested VM deployments exceed available quota") -ForegroundColor Red
+                        Write-Host $("💡 Recommendation: Review quota report above and request quota increases for required VM families") -ForegroundColor Yellow
+                    } `
                 elseif ($successfulVMs -gt 0)
                     {
                         if ($uniqueFailedSkus.Count -gt 0)
@@ -3476,6 +3699,13 @@ function Test-SilkResourceDeployment
 
                         try
                             {
+                                # Check if ReportFullPath was properly initialized
+                                if (-not $ReportFullPath)
+                                    {
+                                        Write-Warning $("HTML report generation skipped: Report path not initialized (likely due to early validation failure).")
+                                        return
+                                    }
+
                                 # HTML report template with embedded CSS for professional styling
                                 $htmlContent = @"
 <!DOCTYPE html>

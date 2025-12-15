@@ -2597,6 +2597,12 @@ function Test-SilkResourceDeployment
                 catch
                     {
                         Write-Warning -Message $("Error occurred while creating VMs: {0}" -f $_)
+
+                        # Clear all active Write-Progress bars on error
+                        Write-Progress -Id 1 -Activity $("VM Deployment") -Completed
+                        Write-Progress -Id 2 -Activity $("CNode Creation") -Completed
+                        Write-Progress -Id 3 -Activity $("DNode Creation") -Completed
+                        Write-Progress -Id 4 -Activity $("Sub-task") -Completed
                     }
 
                 # clean up jobs

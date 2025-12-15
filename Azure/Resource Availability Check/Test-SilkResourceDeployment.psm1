@@ -2013,7 +2013,7 @@ function Test-SilkResourceDeployment
                                                             -Location $Region `
                                                             -ProximityPlacementGroupId $cNodeProximityPlacementGroup.Id `
                                                             -Sku "Aligned" `
-                                                            -PlatformFaultDomainCount 3 `
+                                                            -PlatformFaultDomainCount $maximumFaultDomains `
                                                             -PlatformUpdateDomainCount 20
 
                                 Write-Verbose -Message $("✓ CNode availability set '{0}' created." -f $cNodeAvailabilitySet.Name)
@@ -2180,7 +2180,7 @@ function Test-SilkResourceDeployment
                                                             -Name $("{0}-mNode-{1}-avset" -f $ResourceNamePrefix, $currentMNode) `
                                                             -ProximityPlacementGroupId $mNodeProximityPlacementGroup.Id `
                                                             -Sku "Aligned" `
-                                                            -PlatformFaultDomainCount 3 `
+                                                            -PlatformFaultDomainCount $maximumFaultDomains `
                                                             -PlatformUpdateDomainCount 20
 
                                 Write-Verbose -Message $("✓ Availability Set '{0}' created" -f $mNodeAvailabilitySet.Name)

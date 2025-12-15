@@ -1081,6 +1081,34 @@ function Test-SilkResourceDeployment
                         return
                     }
 
+                # ===============================================================================
+                # Enviornment Information Collection
+                # ===============================================================================
+                # identify the maximum availability set fault domains for given region via API call for sku information
+                try
+                    {
+                        # azure api version for sku info check
+                        $azureSKUApiVersion = "2025-04-01"
+
+                        # generate header for api call to collect sku informatoin
+                        $azureSKUApiRequestHeaders = @{ Authorization = $("Bearer {0}" -f $(ConvertFrom-SecureString -SecureString $(Get-AzAccessToken -ResourceUrl "https://management.azure.com/").Token -AsPlainText)) }
+
+                        # generate uri for api call collecting sku information
+                        $azureSKUApiUri = "https://management.azure.com/subscriptions/{0}/providers/Microsoft.Compute/skus?api-version={1}" -f $SubscriptionId, $azureSKUApiVersion
+
+                        # make request for sku information
+                        $regionAvailabilitySetSKU = $(Invoke-RestMethod -Method Get -Uri $azureSKUApiUri -Headers $azureSKUApiRequestHeaders).value
+
+                        # filter returned sku information to identify maximum fault domains
+                        $maximumFaultDomains = $regionAvailabilitySetSKU | Where-Object -FilterScript {$_.resourceType -eq "availabilitySets" -and $_.locations -eq $Region} | Select-Object -First 1 | Select-Object -ExpandProperty capabilities | Select-Object -ExpandProperty value
+
+                    }
+                catch
+                    {
+                        # if unable to collect fault domain count set the value to 3 as only a few regions only support 2
+                        $maximumFaultDomains = 3
+                    }
+
                 # Do not run the rest of begin block if cleanup only
                 if ($RunCleanupOnly)
                     {

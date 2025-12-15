@@ -2066,7 +2066,7 @@ function Test-SilkResourceDeployment
                                 Write-Verbose -Message $("✓ CNode {0} management NIC '{1}' successfully created with IP '{2}'" -f $cNode, $cNodeMGMTNIC.Name, $cNodeMGMTNIC.IpConfigurations[0].PrivateIpAddress)
 
                                 # create the cnode vm configuration
-                                # Use availability sets when not using zones
+                                # Use availability sets
                                 $cNodeConfig = New-AzVMConfig `
                                                 -VMName $("{0}-cnode-{1:D2}" -f $ResourceNamePrefix, $cNode) `
                                                 -VMSize $cNodeVMSku `

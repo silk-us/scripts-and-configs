@@ -1022,23 +1022,32 @@ function Test-SilkResourceDeployment
                         # if the Create Resource group switch is used
                         if($CreateResourceGroup)
                             {
+                                # Validate ResourceGroupName is provided when using -CreateResourceGroup
+                                if([string]::IsNullOrWhiteSpace($ResourceGroupName))
+                                    {
+                                        Write-Error -Message $("The '-ResourceGroupName' parameter is required to specify a valid resource group name when using '-CreateResourceGroup' switch.")
+                                        $validationError = $true
+                                        return
+                                    }
+
                                 # Create resource group if it does not exist
                                 try
                                     {
                                         $CreatedResourceGroup = $false
                                         if(Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction SilentlyContinue)
                                             {
-                                                Write-Warning -Message $("Do not use '-CreateResourceGroup' switch. Resource group '{0}' already exists in subscription '{1}'." -f $ResourceGroupName, $subscriptionCheck.Name)
+                                                Write-Error -Message $("Resource group '{0}' already exists in subscription '{1}'. Remove the '-CreateResourceGroup' switch to use the existing resource group, or specify a different resource group name." -f $ResourceGroupName, $subscriptionCheck.Name)
                                                 $validationError = $true
                                                 return
                                             }
-                                        Write-Verbose -Message $("Creating resource group '{0}' in subscription '{1}'." -f $ResourceGroupName, $subscriptionCheck.Name)
+                                        Write-Verbose -Message $("Creating resource group '{0}' in region '{1}' within subscription '{2}'." -f $ResourceGroupName, $Region, $subscriptionCheck.Name)
                                         New-AzResourceGroup -Name $ResourceGroupName -Location $Region -ErrorAction Stop -Confirm:$false | Out-Null
                                         $CreatedResourceGroup = $true
-                                    }
+                                        Write-Verbose -Message $("✓ Successfully created resource group '{0}'." -f $ResourceGroupName)
+                                    } `
                                 catch
                                     {
-                                        Write-Error -Message $("Failed to create resource group '{0}' in subscription '{1}': {2}" -f $ResourceGroupName, $subscriptionCheck.Name, $_.Exception.Message)
+                                        Write-Error -Message $("Failed to create resource group '{0}' in region '{1}' within subscription '{2}': {3}" -f $ResourceGroupName, $Region, $subscriptionCheck.Name, $_.Exception.Message)
                                         $validationError = $true
                                         return
                                     }

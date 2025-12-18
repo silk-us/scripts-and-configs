@@ -226,7 +226,8 @@ function Test-SilkResourceDeployment
 
             .OUTPUTS
                 Console output with comprehensive deployment status information, resource validation results,
-                SKU availability reports, quota validation summaries, and deployment progress tracking.
+                SKU availability reports, quota validation summaries (including adjusted deployment counts when
+                quota is insufficient), and deployment progress tracking.
                 Additionally, an HTML report is generated (unless -NoHTMLReport is specified) summarizing deployment status,
                 quota usage, SKU support, and resource validation results. The report is saved to the path specified by -ReportOutputPath
                 or defaults to the current working directory in the format 'SilkDeploymentReport_[timestamp].html'.
@@ -254,7 +255,8 @@ function Test-SilkResourceDeployment
 
                 Validation Capabilities:
                 - SKU availability checking across specified availability zones
-                - Quota validation for all resource types before deployment
+                - Quota validation for all resource types with automatic calculation of maximum deployable resources
+                - Partial deployment support when quota is insufficient, deploying as many VMs as quota allows
                 - Real-time deployment status tracking and error reporting
                 - Post-deployment resource validation and status reporting
 

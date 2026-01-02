@@ -136,20 +136,13 @@ $html += @"
 $ErrorActionPreference = "Stop"
 # -- Check for the required Az.Monitor and AZP modules.
 
-try {
-    Import-Module Az.Monitor -ErrorAction SilentlyContinue
-}
-catch {
-    $errormsg = "Az.Monitor module not available, please install the module."
-    return $errormsg | Write-Error
-}
-
-try {
-    Import-Module azp -ErrorAction SilentlyContinue
-}
-catch {
-    $errormsg = "Azure Price Calc module (azp) module not available, please install the module."
-    return $errormsg | Write-Error
+$requiredModules = @('Az.Monitor', 'azp')
+foreach ($module in $requiredModules) {
+    if (-not (Get-Module -ListAvailable -Name $module)) {
+        Write-Warning "$module module not found. Installing..."
+        Install-Module -Name $module -Force -AllowClobber
+    }
+    Import-Module $module
 }
 
 # Stamp the date

@@ -93,13 +93,12 @@ $quotaList = @(
 )
 
 Write-Host "Retrieving compute SKUs and locations..." -ForegroundColor Cyan
-$allskus = get-azComputeResourceSku
+# $allskus = get-azComputeResourceSku
 if (!$global) {
     $allLocations = Get-AzLocation | Where-Object GeographyGroup -match 'US'
 } else {
     $allLocations = Get-AzLocation
 }
-
 
 if ($location) {
     $allLocations = $allLocations | Where-Object {$_.Location -eq $location}
@@ -109,36 +108,35 @@ Write-Host "Processing $($allLocations.Count) location(s) for quota information.
 $locationQuotas = @()
 
 foreach ($l in $allLocations) {
-    try {
-        Write-Host "  Checking quotas for location: $($l.Location)" -ForegroundColor Gray
-        $clusterLocation = New-Object PSObject  
-        $clusterLocation | Add-Member -MemberType NoteProperty -Name "Location" -Value $l.Location
-
-        # $scope = "/subscriptions/$($azContext.Subscription.Id)/providers/Microsoft.Compute/locations/$($location.Location)"
-
-        # $allQuotas = Get-AzQuota -scope $scope
+     try {
+        $allskus = get-azComputeResourceSku -Location $l.Location 
         $usage = Get-AzVMUsage -Location $l.Location
-
-        $clusterLocationQuota = @()
-        foreach ($quotaName in $quotaList) {
-            $clusterLocationQuotaName = New-Object PSObject
-            $quota = $usage | Where-Object {$_.name.LocalizedValue -eq $quotaName}
-            $zones = ($allskus | Where-Object {$_.Family -eq $quota.Name.Value -and $_.LocationInfo.location -eq $l.Location} | Select-Object -First 1).LocationInfo.Zones | Sort-Object 
-
-            $clusterLocationQuotaName | Add-Member -MemberType NoteProperty -Name "Name" -Value $quotaName
-            $clusterLocationQuotaName | Add-Member -MemberType NoteProperty -Name "Current Usage" -Value $quota.CurrentValue
-            $clusterLocationQuotaName | Add-Member -MemberType NoteProperty -Name "Limit" -Value $quota.Limit
-            $clusterLocationQuotaName | Add-Member -MemberType NoteProperty -Name "Zones" -Value $zones
-
-            $clusterLocationQuota += $clusterLocationQuotaName  
-        }
-        $clusterLocation | Add-Member -MemberType NoteProperty -Name "Quotas" -Value $clusterLocationQuota
-        $locationQuotas += $clusterLocation
-        Write-Host "    Completed quota check for $($l.Location)" -ForegroundColor Green
     } catch {
         Write-Host "    Error processing location $($l.Location): $($_.Exception.Message)" -ForegroundColor Red
         continue
     }
+   
+    Write-Host "  Checking quotas for location: $($l.Location)" -ForegroundColor Gray
+    $clusterLocation = New-Object PSObject  
+    $clusterLocation | Add-Member -MemberType NoteProperty -Name "Location" -Value $l.Location
+
+    $clusterLocationQuota = @()
+    foreach ($quotaName in $quotaList) {
+        $clusterLocationQuotaName = New-Object PSObject
+        $quota = $usage | Where-Object {$_.name.LocalizedValue -eq $quotaName}
+        $zones = ($allskus | Where-Object {$_.Family -eq $quota.Name.Value -and $_.LocationInfo.location -eq $l.Location} | Select-Object -First 1).LocationInfo.Zones | Sort-Object 
+
+        $clusterLocationQuotaName | Add-Member -MemberType NoteProperty -Name "Name" -Value $quotaName
+        $clusterLocationQuotaName | Add-Member -MemberType NoteProperty -Name "Current Usage" -Value $quota.CurrentValue
+        $clusterLocationQuotaName | Add-Member -MemberType NoteProperty -Name "Limit" -Value $quota.Limit
+        $clusterLocationQuotaName | Add-Member -MemberType NoteProperty -Name "Zones" -Value $zones
+
+        $clusterLocationQuota += $clusterLocationQuotaName  
+    }
+    $clusterLocation | Add-Member -MemberType NoteProperty -Name "Quotas" -Value $clusterLocationQuota
+    $locationQuotas += $clusterLocation
+    Write-Host "    Completed quota check for $($l.Location)" -ForegroundColor Green
+
 }
 
 $Cluster | Add-Member -MemberType NoteProperty -Name 'Location Quotas' -Value $locationQuotas

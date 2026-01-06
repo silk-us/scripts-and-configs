@@ -86,6 +86,7 @@ try {
 # Cluster details. 
 $quotaList = @(
     "Standard Dsv5 Family vCPUs"
+    "Standard Esv5 Family vCPUs"
     "Standard Lsv3 Family vCPUs"
     "Standard Laosv4 Family vCPUs"
     "PremiumV2TotalDiskSizeInGB",

@@ -822,6 +822,34 @@ function Test-SilkResourceDeployment
                 Write-Verbose -Message $("Script started at: {0}" -f $StartTime.ToString("yyyy-MM-dd HH:mm:ss"))
 
                 # ========================================================================================================
+                # Progress Tracking Framework
+                # ========================================================================================================
+                # Define major sections with their weight contributions to overall progress
+                # This allows dynamic calculation of progress based on actual operations completed
+                $progressSections = @{
+                    ModuleValidation     = @{ Weight = 10; StartPercent = 0;  EndPercent = 10 }
+                    Configuration        = @{ Weight = 5;  StartPercent = 10; EndPercent = 15 }
+                    EnvironmentValidation= @{ Weight = 10; StartPercent = 15; EndPercent = 25 }
+                    QuotaAnalysis        = @{ Weight = 25; StartPercent = 25; EndPercent = 50 }
+                    NetworkCreation      = @{ Weight = 5;  StartPercent = 50; EndPercent = 55 }
+                    VMDeployment         = @{ Weight = 35; StartPercent = 55; EndPercent = 90 }
+                    Reporting            = @{ Weight = 10; StartPercent = 90; EndPercent = 100 }
+                }
+
+                # Progress ID hierarchy:
+                # Id 1 = Overall function progress (Test-SilkResourceDeployment)
+                # Id 2 = Current major section (e.g., "Module Validation", "VM Deployment")
+                # Id 3 = Individual operation within section (e.g., "Importing Az.Accounts", "Creating CNode-1")
+
+                # Initialize main progress tracking
+                Write-Progress `
+                    -Activity "Test-SilkResourceDeployment" `
+                    -Status "Initializing" `
+                    -CurrentOperation "Starting deployment validation..." `
+                    -PercentComplete 0 `
+                    -Id 1
+
+                # ========================================================================================================
                 # Existing Infrastructure Parameter Mapping
                 # ========================================================================================================
                 # Map CNodeCountAdditional to CNodeCount for existing infrastructure scenarios
@@ -847,13 +875,65 @@ function Test-SilkResourceDeployment
                 # Ensures Az module is installed, imported, and user is properly authenticated
                 try
                     {
+                        # Calculate section progress tracking
+                        $sectionName = 'ModuleValidation'
+                        $sectionSteps = 5  # Check modules, install if needed, import modules, verify auth, validate context
+                        $sectionCurrentStep = 0
+
+                        # Update overall progress to start of module validation section
+                        $overallPercent = $progressSections[$sectionName].StartPercent
+                        Write-Progress `
+                            -Activity "Test-SilkResourceDeployment" `
+                            -Status "Starting Module Validation" `
+                            -CurrentOperation "Preparing to validate Azure PowerShell prerequisites..." `
+                            -PercentComplete $overallPercent `
+                            -Id 1
+
+                        # Start section-level progress
+                        Write-Progress `
+                            -Activity "Module Validation" `
+                            -Status "Checking Prerequisites" `
+                            -CurrentOperation "Validating required Azure PowerShell modules..." `
+                            -PercentComplete 0 `
+                            -ParentId 1 `
+                            -Id 2
+
                         Write-Verbose -Message $("=== Azure PowerShell Module Validation ===")
 
-                        # Check for required Azure PowerShell modules (specific modules instead of entire Az)
+                        # Step 1: Check for required Azure PowerShell modules
+                        $sectionCurrentStep++
+                        $sectionPercent = [int](($sectionCurrentStep / $sectionSteps) * 100)
+                        $overallPercent = $progressSections[$sectionName].StartPercent + (($sectionCurrentStep / $sectionSteps) * $progressSections[$sectionName].Weight)
+
+                        Write-Progress `
+                            -Activity "Module Validation" `
+                            -Status "Checking Module Availability" `
+                            -CurrentOperation "Scanning for required Az modules..." `
+                            -PercentComplete $sectionPercent `
+                            -ParentId 1 `
+                            -Id 2
+
+                        Write-Progress `
+                            -Activity "Test-SilkResourceDeployment" `
+                            -Status "Module Validation ($sectionCurrentStep/$sectionSteps)" `
+                            -CurrentOperation "Checking module availability..." `
+                            -PercentComplete $overallPercent `
+                            -Id 1
+
                         $missingModules = @()
 
                         foreach ($module in $requiredModules)
                             {
+                                # Individual module check progress
+                                $moduleIndex = [array]::IndexOf($requiredModules, $module) + 1
+                                Write-Progress `
+                                    -Activity "Checking Modules" `
+                                    -Status "Module $moduleIndex of $($requiredModules.Count)" `
+                                    -CurrentOperation "Checking $module..." `
+                                    -PercentComplete ([int](($moduleIndex / $requiredModules.Count) * 100)) `
+                                    -ParentId 2 `
+                                    -Id 3
+
                                 $moduleAvailable = Get-Module -ListAvailable -Name $module
                                 if (-not $moduleAvailable)
                                     {
@@ -861,8 +941,31 @@ function Test-SilkResourceDeployment
                                     }
                             }
 
+                        # Complete individual module check progress
+                        Write-Progress -Activity "Checking Modules" -Id 3 -Completed
+
                         if ($missingModules.Count -gt 0)
                             {
+                                # Step 2: Install missing modules
+                                $sectionCurrentStep++
+                                $sectionPercent = [int](($sectionCurrentStep / $sectionSteps) * 100)
+                                $overallPercent = $progressSections[$sectionName].StartPercent + (($sectionCurrentStep / $sectionSteps) * $progressSections[$sectionName].Weight)
+
+                                Write-Progress `
+                                    -Activity "Module Validation" `
+                                    -Status "Installing Missing Modules" `
+                                    -CurrentOperation $("Installing {0}..." -f ($missingModules -join ', ')) `
+                                    -PercentComplete $sectionPercent `
+                                    -ParentId 1 `
+                                    -Id 2
+
+                                Write-Progress `
+                                    -Activity "Test-SilkResourceDeployment" `
+                                    -Status "Module Validation ($sectionCurrentStep/$sectionSteps)" `
+                                    -CurrentOperation "Installing missing modules..." `
+                                    -PercentComplete $overallPercent `
+                                    -Id 1
+
                                 Write-Warning -Message $("Missing Azure PowerShell modules: {0}. Attempting to install..." -f ($missingModules -join ', '))
 
                                 # Check if running as administrator for module installation
@@ -873,6 +976,16 @@ function Test-SilkResourceDeployment
                                     {
                                         foreach ($module in $missingModules)
                                             {
+                                                # Individual module installation progress
+                                                $moduleIndex = [array]::IndexOf($missingModules, $module) + 1
+                                                Write-Progress `
+                                                    -Activity "Installing Modules" `
+                                                    -Status "Module $moduleIndex of $($missingModules.Count)" `
+                                                    -CurrentOperation "Installing $module..." `
+                                                    -PercentComplete ([int](($moduleIndex / $missingModules.Count) * 100)) `
+                                                    -ParentId 2 `
+                                                    -Id 3
+
                                                 if ($isAdmin)
                                                     {
                                                         Write-Verbose -Message $("Installing {0} for all users (administrator privileges detected)..." -f $module)
@@ -885,10 +998,16 @@ function Test-SilkResourceDeployment
                                                     }
                                             }
 
+                                        # Complete individual module installation progress
+                                        Write-Progress -Activity "Installing Modules" -Id 3 -Completed
+
                                         Write-Verbose -Message $("✓ Required Azure PowerShell modules installed successfully.")
                                     }
                                 catch
                                     {
+                                        Write-Progress -Activity "Installing Modules" -Id 3 -Completed
+                                        Write-Progress -Activity "Module Validation" -Id 2 -Completed
+                                        Write-Progress -Activity "Test-SilkResourceDeployment" -Id 1 -Completed
                                         Write-Error -Message $("Failed to install Azure PowerShell modules: {0}. Please install manually using 'Install-Module -Name {1} -Repository PSGallery -Scope CurrentUser'" -f $_.Exception.Message, ($missingModules -join ', '))
                                         return
                                     }
@@ -896,23 +1015,57 @@ function Test-SilkResourceDeployment
                         else
                             {
                                 Write-Verbose -Message $("✓ All required Azure PowerShell modules {0} are available." -f ($requiredModules -join ', '))
+                                # Skip installation step since no modules are missing
+                                $sectionCurrentStep++
                             }
 
                         # Check if any Az modules are already imported to avoid assembly conflicts
                         $azModulesImported = Get-Module -Name Az*
                         if ($azModulesImported.Count -eq 0)
                             {
+                                # Step 3: Import modules
+                                $sectionCurrentStep++
+                                $sectionPercent = [int](($sectionCurrentStep / $sectionSteps) * 100)
+                                $overallPercent = $progressSections[$sectionName].StartPercent + (($sectionCurrentStep / $sectionSteps) * $progressSections[$sectionName].Weight)
+
+                                Write-Progress `
+                                    -Activity "Module Validation" `
+                                    -Status "Importing Modules" `
+                                    -CurrentOperation "Loading Azure PowerShell modules..." `
+                                    -PercentComplete $sectionPercent `
+                                    -ParentId 1 `
+                                    -Id 2
+
+                                Write-Progress `
+                                    -Activity "Test-SilkResourceDeployment" `
+                                    -Status "Module Validation ($sectionCurrentStep/$sectionSteps)" `
+                                    -CurrentOperation "Importing modules..." `
+                                    -PercentComplete $overallPercent `
+                                    -Id 1
+
                                 Write-Verbose -Message $("Importing required Azure PowerShell modules {0}" -f ($requiredModules -join ', '))
                                 try
                                     {
-
                                         $importedModules = @()
                                         foreach ($module in $requiredModules)
                                             {
+                                                # Individual module import progress
+                                                $moduleIndex = [array]::IndexOf($requiredModules, $module) + 1
+                                                Write-Progress `
+                                                    -Activity "Importing Modules" `
+                                                    -Status "Module $moduleIndex of $($requiredModules.Count)" `
+                                                    -CurrentOperation "Importing $module..." `
+                                                    -PercentComplete ([int](($moduleIndex / $requiredModules.Count) * 100)) `
+                                                    -ParentId 2 `
+                                                    -Id 3
+
                                                 Write-Verbose -Message $("Importing {0}..." -f $module)
                                                 $importedModule = Import-Module $module -PassThru -ErrorAction Stop
                                                 $importedModules += $importedModule
                                             }
+
+                                        # Complete individual module import progress
+                                        Write-Progress -Activity "Importing Modules" -Id 3 -Completed
 
                                         if ($importedModules.Count -eq $requiredModules.Count)
                                             {
@@ -921,6 +1074,9 @@ function Test-SilkResourceDeployment
                                     }
                                 catch
                                     {
+                                        Write-Progress -Activity "Importing Modules" -Id 3 -Completed
+                                        Write-Progress -Activity "Module Validation" -Id 2 -Completed
+                                        Write-Progress -Activity "Test-SilkResourceDeployment" -Id 1 -Completed
                                         Write-Error -Message $("Failed to import Azure PowerShell modules: {0}. Please restart PowerShell and try again." -f $_.Exception.Message)
                                         return
                                     }
@@ -937,6 +1093,8 @@ function Test-SilkResourceDeployment
                                         $moduleCount = $azModulesImported.Count
                                         Write-Verbose -Message $("✓ Azure PowerShell sub-modules are already imported ({0} modules loaded)" -f $moduleCount)
                                     }
+                                # Skip import step since modules are already loaded
+                                $sectionCurrentStep++
                             }
 
                         # Suppress Azure PowerShell breaking change warnings for cleaner output
@@ -960,12 +1118,39 @@ function Test-SilkResourceDeployment
                                 Write-Verbose -Message $("Warning: Could not suppress Azure PowerShell breaking change warnings.")
                             }
 
-                        # Verify Azure authentication status
+                        # Step 4: Verify Azure authentication status
+                        $sectionCurrentStep++
+                        $sectionPercent = [int](($sectionCurrentStep / $sectionSteps) * 100)
+                        $overallPercent = $progressSections[$sectionName].StartPercent + (($sectionCurrentStep / $sectionSteps) * $progressSections[$sectionName].Weight)
+
+                        Write-Progress `
+                            -Activity "Module Validation" `
+                            -Status "Verifying Authentication" `
+                            -CurrentOperation "Checking Azure authentication status..." `
+                            -PercentComplete $sectionPercent `
+                            -ParentId 1 `
+                            -Id 2
+
+                        Write-Progress `
+                            -Activity "Test-SilkResourceDeployment" `
+                            -Status "Module Validation ($sectionCurrentStep/$sectionSteps)" `
+                            -CurrentOperation "Verifying Azure authentication..." `
+                            -PercentComplete $overallPercent `
+                            -Id 1
+
                         Write-Verbose -Message $("Checking Azure authentication status...")
                         $currentAzContext = Get-AzContext
                         if (-not $currentAzContext)
                             {
                                 Write-Warning -Message $("You are not authenticated to Azure. Attempting interactive authentication...")
+
+                                Write-Progress `
+                                    -Activity "Azure Authentication" `
+                                    -Status "Signing In" `
+                                    -CurrentOperation "Waiting for interactive authentication..." `
+                                    -PercentComplete 50 `
+                                    -ParentId 2 `
+                                    -Id 3
 
                                 try
                                     {
@@ -980,29 +1165,77 @@ function Test-SilkResourceDeployment
                                             }
                                         else
                                             {
+                                                Write-Progress -Activity "Azure Authentication" -Id 3 -Completed
+                                                Write-Progress -Activity "Module Validation" -Id 2 -Completed
+                                                Write-Progress -Activity "Test-SilkResourceDeployment" -Id 1 -Completed
                                                 Write-Error -Message "Azure authentication failed. Please run 'Connect-AzAccount' manually and try again."
                                                 return
                                             }
                                     }
                                 catch
                                     {
+                                        Write-Progress -Activity "Azure Authentication" -Id 3 -Completed
+                                        Write-Progress -Activity "Module Validation" -Id 2 -Completed
+                                        Write-Progress -Activity "Test-SilkResourceDeployment" -Id 1 -Completed
                                         Write-Error -Message $("Azure authentication failed: {0}. Please run 'Connect-AzAccount' manually and try again." -f $_.Exception.Message)
                                         return
                                     }
+
+                                Write-Progress -Activity "Azure Authentication" -Id 3 -Completed
                             }
                         else
                             {
                                 Write-Verbose -Message $("✓ Already authenticated to Azure as '{0}' in tenant '{1}'" -f $currentAzContext.Account.Id, $currentAzContext.Tenant.Id)
 
+                                # Step 5: Validate context
+                                $sectionCurrentStep++
+                                $sectionPercent = [int](($sectionCurrentStep / $sectionSteps) * 100)
+                                $overallPercent = $progressSections[$sectionName].StartPercent + (($sectionCurrentStep / $sectionSteps) * $progressSections[$sectionName].Weight)
+
+                                Write-Progress `
+                                    -Activity "Module Validation" `
+                                    -Status "Validating Context" `
+                                    -CurrentOperation "Testing Azure connection..." `
+                                    -PercentComplete $sectionPercent `
+                                    -ParentId 1 `
+                                    -Id 2
+
+                                Write-Progress `
+                                    -Activity "Test-SilkResourceDeployment" `
+                                    -Status "Module Validation ($sectionCurrentStep/$sectionSteps)" `
+                                    -CurrentOperation "Validating Azure context..." `
+                                    -PercentComplete $overallPercent `
+                                    -Id 1
+
                                 # Check if the current context is still valid
                                 try
                                     {
+                                        Write-Progress `
+                                            -Activity "Testing Connection" `
+                                            -Status "Validating" `
+                                            -CurrentOperation "Verifying subscription access..." `
+                                            -PercentComplete 50 `
+                                            -ParentId 2 `
+                                            -Id 3
+
                                         $testConnectionNull = Get-AzSubscription -SubscriptionId $currentAzContext.Subscription.Id -ErrorAction Stop
                                         Write-Verbose -Message $("✓ Azure authentication is valid and active.")
+
+                                        Write-Progress -Activity "Testing Connection" -Id 3 -Completed
                                     }
                                 catch
                                     {
+                                        Write-Progress -Activity "Testing Connection" -Id 3 -Completed
                                         Write-Warning -Message $("Current Azure context appears to be expired. Attempting re-authentication...")
+
+                                        Write-Progress `
+                                            -Activity "Azure Re-authentication" `
+                                            -Status "Signing In" `
+                                            -CurrentOperation "Waiting for interactive authentication..." `
+                                            -PercentComplete 50 `
+                                            -ParentId 2 `
+                                            -Id 3
+
                                         try
                                             {
                                                 $connectResult = Connect-AzAccount -ErrorAction Stop
@@ -1010,11 +1243,27 @@ function Test-SilkResourceDeployment
                                             }
                                         catch
                                             {
+                                                Write-Progress -Activity "Azure Re-authentication" -Id 3 -Completed
+                                                Write-Progress -Activity "Module Validation" -Id 2 -Completed
+                                                Write-Progress -Activity "Test-SilkResourceDeployment" -Id 1 -Completed
                                                 Write-Error -Message $("Azure re-authentication failed: {0}. Please run 'Connect-AzAccount' manually and try again." -f $_.Exception.Message)
                                                 return
                                             }
+
+                                        Write-Progress -Activity "Azure Re-authentication" -Id 3 -Completed
                                     }
                             }
+
+                        # Complete section progress
+                        Write-Progress -Activity "Module Validation" -Id 2 -Completed
+
+                        # Update overall progress to end of section
+                        Write-Progress `
+                            -Activity "Test-SilkResourceDeployment" `
+                            -Status "Module Validation Complete" `
+                            -CurrentOperation "Azure PowerShell prerequisites validated successfully" `
+                            -PercentComplete $progressSections[$sectionName].EndPercent `
+                            -Id 1
 
                         Write-Verbose -Message $("=== Azure PowerShell Prerequisites Complete ===")
 
@@ -1028,6 +1277,15 @@ function Test-SilkResourceDeployment
                     } `
                 catch
                     {
+                        # Clean up progress bars on error
+                        Write-Progress -Activity "Azure Authentication" -Id 3 -Completed -ErrorAction SilentlyContinue
+                        Write-Progress -Activity "Testing Connection" -Id 3 -Completed -ErrorAction SilentlyContinue
+                        Write-Progress -Activity "Importing Modules" -Id 3 -Completed -ErrorAction SilentlyContinue
+                        Write-Progress -Activity "Installing Modules" -Id 3 -Completed -ErrorAction SilentlyContinue
+                        Write-Progress -Activity "Checking Modules" -Id 3 -Completed -ErrorAction SilentlyContinue
+                        Write-Progress -Activity "Module Validation" -Id 2 -Completed -ErrorAction SilentlyContinue
+                        Write-Progress -Activity "Test-SilkResourceDeployment" -Id 1 -Completed -ErrorAction SilentlyContinue
+
                         # Restore warning preference in case of error
                         if (Get-Variable -Name originalWarningPreference -ErrorAction SilentlyContinue)
                             {
@@ -1046,11 +1304,67 @@ function Test-SilkResourceDeployment
                 # Command line parameters take precedence over JSON values
                 if ($ChecklistJSON)
                     {
+                        # Configuration section progress tracking
+                        $sectionName = 'Configuration'
+                        $sectionSteps = 6  # Load JSON, subscription, zone alignment, resource group, region, zone
+                        $sectionCurrentStep = 0
+
+                        # Start section progress
+                        $overallPercent = $progressSections[$sectionName].StartPercent
+                        Write-Progress `
+                            -Activity "Test-SilkResourceDeployment" `
+                            -Status "Loading Configuration" `
+                            -CurrentOperation "Processing JSON configuration file..." `
+                            -PercentComplete $overallPercent `
+                            -Id 1
+
+                        Write-Progress `
+                            -Activity "Configuration Loading" `
+                            -Status "Reading JSON File" `
+                            -CurrentOperation "Loading configuration from file..." `
+                            -PercentComplete 0 `
+                            -ParentId 1 `
+                            -Id 2
+
+                        # Step 1: Load JSON file
+                        $sectionCurrentStep++
+                        $sectionPercent = [int](($sectionCurrentStep / $sectionSteps) * 100)
+                        $overallPercent = $progressSections[$sectionName].StartPercent + (($sectionCurrentStep / $sectionSteps) * $progressSections[$sectionName].Weight)
+
+                        Write-Progress `
+                            -Activity "Configuration Loading" `
+                            -Status "Parsing Configuration" `
+                            -CurrentOperation "Reading and parsing JSON file..." `
+                            -PercentComplete $sectionPercent `
+                            -ParentId 1 `
+                            -Id 2
+
                         # Load and parse the JSON configuration file
                         $ConfigImport = Get-Content -Path $ChecklistJSON | ConvertFrom-Json
 
                         # Override JSON values with command line parameters if provided
                         # This allows selective override of JSON config while preserving other values
+
+                        # Step 2: Process subscription ID
+                        $sectionCurrentStep++
+                        $sectionPercent = [int](($sectionCurrentStep / $sectionSteps) * 100)
+                        $overallPercent = $progressSections[$sectionName].StartPercent + (($sectionCurrentStep / $sectionSteps) * $progressSections[$sectionName].Weight)
+
+                        Write-Progress `
+                            -Activity "Configuration Loading" `
+                            -Status "Processing Subscription" `
+                            -CurrentOperation "Validating subscription configuration..." `
+                            -PercentComplete $sectionPercent `
+                            -ParentId 1 `
+                            -Id 2
+
+                        Write-Progress `
+                            -Activity "Subscription Configuration" `
+                            -Status "Checking Parameter" `
+                            -CurrentOperation "Processing subscription ID setting..." `
+                            -PercentComplete 30 `
+                            -ParentId 2 `
+                            -Id 3
 
                         if (!$SubscriptionId)
                             {
@@ -1061,6 +1375,14 @@ function Test-SilkResourceDeployment
                             {
                                 Write-Warning -Message $("Subscription ID parameter is set to '{0}', ignoring subscription ID '{1}' in JSON configuration." -f $SubscriptionId, $ConfigImport.azure_environment.subscription_id)
                             }
+
+                        Write-Progress `
+                            -Activity "Subscription Configuration" `
+                            -Status "Zone Alignment Check" `
+                            -CurrentOperation "Determining zone alignment requirements..." `
+                            -PercentComplete 60 `
+                            -ParentId 2 `
+                            -Id 3
 
                         # Zone Alignment Configuration - Determines cross-subscription alignment requirements
                         # When deployment and JSON subscriptions differ, unless disabled will inherantly align availablity zones between deployment subscriptions and the identified or given zone alignment subscription
@@ -1082,6 +1404,29 @@ function Test-SilkResourceDeployment
                                 Write-Verbose -Message $("Availability Zone alignment check skipped: No alignment subscription specified - deployment will use original zone '{0}' in region '{1}'." -f $Zone, $Region)
                             }
 
+                        Write-Progress -Activity "Subscription Configuration" -Id 3 -Completed
+
+                        # Step 4: Process resource group
+                        $sectionCurrentStep++
+                        $sectionPercent = [int](($sectionCurrentStep / $sectionSteps) * 100)
+                        $overallPercent = $progressSections[$sectionName].StartPercent + (($sectionCurrentStep / $sectionSteps) * $progressSections[$sectionName].Weight)
+
+                        Write-Progress `
+                            -Activity "Configuration Loading" `
+                            -Status "Processing Resource Group" `
+                            -CurrentOperation "Validating resource group configuration..." `
+                            -PercentComplete $sectionPercent `
+                            -ParentId 1 `
+                            -Id 2
+
+                        Write-Progress `
+                            -Activity "Resource Group Configuration" `
+                            -Status "Checking Parameter" `
+                            -CurrentOperation "Processing resource group setting..." `
+                            -PercentComplete 40 `
+                            -ParentId 2 `
+                            -Id 3
+
                         if (!$ResourceGroupName)
                             {
                                 $ResourceGroupName = $ConfigImport.azure_environment.resource_group_name
@@ -1091,6 +1436,29 @@ function Test-SilkResourceDeployment
                             {
                                 Write-Warning -Message $("Resource Group Name parameter is set to '{0}', ignoring resource group name '{1}' in JSON configuration." -f $ResourceGroupName, $ConfigImport.azure_environment.resource_group_name)
                             }
+
+                        Write-Progress -Activity "Resource Group Configuration" -Id 3 -Completed
+
+                        # Step 5: Process region
+                        $sectionCurrentStep++
+                        $sectionPercent = [int](($sectionCurrentStep / $sectionSteps) * 100)
+                        $overallPercent = $progressSections[$sectionName].StartPercent + (($sectionCurrentStep / $sectionSteps) * $progressSections[$sectionName].Weight)
+
+                        Write-Progress `
+                            -Activity "Configuration Loading" `
+                            -Status "Processing Region" `
+                            -CurrentOperation "Validating region configuration..." `
+                            -PercentComplete $sectionPercent `
+                            -ParentId 1 `
+                            -Id 2
+
+                        Write-Progress `
+                            -Activity "Region Configuration" `
+                            -Status "Checking Parameter" `
+                            -CurrentOperation "Processing region setting..." `
+                            -PercentComplete 40 `
+                            -ParentId 2 `
+                            -Id 3
 
                         if(!$Region)
                             {
@@ -1102,6 +1470,29 @@ function Test-SilkResourceDeployment
                                 Write-Warning -Message $("Region parameter is set to '{0}', ignoring region '{1}' in JSON configuration." -f $Region, $ConfigImport.azure_environment.region)
                             }
 
+                        Write-Progress -Activity "Region Configuration" -Id 3 -Completed
+
+                        # Step 6: Process zone
+                        $sectionCurrentStep++
+                        $sectionPercent = [int](($sectionCurrentStep / $sectionSteps) * 100)
+                        $overallPercent = $progressSections[$sectionName].StartPercent + (($sectionCurrentStep / $sectionSteps) * $progressSections[$sectionName].Weight)
+
+                        Write-Progress `
+                            -Activity "Configuration Loading" `
+                            -Status "Processing Zone" `
+                            -CurrentOperation "Validating zone configuration..." `
+                            -PercentComplete $sectionPercent `
+                            -ParentId 1 `
+                            -Id 2
+
+                        Write-Progress `
+                            -Activity "Zone Configuration" `
+                            -Status "Checking Parameter" `
+                            -CurrentOperation "Processing availability zone setting..." `
+                            -PercentComplete 40 `
+                            -ParentId 2 `
+                            -Id 3
+
                         if(!$Zone)
                             {
                                 $Zone = $ConfigImport.azure_environment.zone
@@ -1112,8 +1503,31 @@ function Test-SilkResourceDeployment
                                 Write-Warning -Message $("Zone parameter is set to '{0}', ignoring zone '{1}' in JSON configuration." -f $Zone, $ConfigImport.azure_environment.zone)
                             }
 
+                        Write-Progress -Activity "Zone Configuration" -Id 3 -Completed
+
+                        # Process CNode count
+                        Write-Progress `
+                            -Activity "CNode Configuration" `
+                            -Status "Loading Count" `
+                            -CurrentOperation "Reading CNode count from configuration..." `
+                            -PercentComplete 70 `
+                            -ParentId 2 `
+                            -Id 3
+
                         # identify cnode count
                         $CNodeCount = $ConfigImport.sdp.c_node_count
+
+                        Write-Progress -Activity "CNode Configuration" -Id 3 -Completed
+
+                        # Complete configuration section
+                        Write-Progress -Activity "Configuration Loading" -Id 2 -Completed
+
+                        Write-Progress `
+                            -Activity "Test-SilkResourceDeployment" `
+                            -Status "Configuration Complete" `
+                            -CurrentOperation "JSON configuration loaded successfully" `
+                            -PercentComplete $progressSections[$sectionName].EndPercent `
+                            -Id 1
                     }
 
 
@@ -1122,9 +1536,70 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 try
                     {
+                        # Environment Validation section progress tracking
+                        $sectionName = 'EnvironmentValidation'
+                        $sectionSteps = 5  # Subscription, resource group, context, region/zone, existing infrastructure
+                        $sectionCurrentStep = 0
+
+                        # Start section progress
+                        $overallPercent = $progressSections[$sectionName].StartPercent
+                        Write-Progress `
+                            -Activity "Test-SilkResourceDeployment" `
+                            -Status "Starting Environment Validation" `
+                            -CurrentOperation "Preparing to validate Azure environment..." `
+                            -PercentComplete $overallPercent `
+                            -Id 1
+
+                        Write-Progress `
+                            -Activity "Environment Validation" `
+                            -Status "Initializing" `
+                            -CurrentOperation "Starting environment checks..." `
+                            -PercentComplete 0 `
+                            -ParentId 1 `
+                            -Id 2
+
+                        # Step 1: Check subscription ID
+                        $sectionCurrentStep++
+                        $sectionPercent = [int](($sectionCurrentStep / $sectionSteps) * 100)
+                        $overallPercent = $progressSections[$sectionName].StartPercent + (($sectionCurrentStep / $sectionSteps) * $progressSections[$sectionName].Weight)
+
+                        Write-Progress `
+                            -Activity "Test-SilkResourceDeployment" `
+                            -Status "Environment Validation: Subscription" `
+                            -CurrentOperation "Validating subscription access..." `
+                            -PercentComplete $overallPercent `
+                            -Id 1
+
+                        Write-Progress `
+                            -Activity "Environment Validation" `
+                            -Status "Subscription Check" `
+                            -CurrentOperation "Verifying subscription access..." `
+                            -PercentComplete $sectionPercent `
+                            -ParentId 1 `
+                            -Id 2
+
+                        Write-Progress `
+                            -Activity "Subscription Validation" `
+                            -Status "Checking Access" `
+                            -CurrentOperation "Querying subscription details..." `
+                            -PercentComplete 50 `
+                            -ParentId 2 `
+                            -Id 3
+
                         # Check subscription ID
                         $subscriptionCheck = Get-AzSubscription -SubscriptionId $SubscriptionId -ErrorAction Stop
                         Write-Verbose -Message $("Subscription '{0}' was identified with the ID '{1}'." -f $subscriptionCheck.Name, $subscriptionCheck.Id)
+
+                        Write-Progress -Activity "Subscription Validation" -Id 3 -Completed
+
+                        # Step 2: Check context
+                        Write-Progress `
+                            -Activity "Context Validation" `
+                            -Status "Checking Context" `
+                            -CurrentOperation "Verifying current Azure context..." `
+                            -PercentComplete 30 `
+                            -ParentId 2 `
+                            -Id 3
 
                         # check the current context
                         $currentContext = Get-AzContext
@@ -1132,16 +1607,35 @@ function Test-SilkResourceDeployment
                             {
                                 Write-Warning -Message $("Current context is set to subscription '{0}', switching to '{1}'." -f $currentContext.Subscription.Id, $SubscriptionId)
 
+                                Write-Progress `
+                                    -Activity "Context Validation" `
+                                    -Status "Switching Context" `
+                                    -CurrentOperation "Changing to target subscription..." `
+                                    -PercentComplete 70 `
+                                    -ParentId 2 `
+                                    -Id 3
+
                                 # Set the context to the specified subscription
                                 Set-AzContext -SubscriptionId $SubscriptionId -ErrorAction Stop
                             }
 
+                        Write-Progress -Activity "Context Validation" -Id 3 -Completed
+
                         # if the Create Resource group switch is used
                         if($CreateResourceGroup)
                             {
+                                Write-Progress `
+                                    -Activity "Resource Group Creation" `
+                                    -Status "Validating" `
+                                    -CurrentOperation "Checking resource group creation requirements..." `
+                                    -PercentComplete 20 `
+                                    -ParentId 2 `
+                                    -Id 3
+
                                 # Validate ResourceGroupName is provided when using -CreateResourceGroup
                                 if([string]::IsNullOrWhiteSpace($ResourceGroupName))
                                     {
+                                        Write-Progress -Activity "Resource Group Creation" -Id 3 -Completed
                                         Write-Error -Message $("The '-ResourceGroupName' parameter is required to specify a valid resource group name when using '-CreateResourceGroup' switch.")
                                         $validationError = $true
                                         return
@@ -1153,17 +1647,30 @@ function Test-SilkResourceDeployment
                                         $CreatedResourceGroup = $false
                                         if(Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction SilentlyContinue)
                                             {
+                                                Write-Progress -Activity "Resource Group Creation" -Id 3 -Completed
                                                 Write-Error -Message $("Resource group '{0}' already exists in subscription '{1}'. Remove the '-CreateResourceGroup' switch to use the existing resource group, or specify a different resource group name." -f $ResourceGroupName, $subscriptionCheck.Name)
                                                 $validationError = $true
                                                 return
                                             }
+
+                                        Write-Progress `
+                                            -Activity "Resource Group Creation" `
+                                            -Status "Creating" `
+                                            -CurrentOperation "Creating new resource group..." `
+                                            -PercentComplete 60 `
+                                            -ParentId 2 `
+                                            -Id 3
+
                                         Write-Verbose -Message $("Creating resource group '{0}' in region '{1}' within subscription '{2}'." -f $ResourceGroupName, $Region, $subscriptionCheck.Name)
                                         New-AzResourceGroup -Name $ResourceGroupName -Location $Region -ErrorAction Stop -Confirm:$false | Out-Null
                                         $CreatedResourceGroup = $true
                                         Write-Verbose -Message $("✓ Successfully created resource group '{0}'." -f $ResourceGroupName)
+
+                                        Write-Progress -Activity "Resource Group Creation" -Id 3 -Completed
                                     } `
                                 catch
                                     {
+                                        Write-Progress -Activity "Resource Group Creation" -Id 3 -Completed
                                         Write-Error -Message $("Failed to create resource group '{0}' in region '{1}' within subscription '{2}': {3}" -f $ResourceGroupName, $Region, $subscriptionCheck.Name, $_.Exception.Message)
                                         $validationError = $true
                                         return
@@ -1172,9 +1679,39 @@ function Test-SilkResourceDeployment
 
                         try
                             {
+                                # Step 2: Check for resource group
+                                $sectionCurrentStep++
+                                $sectionPercent = [int](($sectionCurrentStep / $sectionSteps) * 100)
+                                $overallPercent = $progressSections[$sectionName].StartPercent + (($sectionCurrentStep / $sectionSteps) * $progressSections[$sectionName].Weight)
+
+                                Write-Progress `
+                                    -Activity "Test-SilkResourceDeployment" `
+                                    -Status "Environment Validation: Resource Group" `
+                                    -CurrentOperation "Validating resource group..." `
+                                    -PercentComplete $overallPercent `
+                                    -Id 1
+
+                                Write-Progress `
+                                    -Activity "Environment Validation" `
+                                    -Status "Resource Group Check" `
+                                    -CurrentOperation "Verifying resource group exists..." `
+                                    -PercentComplete $sectionPercent `
+                                    -ParentId 1 `
+                                    -Id 2
+
+                                Write-Progress `
+                                    -Activity "Resource Group Validation" `
+                                    -Status "Checking Existence" `
+                                    -CurrentOperation "Querying resource group..." `
+                                    -PercentComplete 50 `
+                                    -ParentId 2 `
+                                    -Id 3
+
                                 # Check for resource group
                                 $resourceGroupCheck = Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction Stop
                                 Write-Verbose -Message $("Resource group '{0}' was identified in the subscription {1}." -f $resourceGroupCheck.ResourceGroupName, $subscriptionCheck.Name)
+
+                                Write-Progress -Activity "Resource Group Validation" -Id 3 -Completed
                             } `
                         catch
                             {
@@ -1183,43 +1720,123 @@ function Test-SilkResourceDeployment
                                 return
                             }
 
+                        # Step 3: Check region and zone availability
+                        $sectionCurrentStep++
+                        $sectionPercent = [int](($sectionCurrentStep / $sectionSteps) * 100)
+                        $overallPercent = $progressSections[$sectionName].StartPercent + (($sectionCurrentStep / $sectionSteps) * $progressSections[$sectionName].Weight)
+
+                        Write-Progress `
+                            -Activity "Test-SilkResourceDeployment" `
+                            -Status "Environment Validation: Region/Zone" `
+                            -CurrentOperation "Validating region and availability zone configuration..." `
+                            -PercentComplete $overallPercent `
+                            -Id 1
+
+                        Write-Progress `
+                            -Activity "Environment Validation" `
+                            -Status "Region/Zone Check" `
+                            -CurrentOperation "Querying regional capabilities..." `
+                            -PercentComplete $sectionPercent `
+                            -ParentId 1 `
+                            -Id 2
+
+                        Write-Progress `
+                            -Activity "Region/Zone Validation" `
+                            -Status "Querying SKUs" `
+                            -CurrentOperation "Retrieving supported SKUs for region..." `
+                            -PercentComplete 30 `
+                            -ParentId 2 `
+                            -Id 3
+
                         # Check region and get supported SKUs
                         $locationSupportedSKU = Get-AzComputeResourceSku -Location $Region -ErrorAction Stop
+
+                        Write-Progress `
+                            -Activity "Region/Zone Validation" `
+                            -Status "Checking Zones" `
+                            -CurrentOperation "Validating availability zone configuration..." `
+                            -PercentComplete 70 `
+                            -ParentId 2 `
+                            -Id 3
 
                         # Check zone availability
                         if ($Zone -eq "Zoneless" -and $locationSupportedSKU.LocationInfo.Zones.Count -ne 0)
                             {
+                                Write-Progress -Activity "Region/Zone Validation" -Id 3 -Completed
                                 Write-Error -Message $("The specified region '{0}' has availability zones {1}, but 'Zoneless' was specified." -f ($locationSupportedSKU.LocationInfo.Location | Select-Object -Unique), (($locationSupportedSKU.LocationInfo.Zones | Sort-Object | Select-Object -Unique) -join ", "))
                                 $validationError = $true
                                 return
                             } `
                         elseif ($locationSupportedSKU.LocationInfo.Zones.Count -eq 0 -and $Zone -ne "Zoneless")
                             {
+                                Write-Progress `
+                                    -Activity "Region/Zone Validation" `
+                                    -Status "Adjusting Zone" `
+                                    -CurrentOperation "Changing to Zoneless configuration..." `
+                                    -PercentComplete 85 `
+                                    -ParentId 2 `
+                                    -Id 3
+
                                 Write-Warning -Message $("The specified region '{0}' has no Availability Zones, but Zone value {1} was specified instead of 'Zoneless'." -f ($locationSupportedSKU.LocationInfo.Location | Select-Object -Unique), $Zone)
                                 Write-Warning -Message $("Changing deployment Zone selection from '{0}' to 'Zoneless' and deploying in Region {1}." -f $Zone, $Region)
                                 $Zone = "Zoneless"
                             } `
                         elseif ($Zone -eq "Zoneless")
                             {
+                                Write-Progress `
+                                    -Activity "Region/Zone Validation" `
+                                    -Status "Validating Zoneless" `
+                                    -CurrentOperation "Confirming zoneless configuration..." `
+                                    -PercentComplete 90 `
+                                    -ParentId 2 `
+                                    -Id 3
+
                                 Write-Verbose -Message $("Zoneless is a valid zone selection for the specified region '{0}'." -f ($locationSupportedSKU.LocationInfo.Location | Select-Object -Unique))
                             } `
                         elseif ($Zone -notin $locationSupportedSKU.LocationInfo.Zones)
                             {
+                                Write-Progress -Activity "Region/Zone Validation" -Id 3 -Completed
                                 Write-Error -Message $("The specified zone '{0}' is not available in the region '{1}'." -f $Zone, $Region)
                                 $validationError = $true
                                 return
                             } `
                         else
                             {
+                                Write-Progress `
+                                    -Activity "Region/Zone Validation" `
+                                    -Status "Zone Valid" `
+                                    -CurrentOperation "Confirming zone availability..." `
+                                    -PercentComplete 95 `
+                                    -ParentId 2 `
+                                    -Id 3
+
                                 Write-Verbose -Message $("The specified zone '{0}' is available in the region '{1}' with zones {2}." -f $Zone, ($locationSupportedSKU.LocationInfo.Location | Select-Object -Unique), (($locationSupportedSKU.LocationInfo.Zones | Sort-Object | Select-Object -Unique) -join ", "))
                             }
+
+                        Write-Progress -Activity "Region/Zone Validation" -Id 3 -Completed
                     } `
                 catch
                     {
+                        Write-Progress -Activity "Region/Zone Validation" -Id 3 -Completed -ErrorAction SilentlyContinue
+                        Write-Progress -Activity "Resource Group Validation" -Id 3 -Completed -ErrorAction SilentlyContinue
+                        Write-Progress -Activity "Subscription Validation" -Id 3 -Completed -ErrorAction SilentlyContinue
+                        Write-Progress -Activity "Environment Validation" -Id 2 -Completed -ErrorAction SilentlyContinue
+                        Write-Progress -Activity "Test-SilkResourceDeployment" -Id 1 -Completed -ErrorAction SilentlyContinue
+
                         Write-Error -Message "Failed to validate environment information: $_"
                         $validationError = $true
                         return
                     }
+
+                # Complete environment validation section
+                Write-Progress -Activity "Environment Validation" -Id 2 -Completed
+
+                Write-Progress `
+                    -Activity "Test-SilkResourceDeployment" `
+                    -Status "Environment Validation Complete" `
+                    -CurrentOperation "Azure environment validated successfully" `
+                    -PercentComplete $progressSections['EnvironmentValidation'].EndPercent `
+                    -Id 1
 
                 # Do not run the rest of begin block if cleanup only
                 if ($RunCleanupOnly)
@@ -1234,40 +1851,55 @@ function Test-SilkResourceDeployment
                 # Proximity Placement Group and Availability Set exist and are properly configured
                 if($ProximityPlacementGroupName -or $AvailabilitySetName)
                     {
+                        Write-Progress `
+                            -Activity "Test-SilkResourceDeployment" `
+                            -Status "Existing Infrastructure Validation" `
+                            -CurrentOperation "Validating existing Proximity Placement Group and Availability Set..." `
+                            -PercentComplete 25 `
+                            -Id 1
+
                         $processSection = $("Existing Infrastructure Validation")
                         $messagePrefix = $("[{0}] " -f $processSection)
 
                         Write-Verbose -Message $("{0}Validating existing infrastructure resources in resource group '{1}'." -f $messagePrefix, $ResourceGroupName)
 
                         # Both parameters must be provided together
+                        Write-Progress -Activity "Existing Infrastructure Validation" -Status "Parameter Validation" -CurrentOperation "Verifying PPG and AvSet parameters are provided together..." -PercentComplete 10 -ParentId 2 -Id 3
                         if((-not $ProximityPlacementGroupName) -or (-not $AvailabilitySetName))
                             {
+                                Write-Progress -Activity "Existing Infrastructure Validation" -Id 3 -Completed
                                 Write-Error -Message $("{0}Both ProximityPlacementGroupName and AvailabilitySetName parameters must be specified together. Only one parameter was provided." -f $messagePrefix)
                                 $validationError = $true
                                 return
                             }
 
                         # Validate Proximity Placement Group exists
+                        Write-Progress -Activity "Existing Infrastructure Validation" -Id 3 -Completed
                         try
                             {
+                                Write-Progress -Activity "Existing Infrastructure Validation" -Status "Proximity Placement Group Check" -CurrentOperation "Querying for PPG '$ProximityPlacementGroupName'..." -PercentComplete 25 -ParentId 2 -Id 3
                                 Write-Verbose -Message $("{0}Checking for Proximity Placement Group '{1}' in resource group '{2}'..." -f $messagePrefix, $ProximityPlacementGroupName, $ResourceGroupName)
                                 $existingProximityPlacementGroup = Get-AzProximityPlacementGroup -ResourceGroupName $ResourceGroupName -Name $ProximityPlacementGroupName -ErrorAction Stop
 
+                                Write-Progress -Activity "Existing Infrastructure Validation" -Status "Proximity Placement Group Check" -CurrentOperation "Validating PPG region matches target region '$Region'..." -PercentComplete 35 -ParentId 2 -Id 3
                                 Write-Verbose -Message $("{0}✓ Successfully validated Proximity Placement Group '{1}' exists in '{2}' region." -f $messagePrefix, $ProximityPlacementGroupName, $existingProximityPlacementGroup.Location)
 
                                 # Validate PPG region matches target region
                                 if($existingProximityPlacementGroup.Location -ne $Region)
                                     {
+                                        Write-Progress -Activity "Existing Infrastructure Validation" -Id 3 -Completed
                                         Write-Error -Message $("{0}Proximity Placement Group '{1}' is located in region '{2}', but deployment is targeting region '{3}'. Regions must match." -f $messagePrefix, $ProximityPlacementGroupName, $existingProximityPlacementGroup.Location, $Region)
                                         $validationError = $true
                                         return
                                     }
 
                                 # Validate PPG zone configuration matches target zone
+                                Write-Progress -Activity "Existing Infrastructure Validation" -Status "Proximity Placement Group Check" -CurrentOperation "Validating PPG zone configuration matches target zone '$Zone'..." -PercentComplete 45 -ParentId 2 -Id 3
                                 if($Zone -ne "Zoneless")
                                     {
                                         if($existingProximityPlacementGroup.Zones -and $existingProximityPlacementGroup.Zones -notcontains $Zone)
                                             {
+                                                Write-Progress -Activity "Existing Infrastructure Validation" -Id 3 -Completed
                                                 Write-Error -Message $("{0}Proximity Placement Group '{1}' is configured for zones '{2}', but deployment is targeting zone '{3}'. Zones must match." -f $messagePrefix, $ProximityPlacementGroupName, ($existingProximityPlacementGroup.Zones -join ", "), $Zone)
                                                 $validationError = $true
                                                 return
@@ -1291,30 +1923,37 @@ function Test-SilkResourceDeployment
                             }
 
                         # Validate Availability Set exists
+                        Write-Progress -Activity "Existing Infrastructure Validation" -Id 3 -Completed
                         try
                             {
+                                Write-Progress -Activity "Existing Infrastructure Validation" -Status "Availability Set Check" -CurrentOperation "Querying for AvSet '$AvailabilitySetName'..." -PercentComplete 55 -ParentId 2 -Id 3
                                 Write-Verbose -Message $("{0}Checking for Availability Set '{1}' in resource group '{2}'..." -f $messagePrefix, $AvailabilitySetName, $ResourceGroupName)
                                 $existingAvailabilitySet = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -Name $AvailabilitySetName -ErrorAction Stop
 
+                                Write-Progress -Activity "Existing Infrastructure Validation" -Status "Availability Set Check" -CurrentOperation "Validating AvSet region matches target region '$Region'..." -PercentComplete 65 -ParentId 2 -Id 3
                                 Write-Verbose -Message $("{0}✓ Successfully validated Availability Set '{1}' exists with {2} fault domains and {3} update domains." -f $messagePrefix, $AvailabilitySetName, $existingAvailabilitySet.PlatformFaultDomainCount, $existingAvailabilitySet.PlatformUpdateDomainCount)
 
                                 # Validate AvSet region matches target region
                                 if($existingAvailabilitySet.Location -ne $Region)
                                     {
+                                        Write-Progress -Activity "Existing Infrastructure Validation" -Id 3 -Completed
                                         Write-Error -Message $("{0}Availability Set '{1}' is located in region '{2}', but deployment is targeting region '{3}'. Regions must match." -f $messagePrefix, $AvailabilitySetName, $existingAvailabilitySet.Location, $Region)
                                         $validationError = $true
                                         return
                                     }
 
                                 # Validate AvSet is associated with the correct PPG
+                                Write-Progress -Activity "Existing Infrastructure Validation" -Status "Availability Set Check" -CurrentOperation "Validating AvSet is associated with PPG '$ProximityPlacementGroupName'..." -PercentComplete 75 -ParentId 2 -Id 3
                                 if($existingAvailabilitySet.ProximityPlacementGroup.Id -ne $existingProximityPlacementGroup.Id)
                                     {
+                                        Write-Progress -Activity "Existing Infrastructure Validation" -Id 3 -Completed
                                         Write-Error -Message $("{0}Availability Set '{1}' is not associated with Proximity Placement Group '{2}'. These resources must be linked together." -f $messagePrefix, $AvailabilitySetName, $ProximityPlacementGroupName)
                                         Write-Error -Message $("{0}Current AvSet PPG: '{1}', Expected PPG: '{2}'" -f $messagePrefix, $(if($existingAvailabilitySet.ProximityPlacementGroup.Id){$existingAvailabilitySet.ProximityPlacementGroup.Id}else{$("None")}), $existingProximityPlacementGroup.Id)
                                         $validationError = $true
                                         return
                                     }
 
+                                Write-Progress -Activity "Existing Infrastructure Validation" -Status "Availability Set Check" -CurrentOperation "Checking AvSet capacity for $CNodeCount CNodes..." -PercentComplete 85 -ParentId 2 -Id 3
                                 Write-Verbose -Message $("{0}✓ Availability Set '{1}' is correctly associated with Proximity Placement Group '{2}'." -f $messagePrefix, $AvailabilitySetName, $ProximityPlacementGroupName)
 
                                 # Check current VM count in Availability Set
@@ -1340,12 +1979,20 @@ function Test-SilkResourceDeployment
                                 return
                             }
 
+                        Write-Progress -Activity "Existing Infrastructure Validation" -Id 3 -Completed
                         Write-Verbose -Message $("{0}✓ All existing infrastructure resources validated successfully. Proceeding with CNode deployment test into existing PPG/AvSet." -f $messagePrefix)
                     }
 
                 # ===============================================================================
                 # Environment Information Collection
                 # ===============================================================================
+                Write-Progress `
+                    -Activity "Test-SilkResourceDeployment" `
+                    -Status "Environment Information Collection" `
+                    -CurrentOperation "Querying regional capabilities and fault domain limits..." `
+                    -PercentComplete 30 `
+                    -Id 1
+
                 $processSection = $("Environment Information Collection")
                 $sectionStep = $("Maximum Fault Domains")
                 $messagePrefix = $("{0}{1}" -f $(if($processSection){$("[{0}] " -f $processSection)}else{$("")}), $(if($sectionStep){$("[{0}] " -f $sectionStep)}else{$("")}))
@@ -1355,11 +2002,13 @@ function Test-SilkResourceDeployment
                 # Query Azure Resource SKU API to determine maximum fault domains supported by the region
                 # Fault domains define the number of physical hardware failure boundaries within an availability set
                 # Most Azure regions support 3 fault domains, but some regions only support 2
+                Write-Progress -Activity "Environment Information Collection" -Status "Maximum Fault Domains" -CurrentOperation "Querying Azure Resource SKU API for region '$Region'..." -PercentComplete 20 -ParentId 2 -Id 3
                 try
                     {
                         # Define Azure Resource SKU API version for querying compute SKU information
                         $azureSKUApiVersion = $("2025-04-01")
 
+                        Write-Progress -Activity "Environment Information Collection" -Status "Maximum Fault Domains" -CurrentOperation "Generating authorization token..." -PercentComplete 40 -ParentId 2 -Id 3
                         # Generate authorization header using current Azure access token for Management API
                         $azureSKUApiRequestHeaders =   @{
                                                             Authorization = $("Bearer {0}" -f $(ConvertFrom-SecureString -SecureString $(Get-AzAccessToken -ResourceUrl $("https://management.azure.com/")).Token -AsPlainText))
@@ -1368,9 +2017,11 @@ function Test-SilkResourceDeployment
                         # Construct API URI to query compute SKUs for the target subscription
                         $azureSKUApiUri = $("https://management.azure.com/subscriptions/{0}/providers/Microsoft.Compute/skus?api-version={1}" -f $SubscriptionId, $azureSKUApiVersion)
 
+                        Write-Progress -Activity "Environment Information Collection" -Status "Maximum Fault Domains" -CurrentOperation "Executing REST API call to retrieve SKU information..." -PercentComplete 60 -ParentId 2 -Id 3
                         # Execute REST API call to retrieve SKU information
                         $regionAvailabilitySetSKU = $(Invoke-RestMethod -Method Get -Uri $azureSKUApiUri -Headers $azureSKUApiRequestHeaders).value
 
+                        Write-Progress -Activity "Environment Information Collection" -Status "Maximum Fault Domains" -CurrentOperation "Parsing availability set capabilities for region '$Region'..." -PercentComplete 80 -ParentId 2 -Id 3
                         # Filter SKU response to extract maximum fault domains capability for availability sets in the target region
                         $maximumFaultDomains = $regionAvailabilitySetSKU | Where-Object -FilterScript {$_.resourceType -eq $("availabilitySets") -and $_.locations -eq $Region} | Select-Object -First 1 | Select-Object -ExpandProperty capabilities | Select-Object -ExpandProperty value
 
@@ -1384,6 +2035,7 @@ function Test-SilkResourceDeployment
                         $maximumFaultDomains = 3
                         Write-Warning -Message $("{0}Failed to query Azure Resource SKU API for fault domain information. Defaulting to {1} fault domains. Error: {2}" -f $messagePrefix, $maximumFaultDomains, $_.Exception.Message)
                     }
+                Write-Progress -Activity "Environment Information Collection" -Id 3 -Completed
 
 
                 # ===============================================================================
@@ -1397,6 +2049,7 @@ function Test-SilkResourceDeployment
 
                 # Production CNode SKU Configuration
                 # Actual production deployments use 64 vCPU SKUs for high performance
+                Write-Progress -Activity "Environment Information Collection" -Status "CNode SKU Configuration" -CurrentOperation "Loading production CNode SKU configuration..." -PercentComplete 30 -ParentId 2 -Id 3
                 $cNodeSizeObject = @(
                                         [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "s_v5"; QuotaFamily = "Standard Dsv5 Family vCPUs"; cNodeFriendlyName = "No_Increased_Logical_Capacity"};
                                         [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "s_v3"; QuotaFamily = "Standard Lsv3 Family vCPUs"; cNodeFriendlyName = "Read_Cache_Enabled"};
@@ -1405,6 +2058,7 @@ function Test-SilkResourceDeployment
 
                 if ($Development)
                     {
+                        Write-Progress -Activity "Environment Information Collection" -Status "CNode SKU Configuration" -CurrentOperation "Running in Development Mode - loading reduced CNode configuration..." -PercentComplete 50 -ParentId 2 -Id 3
                         Write-Verbose -Message $("Running in Development Mode, using reduced CNode configuration for faster deployment.")
                         $cNodeSizeObject = @(
                                                 [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 2; vmSkuSuffix = "s_v5"; QuotaFamily = "Standard Dsv5 Family vCPUs"; cNodeFriendlyName = "No_Increased_Logical_Capacity"};
@@ -1413,11 +2067,13 @@ function Test-SilkResourceDeployment
                                             )
                     }
 
+                Write-Progress -Activity "Environment Information Collection" -Status "CNode SKU Configuration" -CurrentOperation "Validating CNode SKU configuration..." -PercentComplete 70 -ParentId 2 -Id 3
                 # Output current CNode size object configuration
                 foreach ($cNodeSize in $cNodeSizeObject)
                     {
                         Write-Verbose -Message $("CNode SKU: {0}{1}{2} with friendly name '{3}'" -f $cNodeSize.vmSkuPrefix, $cNodeSize.vCPU, $cNodeSize.vmSkuSuffix, $cNodeSize.cNodeFriendlyName)
                     }
+                Write-Progress -Activity "Environment Information Collection" -Id 3 -Completed
 
                 # ===============================================================================
                 # MNode/DNode SKU Configuration Object
@@ -1439,6 +2095,7 @@ function Test-SilkResourceDeployment
 
                 # Production MNode/DNode SKU Configuration
                 # Actual production deployments use 16 DNodes per MNode for high availability
+                Write-Progress -Activity "Environment Information Collection" -Status "MNode/DNode SKU Configuration" -CurrentOperation "Loading production MNode/DNode SKU configuration..." -PercentComplete 30 -ParentId 2 -Id 3
                 $mNodeSizeObject = @(
                                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "s_v3";   PhysicalSize = 19.5;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
                                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "s_v3";   PhysicalSize = 39.1;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
@@ -1452,6 +2109,7 @@ function Test-SilkResourceDeployment
 
                 if ($Development)
                     {
+                        Write-Progress -Activity "Environment Information Collection" -Status "MNode/DNode SKU Configuration" -CurrentOperation "Running in Development Mode - loading reduced MNode/DNode configuration..." -PercentComplete 50 -ParentId 2 -Id 3
                         Write-Verbose -Message $("Running in Development Mode, using reduced MNode/DNode configuration for faster deployment.")
                         $mNodeSizeObject = @(
                                                 [pscustomobject]@{dNodeCount = 1; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "s_v3";   PhysicalSize = 19.5;     QuotaFamily = "Standard Lsv3 Family vCPUs"};
@@ -1466,10 +2124,12 @@ function Test-SilkResourceDeployment
                     }
 
                 # Output current MNode/DNode size object configuration
+                Write-Progress -Activity "Environment Information Collection" -Status "MNode/DNode SKU Configuration" -CurrentOperation "Validating MNode/DNode SKU configuration..." -PercentComplete 70 -ParentId 2 -Id 3
                 foreach($mNodeSizedetail in $mNodeSizeObject)
                     {
                         Write-Verbose -Message $("MNode Physical Size {0} TiB configuration has {1} DNodes using SKU: {2}{3}{4}" -f $mNodeSizedetail.PhysicalSize, $mNodeSizedetail.dNodeCount, $mNodeSizedetail.vmSkuPrefix, $mNodeSizedetail.vCPU, $mNodeSizedetail.vmSkuSuffix)
                     }
+                Write-Progress -Activity "Environment Information Collection" -Id 3 -Completed
 
 
                 # ===============================================================================
@@ -1492,6 +2152,13 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 # SKU Configuration Identification and Validation
                 # ===============================================================================
+                Write-Progress `
+                    -Activity "Test-SilkResourceDeployment" `
+                    -Status "SKU Configuration" `
+                    -CurrentOperation "Identifying and validating SKU configuration..." `
+                    -PercentComplete 33 `
+                    -Id 1
+
                 # Set MNode size from parameter values when not using JSON configuration
                 if (!$MNodeSize -and $ConfigImport)
                     {
@@ -1721,6 +2388,13 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 # Compute SKU Location and Zone Support Validation
                 # ===============================================================================
+                Write-Progress `
+                    -Activity "Test-SilkResourceDeployment" `
+                    -Status "SKU Support Validation" `
+                    -CurrentOperation "Validating SKU support in target region and zone..." `
+                    -PercentComplete 38 `
+                    -Id 1
+
                 # Verify that selected SKUs are supported in the target region and availability zone
                 if ($cNodeObject)
                     {
@@ -1781,6 +2455,13 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 # quota check
                 # ===============================================================================
+                Write-Progress `
+                    -Activity "Test-SilkResourceDeployment" `
+                    -Status "Quota Analysis" `
+                    -CurrentOperation "Analyzing subscription quotas and calculating deployment capacity..." `
+                    -PercentComplete 40 `
+                    -Id 1
+
                 try
                     {
                         $computeQuotaUsage = Get-AzVMUsage -Location $Region -ErrorAction SilentlyContinue
@@ -1796,6 +2477,13 @@ function Test-SilkResourceDeployment
                         # Check if CNodeSize is within the available quota
                         if($cNodeObject)
                             {
+                                Write-Progress `
+                                    -Activity "Test-SilkResourceDeployment" `
+                                    -Status "Quota Analysis" `
+                                    -CurrentOperation "Checking CNode quota availability..." `
+                                    -PercentComplete 42 `
+                                    -Id 1
+
                                 # Check if CNodeSize is within the available quota
                                 $cNodeSKUFamilyQuota = $ComputeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $cNodeObject.QuotaFamily }
                                 $availableVCPUs = $cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue
@@ -1840,6 +2528,13 @@ function Test-SilkResourceDeployment
                         # check for quota for mnodes
                         if($MNodeSize)
                             {
+                                Write-Progress `
+                                    -Activity "Test-SilkResourceDeployment" `
+                                    -Status "Quota Analysis" `
+                                    -CurrentOperation "Checking MNode/DNode quota availability..." `
+                                    -PercentComplete 45 `
+                                    -Id 1
+
                                 $mNodeFamilyCount = $mNodeObject | Group-Object -Property QuotaFamily
                                 $mNodeInstanceCount = $MNodeSize | Group-Object | Select-Object Name, Count
                                 $mNodeQuotaAdjustments =   @{}
@@ -1916,6 +2611,13 @@ function Test-SilkResourceDeployment
                                             }
                                     }
                             }
+
+                        Write-Progress `
+                            -Activity "Test-SilkResourceDeployment" `
+                            -Status "Quota Analysis" `
+                            -CurrentOperation "Validating total quota requirements..." `
+                            -PercentComplete 48 `
+                            -Id 1
 
                         # check general quota values
                         # check vm quota
@@ -2041,6 +2743,13 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 # VM Image SKU Discovery and Selection
                 # ===============================================================================
+                Write-Progress `
+                    -Activity "Test-SilkResourceDeployment" `
+                    -Status "VM Image Discovery" `
+                    -CurrentOperation "Discovering and selecting optimal VM image..." `
+                    -PercentComplete 50 `
+                    -Id 1
+
                 # Automatically detect the best available Ubuntu image SKU for the target region
                 # Prioritizes Gen2 VMs for better performance, with fallback to alternative offers
                 if (-not $VMImageSku)
@@ -2191,6 +2900,13 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 # Deployment Configuration Summary
                 # ===============================================================================
+                Write-Progress `
+                    -Activity "Test-SilkResourceDeployment" `
+                    -Status "Configuration Complete" `
+                    -CurrentOperation "Deployment configuration validated and ready..." `
+                    -PercentComplete 55 `
+                    -Id 1
+
                 Write-Verbose -Message $("=== Silk Azure Deployment Configuration ===")
                 Write-Verbose -Message $("Subscription ID: {0}" -f $SubscriptionId)
                 Write-Verbose -Message $("Resource Group: {0}" -f $ResourceGroupName)
@@ -2320,6 +3036,13 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 # Virtual Network Infrastructure Creation
                 # ===============================================================================
+                Write-Progress `
+                    -Activity "Test-SilkResourceDeployment" `
+                    -Status "Network Infrastructure Creation" `
+                    -CurrentOperation "Creating isolated network environment..." `
+                    -PercentComplete 56 `
+                    -Id 1
+
                 # Creates a completely isolated network environment for testing VM deployments
                 # This ensures no accidental internet access and validates Azure resource availability
                 try
@@ -2356,6 +3079,13 @@ function Test-SilkResourceDeployment
                                                     -DestinationAddressPrefix * `
                                                     -DestinationPortRange *
 
+                        Write-Progress `
+                            -Activity "Test-SilkResourceDeployment" `
+                            -Status "Network Infrastructure Creation" `
+                            -CurrentOperation "Configuring Network Security Group with isolation rules..." `
+                            -PercentComplete 57 `
+                            -Id 1
+
                         # Create the Network Security Group with restrictive rules
                         $nSG = New-AzNetworkSecurityGroup `
                                 -ResourceGroupName $ResourceGroupName `
@@ -2388,6 +3118,13 @@ function Test-SilkResourceDeployment
                                         -NetworkSecurityGroup $nSG
 
                         Write-Verbose -Message $("✓ Management subnet '{0}' configured with address range {1}" -f $mGMTSubnet.Name, ($mGMTSubnet.AddressPrefix -join ','))
+
+                        Write-Progress `
+                            -Activity "Test-SilkResourceDeployment" `
+                            -Status "Network Infrastructure Creation" `
+                            -CurrentOperation "Creating Virtual Network and subnet..." `
+                            -PercentComplete 58 `
+                            -Id 1
 
                         $vNET = New-AzVirtualNetwork `
                                     -ResourceGroupName $ResourceGroupName `
@@ -2429,23 +3166,50 @@ function Test-SilkResourceDeployment
                                 $totalVMs = $totalDNodes
                             }
 
-                        # Start main VM creation progress
+                        # VM Deployment section progress tracking
+                        $sectionName = 'VMDeployment'
+                        $vmDeploymentStartPercent = $progressSections[$sectionName].StartPercent
+                        $vmDeploymentEndPercent = $progressSections[$sectionName].EndPercent
+                        $vmDeploymentWeight = $progressSections[$sectionName].Weight
+                        $totalVMsToCreate = $adjustedCNodeCount + $totalDNodes
+                        $vmsCreated = 0
+
+                        # Start main VM deployment section progress
                         Write-Progress `
-                            -Status "Initializing VM Deployment" `
-                            -CurrentOperation "Starting VM deployment process..." `
-                            -PercentComplete 0 `
-                            -Activity "VM Deployment" `
+                            -Activity "Test-SilkResourceDeployment" `
+                            -Status "Starting VM Deployment" `
+                            -CurrentOperation "Initializing VM deployment process..." `
+                            -PercentComplete $vmDeploymentStartPercent `
                             -Id 1
+
+                        Write-Progress `
+                            -Activity "VM Deployment" `
+                            -Status "Initializing" `
+                            -CurrentOperation "Preparing VM deployment environment..." `
+                            -PercentComplete 0 `
+                            -ParentId 1 `
+                            -Id 2
 
                         if($adjustedCNodeCount -gt 0)
                             {
                                 # Update progress for availability set creation
+                                $sectionPercent = [int](($vmsCreated / $totalVMsToCreate) * 100)
+                                $overallPercent = $vmDeploymentStartPercent + (($vmsCreated / $totalVMsToCreate) * $vmDeploymentWeight)
+
                                 Write-Progress `
-                                    -Status "Creating CNode Infrastructure" `
-                                    -CurrentOperation "Creating CNode availability set..." `
-                                    -PercentComplete 2 `
-                                    -Activity "VM Deployment" `
+                                    -Activity "Test-SilkResourceDeployment" `
+                                    -Status "VM Deployment: Creating CNode Infrastructure" `
+                                    -CurrentOperation "Setting up CNode availability set and PPG..." `
+                                    -PercentComplete $overallPercent `
                                     -Id 1
+
+                                Write-Progress `
+                                    -Activity "VM Deployment" `
+                                    -Status "CNode Infrastructure Setup" `
+                                    -CurrentOperation "Creating availability set and proximity placement group..." `
+                                    -PercentComplete $sectionPercent `
+                                    -ParentId 1 `
+                                    -Id 2
 
                                 # Check if using existing infrastructure or creating new infrastructure
                                 if($ProximityPlacementGroupName -and $AvailabilitySetName)
@@ -2501,26 +3265,57 @@ function Test-SilkResourceDeployment
                                     }
 
                                 # CNode creation phase with updated progress
+                                $sectionPercent = [int](($vmsCreated / $totalVMsToCreate) * 100)
+                                $overallPercent = $vmDeploymentStartPercent + (($vmsCreated / $totalVMsToCreate) * $vmDeploymentWeight)
+
                                 Write-Progress `
-                                    -Status "Creating CNodes" `
-                                    -CurrentOperation $("Preparing to create {0} CNode VMs..." -f $adjustedCNodeCount) `
-                                    -PercentComplete 5 `
-                                    -Activity "VM Deployment" `
+                                    -Activity "Test-SilkResourceDeployment" `
+                                    -Status "VM Deployment: Creating CNodes" `
+                                    -CurrentOperation $("Starting {0} CNode VM deployments..." -f $adjustedCNodeCount) `
+                                    -PercentComplete $overallPercent `
                                     -Id 1
+
+                                Write-Progress `
+                                    -Activity "VM Deployment" `
+                                    -Status "CNode Creation" `
+                                    -CurrentOperation $("Preparing to create {0} CNode VMs..." -f $adjustedCNodeCount) `
+                                    -PercentComplete $sectionPercent `
+                                    -ParentId 1 `
+                                    -Id 2
 
                                 for ($cNode = 1; $cNode -le $adjustedCNodeCount; $cNode++)
                                     {
                                 # Calculate CNode SKU for display
                                 $currentCNodeSku = "{0}" -f $CNodeSku
 
-                                # Update sub-progress for CNode creation
+                                # Update all three levels of progress for each CNode
+                                $vmsCreated++
+                                $sectionPercent = [int](($vmsCreated / $totalVMsToCreate) * 100)
+                                $overallPercent = $vmDeploymentStartPercent + (($vmsCreated / $totalVMsToCreate) * $vmDeploymentWeight)
+                                $cnodeProgress = [int](($cNode / $adjustedCNodeCount) * 100)
+
                                 Write-Progress `
-                                    -Status $("Creating CNode {0} of {1} ({2})" -f $cNode, $adjustedCNodeCount, $currentCNodeSku) `
-                                    -CurrentOperation $("Configuring CNode {0} with SKU {1}..." -f $cNode, $currentCNodeSku) `
-                                    -PercentComplete $(($cNode / $adjustedCNodeCount) * 100) `
-                                    -Activity "CNode Creation" `
+                                    -Activity "Test-SilkResourceDeployment" `
+                                    -Status $("VM Deployment: CNode {0}/{1}" -f $cNode, $adjustedCNodeCount) `
+                                    -CurrentOperation $("Deploying CNode {0} ({1})..." -f $cNode, $currentCNodeSku) `
+                                    -PercentComplete $overallPercent `
+                                    -Id 1
+
+                                Write-Progress `
+                                    -Activity "VM Deployment" `
+                                    -Status $("CNodes: {0}%" -f $sectionPercent) `
+                                    -CurrentOperation $("Creating CNode {0} of {1}..." -f $cNode, $adjustedCNodeCount) `
+                                    -PercentComplete $sectionPercent `
                                     -ParentId 1 `
                                     -Id 2
+
+                                Write-Progress `
+                                    -Activity "CNode Creation" `
+                                    -Status $("CNode {0} of {1}" -f $cNode, $adjustedCNodeCount) `
+                                    -CurrentOperation $("Configuring CNode {0} with SKU {1}..." -f $cNode, $currentCNodeSku) `
+                                    -PercentComplete $cnodeProgress `
+                                    -ParentId 2 `
+                                    -Id 3
 
                                 # create the cnode management NIC
                                 $cNodeMGMTNIC = New-AzNetworkInterface `
@@ -2618,7 +3413,7 @@ function Test-SilkResourceDeployment
                                     }
 
                                 # Clean up CNode creation sub-progress bar as this phase is complete
-                                Write-Progress -Activity "CNode Creation" -Id 2 -Completed
+                                Write-Progress -Activity "CNode Creation" -Id 3 -Completed
                             }
 
                         # Skip MNode deployment if quota is insufficient
@@ -2683,27 +3478,53 @@ function Test-SilkResourceDeployment
                                 Write-Verbose -Message $("✓ Availability Set '{0}' created" -f $mNodeAvailabilitySet.Name)
 
                                 # Update main progress for MNode group
-                                $processedCNodes = $adjustedCNodeCount
-                                $processedDNodes = $dNodeStartCount
-                                $totalProcessed = $processedCNodes + $processedDNodes
-                                $mainPercentComplete = [Math]::Min([Math]::Round(($totalProcessed / $totalVMs) * 100), 90)
+                                $sectionPercent = [int](($vmsCreated / $totalVMsToCreate) * 100)
+                                $overallPercent = $vmDeploymentStartPercent + (($vmsCreated / $totalVMsToCreate) * $vmDeploymentWeight)
 
                                 Write-Progress `
-                                    -Status $("Processing MNode Group {0} of {1} - {2} TiB ({3})" -f $currentMNode, $mNodeObject.Count, $currentMNodePhysicalSize, $currentMNodeSku) `
-                                    -CurrentOperation $("Creating {0} DNodes for {1} TiB MNode..." -f $currentDNodeCount, $currentMNodePhysicalSize) `
-                                    -PercentComplete $mainPercentComplete `
-                                    -Activity "VM Deployment" `
+                                    -Activity "Test-SilkResourceDeployment" `
+                                    -Status $("VM Deployment: MNode Group {0}/{1}" -f $currentMNode, $mNodeObject.Count) `
+                                    -CurrentOperation $("Creating {0} DNodes for {1} TiB MNode ({2})..." -f $currentDNodeCount, $currentMNodePhysicalSize, $currentMNodeSku) `
+                                    -PercentComplete $overallPercent `
                                     -Id 1
+
+                                Write-Progress `
+                                    -Activity "VM Deployment" `
+                                    -Status $("MNode Group {0} - {1} TiB" -f $currentMNode, $currentMNodePhysicalSize) `
+                                    -CurrentOperation $("Processing {0} DNodes with SKU {1}..." -f $currentDNodeCount, $currentMNodeSku) `
+                                    -PercentComplete $sectionPercent `
+                                    -ParentId 1 `
+                                    -Id 2
 
                                 for ($dNode = 1; $dNode -le $currentDNodeCount; $dNode++)
                                     {
-                                        # Update sub-progress for DNode creation
+                                        # Update all three levels of progress for each DNode
+                                        $vmsCreated++
+                                        $sectionPercent = [int](($vmsCreated / $totalVMsToCreate) * 100)
+                                        $overallPercent = $vmDeploymentStartPercent + (($vmsCreated / $totalVMsToCreate) * $vmDeploymentWeight)
+                                        $dnodeProgress = [int](($dNode / $currentDNodeCount) * 100)
+
                                         Write-Progress `
-                                            -Status $("Creating DNode {0} of {1} - {2} TiB ({3})" -f $dNode, $currentDNodeCount, $currentMNodePhysicalSize, $currentMNodeSku) `
-                                            -CurrentOperation $("Configuring DNode {0} with SKU {1}..." -f ($dNode + $dNodeStartCount), $currentMNodeSku) `
-                                            -PercentComplete $(($dNode / $currentDNodeCount) * 100) `
-                                            -Activity $("MNode Group {0} DNode Creation" -f $currentMNode) `
+                                            -Activity "Test-SilkResourceDeployment" `
+                                            -Status $("VM Deployment: MNode {0} DNode {1}/{2}" -f $currentMNode, $dNode, $currentDNodeCount) `
+                                            -CurrentOperation $("Deploying DNode {0} ({1} TiB, {2})..." -f ($dNode + $dNodeStartCount), $currentMNodePhysicalSize, $currentMNodeSku) `
+                                            -PercentComplete $overallPercent `
+                                            -Id 1
+
+                                        Write-Progress `
+                                            -Activity "VM Deployment" `
+                                            -Status $("MNode {0}: DNodes {1}%" -f $currentMNode, $sectionPercent) `
+                                            -CurrentOperation $("Creating DNode {0} of {1}..." -f $dNode, $currentDNodeCount) `
+                                            -PercentComplete $sectionPercent `
                                             -ParentId 1 `
+                                            -Id 2
+
+                                        Write-Progress `
+                                            -Activity $("MNode {0} DNode Creation" -f $currentMNode) `
+                                            -Status $("DNode {0} of {1} - {2} TiB" -f $dNode, $currentDNodeCount, $currentMNodePhysicalSize) `
+                                            -CurrentOperation $("Configuring DNode {0} with SKU {1}..." -f ($dNode + $dNodeStartCount), $currentMNodeSku) `
+                                            -PercentComplete $dnodeProgress `
+                                            -ParentId 2 `
                                             -Id 3
 
                                         # set dnode number to use for naming
@@ -2769,15 +3590,6 @@ function Test-SilkResourceDeployment
                                                         -Primary:$true `
                                                         -DeleteOption "Delete"
 
-                                        # Update sub-progress for VM creation
-                                        Write-Progress `
-                                            -Status $("Creating DNode {0} VM ({1})..." -f $dNode, $currentMNodeSku) `
-                                            -CurrentOperation $("Starting VM creation job for DNode {0} with SKU {1}..." -f $dNodeNumber, $currentMNodeSku) `
-                                            -PercentComplete $(($dNode / $mNode.dNodeCount) * 100) `
-                                            -Activity $("MNode Group {0} DNode Creation" -f $currentMNode) `
-                                            -ParentId 1 `
-                                            -Id 3
-
                                         try
                                             {
                                                 # Suppress warnings specifically for VM creation
@@ -2817,8 +3629,8 @@ function Test-SilkResourceDeployment
                                 $mNodeProximityPlacementGroup = $null
                                 $dNodeStartCount += $currentDNodeCount
 
-                                # Clean up this MNode group's sub-progress bar as it's complete
-                                Write-Progress -Activity $("MNode Group {0} DNode Creation" -f $currentMNode) -Id 3 -Completed
+                                # Clean up this MNode group's individual operation progress bar
+                                Write-Progress -Activity $("MNode {0} DNode Creation" -f $currentMNode) -Id 3 -Completed
                             }
                             }
 
@@ -2834,37 +3646,47 @@ function Test-SilkResourceDeployment
                         # Wait for all VMs to be created - Final phase of VM deployment
                         $allVMJobs = Get-Job
 
-                        # Update main progress to show completion phase and immediately show monitoring sub-progress
+                        # Update main progress to show monitoring phase
+                        $overallPercent = $vmDeploymentStartPercent + (0.9 * $vmDeploymentWeight)  # 90% through deployment section
                         Write-Progress `
-                            -Status "Monitoring VM Creation Jobs" `
-                            -CurrentOperation "Waiting for all VMs to be deployed..." `
-                            -PercentComplete 95 `
-                            -Activity "VM Deployment" `
+                            -Activity "Test-SilkResourceDeployment" `
+                            -Status "VM Deployment: Monitoring Job Completion" `
+                            -CurrentOperation $("Waiting for {0} VM deployment jobs to complete..." -f $allVMJobs.Count) `
+                            -PercentComplete $overallPercent `
                             -Id 1
 
-                        # Immediately start VM deployment monitoring sub-progress
+                        # Section-level progress (Level 2)
                         Write-Progress `
-                            -Status "Monitoring VM Deployment" `
-                            -CurrentOperation $("Waiting for {0} VMs to deploy..." -f $allVMJobs.Count) `
-                            -PercentComplete 0 `
-                            -Activity "VM Deployment Monitoring" `
+                            -Activity "VM Deployment" `
+                            -Status "Job Monitoring" `
+                            -CurrentOperation $("Tracking {0} active deployment jobs..." -f $allVMJobs.Count) `
+                            -PercentComplete 90 `
                             -ParentId 1 `
-                            -Id 4
+                            -Id 2
+
+                        # Operation-level progress (Level 3)
+                        Write-Progress `
+                            -Activity "VM Job Monitoring" `
+                            -Status "Starting" `
+                            -CurrentOperation $("Initializing monitoring for {0} VMs..." -f $allVMJobs.Count) `
+                            -PercentComplete 0 `
+                            -ParentId 2 `
+                            -Id 3
 
                         # Initial status check to show immediate progress
                         $currentVMJobs = Get-Job
                         $completedJobs = $currentVMJobs | Where-Object { $_.State -in @('Completed', 'Failed', 'Stopped') }
                         $runningJobs = $currentVMJobs | Where-Object { $_.State -in @('Running', 'NotStarted') }
-                        $initialCompletionPercent = [Math]::Round(($completedJobs.Count / $allVMJobs.Count) * 100)
+                        $initialCompletionPercent = if ($allVMJobs.Count -gt 0) { [Math]::Round(($completedJobs.Count / $allVMJobs.Count) * 100) } else { 0 }
 
-                        # Update sub-progress immediately with current status
+                        # Update operation-level progress with initial status
                         Write-Progress `
-                            -Status $("VM Deployment: {0}%" -f $initialCompletionPercent) `
-                            -CurrentOperation $("Monitoring {0} running VMs..." -f $runningJobs.Count) `
+                            -Activity "VM Job Monitoring" `
+                            -Status $("Jobs: {0}%" -f $initialCompletionPercent) `
+                            -CurrentOperation $("{0} completed, {1} running..." -f $completedJobs.Count, $runningJobs.Count) `
                             -PercentComplete $initialCompletionPercent `
-                            -Activity "VM Deployment Monitoring" `
-                            -ParentId 1 `
-                            -Id 4
+                            -ParentId 2 `
+                            -Id 3
 
                         do
                             {
@@ -2873,45 +3695,54 @@ function Test-SilkResourceDeployment
                                 $currentVMJobs = Get-Job
                                 $completedJobs = $currentVMJobs | Where-Object { $_.State -in @('Completed', 'Failed', 'Stopped') }
                                 $runningJobs = $currentVMJobs | Where-Object { $_.State -in @('Running', 'NotStarted') }
-                                $completionPercent = [Math]::Round(($completedJobs.Count / $allVMJobs.Count) * 100)
+                                $completionPercent = if ($allVMJobs.Count -gt 0) { [Math]::Round(($completedJobs.Count / $allVMJobs.Count) * 100) } else { 100 }
 
-                                # Update sub-progress for VM deployment
+                                # Calculate overall progress (90-100% of deployment section)
+                                $monitoringProgress = $completionPercent / 100.0
+                                $overallPercent = $vmDeploymentStartPercent + ((0.9 + ($monitoringProgress * 0.1)) * $vmDeploymentWeight)
+
+                                # Update all three levels of progress
                                 Write-Progress `
-                                    -Status $("VM Deployment: {0}%" -f $completionPercent) `
-                                    -CurrentOperation $("Waiting for {0} remaining VMs to deploy..." -f $runningJobs.Count) `
-                                    -PercentComplete $completionPercent `
-                                    -Activity "VM Deployment Monitoring" `
+                                    -Activity "Test-SilkResourceDeployment" `
+                                    -Status $("VM Deployment: {0}% complete" -f $completionPercent) `
+                                    -CurrentOperation $("{0} VMs remaining..." -f $runningJobs.Count) `
+                                    -PercentComplete $overallPercent `
+                                    -Id 1
+
+                                Write-Progress `
+                                    -Activity "VM Deployment" `
+                                    -Status "Monitoring Progress" `
+                                    -CurrentOperation $("{0} completed, {1} remaining..." -f $completedJobs.Count, $runningJobs.Count) `
+                                    -PercentComplete $(90 + ($monitoringProgress * 10)) `
                                     -ParentId 1 `
-                                    -Id 4
+                                    -Id 2
+
+                                Write-Progress `
+                                    -Activity "VM Job Monitoring" `
+                                    -Status $("Jobs: {0}%" -f $completionPercent) `
+                                    -CurrentOperation $("Waiting for {0} remaining jobs..." -f $runningJobs.Count) `
+                                    -PercentComplete $completionPercent `
+                                    -ParentId 2 `
+                                    -Id 3
                             } `
                         while
                             (
                                 $runningJobs.Count -gt 0
                             )
 
-                        # Final progress updates
-                        Write-Progress `
-                            -Status "VM Deployment Complete" `
-                            -CurrentOperation "All VMs have been successfully deployed" `
-                            -PercentComplete 100 `
-                            -Activity "VM Deployment Monitoring" `
-                            -ParentId 1 `
-                            -Id 4
+                        # Complete all progress bars for VM deployment
+                        Write-Progress -Activity "VM Job Monitoring" -Id 3 -Completed
+                        Write-Progress -Activity "VM Deployment" -Id 2 -Completed
 
+                        # Update overall progress to end of VM deployment section
                         Write-Progress `
+                            -Activity "Test-SilkResourceDeployment" `
                             -Status "VM Deployment Complete" `
-                            -CurrentOperation "All VMs have been deployed successfully" `
-                            -PercentComplete 100 `
-                            -Activity "VM Deployment" `
+                            -CurrentOperation "All VMs deployed successfully" `
+                            -PercentComplete $vmDeploymentEndPercent `
                             -Id 1
 
-                        Start-Sleep -Seconds 2
-
-                        # Complete sub-progress bars
-                        Write-Progress `
-                            -Activity "VM Deployment Monitoring" `
-                            -Id 4 `
-                            -Completed
+                        Start-Sleep -Milliseconds 500
 
                         # Analyze failed jobs AFTER monitoring is complete
                         $finalVMJobs = Get-Job
@@ -3078,6 +3909,13 @@ function Test-SilkResourceDeployment
                 # get timespan to report on deployment duration
                 $DeploymentTimespan = New-TimeSpan -Start $StartTime -End (Get-Date)
 
+                Write-Progress `
+                    -Activity "Test-SilkResourceDeployment" `
+                    -Status "Post-Deployment Validation" `
+                    -CurrentOperation "Collecting and validating deployment results..." `
+                    -PercentComplete 96 `
+                    -Id 1
+
                 # Comprehensive resource validation and reporting
                 Write-Host "`n=== Post-Deployment Validation ===" -ForegroundColor Cyan
 
@@ -3242,6 +4080,13 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 # Report Data Processing and Analysis
                 # ===============================================================================
+                Write-Progress `
+                    -Activity "Test-SilkResourceDeployment" `
+                    -Status "Report Generation" `
+                    -CurrentOperation "Processing deployment data and generating statistics..." `
+                    -PercentComplete 97 `
+                    -Id 1
+
                 # Centralized data processing for both console and HTML reports
                 # This section calculates all report data once to ensure consistency
 
@@ -3943,6 +4788,13 @@ function Test-SilkResourceDeployment
                         # Ensure clean console state before HTML generation messages
                         Start-Sleep -Milliseconds 300
                         [System.Console]::Out.Flush()
+
+                        Write-Progress `
+                            -Activity "Test-SilkResourceDeployment" `
+                            -Status "HTML Report Generation" `
+                            -CurrentOperation "Creating comprehensive HTML report..." `
+                            -PercentComplete 98 `
+                            -Id 1
 
                         Write-Host "`n=== Generating HTML Report ===" -ForegroundColor Cyan
                         Write-Verbose -Message $("Generating HTML report at: {0}" -f $ReportFullPath)

@@ -1,14 +1,14 @@
 {
-"resource_group_name": "flex-example",
-"azure_region": "eastus",
+"resource_group_name": "example-nsg-rg",
+"azure_region": "centralus",
 "cluster_number": "1234",
 "subnet_config":[
   {"string": "flex_subnet_cidr","cidr": "10.0.5.128/28"},
-  {"string": "external_mgmt_cidr","cidr": "10.0.5.0/25"},
+  {"string": "external_data_1_cidr","cidr": "10.0.4.0/25"},
+  {"string": "external_data_2_cidr","cidr": "10.0.4.128/25"},
   {"string": "internal_1_cidr","cidr": "10.0.0.0/23"},
   {"string": "internal_2_cidr","cidr": "10.0.2.0/23"},
-  {"string": "external_data_1_cidr","cidr": "10.0.4.0/25"},
-  {"string": "external_data_2_cidr","cidr": "10.0.4.128/25"}
+  {"string": "external_mgmt_cidr","cidr": "10.0.5.0/25"}
 ],
 "nsg": [
   {

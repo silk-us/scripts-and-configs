@@ -1,0 +1,17 @@
+
+{
+    "vnet_resource_group_name": "example-vnet-rg",
+    "vnet_name": "example-vnet",
+    "nsg_resource_group_name": "example-nsg-rg",
+    "subnet_config": [
+        {
+            "name": "example-flex-subnet",
+            "ip_range": "10.0.5.128/28",
+            "nsg_name": "example-flex-nsg",
+            "service_endpoint": [
+                "Microsoft.Storage.Global",
+                "Microsoft.ContainerRegistry"
+            ]
+        }
+    ]
+}

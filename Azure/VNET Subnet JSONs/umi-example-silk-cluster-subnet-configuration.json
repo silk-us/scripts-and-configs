@@ -1,0 +1,50 @@
+
+{
+    "vnet_resource_group_name": "example-vnet-rg",
+    "vnet_name": "example-vnet",
+    "nsg_resource_group_name": "example-nsg-rg",
+    "subnet_config": [
+        {
+            "name": "example-flex-subnet",
+            "ip_range": "10.0.5.128/28",
+            "nsg_name": "example-flex-nsg",
+            "service_endpoint": [
+                "Microsoft.Storage.Global",
+                "Microsoft.ContainerRegistry"
+            ]
+        },
+        {
+            "name": "example-external-data1-subnet",
+            "ip_range": "10.0.4.0/25",
+            "nsg_name": "example-external-data1-nsg",
+            "service_endpoint": []
+        },
+        {
+            "name": "example-external-data2-subnet",
+            "ip_range": "10.0.4.128/25",
+            "nsg_name": "example-external-data2-nsg",
+            "service_endpoint": []
+        },
+        {
+            "name": "example-internal1-subnet",
+            "ip_range": "10.0.0.0/23",
+            "nsg_name": "example-internal1-nsg",
+            "service_endpoint": []
+        },
+        {
+            "name": "example-internal2-subnet",
+            "ip_range": "10.0.2.0/23",
+            "nsg_name": "example-internal2-nsg",
+            "service_endpoint": []
+        },
+        {
+            "name": "example-external-mgmt-subnet",
+            "ip_range": "10.0.5.0/25",
+            "nsg_name": "example-external-mgmt-nsg",
+            "service_endpoint": [
+                "Microsoft.Storage.Global",
+                "Microsoft.ContainerRegistry"
+            ]
+        }
+    ]
+}

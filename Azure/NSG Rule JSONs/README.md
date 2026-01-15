@@ -13,7 +13,7 @@ Update "resource_group_name", "azure_region", and the "name" of the NSG as neede
 
 ```json
   "resource_group_name": "flex-example",
-  "azure_region": "eastus",
+  "azure_region": "centralus",
   "nsg": [
     {
       "name": "flex-example-nsg",
@@ -25,15 +25,15 @@ The first three values from the [example-silk-cluster-nsg-configuration](example
 Update "resource_group_name", "azure_region", "cluster_number", and each of the "cidr" values in the "subnet_config" hashtables to match your environments configuration.
 ```json
     "resource_group_name": "flex-example",
-    "azure_region": "eastus",
+    "azure_region": "centralus",
     "cluster_number": "1234",
     "subnet_config":[
       {"string": "flex_subnet_cidr","cidr": "10.0.5.128/28"},
-      {"string": "external_mgmt_cidr","cidr": "10.0.5.0/25"},
+      {"string": "external_data_1_cidr","cidr": "10.0.4.0/25"},
+      {"string": "external_data_2_cidr","cidr": "10.0.4.128/25"},
       {"string": "internal_1_cidr","cidr": "10.0.0.0/23"},
       {"string": "internal_2_cidr","cidr": "10.0.2.0/23"},
-      {"string": "external_data_1_cidr","cidr": "10.0.4.0/25"},
-      {"string": "external_data_2_cidr","cidr": "10.0.4.128/25"}
+      {"string": "external_mgmt_cidr","cidr": "10.0.5.0/25"}
     ],
 ...
 ```

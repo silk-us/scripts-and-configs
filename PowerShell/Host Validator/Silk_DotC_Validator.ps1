@@ -430,6 +430,97 @@ function ValidateWindows {
     catch { AddRowErrText ("Could not query MSiSCSI: {0}" -f $_.Exception.Message) }
     CloseCard
 
+    
+
+    # ---- iSCSI Fast Failback Registry Parameters ----
+    NewCard "iSCSI Fast Failback Registry Parameters" "REG" "info"
+    try {
+        $regRows = Invoke-Windows -ComputerName $ComputerName -Credential $Credential -Command @'
+    function Find-SilkiSCSIRegistryInstance {
+        $property = "DriverDesc"
+        $regLocal = "HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e97b-e325-11ce-bfc1-08002be10318}"
+        $paths = Get-ChildItem -Path $regLocal -Recurse -ErrorAction SilentlyContinue
+
+        $targetPath = $null
+        foreach ($path in $paths) {
+            $psPath = $path.Name.Replace("HKEY_LOCAL_MACHINE","HKLM:")
+            $propertyValue = Get-ItemProperty -Path $psPath -Name $property -ErrorAction SilentlyContinue |
+                             Select-Object -ExpandProperty $property
+            if ($propertyValue -eq "Microsoft iSCSI Initiator") {
+                $targetPath = $psPath
+            }
+        }
+        if ($targetPath) { return $targetPath } else { return $null }
+    }
+
+    $instPath = Find-SilkiSCSIRegistryInstance
+    if (-not $instPath) {
+        [pscustomobject]@{ Kind='Error'; Message='Microsoft iSCSI Initiator not found in the registry.' }
+        return
+    }
+
+    $paramKey = Join-Path $instPath 'Parameters'
+    if (-not (Test-Path $paramKey)) {
+        [pscustomobject]@{ Kind='Error'; Message=("Parameters key not found at {0}" -f $paramKey); Path=$paramKey }
+        return
+    }
+
+    $props = Get-ItemProperty -Path $paramKey -ErrorAction SilentlyContinue
+
+    # Expected DWORD values (all numeric; EnableNOPOut expected 1)
+    $expected = [ordered]@{
+        TCPConnectTime        = 3
+        TCPDisconnectTime     = 3
+        DelayBetweenReconnect = 3
+        EnableNOPOut          = 1
+        MaxRequestHoldTime    = 10
+        LinkDownTime          = 3
+        SrbTimeoutDelta       = 3
+    }
+
+    foreach ($name in $expected.Keys) {
+        $act = $props.$name
+        $ok  = ($null -ne $act) -and ([int]$act -eq [int]$expected[$name])
+
+        [pscustomobject]@{
+            Kind     = 'Check'
+            Name     = $name
+            Expected = [int]$expected[$name]
+            Actual   = if ($null -eq $act) { 'MISSING' } else { [int]$act }
+            OK       = $ok
+            Path     = $paramKey
+        }
+    }
+'@
+
+        if (-not $regRows) {
+            AddRowWarnText "No data returned while checking iSCSI Parameters"
+        }
+        elseif ($regRows[0].Kind -eq 'Error') {
+            AddRowWarnText $regRows[0].Message
+        }
+        else {
+            $evaluatedPath = ($regRows | Select-Object -First 1 -ExpandProperty Path)
+            if ($evaluatedPath) { AddRowInfoText ("Evaluating registry key: {0}" -f $evaluatedPath) }
+
+            $nonCompliant = @($regRows | Where-Object { -not $_.OK })
+            if ($nonCompliant.Count -eq 0) {
+                AddRowOKText "All iSCSI registry parameters are compliant"
+            } else {
+                $summary = $nonCompliant | ForEach-Object {
+                    "{0}={1} (expected {2})" -f $_.Name, $_.Actual, $_.Expected
+                }
+                AddRowWarnText ("Non-compliant iSCSI registry parameters: {0}" -f ($summary -join '; '))
+            }
+            $view = $regRows | Select-Object Name, Expected, Actual, OK
+            DumpTable $view
+        }
+    }
+    catch {
+        AddRowErrText ("iSCSI registry validation error: {0}" -f $_.Exception.Message)
+    }
+    CloseCard
+
     # ---------- MPIO Strict Validation ----------
     NewCard "MPIO Settings" "MPIO" "info"
     try {

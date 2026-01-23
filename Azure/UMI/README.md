@@ -20,8 +20,8 @@ UMI deployments require the following resources to be created before initiating 
 Network Security Groups control traffic to the Flex management and Silk cluster subnets. The example JSON configurations define the required security rules for proper operation.
 
 **Required NSGs:**
-- **Flex Subnet NSG** - Controls access to the Flex management subnet ([example-flex-nsg-configuration.json](../NSG%20Rule%20JSONs/example-flex-nsg-configuration.json))
-- **Silk Cluster Subnet NSGs** - Controls access to all cluster subnets (external data, internal, external management) ([example-silk-cluster-nsg-configuration.json](../NSG%20Rule%20JSONs/example-silk-cluster-nsg-configuration.json))
+- [**Flex Subnet NSG**](../NSG%20Rule%20JSONs/example-flex-nsg-configuration.json) - Controls access to the Flex management subnet
+- [**Silk Cluster Subnet NSGs**](../NSG%20Rule%20JSONs/example-silk-cluster-nsg-configuration.json) - Controls access to all cluster subnets (external data, internal, external management)
 
 **Configuration Requirements:**
 - Security rules allowing required traffic within VNET scope

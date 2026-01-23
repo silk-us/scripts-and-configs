@@ -7,6 +7,10 @@ This directory contains configuration templates, tools, and documentation to sup
 ## User Managed Identity (UMI) Deployment Guide
 
 Silk Flex deployments on Azure can utilize either a System Managed Identity (SMI) or a User Managed Identity (UMI).
+For either deployment method, if the account used during the deployment can not have `owner` role assignment to the Resource Group these roles detail the minimum required permissions to deploy from the Azure marketplace:
+- [resource-group-role](./Role%20JSONs/example-silk-deployment-operator-resource-group-role.json)
+- [subscription-role](./Role%20JSONs/example-silk-deployment-operator-subscription-role.json)
+- [vnet-resource-group-role](./Role%20JSONs/example-silk-deployment-operator-vnet-resource-group-role.json)
 
 ### UMI vs SMI Deployments
 
@@ -29,6 +33,10 @@ Network Security Groups control traffic to the Flex management and Silk cluster 
 - Security rules allowing required traffic within VNET scope
 - Proper priority ordering and rule directionality
 - CIDR ranges matching your subnet configuration
+- Confirm that an outbound rule is added in the Flex NSG for these destinations: "Storage," "AzureCloud," and hub.clarity.silk.us (34.120.213.129).
+- Allow HTTPs outbound internet traffic for these domains on the any additional firewalls (permanent access):
+    - Azure domains:*.blob.core.windows.net, *.azure.com
+    - Clarity domains: hub.clarity.silk.us (34.120.213.129)
 
 Detailed configuration specifications and deployment methods are available in the [NSG Rule JSONs README](./NSG%20Rule%20JSONs/README.md).
 

@@ -64,10 +64,10 @@ A User Managed Identity must be created in Azure that will be assigned to the Si
 Custom Azure RBAC roles must be created and assigned to the User Managed Identity with minimum required permissions for Flex operation.
 
 **Required Roles:**
-- **UMI Resource Group Role** - Permissions to create and manage compute resources in the target resource group ([example-silk-umi-resourcegroup-role.json](../Role%20JSONs/example-silk-umi-resourcegroup-role.json))
-- **UMI NSG Role** - Read and write permissions on Network Security Groups ([example-silk-umi-nsg-role.json](../Role%20JSONs/example-silk-umi-nsg-role.json))
-- **UMI VNET Role** - Subnet join and read permissions on the Virtual Network ([example-silk-umi-vnet-role.json](../Role%20JSONs/example-silk-umi-vnet-role.json))
-- **UMI Subscription Logs Role** - Activity log read permissions at the subscription level ([example-silk-umi-subscription-logs-role.json](../Role%20JSONs/example-silk-umi-subscription-logs-role.json))
+- [**UMI Resource Group Role**](../Role%20JSONs/example-silk-umi-resourcegroup-role.json) - Permissions to create and manage compute resources in the target resource group
+- [**UMI NSG Role**](../Role%20JSONs/example-silk-umi-nsg-role.json) - Read and write permissions on Network Security Groups
+- [**UMI VNET Role**](../Role%20JSONs/example-silk-umi-vnet-role.json) - Subnet join and read permissions on the Virtual Network
+- [**UMI Subscription Logs Role**](../Role%20JSONs/example-silk-umi-subscription-logs-role.json) - Activity log read permissions at the subscription level
 
 **Assignment Requirements:**
 - **UMI Resource Group Role** → Assigned to UMI on the empty target resource group

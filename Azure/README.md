@@ -15,5 +15,9 @@ Provides the `Test-SilkResourceDeployment` PowerShell module that validates whet
 ### [Role JSONs](./Role%20JSONs)
 Contains example Azure RBAC role definitions with minimum required permissions for Silk Flex deployments using User Managed Identities. Includes separate roles for deployment operators and User Managed Identities (UMI) with granular permissions scoped to resource groups, subscriptions, VNETs, and NSGs to follow the principle of least privilege.
 
+### [UMI](./UMI)
+Contains a readme detailing the requirement of a User Managed Identity deployment.
+
+
 ### [VNET Subnet JSONs](./VNET%20Subnet%20JSONs)
 Provides example subnet configuration templates for deploying Silk Flex subnets within existing Azure Virtual Networks. Includes all required service endpoints (Microsoft.Storage.Global and Microsoft.ContainerRegistry) and guidance for associating appropriately configured NSGs to the subnet.

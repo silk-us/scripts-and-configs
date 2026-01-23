@@ -2,9 +2,9 @@
 
 Silk Flex deployments on Azure can utilize either a System Managed Identity (SMI) or a User Managed Identity (UMI).
 For either deployment method, if the account used during the deployment can not have `owner` role assignment to the Resource Group these roles detail the minimum required permissions to deploy from the Azure marketplace:
-- [resource-group-role](./Role%20JSONs/example-silk-deployment-operator-resource-group-role.json)
-- [subscription-role](./Role%20JSONs/example-silk-deployment-operator-subscription-role.json)
-- [vnet-resource-group-role](./Role%20JSONs/example-silk-deployment-operator-vnet-resource-group-role.json)
+- [resource-group-role](../Role%20JSONs/example-silk-deployment-operator-resource-group-role.json)
+- [subscription-role](../Role%20JSONs/example-silk-deployment-operator-subscription-role.json)
+- [vnet-resource-group-role](../Role%20JSONs/example-silk-deployment-operator-vnet-resource-group-role.json)
 
 ### UMI vs SMI Deployments
 
@@ -20,8 +20,8 @@ UMI deployments require the following resources to be created before initiating 
 Network Security Groups control traffic to the Flex management and Silk cluster subnets. The example JSON configurations define the required security rules for proper operation.
 
 **Required NSGs:**
-- **Flex Subnet NSG** - Controls access to the Flex management subnet ([example-flex-nsg-configuration.json](./NSG%20Rule%20JSONs/example-flex-nsg-configuration.json))
-- **Silk Cluster Subnet NSGs** - Controls access to all cluster subnets (external data, internal, external management) ([example-silk-cluster-nsg-configuration.json](./NSG%20Rule%20JSONs/example-silk-cluster-nsg-configuration.json))
+- **Flex Subnet NSG** - Controls access to the Flex management subnet ([example-flex-nsg-configuration.json](../NSG%20Rule%20JSONs/example-flex-nsg-configuration.json))
+- **Silk Cluster Subnet NSGs** - Controls access to all cluster subnets (external data, internal, external management) ([example-silk-cluster-nsg-configuration.json](../NSG%20Rule%20JSONs/example-silk-cluster-nsg-configuration.json))
 
 **Configuration Requirements:**
 - Security rules allowing required traffic within VNET scope
@@ -32,7 +32,7 @@ Network Security Groups control traffic to the Flex management and Silk cluster 
     - Azure domains:*.blob.core.windows.net, *.azure.com
     - Clarity domains: hub.clarity.silk.us (34.120.213.129)
 
-Detailed configuration specifications and deployment methods are available in the [NSG Rule JSONs README](./NSG%20Rule%20JSONs/README.md).
+Detailed configuration specifications and deployment methods are available in the [NSG Rule JSONs README](../NSG%20Rule%20JSONs/README.md).
 
 #### 2. Virtual Network Subnets
 All subnets required by the Silk cluster must be pre-created within an existing Virtual Network. These subnets must be configured with the appropriate service endpoints and associated with their corresponding NSGs.
@@ -48,9 +48,9 @@ All subnets required by the Silk cluster must be pre-created within an existing 
 - Service endpoints: `Microsoft.Storage.Global` and `Microsoft.ContainerRegistry` on Flex and Management subnets
 - NSG association for each subnet
 
-Example configuration: [umi-example-silk-cluster-subnet-configuration.json](./VNET%20Subnet%20JSONs/umi-example-silk-cluster-subnet-configuration.json)
+Example configuration: [umi-example-silk-cluster-subnet-configuration.json](../VNET%20Subnet%20JSONs/umi-example-silk-cluster-subnet-configuration.json)
 
-Detailed configuration specifications and deployment methods are available in the [VNET Subnet JSONs README](./VNET%20Subnet%20JSONs/README.md).
+Detailed configuration specifications and deployment methods are available in the [VNET Subnet JSONs README](../VNET%20Subnet%20JSONs/README.md).
 
 #### 3. User Managed Identity
 A User Managed Identity must be created in Azure that will be assigned to the Silk Flex deployment. This identity will be used by Flex to interact with Azure resources during and after deployment.
@@ -64,10 +64,10 @@ A User Managed Identity must be created in Azure that will be assigned to the Si
 Custom Azure RBAC roles must be created and assigned to the User Managed Identity with minimum required permissions for Flex operation.
 
 **Required Roles:**
-- **UMI Resource Group Role** - Permissions to create and manage compute resources in the target resource group ([example-silk-umi-resourcegroup-role.json](./Role%20JSONs/example-silk-umi-resourcegroup-role.json))
-- **UMI NSG Role** - Read and write permissions on Network Security Groups ([example-silk-umi-nsg-role.json](./Role%20JSONs/example-silk-umi-nsg-role.json))
-- **UMI VNET Role** - Subnet join and read permissions on the Virtual Network ([example-silk-umi-vnet-role.json](./Role%20JSONs/example-silk-umi-vnet-role.json))
-- **UMI Subscription Logs Role** - Activity log read permissions at the subscription level ([example-silk-umi-subscription-logs-role.json](./Role%20JSONs/example-silk-umi-subscription-logs-role.json))
+- **UMI Resource Group Role** - Permissions to create and manage compute resources in the target resource group ([example-silk-umi-resourcegroup-role.json](../Role%20JSONs/example-silk-umi-resourcegroup-role.json))
+- **UMI NSG Role** - Read and write permissions on Network Security Groups ([example-silk-umi-nsg-role.json](../Role%20JSONs/example-silk-umi-nsg-role.json))
+- **UMI VNET Role** - Subnet join and read permissions on the Virtual Network ([example-silk-umi-vnet-role.json](../Role%20JSONs/example-silk-umi-vnet-role.json))
+- **UMI Subscription Logs Role** - Activity log read permissions at the subscription level ([example-silk-umi-subscription-logs-role.json](../Role%20JSONs/example-silk-umi-subscription-logs-role.json))
 
 **Assignment Requirements:**
 - **UMI Resource Group Role** → Assigned to UMI on the empty target resource group
@@ -75,7 +75,7 @@ Custom Azure RBAC roles must be created and assigned to the User Managed Identit
 - **UMI VNET Role** → Assigned to UMI on the VNET resource
 - **UMI Subscription Logs Role** → Assigned to UMI on the subscription
 
-Detailed role definitions and assignment guidance are available in the [Role JSONs README](./Role%20JSONs/README.md).
+Detailed role definitions and assignment guidance are available in the [Role JSONs README](../Role%20JSONs/README.md).
 
 ### Resource Creation Order
 

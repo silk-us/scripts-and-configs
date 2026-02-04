@@ -1,6 +1,3 @@
-param(
-    [parameter(Mandatory)]
-    [hashtable]$parameterTable
-)
+$parameterTable
 
 return $parameterTable

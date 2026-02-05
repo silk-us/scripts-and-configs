@@ -147,10 +147,15 @@ $Cluster | Add-Member -MemberType NoteProperty -Name 'Location Quotas' -Value $l
 
 Write-Host "Retrieving virtual network information..." -ForegroundColor Cyan
 try {
-    $allVNets = Get-AzVirtualNetwork
 
     if ($virtualNetwork) {
-        $allVNets = $allVNets | Where-Object {$_.Name -eq $virtualNetwork}
+        $allVNets = Get-AzVirtualNetwork -Name $virtualNetwork -ErrorAction SilentlyContinue
+    } else {
+        $allVNets = Get-AzVirtualNetwork
+    }
+
+    if ($location) {
+        $allVNets = $allVNets | Where-Object {$_.Location -eq $location}
     }
 
     $clusterVNets = @()

@@ -270,9 +270,11 @@ try {
                 $policySetRest = $null
                 try {
                     $policySetId = if ($policySetDef -and $policySetDef.Id) { $policySetDef.Id } else { $pa.PolicyDefinitionId }
-                    $psRest = Invoke-AzRestMethod -Method GET -Path "$policySetId?api-version=2023-04-01"
-                    if ($psRest.StatusCode -eq 200 -and $psRest.Content) {
-                        $policySetRest = $psRest.Content | ConvertFrom-Json
+                    if ($policySetId) {
+                        $psRest = Invoke-AzRestMethod -Method GET -Path "$policySetId?api-version=2023-04-01"
+                        if ($psRest.StatusCode -eq 200 -and $psRest.Content) {
+                            $policySetRest = $psRest.Content | ConvertFrom-Json
+                        }
                     }
                 } catch {
                     Write-Host "    Warning: Could not retrieve policy set via REST for $($pa.Name)" -ForegroundColor Yellow
@@ -307,9 +309,11 @@ try {
                 $policyDefRest = $null
                 try {
                     $policyDefId = if ($policyDef -and $policyDef.Id) { $policyDef.Id } else { $pa.PolicyDefinitionId }
-                    $pdRest = Invoke-AzRestMethod -Method GET -Path "$policyDefId?api-version=2023-04-01"
-                    if ($pdRest.StatusCode -eq 200 -and $pdRest.Content) {
-                        $policyDefRest = $pdRest.Content | ConvertFrom-Json
+                    if ($policyDefId) {
+                        $pdRest = Invoke-AzRestMethod -Method GET -Path "$policyDefId?api-version=2023-04-01"
+                        if ($pdRest.StatusCode -eq 200 -and $pdRest.Content) {
+                            $policyDefRest = $pdRest.Content | ConvertFrom-Json
+                        }
                     }
                 } catch {
                     Write-Host "    Warning: Could not retrieve policy definition via REST for $($pa.Name)" -ForegroundColor Yellow

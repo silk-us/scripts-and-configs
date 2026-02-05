@@ -260,39 +260,18 @@ try {
             if ($assignmentParameters) {
                 $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Assignment Parameters" -Value $assignmentParameters
             }
-
-            $policyDefinitionId = $pa.PolicyDefinitionId
-            if (-not $policyDefinitionId -and $pa.Id) {
-                try {
-                    $paRest = Invoke-AzRestMethod -Method GET -Path "$($pa.Id)?api-version=2023-04-01"
-                    if ($paRest.StatusCode -eq 200 -and $paRest.Content) {
-                        $paJson = $paRest.Content | ConvertFrom-Json
-                        $policyDefinitionId = $paJson.properties.policyDefinitionId
-                    }
-                } catch {
-                    Write-Host "    Warning: Could not retrieve policyDefinitionId via REST for $($pa.Name)" -ForegroundColor Yellow
-                }
-            }
-            if (-not $policyDefinitionId) {
-                Write-Host "    Warning: Missing policyDefinitionId for $($pa.Name); skipping definition lookup" -ForegroundColor Yellow
-                $policyInfo += $policyObject
-                continue
-            }
-
-            if ($policyDefinitionId -match "/policySetDefinitions/") {
-                $policySetDef = Get-AzPolicySetDefinition -Id $policyDefinitionId -ErrorAction SilentlyContinue
+            if ($pa.PolicyDefinitionId -match "/policySetDefinitions/") {
+                $policySetDef = Get-AzPolicySetDefinition -Id $pa.PolicyDefinitionId -ErrorAction SilentlyContinue
                 if (-not $policySetDef) {
-                    $policySetName = ($policyDefinitionId -split '/')[ -1 ]
+                    $policySetName = ($pa.PolicyDefinitionId -split '/')[ -1 ]
                     $policySetDef = Get-AzPolicySetDefinition -Name $policySetName -ErrorAction SilentlyContinue
                 }
                 $policySetRest = $null
                 try {
-                    $policySetId = if ($policySetDef -and $policySetDef.Id) { $policySetDef.Id } else { $policyDefinitionId }
-                    if ($policySetId) {
-                        $psRest = Invoke-AzRestMethod -Method GET -Path "$policySetId?api-version=2023-04-01"
-                        if ($psRest.StatusCode -eq 200 -and $psRest.Content) {
-                            $policySetRest = $psRest.Content | ConvertFrom-Json
-                        }
+                    $policySetId = if ($policySetDef -and $policySetDef.Id) { $policySetDef.Id } else { $pa.PolicyDefinitionId }
+                    $psRest = Invoke-AzRestMethod -Method GET -Path "$policySetId?api-version=2023-04-01"
+                    if ($psRest.StatusCode -eq 200 -and $psRest.Content) {
+                        $policySetRest = $psRest.Content | ConvertFrom-Json
                     }
                 } catch {
                     Write-Host "    Warning: Could not retrieve policy set via REST for $($pa.Name)" -ForegroundColor Yellow
@@ -319,19 +298,17 @@ try {
                 $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Rules" -Value $policySetRules
                 $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Definition Parameters" -Value $policySetParameters
             } else {
-                $policyDef = Get-AzPolicyDefinition -Id $policyDefinitionId -ErrorAction SilentlyContinue
+                $policyDef = Get-AzPolicyDefinition -Id $pa.PolicyDefinitionId -ErrorAction SilentlyContinue
                 if (-not $policyDef) {
-                    $policyDefName = ($policyDefinitionId -split '/')[ -1 ]
+                    $policyDefName = ($pa.PolicyDefinitionId -split '/')[ -1 ]
                     $policyDef = Get-AzPolicyDefinition -Name $policyDefName -ErrorAction SilentlyContinue
                 }
                 $policyDefRest = $null
                 try {
-                    $policyDefId = if ($policyDef -and $policyDef.Id) { $policyDef.Id } else { $policyDefinitionId }
-                    if ($policyDefId) {
-                        $pdRest = Invoke-AzRestMethod -Method GET -Path "$policyDefId?api-version=2023-04-01"
-                        if ($pdRest.StatusCode -eq 200 -and $pdRest.Content) {
-                            $policyDefRest = $pdRest.Content | ConvertFrom-Json
-                        }
+                    $policyDefId = if ($policyDef -and $policyDef.Id) { $policyDef.Id } else { $pa.PolicyDefinitionId }
+                    $pdRest = Invoke-AzRestMethod -Method GET -Path "$policyDefId?api-version=2023-04-01"
+                    if ($pdRest.StatusCode -eq 200 -and $pdRest.Content) {
+                        $policyDefRest = $pdRest.Content | ConvertFrom-Json
                     }
                 } catch {
                     Write-Host "    Warning: Could not retrieve policy definition via REST for $($pa.Name)" -ForegroundColor Yellow

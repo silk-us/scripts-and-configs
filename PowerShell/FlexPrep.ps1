@@ -226,8 +226,7 @@ Write-Host "Retrieving policy assignments..." -ForegroundColor Cyan
 try {
     $policyScope = "/subscriptions/$($azContext.Subscription.Id)"
 
-    $policyAssignments = Get-AzPolicyAssignment -Scope $policyScope
-    $policyDefinitions = Get-AzPolicyDefinition
+    $policyAssignments = Get-AzPolicyAssignment -Scope $policyScope -IncludeDescendent
 
     Write-Host "Processing $($policyAssignments.Count) policy assignment(s)..." -ForegroundColor Cyan
     $policyInfo = @()
@@ -236,11 +235,95 @@ try {
             Write-Host "  Processing policy: $($pa.Name)" -ForegroundColor Gray
             $policyObject = New-Object PSObject
             $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Assignment Name" -Value $pa.Name
+            $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Assignment Display Name" -Value $pa.DisplayName
             $policyObject | Add-Member -MemberType NoteProperty -Name "Scope" -Value $pa.Scope
             $policyObject | Add-Member -MemberType NoteProperty -Name "Enforcement Mode" -Value $pa.EnforcementMode
-            $policyDef = $policyDefinitions | Where-Object {$_.Name  -eq $pa.PolicyDefinitionId}
-            $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Definition Name" -Value $policyDef.DisplayName
-            $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Definition Description" -Value $policyDef.Description
+            $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Definition Id" -Value $pa.PolicyDefinitionId
+            $assignmentParameters = if ($pa.Properties -and $pa.Properties.Parameters) { $pa.Properties.Parameters } else { $pa.Parameters }
+            if (-not $assignmentParameters) {
+                $paRefresh = Get-AzPolicyAssignment -Name $pa.Name -Scope $pa.Scope -ErrorAction SilentlyContinue
+                if ($paRefresh -and $paRefresh.Properties -and $paRefresh.Properties.Parameters) {
+                    $assignmentParameters = $paRefresh.Properties.Parameters
+                }
+            }
+            if (-not $assignmentParameters -and $pa.Id) {
+                try {
+                    $paRest = Invoke-AzRestMethod -Method GET -Path "$($pa.Id)?api-version=2023-04-01"
+                    if ($paRest.StatusCode -eq 200 -and $paRest.Content) {
+                        $paJson = $paRest.Content | ConvertFrom-Json
+                        $assignmentParameters = $paJson.properties.parameters
+                    }
+                } catch {
+                    Write-Host "    Warning: Could not retrieve assignment parameters via REST for $($pa.Name)" -ForegroundColor Yellow
+                }
+            }
+            if ($assignmentParameters) {
+                $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Assignment Parameters" -Value $assignmentParameters
+            }
+
+            if ($pa.PolicyDefinitionId -match "/policySetDefinitions/") {
+                $policySetDef = Get-AzPolicySetDefinition -Id $pa.PolicyDefinitionId -ErrorAction SilentlyContinue
+                if (-not $policySetDef) {
+                    $policySetName = ($pa.PolicyDefinitionId -split '/')[ -1 ]
+                    $policySetDef = Get-AzPolicySetDefinition -Name $policySetName -ErrorAction SilentlyContinue
+                }
+                $policySetRest = $null
+                try {
+                    $policySetId = if ($policySetDef -and $policySetDef.Id) { $policySetDef.Id } else { $pa.PolicyDefinitionId }
+                    $psRest = Invoke-AzRestMethod -Method GET -Path "$policySetId?api-version=2023-04-01"
+                    if ($psRest.StatusCode -eq 200 -and $psRest.Content) {
+                        $policySetRest = $psRest.Content | ConvertFrom-Json
+                    }
+                } catch {
+                    Write-Host "    Warning: Could not retrieve policy set via REST for $($pa.Name)" -ForegroundColor Yellow
+                }
+                $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Definition Type" -Value "Policy Set"
+                $policySetDisplayName = if ($policySetRest -and $policySetRest.properties -and $policySetRest.properties.displayName) { $policySetRest.properties.displayName } elseif ($policySetDef -and $policySetDef.Properties -and $policySetDef.Properties.DisplayName) { $policySetDef.Properties.DisplayName } else { $policySetDef.DisplayName }
+                $policySetDescription = if ($policySetRest -and $policySetRest.properties -and $policySetRest.properties.description) { $policySetRest.properties.description } elseif ($policySetDef -and $policySetDef.Properties -and $policySetDef.Properties.Description) { $policySetDef.Properties.Description } else { $policySetDef.Description }
+                $policySetRules = if ($policySetRest -and $policySetRest.properties -and $policySetRest.properties.policyDefinitions) { $policySetRest.properties.policyDefinitions } elseif ($policySetDef -and $policySetDef.Properties -and $policySetDef.Properties.PolicyDefinitions) { $policySetDef.Properties.PolicyDefinitions } else { $policySetDef.PolicyDefinitions }
+                $policySetParameters = if ($policySetRest -and $policySetRest.properties -and $policySetRest.properties.parameters) { $policySetRest.properties.parameters } elseif ($policySetDef -and $policySetDef.Properties -and $policySetDef.Properties.Parameters) { $policySetDef.Properties.Parameters } else { $policySetDef.Parameters }
+                if (-not $policySetParameters) {
+                    try {
+                        $policySetId = if ($policySetDef -and $policySetDef.Id) { $policySetDef.Id } else { $pa.PolicyDefinitionId }
+                        $psRest = Invoke-AzRestMethod -Method GET -Path "$policySetId?api-version=2023-04-01"
+                        if ($psRest.StatusCode -eq 200 -and $psRest.Content) {
+                            $psJson = $psRest.Content | ConvertFrom-Json
+                            $policySetParameters = $psJson.properties.parameters
+                        }
+                    } catch {
+                        Write-Host "    Warning: Could not retrieve policy set parameters via REST for $($pa.Name)" -ForegroundColor Yellow
+                    }
+                }
+                $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Definition Name" -Value $policySetDisplayName
+                $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Definition Description" -Value $policySetDescription
+                $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Rules" -Value $policySetRules
+                $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Definition Parameters" -Value $policySetParameters
+            } else {
+                $policyDef = Get-AzPolicyDefinition -Id $pa.PolicyDefinitionId -ErrorAction SilentlyContinue
+                if (-not $policyDef) {
+                    $policyDefName = ($pa.PolicyDefinitionId -split '/')[ -1 ]
+                    $policyDef = Get-AzPolicyDefinition -Name $policyDefName -ErrorAction SilentlyContinue
+                }
+                $policyDefRest = $null
+                try {
+                    $policyDefId = if ($policyDef -and $policyDef.Id) { $policyDef.Id } else { $pa.PolicyDefinitionId }
+                    $pdRest = Invoke-AzRestMethod -Method GET -Path "$policyDefId?api-version=2023-04-01"
+                    if ($pdRest.StatusCode -eq 200 -and $pdRest.Content) {
+                        $policyDefRest = $pdRest.Content | ConvertFrom-Json
+                    }
+                } catch {
+                    Write-Host "    Warning: Could not retrieve policy definition via REST for $($pa.Name)" -ForegroundColor Yellow
+                }
+                $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Definition Type" -Value "Policy"
+                $policyDefDisplayName = if ($policyDefRest -and $policyDefRest.properties -and $policyDefRest.properties.displayName) { $policyDefRest.properties.displayName } elseif ($policyDef -and $policyDef.Properties -and $policyDef.Properties.DisplayName) { $policyDef.Properties.DisplayName } else { $policyDef.DisplayName }
+                $policyDefDescription = if ($policyDefRest -and $policyDefRest.properties -and $policyDefRest.properties.description) { $policyDefRest.properties.description } elseif ($policyDef -and $policyDef.Properties -and $policyDef.Properties.Description) { $policyDef.Properties.Description } else { $policyDef.Description }
+                $policyDefRule = if ($policyDefRest -and $policyDefRest.properties -and $policyDefRest.properties.policyRule) { $policyDefRest.properties.policyRule } elseif ($policyDef -and $policyDef.Properties -and $policyDef.Properties.PolicyRule) { $policyDef.Properties.PolicyRule } else { $policyDef.PolicyRule }
+                $policyDefParameters = if ($policyDefRest -and $policyDefRest.properties -and $policyDefRest.properties.parameters) { $policyDefRest.properties.parameters } elseif ($policyDef -and $policyDef.Properties -and $policyDef.Properties.Parameters) { $policyDef.Properties.Parameters } else { $policyDef.Parameters }
+                $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Definition Name" -Value $policyDefDisplayName
+                $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Definition Description" -Value $policyDefDescription
+                $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Rules" -Value $policyDefRule
+                $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Definition Parameters" -Value $policyDefParameters
+            }
             $policyInfo += $policyObject
         } catch {
             Write-Host "    Error processing policy $($pa.Name): $($_.Exception.Message)" -ForegroundColor Red

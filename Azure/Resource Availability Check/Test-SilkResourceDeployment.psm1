@@ -1580,7 +1580,7 @@ function Test-SilkResourceDeployment
                 # Identify MNode SKU details based on configuration
                 if ($MNodeSize)
                     {
-                        $MNodeSize | % { $nodeSize = $_; $mNodeObject.Add($($mNodeSizeObject | Where-Object { $_.PhysicalSize -eq $nodeSize })) }
+                        $MNodeSize | ForEach-Object { $nodeSize = $_; $mNodeObject.Add($($mNodeSizeObject | Where-Object { $_.PhysicalSize -eq $nodeSize })) }
                     } `
                 elseif ($MNodeCount -and $MNodeSku)
                     {
@@ -1606,7 +1606,7 @@ function Test-SilkResourceDeployment
                     {
                         # Create unique MNode object list to avoid duplicates
                         $mNodeObjectUnique = New-Object System.Collections.Generic.List[PSCustomObject]
-                        $mNodeObject | % { if(-not $mNodeObjectUnique.Contains($_)) { $mNodeObjectUnique.Add($_) } }
+                        $mNodeObject | ForEach-Object { if(-not $mNodeObjectUnique.Contains($_)) { $mNodeObjectUnique.Add($_) } }
 
                         foreach ($mNodeDetail in $mNodeObject)
                             {
@@ -1876,7 +1876,7 @@ function Test-SilkResourceDeployment
                                             {
                                                 if ($mNodeType.QuotaFamily -eq $mNodeFamily.Name)
                                                     {
-                                                        $mNodeFamilyvCPUCount += $mNodeType.vCPU * $mNodeType.dNodeCount * $($mNodeInstanceCount | ? Name -eq $mNodeType.PhysicalSize).Count
+                                                        $mNodeFamilyvCPUCount += $mNodeType.vCPU * $mNodeType.dNodeCount * $($mNodeInstanceCount | Where-Object Name -eq $mNodeType.PhysicalSize).Count
                                                     }
                                             }
 
@@ -1940,7 +1940,7 @@ function Test-SilkResourceDeployment
                                             } `
                                         else
                                             {
-                                                Write-Verbose -Message $("Sufficient vCPU quota available for MNode SKU {0} of Family: {1}. Required: {2} -> Limit: {3}, Consumed: {4}, Available: {5}" -f $(($mNodeFamily.group | % { "{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix }) -join ', '), $mNodeFamily.Name, $mNodeFamilyvCPUCount, $mNodeSKUFamilyQuota.Limit, $mNodeSKUFamilyQuota.CurrentValue, $availableMNodeVCPUs)
+                                                Write-Verbose -Message $("Sufficient vCPU quota available for MNode SKU {0} of Family: {1}. Required: {2} -> Limit: {3}, Consumed: {4}, Available: {5}" -f $(($mNodeFamily.group | ForEach-Object { "{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix }) -join ', '), $mNodeFamily.Name, $mNodeFamilyvCPUCount, $mNodeSKUFamilyQuota.Limit, $mNodeSKUFamilyQuota.CurrentValue, $availableMNodeVCPUs)
 
                                                 # Add full counts
                                                 foreach ($mNodeType in $mNodeFamily.Group)

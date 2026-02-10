@@ -970,8 +970,10 @@ function Test-SilkResourceDeployment
                                 try
                                     {
                                         # Attempt interactive authentication
-                                        Write-Host "Opening Azure authentication dialog. Please complete the sign-in process..." -ForegroundColor Yellow
+                                        Write-Verbose -Message $("Initiating interactive Azure authentication process...")
+                                        Write-Host $("Opening Azure authentication dialog. Please complete the sign-in process...") -ForegroundColor Yellow
                                         $connectResult = Connect-AzAccount -ErrorAction Stop
+                                        Write-Verbose -Message $("Azure authentication command completed, validating connection result...")
 
                                         if ($connectResult)
                                             {
@@ -1977,7 +1979,7 @@ function Test-SilkResourceDeployment
                                     } `
                                 else
                                     {
-                                        $quotaAdjustmentMessages += "  → CNode: Cannot deploy any VMs due to insufficient quota"
+                                        $quotaAdjustmentMessages += $("  → CNode: Cannot deploy any VMs due to insufficient quota")
                                     }
                             }
 
@@ -1991,7 +1993,7 @@ function Test-SilkResourceDeployment
                                                 $anyDeploymentPossible = $true
                                                 if($adjustment.AdjustedCount -lt $adjustment.OriginalCount)
                                                     {
-                                                        $quotaAdjustmentMessages += "  → MNode ({0}): Deploying {1} of {2} requested DNodes (quota constrained)" -f $physicalSize, $adjustment.AdjustedCount, $adjustment.OriginalCount
+                                                        $quotaAdjustmentMessages += $("  → MNode ({0}): Deploying {1} of {2} requested DNodes (quota constrained)" -f $physicalSize, $adjustment.AdjustedCount, $adjustment.OriginalCount)
                                                     } `
                                                 else
                                                     {
@@ -2000,7 +2002,7 @@ function Test-SilkResourceDeployment
                                             } `
                                         else
                                             {
-                                                $quotaAdjustmentMessages += "  → MNode ({0}): Cannot deploy any DNodes due to insufficient quota" -f $physicalSize
+                                                $quotaAdjustmentMessages += $("  → MNode ({0}): Cannot deploy any DNodes due to insufficient quota" -f $physicalSize)
                                             }
                                     }
                             }
@@ -2097,7 +2099,9 @@ function Test-SilkResourceDeployment
                                                                                     Sort-Object Skus -Descending |
                                                                                     Select-Object -First 1 -ExpandProperty Skus
                                                                             }
+                                                                        Write-Verbose -Message $("Primary offer unavailable, using alternative offer for VM image discovery")
                                                                         Write-Host $("Using alternative offer: {0} with SKU: {1}" -f $offer, $VMImageSku)
+                                                                        Write-Verbose -Message $("Alternative offer '{0}' successfully located with SKU '{1}' for image deployment" -f $offer, $VMImageSku)
                                                                         break
                                                                     }
                                                             } `
@@ -2618,7 +2622,7 @@ function Test-SilkResourceDeployment
                                     }
 
                                 # Clean up CNode creation sub-progress bar as this phase is complete
-                                Write-Progress -Activity "CNode Creation" -Id 2 -Completed
+                                Write-Progress -Activity $("CNode Creation") -Id 2 -Completed
                             }
 
                         # Skip MNode deployment if quota is insufficient
@@ -2901,8 +2905,8 @@ function Test-SilkResourceDeployment
                         Start-Sleep -Seconds 2
 
                         # Complete all progress bars
-                        Write-Progress -Activity "VM Deployment Monitoring" -Id 4 -Completed
-                        Write-Progress -Activity "VM Deployment" -Id 1 -Completed
+                        Write-Progress -Activity $("VM Deployment Monitoring") -Id 4 -Completed
+                        Write-Progress -Activity $("VM Deployment") -Id 1 -Completed
 
                         # Analyze failed jobs AFTER monitoring is complete
                         $finalVMJobs = Get-Job
@@ -3067,7 +3071,9 @@ function Test-SilkResourceDeployment
                 $DeploymentTimespan = New-TimeSpan -Start $StartTime -End (Get-Date)
 
                 # Comprehensive resource validation and reporting
-                Write-Host "`n=== Post-Deployment Validation ===" -ForegroundColor Cyan
+                Write-Verbose -Message $("Initiating post-deployment validation process for resource verification")
+                Write-Host $("`n=== Post-Deployment Validation ===") -ForegroundColor Cyan
+                Write-Verbose -Message $("Querying Azure Resource Manager for deployed resources in resource group '{0}'" -f $ResourceGroupName)
 
                 # Get all deployed resources for validation
                 $deployedVMs = Get-AzVM -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
@@ -3479,22 +3485,24 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 # SKU Support and Quota Availability Report
                 # ===============================================================================
-                Write-Host "`n=== SKU Support and Quota Availability Report ===" -ForegroundColor Cyan
+                Write-Verbose -Message $("Generating SKU support and quota availability analysis report")
+                Write-Host $("`n=== SKU Support and Quota Availability Report ===") -ForegroundColor Cyan
+                Write-Verbose -Message $("Analyzing SKU support for region '{0}' and zone '{1}' against deployment requirements" -f $Region, $Zone)
 
                 # CNode SKU Support Report
                 if($cNodeObject)
                     {
                         $cNodeData = $skuSupportData | Where-Object { $_.ComponentType -eq "CNode" }
 
-                        Write-Host "`nCNode SKU Support:" -ForegroundColor Yellow
+                        Write-Host $("`nCNode SKU Support:") -ForegroundColor Yellow
                         Write-Host $("  SKU: {0}" -f $cNodeData.SKUName)
                         Write-Host $("  Region: {0}" -f $Region)
 
                         switch ($cNodeData.ZoneSupportStatus)
                             {
-                                "Success" { Write-Host "  Zone Support: $($cNodeData.ZoneSupport)" -ForegroundColor Green }
-                                "Warning" { Write-Host "  Zone Support: $($cNodeData.ZoneSupport)" -ForegroundColor Yellow }
-                                "Error" { Write-Host "  Region Support: $($cNodeData.ZoneSupport)" -ForegroundColor Red }
+                                "Success" { Write-Host $("  Zone Support: {0}" -f $cNodeData.ZoneSupport) -ForegroundColor Green }
+                                "Warning" { Write-Host $("  Zone Support: {0}" -f $cNodeData.ZoneSupport) -ForegroundColor Yellow }
+                                "Error" { Write-Host $("  Region Support: {0}" -f $cNodeData.ZoneSupport) -ForegroundColor Red }
                             }
 
                         if ($cNodeData.AvailableZones.Count -gt 0 -and $cNodeData.ZoneSupportStatus -ne "Error")
@@ -3515,9 +3523,9 @@ function Test-SilkResourceDeployment
 
                                 switch ($mNodeTypeData.ZoneSupportStatus)
                                     {
-                                        "Success" { Write-Host "  Zone Support: $($mNodeTypeData.ZoneSupport)" -ForegroundColor Green }
-                                        "Warning" { Write-Host "  Zone Support: $($mNodeTypeData.ZoneSupport)" -ForegroundColor Yellow }
-                                        "Error" { Write-Host "  Region Support: $($mNodeTypeData.ZoneSupport)" -ForegroundColor Red }
+                                        "Success" { Write-Host $("  Zone Support: {0}" -f $mNodeTypeData.ZoneSupport) -ForegroundColor Green }
+                                        "Warning" { Write-Host $("  Zone Support: {0}" -f $mNodeTypeData.ZoneSupport) -ForegroundColor Yellow }
+                                        "Error" { Write-Host $("  Region Support: {0}" -f $mNodeTypeData.ZoneSupport) -ForegroundColor Red }
                                     }
 
                                 if ($mNodeTypeData.AvailableZones.Count -gt 0 -and $mNodeTypeData.ZoneSupportStatus -ne "Error")
@@ -3530,7 +3538,9 @@ function Test-SilkResourceDeployment
                 # Quota Family Summary
                 if ($computeQuotaUsage)
                     {
-                        Write-Host "`nQuota Family Summary:" -ForegroundColor Yellow
+                        Write-Verbose -Message $("Processing quota family requirements and availability analysis")
+                        Write-Host $("`nQuota Family Summary:") -ForegroundColor Yellow
+                        Write-Verbose -Message $("Evaluating {0} quota family requirements against subscription limits" -f $quotaFamilyRequirements.Count)
 
                         # Display quota family summary using preprocessed data
                         $quotaFamilies = ($skuSupportData | ForEach-Object {
@@ -3588,7 +3598,7 @@ function Test-SilkResourceDeployment
                 # Quota Summary
                 if ($computeQuotaUsage)
                     {
-                        Write-Host "`nQuota Summary:" -ForegroundColor Yellow
+                        Write-Host $("`nQuota Summary:") -ForegroundColor Yellow
 
                         # Display quota summary using preprocessed data
                         foreach ($quotaData in $quotaAnalysisData)
@@ -3602,7 +3612,9 @@ function Test-SilkResourceDeployment
                     }
 
                 # Display the deployment report table
-                Write-Host "`n=== VM Deployment Report ===" -ForegroundColor Cyan
+                Write-Verbose -Message $("Generating comprehensive VM deployment status report")
+                Write-Host $("`n=== VM Deployment Report ===") -ForegroundColor Cyan
+                Write-Verbose -Message $("Report includes deployment status for {0} total VMs across CNode and DNode groups" -f $deploymentReport.Count)
 
                 # CNode Report
                 $cNodeReport = $deploymentReport | Where-Object { $_.ResourceType -eq "CNode" }
@@ -3641,7 +3653,8 @@ function Test-SilkResourceDeployment
                     }
 
                 # Silk Component Summary
-                Write-Host "`n=== Silk Component Summary ===" -ForegroundColor Cyan
+                Write-Verbose -Message $("Generating Silk component deployment summary with CNode and MNode statistics")
+                Write-Host $("`n=== Silk Component Summary ===") -ForegroundColor Cyan
 
                 # Calculate CNode statistics
                 $cNodeReport = $deploymentReport | Where-Object { $_.ResourceType -eq "CNode" }
@@ -3705,41 +3718,43 @@ function Test-SilkResourceDeployment
                                             ) -AutoSize
 
                 # Infrastructure Summary
-                Write-Host "`n=== Infrastructure Summary ===" -ForegroundColor Cyan
+                Write-Verbose -Message $("Compiling infrastructure deployment summary for all Azure resources")
+                Write-Host $("`n=== Infrastructure Summary ===") -ForegroundColor Cyan
+                Write-Verbose -Message $("Infrastructure summary includes VNet, NSG, PPG, AvSet, and VM deployment status")
                 if ($nonSuccessfulVMs.Count -gt 0)
                     {
-                        Write-Host "`nVMs with Non-Successful Provisioning States:" -ForegroundColor Yellow
-                        $nonSuccessfulVMs | ForEach-Object { Write-Host "  $($_.VMName): $($_.ProvisioningState)" -ForegroundColor Yellow }
+                        Write-Host $("`nVMs with Non-Successful Provisioning States:") -ForegroundColor Yellow
+                        $nonSuccessfulVMs | ForEach-Object { Write-Host $("  {0}: {1}" -f $_.VMName, $_.ProvisioningState) -ForegroundColor Yellow }
                     }
 
                 # Display deployment validation findings if available
                 if ($deploymentValidationResults -and $deploymentValidationResults.Count -gt 0)
                     {
-                        Write-Host "`nDeployment Validation Findings:" -ForegroundColor Yellow
+                        Write-Host $("`nDeployment Validation Findings:") -ForegroundColor Yellow
 
                         # Display deployment validation findings using preprocessed data
                         if ($validationFindings.NoCapacityIssues.Count -gt 0)
                             {
                                 $affectedSkus = $validationFindings.NoCapacityIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
                                 Write-Host $("  ⚠️ No SKU Capacity Available: {0} VM(s) affected ({1})" -f $validationFindings.NoCapacityIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
-                                Write-Host "      → Azure has no available capacity for these VM SKUs in the target zone/region" -ForegroundColor DarkGray
-                                Write-Host "      → Try: Different availability zone, different region, or wait and retry" -ForegroundColor DarkGray
+                                Write-Host $("      → Azure has no available capacity for these VM SKUs in the target zone/region") -ForegroundColor DarkGray
+                                Write-Host $("      → Try: Different availability zone, different region, or wait and retry") -ForegroundColor DarkGray
                             }
 
                         if ($validationFindings.QuotaIssues.Count -gt 0)
                             {
                                 $affectedSkus = $validationFindings.QuotaIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
                                 Write-Host $("  📊 Quota Exceeded: {0} VM(s) affected ({1})" -f $validationFindings.QuotaIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
-                                Write-Host "      → Subscription has reached limits for these VM families or total vCPUs" -ForegroundColor DarkGray
-                                Write-Host "      → Try: Request quota increase via Azure portal Support tickets" -ForegroundColor DarkGray
+                                Write-Host $("      → Subscription has reached limits for these VM families or total vCPUs") -ForegroundColor DarkGray
+                                Write-Host $("      → Try: Request quota increase via Azure portal Support tickets") -ForegroundColor DarkGray
                             }
 
                         if ($validationFindings.SKUSupportIssues.Count -gt 0)
                             {
                                 $affectedSkus = $validationFindings.SKUSupportIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
                                 Write-Host $("  🔧 SKU Support: {0} VM(s) affected ({1})" -f $validationFindings.SKUSupportIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
-                                Write-Host "      → These VM SKUs are not supported in the target region/zone" -ForegroundColor DarkGray
-                                Write-Host "      → Try: Different region that supports these SKUs, or use alternative VM SKUs" -ForegroundColor DarkGray
+                                Write-Host $("      → These VM SKUs are not supported in the target region/zone") -ForegroundColor DarkGray
+                                Write-Host $("      → Try: Different region that supports these SKUs, or use alternative VM SKUs") -ForegroundColor DarkGray
 
                                 # Show zone-specific information for SKU support issues
                                 $skuIssuesWithAlternatives = $validationFindings.SKUSupportIssues | Where-Object { $_.AlternativeZones -and $_.AlternativeZones.Count -gt 0 }
@@ -3753,43 +3768,43 @@ function Test-SilkResourceDeployment
                             {
                                 $affectedSkus = $validationFindings.OtherIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne "" }
                                 Write-Host $("  ⚙️ Other Constraints: {0} VM(s) affected ({1})" -f $validationFindings.OtherIssues.Count, ($affectedSkus -join ", ")) -ForegroundColor Gray
-                                Write-Host "      → Deployment failed due to other Azure constraints or configuration issues" -ForegroundColor DarkGray
-                                Write-Host "      → Try: Review error details in HTML report for specific troubleshooting steps" -ForegroundColor DarkGray
+                                Write-Host $("      → Deployment failed due to other Azure constraints or configuration issues") -ForegroundColor DarkGray
+                                Write-Host $("      → Try: Review error details in HTML report for specific troubleshooting steps") -ForegroundColor DarkGray
                             }
                     }
 
-                Write-Host "Virtual Network: " -NoNewline
+                Write-Host $("Virtual Network: ") -NoNewline
                 if ($deployedVNet)
                     {
                         Write-Host $("✓ {0}" -f $deployedVNet.Name) -ForegroundColor Green
                     } `
                 else
                     {
-                        Write-Host "✗ Not Found" -ForegroundColor Red
+                        Write-Host $("✗ Not Found") -ForegroundColor Red
                     }
 
-                Write-Host "Network Security Group: " -NoNewline
+                Write-Host $("Network Security Group: ") -NoNewline
                 if ($deployedNSG)
                     {
                         Write-Host $("✓ {0}" -f $deployedNSG.Name) -ForegroundColor Green
                     } `
                 else
                     {
-                        Write-Host "✗ Not Found" -ForegroundColor Red
+                        Write-Host $("✗ Not Found") -ForegroundColor Red
                     }
 
                 # Proximity Placement Group and Availability Sets Summary
-                Write-Host "Proximity Placement Groups: " -NoNewline
+                Write-Host $("Proximity Placement Groups: ") -NoNewline
                 if ($deployedPPG)
                     {
                         Write-Host $("✓ {0} groups ({1})" -f $deployedPPG.Count, ($deployedPPG.Name -join ", ")) -ForegroundColor Green
                     } `
                 else
                     {
-                        Write-Host "✗ Not Found" -ForegroundColor Red
+                        Write-Host $("✗ Not Found") -ForegroundColor Red
                     }
 
-                Write-Host "Availability Sets: " -NoNewline
+                Write-Host $("Availability Sets: ") -NoNewline
                 if ($deployedAvailabilitySets)
                     {
                         $avSetNames = ($deployedAvailabilitySets.Name | Sort-Object) -join ", "
@@ -3797,11 +3812,11 @@ function Test-SilkResourceDeployment
                     } `
                 else
                     {
-                        Write-Host "✗ Not Found" -ForegroundColor Red
+                        Write-Host $("✗ Not Found") -ForegroundColor Red
                     }
 
                 Write-Host $("Expected VMs: {0}" -f $totalExpectedVMs)
-                Write-Host "Successfully Deployed VMs: " -NoNewline
+                Write-Host $("Successfully Deployed VMs: ") -NoNewline
                 if ($successfulVMs -eq $totalExpectedVMs)
                     {
                         Write-Host $("{0}" -f $successfulVMs) -ForegroundColor Green
@@ -3813,7 +3828,7 @@ function Test-SilkResourceDeployment
 
                 if ($failedVMs -gt 0)
                     {
-                        Write-Host "Failed VM Deployments: " -NoNewline
+                        Write-Host $("Failed VM Deployments: ") -NoNewline
                         Write-Host $("{0}" -f $failedVMs) -ForegroundColor Red
                     }
 
@@ -3821,29 +3836,30 @@ function Test-SilkResourceDeployment
                 Write-Host $("Total Resources Created: {0}" -f $totalResourcesCreated)
 
                 # Zone Alignment Information
-                Write-Host "`n=== Zone Alignment Information ===" -ForegroundColor Cyan
-                Write-Host "Deployment Zone: " -NoNewline
+                Write-Verbose -Message $("Displaying zone alignment configuration and cross-subscription mapping details")
+                Write-Host $("`n=== Zone Alignment Information ===") -ForegroundColor Cyan
+                Write-Host $("Deployment Zone: ") -NoNewline
                 Write-Host $("{0}" -f $zoneAlignmentInfo.FinalZone) -ForegroundColor Green
 
                 if ($zoneAlignmentInfo.AlignmentSubscription)
                     {
-                        Write-Host "Alignment Subscription: " -NoNewline
+                        Write-Host $("Alignment Subscription: ") -NoNewline
                         Write-Host $("{0}" -f $zoneAlignmentInfo.AlignmentSubscription) -ForegroundColor Yellow
 
                         if ($zoneAlignmentInfo.AlignmentPerformed)
                             {
-                                Write-Host "Zone Alignment: " -NoNewline
+                                Write-Host $("Zone Alignment: ") -NoNewline
                                 Write-Host $("✓ Applied") -ForegroundColor Green
                                 Write-Host $("  Original Zone: {0} → Final Zone: {1}" -f $zoneAlignmentInfo.OriginalZone, $zoneAlignmentInfo.FinalZone) -ForegroundColor Gray
                             } `
                         elseif ($zoneAlignmentInfo.AlignmentDisabled)
                             {
-                                Write-Host "Zone Alignment: " -NoNewline
+                                Write-Host $("Zone Alignment: ") -NoNewline
                                 Write-Host $("⚠ Disabled by parameter") -ForegroundColor Yellow
                             } `
                         else
                             {
-                                Write-Host "Zone Alignment: " -NoNewline
+                                Write-Host $("Zone Alignment: ") -NoNewline
                                 Write-Host $("- No adjustment needed") -ForegroundColor Gray
                             }
 
@@ -3852,7 +3868,7 @@ function Test-SilkResourceDeployment
                         # Display zone mappings if available
                         if ($zoneAlignmentInfo.ZoneMappings.Count -gt 0)
                             {
-                                Write-Host "Zone Mappings:" -ForegroundColor Gray
+                                Write-Host $("Zone Mappings:") -ForegroundColor Gray
                                 foreach ($mapping in $zoneAlignmentInfo.ZoneMappings)
                                     {
                                         Write-Host $("  Deployment Zone {0} ↔ Alignment Zone {1}" -f $mapping.DeploymentZone, $mapping.AlignmentZone) -ForegroundColor DarkGray
@@ -3861,13 +3877,14 @@ function Test-SilkResourceDeployment
                     } `
                 else
                     {
-                        Write-Host "Zone Alignment: " -NoNewline
+                        Write-Host $("Zone Alignment: ") -NoNewline
                         Write-Host $("- Not Applicable") -ForegroundColor Gray
                         Write-Host $("Reason: {0}" -f $zoneAlignmentInfo.AlignmentReason) -ForegroundColor Gray
                     }
 
                 # Deployment Results Status
-                Write-Host "`n=== Deployment Results Status ===" -ForegroundColor Cyan
+                Write-Verbose -Message $("Analyzing final deployment results and generating readiness assessment")
+                Write-Host $("`n=== Deployment Results Status ===") -ForegroundColor Cyan
 
                 # Get unique SKUs that failed for more accurate reporting using preprocessed data
                 $uniqueFailedSkus = @()
@@ -3912,8 +3929,8 @@ function Test-SilkResourceDeployment
                 # Console Output Buffer Management
                 # ===============================================================================
                 # Add buffer space to prevent console output overlap in Azure Cloud Shell
-                Write-Host ""
-                Write-Host ""
+                Write-Host $("")
+                Write-Host $("")
                 Start-Sleep -Milliseconds 500
 
                 # Clear any remaining progress artifacts
@@ -3931,7 +3948,7 @@ function Test-SilkResourceDeployment
                         Start-Sleep -Milliseconds 300
                         [System.Console]::Out.Flush()
 
-                        Write-Host "`n=== Generating HTML Report ===" -ForegroundColor Cyan
+                        Write-Host $("`n=== Generating HTML Report ===") -ForegroundColor Cyan
                         Write-Verbose -Message $("Generating HTML report at: {0}" -f $ReportFullPath)
 
                         try
@@ -4607,7 +4624,7 @@ function Test-SilkResourceDeployment
                         # Post-HTML Generation Buffer
                         # ===============================================================================
                         # Final console stabilization for clean output
-                        Write-Host ""
+                        Write-Host $("")
                         Start-Sleep -Milliseconds 200
                         [System.Console]::Out.Flush()
                     }
@@ -4781,7 +4798,7 @@ function Test-SilkResourceDeployment
                                 $cleanupDidRun = $true
 
                                 # Update main cleanup progress (NICs = next 15% after VMs)
-                                Write-Progress -Id 5 -Activity "Cleaning up test resources..." -Status "Removing network interfaces..." -PercentComplete 55
+                                Write-Progress -Id 5 -Activity $("Cleaning up test resources...") -Status $("Removing network interfaces...") -PercentComplete 55
 
                                 # Start NIC cleanup sub-progress
                                 Write-Progress -Id 7 `

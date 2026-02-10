@@ -1790,10 +1790,8 @@ function Test-SilkResourceDeployment
                         $totalVMCount = 0
                         $totalvCPUCount = 0
 
-                        $insufficientQuota = $false
                         $originalCNodeCount = $CNodeCount
                         $adjustedCNodeCount = $CNodeCount
-                        $cNodeQuotaAdjusted = $false
 
                         # Check if CNodeSize is within the available quota
                         if($cNodeObject)
@@ -1811,8 +1809,6 @@ function Test-SilkResourceDeployment
                                         if ($maxCNodesFromQuota -gt 0)
                                             {
                                                 $adjustedCNodeCount = $maxCNodesFromQuota
-                                                $cNodeQuotaAdjusted = $true
-                                                $insufficientQuota = $true
                                                 $quotaErrorMessage = "{0} {1}" -f $("Partial CNode quota available for SKU: {0}. Requested: {1} CNodes ({2} vCPU), Available quota: {3} vCPU, Deploying: {4} CNode(s)" -f $cNodeVMSku, $CNodeCount, $cNodevCPUCount, $availableVCPUs, $maxCNodesFromQuota), $quotaErrorMessage
                                                 Write-Warning $quotaErrorMessage
 
@@ -1822,8 +1818,6 @@ function Test-SilkResourceDeployment
                                         else
                                             {
                                                 $adjustedCNodeCount = 0
-                                                $cNodeQuotaAdjusted = $true
-                                                $insufficientQuota = $true
                                                 $quotaErrorMessage = "{0} {1}" -f $("Insufficient vCPU quota for CNode SKU: {0}. Required: {1} vCPU per CNode, Available: {2} vCPU. CNode deployment will be skipped." -f $cNodeVMSku, $cNodeObject.vCPU, $availableVCPUs), $quotaErrorMessage
                                                 Write-Warning $quotaErrorMessage
                                                 $cNodevCPUCount = 0
@@ -1865,8 +1859,6 @@ function Test-SilkResourceDeployment
 
                                         if ($availableMNodeVCPUs -lt $mNodeFamilyvCPUCount)
                                             {
-                                                $insufficientQuota = $true
-
                                                 # For each MNode type in this family, calculate partial deployment
                                                 foreach ($mNodeType in $mNodeFamily.Group)
                                                     {
@@ -1926,7 +1918,6 @@ function Test-SilkResourceDeployment
                             {
                                 $quotaErrorMessage = "{0} {1}" -f $("Insufficient VM quota available. Required: {0} -> Limit: {1}, Consumed: {2}, Available: {3}" -f $totalVMCount, $totalVMQuota.Limit, $totalVMQuota.CurrentValue, ($totalVMQuota.Limit - $totalVMQuota.CurrentValue)), $quotaErrorMessage
                                 Write-Warning $quotaErrorMessage
-                                $insufficientQuota = $true
                             } `
                         else
                             {
@@ -1939,7 +1930,6 @@ function Test-SilkResourceDeployment
                             {
                                 $quotaErrorMessage = "{0} {1}" -f $("Insufficient vCPU quota available. Required: {0} -> Limit: {1}, Consumed: {2}, Available: {3}" -f $totalVCPUCount, $totalVCPUQuota.Limit, $totalVCPUQuota.CurrentValue, ($totalVCPUQuota.Limit - $totalVCPUQuota.CurrentValue)), $quotaErrorMessage
                                 Write-Warning $quotaErrorMessage
-                                $insufficientQuota = $true
                             } `
                         else
                             {
@@ -1952,7 +1942,6 @@ function Test-SilkResourceDeployment
                             {
                                 $quotaErrorMessage = "{0} {1}" -f $("Insufficient Availability Set quota available. Required: {0} -> Limit: {1}, Consumed: {2}, Available: {3}" -f $totalAvailabilitySetCount, $totalAvailabilitySetQuota.Limit, $totalAvailabilitySetQuota.CurrentValue, ($totalAvailabilitySetQuota.Limit - $totalAvailabilitySetQuota.CurrentValue)), $quotaErrorMessage
                                 Write-Warning $quotaErrorMessage
-                                $insufficientQuota = $true
                             } `
                         else
                             {

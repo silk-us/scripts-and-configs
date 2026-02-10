@@ -822,6 +822,18 @@ function Test-SilkResourceDeployment
                 Write-Verbose -Message $("Script started at: {0}" -f $StartTime.ToString("yyyy-MM-dd HH:mm:ss"))
 
                 # ========================================================================================================
+                # Known Preview/New SKU Families Configuration
+                # ========================================================================================================
+                # Centralized list of SKU families that may not yet be registered in Azure's quota system
+                # These families are typically in preview or newly released and may not appear in Get-AzVMUsage results
+                # Update this list as new SKU families are released or when preview families become GA
+                $knownPreviewSkuFamilies =    @(
+                                                    $($"Standard Easv6 Family vCPUs"),  # AMD-based E-series v6 with increased logical capacity
+                                                    $($"Standard Dasv6 Family vCPUs")   # AMD-based D-series v6 general purpose
+                                                )
+                Write-Verbose -Message $($"Tracking {0} known preview/new SKU families that may not be in quota system" -f $knownPreviewSkuFamilies.Count)
+
+                # ========================================================================================================
                 # Existing Infrastructure Parameter Mapping
                 # ========================================================================================================
                 # Map CNodeCountAdditional to CNodeCount for existing infrastructure scenarios
@@ -1798,7 +1810,22 @@ function Test-SilkResourceDeployment
                             {
                                 # Check if CNodeSize is within the available quota
                                 $cNodeSKUFamilyQuota = $ComputeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $cNodeObject.QuotaFamily }
-                                $availableVCPUs = $cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue
+
+                                # Check if quota family exists in Azure
+                                if (-not $cNodeSKUFamilyQuota)
+                                    {
+                                        $quotaWarningMessage = $($"WARNING: Quota family '{0}' for CNode SKU '{1}' is not available in Azure quota system for region '{2}'. This is expected for preview/new SKU families ({3}). Quota validation will be skipped - deployment may fail if insufficient quota exists." -f $cNodeObject.QuotaFamily, $cNodeVMSku, $Region, ($knownPreviewSkuFamilies -join $(", ")))
+                                        Write-Warning $quotaWarningMessage
+                                        Write-Verbose -Message $quotaWarningMessage
+
+                                        # Set to "unlimited" scenario since we can't check quota
+                                        $availableVCPUs = [int]::MaxValue
+                                    }
+                                else
+                                    {
+                                        $availableVCPUs = $cNodeSKUFamilyQuota.Limit - $cNodeSKUFamilyQuota.CurrentValue
+                                    }
+
                                 $cNodevCPUCount = $cNodeObject.vCPU * $CNodeCount
 
                                 if ($availableVCPUs -lt $cNodevCPUCount)
@@ -1855,7 +1882,21 @@ function Test-SilkResourceDeployment
 
                                         # Check if MNodeSize is within the available quota
                                         $mNodeSKUFamilyQuota = $ComputeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $mNodeFamily.Name }
-                                        $availableMNodeVCPUs = $mNodeSKUFamilyQuota.Limit - $mNodeSKUFamilyQuota.CurrentValue
+
+                                        # Check if quota family exists in Azure
+                                        if (-not $mNodeSKUFamilyQuota)
+                                            {
+                                                $quotaWarningMessage = $($"WARNING: Quota family '{0}' for MNode SKU family is not available in Azure quota system for region '{1}'. This is expected for preview/new SKU families ({2}). Quota validation will be skipped - deployment may fail if insufficient quota exists." -f $mNodeFamily.Name, $Region, ($knownPreviewSkuFamilies -join $(", ")))
+                                                Write-Warning $quotaWarningMessage
+                                                Write-Verbose -Message $quotaWarningMessage
+
+                                                # Set to "unlimited" scenario since we can't check quota
+                                                $availableMNodeVCPUs = [int]::MaxValue
+                                            }
+                                        else
+                                            {
+                                                $availableMNodeVCPUs = $mNodeSKUFamilyQuota.Limit - $mNodeSKUFamilyQuota.CurrentValue
+                                            }
 
                                         if ($availableMNodeVCPUs -lt $mNodeFamilyvCPUCount)
                                             {
@@ -3306,6 +3347,12 @@ function Test-SilkResourceDeployment
                         $cNodevCPUCount = $cNodeObject.vCPU * $CNodeCount
                         $cNodeSKUFamilyQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $cNodeObject.QuotaFamily }
 
+                        # Check if quota family exists in Azure
+                        if (-not $cNodeSKUFamilyQuota)
+                            {
+                                Write-Verbose -Message $("WARNING: Quota family '{0}' for CNode SKU '{1}' not found in Azure quota data. This SKU family may be in preview or not yet registered in the quota system." -f $cNodeObject.QuotaFamily, $cNodeVMSku)
+                            }
+
                         # Determine zone support status
                         if ($cNodeSupportedSKU)
                             {
@@ -3353,6 +3400,12 @@ function Test-SilkResourceDeployment
                                 $mNodeInstanceCount = $MNodeSize | Group-Object | Select-Object Name, Count
                                 $mNodevCPUCount = $mNodeType.vCPU * $mNodeType.dNodeCount * ($mNodeInstanceCount | Where-Object { $_.Name -eq $mNodeType.PhysicalSize }).Count
                                 $mNodeSKUFamilyQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $mNodeType.QuotaFamily }
+
+                                # Check if quota family exists in Azure
+                                if (-not $mNodeSKUFamilyQuota)
+                                    {
+                                        Write-Verbose -Message $("WARNING: Quota family '{0}' for MNode SKU '{1}' not found in Azure quota data. This SKU family may be in preview or not yet registered in the quota system." -f $mNodeType.QuotaFamily, $mNodeSkuName)
+                                    }
 
                                 # Determine zone support status
                                 if ($mNodeSupportedSKU)
@@ -3560,7 +3613,16 @@ function Test-SilkResourceDeployment
                                 $quotaFamilyInfo = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $quotaFamily }
 
                                 Write-Host $("`n  {0}:" -f $quotaFamily) -ForegroundColor Cyan
-                                if ($quotaFamilyInfo)
+
+                                if (-not $quotaFamilyInfo)
+                                    {
+                                        Write-Host $($"    ⚠️  Quota information unavailable - SKU family not yet registered in Azure quota system") -ForegroundColor Yellow
+                                        Write-Host $($"    Status: This is expected for preview or newly released SKU families ({0})" -f ($knownPreviewSkuFamilies -join $(", "))) -ForegroundColor Yellow
+                                        Write-Host $($"    Impact: Quota validation skipped - deployment will proceed but may fail if insufficient quota") -ForegroundColor Yellow
+                                        Write-Host $($"    vCPU Required: {0}" -f $requiredvCPU) -ForegroundColor Yellow
+                                        Write-Verbose -Message $($"Quota family '{0}' not found in Get-AzVMUsage results for region '{1}'" -f $quotaFamily, $Region)
+                                    }
+                                elseif ($quotaFamilyInfo)
                                     {
                                         $availableQuota = $quotaFamilyInfo.Limit - $quotaFamilyInfo.CurrentValue
                                         if ($availableQuota -ge $requiredvCPU)
@@ -3575,11 +3637,6 @@ function Test-SilkResourceDeployment
                                                 Write-Host $("    vCPU Available: {0}/{1}" -f $availableQuota, $quotaFamilyInfo.Limit)
                                                 Write-Host $("    Status: ✗ Insufficient (Shortfall: {0} vCPU)" -f ($requiredvCPU - $availableQuota)) -ForegroundColor Red
                                             }
-                                    } `
-                                else
-                                    {
-                                        Write-Host $("    vCPU Required: {0}" -f $requiredvCPU)
-                                        Write-Host $("    Status: ⚠ Unable to determine quota") -ForegroundColor Yellow
                                     }
                             }
                     }
@@ -4252,7 +4309,14 @@ function Test-SilkResourceDeployment
 
                                                 $quotaStatus = ""
                                                 $quotaStatusClass = ""
-                                                if ($quotaFamilyInfo)
+                                                $quotaWarning = ""
+                                                if (-not $quotaFamilyInfo)
+                                                    {
+                                                        $quotaStatus = $($"⚠ Quota Information Unavailable")
+                                                        $quotaStatusClass = $($"status-warning")
+                                                        $quotaWarning = $($"<br><em style='color: #ff9800;'>This SKU family is not yet registered in Azure quota system (expected for preview/new families like {0}). Quota validation was skipped.</em>" -f ($knownPreviewSkuFamilies -join $(", ")))
+                                                    }
+                                                elseif ($quotaFamilyInfo)
                                                     {
                                                         $availableQuota = $quotaFamilyInfo.Limit - $quotaFamilyInfo.CurrentValue
                                                         if ($availableQuota -ge $requiredvCPU)
@@ -4267,18 +4331,13 @@ function Test-SilkResourceDeployment
                                                                 $quotaStatusClass = "status-error"
                                                             }
                                                     }
-                                                else
-                                                    {
-                                                        $quotaStatus = "⚠ Unable to determine quota"
-                                                        $quotaStatusClass = "status-warning"
-                                                    }
 
                                                 $htmlContent += @"
             <div class="info-card">
                 <h4>🔧 $quotaFamily</h4>
                 <strong>vCPU Required:</strong> $requiredvCPU<br>
                 $(if($quotaFamilyInfo){"<strong>vCPU Available:</strong> $($quotaFamilyInfo.Limit - $quotaFamilyInfo.CurrentValue)/$($quotaFamilyInfo.Limit)<br>"})
-                <strong>Status:</strong> <span class="$quotaStatusClass">$quotaStatus</span>
+                <strong>Status:</strong> <span class="$quotaStatusClass">$quotaStatus</span>$quotaWarning
             </div>
 "@
                                             }

@@ -2898,20 +2898,11 @@ function Test-SilkResourceDeployment
                             -ParentId 1 `
                             -Id 4
 
-                        Write-Progress `
-                            -Status "VM Deployment Complete" `
-                            -CurrentOperation "All VMs have been deployed successfully" `
-                            -PercentComplete 100 `
-                            -Activity "VM Deployment" `
-                            -Id 1
-
                         Start-Sleep -Seconds 2
 
-                        # Complete sub-progress bars
-                        Write-Progress `
-                            -Activity "VM Deployment Monitoring" `
-                            -Id 4 `
-                            -Completed
+                        # Complete all progress bars
+                        Write-Progress -Activity "VM Deployment Monitoring" -Id 4 -Completed
+                        Write-Progress -Activity "VM Deployment" -Id 1 -Completed
 
                         # Analyze failed jobs AFTER monitoring is complete
                         $finalVMJobs = Get-Job
@@ -3058,11 +3049,8 @@ function Test-SilkResourceDeployment
                     {
                         Write-Warning -Message $("Error occurred while creating VMs: {0}" -f $_)
 
-                        # Clear all active Write-Progress bars on error
-                        Write-Progress -Id 1 -Activity $("VM Deployment") -Completed
-                        Write-Progress -Id 2 -Activity $("CNode Creation") -Completed
-                        Write-Progress -Id 3 -Activity $("DNode Creation") -Completed
-                        Write-Progress -Id 4 -Activity $("Sub-task") -Completed
+                        # Clear all active Write-Progress bars on error (using generic activity names)
+                        1..4 | ForEach-Object { Write-Progress -Id $_ -Completed }
                     }
 
                 # clean up jobs
@@ -3919,7 +3907,6 @@ function Test-SilkResourceDeployment
                     }
 
                 Write-Host $("⏱️ Total Deployment Time: {0}" -f $DeploymentTimespan.ToString("hh\:mm\:ss")) -ForegroundColor Cyan
-                Write-Progress -Id 1 -Completed
 
                 # ===============================================================================
                 # Console Output Buffer Management

@@ -24,7 +24,19 @@
         "Microsoft.Storage/storageAccounts/write",
         "Microsoft.Resources/deployments/cancel/action",
         "Microsoft.Resources/deployments/delete",
-        "Microsoft.Resources/deployments/exportTemplate/action"
+        "Microsoft.Resources/deployments/exportTemplate/action",
+        "Microsoft.Network/virtualNetworks/CheckIPAddressAvailability/read",
+        "Microsoft.Network/loadBalancers/write",
+        "Microsoft.Network/loadBalancers/read",
+        "Microsoft.Network/loadBalancers/backendAddressPools/join/action",
+        "Microsoft.Network/networkSecurityGroups/join/action",
+        "Microsoft.Network/natGateways/read",
+        "Microsoft.Network/natGateways/write",
+        "Microsoft.Network/natGateways/join/action",
+        "Microsoft.Network/publicIPAddresses/read",
+        "Microsoft.Network/publicIPAddresses/write",
+        "Microsoft.ManagedIdentity/userAssignedIdentities/*/read",
+        "Microsoft.ManagedIdentity/userAssignedIdentities/*/assign/action"
     ],
     "dataActions": [
         "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/add/action",

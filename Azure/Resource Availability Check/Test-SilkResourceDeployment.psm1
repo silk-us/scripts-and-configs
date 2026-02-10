@@ -999,7 +999,7 @@ function Test-SilkResourceDeployment
                                 # Check if the current context is still valid
                                 try
                                     {
-                                        $testConnectionNull = Get-AzSubscription -SubscriptionId $currentAzContext.Subscription.Id -ErrorAction Stop
+                                        Get-AzSubscription -SubscriptionId $currentAzContext.Subscription.Id -ErrorAction Stop | Out-Null
                                         Write-Verbose -Message $("✓ Azure authentication is valid and active.")
                                     }
                                 catch

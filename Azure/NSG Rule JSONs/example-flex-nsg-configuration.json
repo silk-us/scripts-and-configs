@@ -61,6 +61,23 @@
                     "destinationAddressPrefixes": []
                 },
                 {
+                    "name": "allow-to-mgmt-subnet",
+                    "provisioningState": "Succeeded",
+                    "description": "Allow all outbound traffic from Flex subnet to Silk cluster external management subnet.",
+                    "protocol": "*",
+                    "sourcePortRange": "*",
+                    "destinationPortRange": "*",
+                    "sourceAddressPrefix": "*",
+                    "destinationAddressPrefix": "external_mgmt_cidr",
+                    "access": "Allow",
+                    "priority": 100,
+                    "direction": "Outbound",
+                    "sourcePortRanges": [],
+                    "destinationPortRanges": [],
+                    "sourceAddressPrefixes": [],
+                    "destinationAddressPrefixes": []
+                },
+                {
                     "name": "deny-vnet",
                     "provisioningState": "Succeeded",
                     "description": "Deny all vnet traffic not allowed above.",

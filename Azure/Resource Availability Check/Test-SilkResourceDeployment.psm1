@@ -1568,21 +1568,56 @@ function Test-SilkResourceDeployment
                         Write-Verbose -Message $("MNode-only deployment mode - CNode configuration skipped.")
                         $cNodeObject = $null
                     } `
-                elseif ($CNodeCount -and ($CNodeFriendlyName -eq "Read_Cache_Enabled" -or $ConfigImport.sdp.read_cache_enabled))
+                elseif ($CNodeCount -and $CNodeFriendlyName)
                     {
-                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "Read_Cache_Enabled" }
-                    } `
-                elseif ($CNodeCount -and ($CNodeFriendlyName -eq "Increased_Logical_Capacity" -or $ConfigImport.sdp.increased_logical_capacity))
-                    {
-                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "Increased_Logical_Capacity" }
-                    } `
-                elseif ($CNodeCount -and ($CNodeFriendlyName -eq "No_Increased_Logical_Capacity" -or (!$ConfigImport.sdp.increased_logical_capacity -and !$ConfigImport.sdp.read_cache_enabled)))
-                    {
-                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "No_Increased_Logical_Capacity" }
+                        # Dynamic friendly name lookup - automatically supports any friendly name in $cNodeSizeObject
+                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq $CNodeFriendlyName }
+
+                        if (-not $cNodeObject)
+                            {
+                                $availableFriendlyNames = ($cNodeSizeObject.cNodeFriendlyName | Sort-Object) -join ", "
+                                Write-Error $("Invalid CNode friendly name '{0}'. Available options: {1}" -f $CNodeFriendlyName, $availableFriendlyNames)
+                                $validationError = $true
+                                return
+                            }
                     } `
                 elseif ($CNodeCount -and $CNodeSku)
                     {
+                        # Dynamic SKU lookup - automatically supports any SKU in $cNodeSizeObject
                         $cNodeObject = $cNodeSizeObject | Where-Object { $("{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix) -eq $CNodeSku }
+
+                        if (-not $cNodeObject)
+                            {
+                                $availableSkus = ($cNodeSizeObject | ForEach-Object { "{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix } | Sort-Object) -join ", "
+                                Write-Error $("Invalid CNode SKU '{0}'. Available options: {1}" -f $CNodeSku, $availableSkus)
+                                $validationError = $true
+                                return
+                            }
+                    } `
+                elseif ($CNodeCount -and $ConfigImport.sdp.read_cache_enabled)
+                    {
+                        # JSON config fallback: read_cache_enabled maps to Read_Cache_Enabled (no AMD variant available)
+                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "Read_Cache_Enabled" }
+                    } `
+                elseif ($CNodeCount -and $ConfigImport.sdp.increased_logical_capacity -and $ConfigImport.sdp.amd_sku)
+                    {
+                        # JSON config fallback: increased_logical_capacity + amd_sku maps to Increased_Logical_Capacity_AMD
+                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "Increased_Logical_Capacity_AMD" }
+                    } `
+                elseif ($CNodeCount -and $ConfigImport.sdp.increased_logical_capacity)
+                    {
+                        # JSON config fallback: increased_logical_capacity maps to Increased_Logical_Capacity (Intel)
+                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "Increased_Logical_Capacity" }
+                    } `
+                elseif ($CNodeCount -and $ConfigImport.sdp.amd_sku -and (!$ConfigImport.sdp.increased_logical_capacity -and !$ConfigImport.sdp.read_cache_enabled))
+                    {
+                        # JSON config fallback: amd_sku with no other flags maps to No_Increased_Logical_Capacity_AMD
+                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "No_Increased_Logical_Capacity_AMD" }
+                    } `
+                elseif ($CNodeCount -and (!$ConfigImport.sdp.increased_logical_capacity -and !$ConfigImport.sdp.read_cache_enabled))
+                    {
+                        # JSON config fallback: no flags set maps to No_Increased_Logical_Capacity (Intel)
+                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "No_Increased_Logical_Capacity" }
                     } `
                 else
                     {
@@ -1837,7 +1872,7 @@ function Test-SilkResourceDeployment
                                 # Check if quota family exists in Azure
                                 if (-not $cNodeSKUFamilyQuota)
                                     {
-                                        $quotaWarningMessage = $($"WARNING: Quota family '{0}' for CNode SKU '{1}' is not available in Azure quota system for region '{2}'. This is expected for preview/new SKU families ({3}). Quota validation will be skipped - deployment may fail if insufficient quota exists." -f $cNodeObject.QuotaFamily, $cNodeVMSku, $Region, ($knownPreviewSkuFamilies -join $(", ")))
+                                        $quotaWarningMessage = $("WARNING: Quota family '{0}' for CNode SKU '{1}' is not available in Azure quota system for region '{2}'. This is expected for preview/new SKU families ({3}). Quota validation will be skipped - deployment may fail if insufficient quota exists." -f $cNodeObject.QuotaFamily, $cNodeVMSku, $Region, ($knownPreviewSkuFamilies -join ", "))
                                         Write-Warning $quotaWarningMessage
                                         Write-Verbose -Message $quotaWarningMessage
 
@@ -1859,7 +1894,7 @@ function Test-SilkResourceDeployment
                                         if ($maxCNodesFromQuota -gt 0)
                                             {
                                                 $adjustedCNodeCount = $maxCNodesFromQuota
-                                                $quotaErrorMessage = "{0} {1}" -f $("Partial CNode quota available for SKU: {0}. Requested: {1} CNodes ({2} vCPU), Available quota: {3} vCPU, Deploying: {4} CNode(s)" -f $cNodeVMSku, $CNodeCount, $cNodevCPUCount, $availableVCPUs, $maxCNodesFromQuota), $quotaErrorMessage
+                                                $quotaErrorMessage = $("Partial CNode quota available for SKU: {0}. Requested: {1} CNodes ({2} vCPU), Available quota: {3} vCPU, Deploying: {4} CNode(s)" -f $cNodeVMSku, $CNodeCount, $cNodevCPUCount, $availableVCPUs, $maxCNodesFromQuota)
                                                 Write-Warning $quotaErrorMessage
 
                                                 # Recalculate with adjusted count
@@ -1868,7 +1903,7 @@ function Test-SilkResourceDeployment
                                         else
                                             {
                                                 $adjustedCNodeCount = 0
-                                                $quotaErrorMessage = "{0} {1}" -f $("Insufficient vCPU quota for CNode SKU: {0}. Required: {1} vCPU per CNode, Available: {2} vCPU. CNode deployment will be skipped." -f $cNodeVMSku, $cNodeObject.vCPU, $availableVCPUs), $quotaErrorMessage
+                                                $quotaErrorMessage = $("Insufficient vCPU quota for CNode SKU: {0}. Required: {1} vCPU per CNode, Available: {2} vCPU. CNode deployment will be skipped." -f $cNodeVMSku, $cNodeObject.vCPU, $availableVCPUs)
                                                 Write-Warning $quotaErrorMessage
                                                 $cNodevCPUCount = 0
                                             }
@@ -1909,7 +1944,7 @@ function Test-SilkResourceDeployment
                                         # Check if quota family exists in Azure
                                         if (-not $mNodeSKUFamilyQuota)
                                             {
-                                                $quotaWarningMessage = $($"WARNING: Quota family '{0}' for MNode SKU family is not available in Azure quota system for region '{1}'. This is expected for preview/new SKU families ({2}). Quota validation will be skipped - deployment may fail if insufficient quota exists." -f $mNodeFamily.Name, $Region, ($knownPreviewSkuFamilies -join $(", ")))
+                                                $quotaWarningMessage = $("WARNING: Quota family '{0}' for MNode SKU family is not available in Azure quota system for region '{1}'. This is expected for preview/new SKU families ({2}). Quota validation will be skipped - deployment may fail if insufficient quota exists." -f $mNodeFamily.Name, $Region, ($knownPreviewSkuFamilies -join ", "))
                                                 Write-Warning $quotaWarningMessage
                                                 Write-Verbose -Message $quotaWarningMessage
 
@@ -1937,7 +1972,7 @@ function Test-SilkResourceDeployment
                                                                                                                         AdjustedCount = $maxDNodesFromQuota
                                                                                                                         SKU = $("{0}{1}{2}" -f $mNodeType.vmSkuPrefix, $mNodeType.vCPU, $mNodeType.vmSkuSuffix)
                                                                                                                     }
-                                                                $quotaErrorMessage = "{0} {1}" -f $("Partial MNode quota available for {2} TiB ({3}). Requested: {4} DNodes, Available quota: {5} vCPU, Deploying: {6} DNode(s)" -f $mNodeType.PhysicalSize, $mNodeType.vmSkuPrefix, $mNodeType.vCPU, $mNodeType.vmSkuSuffix, $requestedDNodes, $availableMNodeVCPUs, $maxDNodesFromQuota), $quotaErrorMessage
+                                                                $quotaErrorMessage = $("Partial MNode quota available for {0} TiB ({1}{2}{3}). Requested: {4} DNodes, Available quota: {5} vCPU, Deploying: {6} DNode(s)" -f $mNodeType.PhysicalSize, $mNodeType.vmSkuPrefix, $mNodeType.vCPU, $mNodeType.vmSkuSuffix, $requestedDNodes, $availableMNodeVCPUs, $maxDNodesFromQuota)
                                                                 Write-Warning $quotaErrorMessage
 
                                                                 $totalVMCount += $maxDNodesFromQuota
@@ -1950,7 +1985,7 @@ function Test-SilkResourceDeployment
                                                                                                                         AdjustedCount = 0
                                                                                                                         SKU = $("{0}{1}{2}" -f $mNodeType.vmSkuPrefix, $mNodeType.vCPU, $mNodeType.vmSkuSuffix)
                                                                                                                     }
-                                                                $quotaErrorMessage = "{0} {1}" -f $("Insufficient vCPU quota for MNode {2} TiB ({3}). Required: {4} vCPU per DNode, Available: {5} vCPU. MNode group will be skipped." -f $mNodeType.PhysicalSize, $mNodeType.vmSkuPrefix, $mNodeType.vCPU, $mNodeType.vmSkuSuffix, $vCPUPerDNode, $availableMNodeVCPUs), $quotaErrorMessage
+                                                                $quotaErrorMessage = $("Insufficient vCPU quota for MNode {0} TiB ({1}{2}{3}). Required: {4} vCPU per DNode, Available: {5} vCPU. MNode group will be skipped." -f $mNodeType.PhysicalSize, $mNodeType.vmSkuPrefix, $mNodeType.vCPU, $mNodeType.vmSkuSuffix, $vCPUPerDNode, $availableMNodeVCPUs)
                                                                 Write-Warning $quotaErrorMessage
                                                             } `
                                                         else
@@ -1980,7 +2015,7 @@ function Test-SilkResourceDeployment
                         $totalVMQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Virtual Machines" }
                         if($totalVMCount -gt ($totalVMQuota.Limit - $totalVMQuota.CurrentValue))
                             {
-                                $quotaErrorMessage = "{0} {1}" -f $("Insufficient VM quota available. Required: {0} -> Limit: {1}, Consumed: {2}, Available: {3}" -f $totalVMCount, $totalVMQuota.Limit, $totalVMQuota.CurrentValue, ($totalVMQuota.Limit - $totalVMQuota.CurrentValue)), $quotaErrorMessage
+                                $quotaErrorMessage = $("Insufficient VM quota available. Required: {0} -> Limit: {1}, Consumed: {2}, Available: {3}" -f $totalVMCount, $totalVMQuota.Limit, $totalVMQuota.CurrentValue, ($totalVMQuota.Limit - $totalVMQuota.CurrentValue))
                                 Write-Warning $quotaErrorMessage
                             } `
                         else
@@ -1992,7 +2027,7 @@ function Test-SilkResourceDeployment
                         $totalVCPUQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Total Regional vCPUs" }
                         if($totalVCPUCount -gt ($totalVCPUQuota.Limit - $totalVCPUQuota.CurrentValue))
                             {
-                                $quotaErrorMessage = "{0} {1}" -f $("Insufficient vCPU quota available. Required: {0} -> Limit: {1}, Consumed: {2}, Available: {3}" -f $totalVCPUCount, $totalVCPUQuota.Limit, $totalVCPUQuota.CurrentValue, ($totalVCPUQuota.Limit - $totalVCPUQuota.CurrentValue)), $quotaErrorMessage
+                                $quotaErrorMessage = $("Insufficient vCPU quota available. Required: {0} -> Limit: {1}, Consumed: {2}, Available: {3}" -f $totalVCPUCount, $totalVCPUQuota.Limit, $totalVCPUQuota.CurrentValue, ($totalVCPUQuota.Limit - $totalVCPUQuota.CurrentValue))
                                 Write-Warning $quotaErrorMessage
                             } `
                         else
@@ -2004,7 +2039,7 @@ function Test-SilkResourceDeployment
                         $totalAvailabilitySetQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Availability Sets" }
                         if($totalAvailabilitySetCount -gt ($totalAvailabilitySetQuota.Limit - $totalAvailabilitySetQuota.CurrentValue))
                             {
-                                $quotaErrorMessage = "{0} {1}" -f $("Insufficient Availability Set quota available. Required: {0} -> Limit: {1}, Consumed: {2}, Available: {3}" -f $totalAvailabilitySetCount, $totalAvailabilitySetQuota.Limit, $totalAvailabilitySetQuota.CurrentValue, ($totalAvailabilitySetQuota.Limit - $totalAvailabilitySetQuota.CurrentValue)), $quotaErrorMessage
+                                $quotaErrorMessage = $("Insufficient Availability Set quota available. Required: {0} -> Limit: {1}, Consumed: {2}, Available: {3}" -f $totalAvailabilitySetCount, $totalAvailabilitySetQuota.Limit, $totalAvailabilitySetQuota.CurrentValue, ($totalAvailabilitySetQuota.Limit - $totalAvailabilitySetQuota.CurrentValue))
                                 Write-Warning $quotaErrorMessage
                             } `
                         else
@@ -3639,11 +3674,11 @@ function Test-SilkResourceDeployment
 
                                 if (-not $quotaFamilyInfo)
                                     {
-                                        Write-Host $($"    ⚠️  Quota information unavailable - SKU family not yet registered in Azure quota system") -ForegroundColor Yellow
-                                        Write-Host $($"    Status: This is expected for preview or newly released SKU families ({0})" -f ($knownPreviewSkuFamilies -join $(", "))) -ForegroundColor Yellow
-                                        Write-Host $($"    Impact: Quota validation skipped - deployment will proceed but may fail if insufficient quota") -ForegroundColor Yellow
-                                        Write-Host $($"    vCPU Required: {0}" -f $requiredvCPU) -ForegroundColor Yellow
-                                        Write-Verbose -Message $($"Quota family '{0}' not found in Get-AzVMUsage results for region '{1}'" -f $quotaFamily, $Region)
+                                        Write-Host $("    ⚠️  Quota information unavailable - SKU family not yet registered in Azure quota system") -ForegroundColor Yellow
+                                        Write-Host $("    Status: This is expected for preview or newly released SKU families ({0})" -f ($knownPreviewSkuFamilies -join $(", "))) -ForegroundColor Yellow
+                                        Write-Host $("    Impact: Quota validation skipped - deployment will proceed but may fail if insufficient quota") -ForegroundColor Yellow
+                                        Write-Host $("    vCPU Required: {0}" -f $requiredvCPU) -ForegroundColor Yellow
+                                        Write-Verbose -Message $("Quota family '{0}' not found in Get-AzVMUsage results for region '{1}'" -f $quotaFamily, $Region)
                                     }
                                 elseif ($quotaFamilyInfo)
                                     {
@@ -4335,9 +4370,9 @@ function Test-SilkResourceDeployment
                                                 $quotaWarning = ""
                                                 if (-not $quotaFamilyInfo)
                                                     {
-                                                        $quotaStatus = $($"⚠ Quota Information Unavailable")
-                                                        $quotaStatusClass = $($"status-warning")
-                                                        $quotaWarning = $($"<br><em style='color: #ff9800;'>This SKU family is not yet registered in Azure quota system (expected for preview/new families like {0}). Quota validation was skipped.</em>" -f ($knownPreviewSkuFamilies -join $(", ")))
+                                                        $quotaStatus = $("⚠ Quota Information Unavailable")
+                                                        $quotaStatusClass = $("status-warning")
+                                                        $quotaWarning = $("<br><em style='color: #ff9800;'>This SKU family is not yet registered in Azure quota system (expected for preview/new families like {0}). Quota validation was skipped.</em>" -f ($knownPreviewSkuFamilies -join $(", ")))
                                                     }
                                                 elseif ($quotaFamilyInfo)
                                                     {

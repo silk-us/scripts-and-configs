@@ -1,5 +1,5 @@
 param(
-    [parameter(Mandatory)]
+    [parameter()]
     [string] $URI,
     [parameter()]
     [string] $virtualNetwork,

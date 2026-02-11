@@ -40,15 +40,22 @@ If the user performing the deployment has owner access to the empty Resource Gro
 
 ### User Managed Identity Roles
 If the deployment will use a User Managed Identity instead of the default System Managed Identity these roles can be created and assigned to the UMI to allow only the required actions to the environment.
-- [UMI Resource Group Role](example-silk-umi-resourcegroup-role.json)
-  - Created with the assignable scope of the empty Resource Group.
-  - Assigned to the UMI on the empty Resource Group.
+- [UMI Flex Resource Group Role](example-silk-umi-flex-rg-role.json)
+  - Created with the assignable scope of the empty Flex Resource Group.
+  - Assigned to the UMI on the empty Flex Resource Group.
 - [UMI NSG Role](example-silk-umi-nsg-role.json)
   - Created with the assignable scope of the Resource Group that the NSGs will be/have been created.
   - Assigned to the UMI on each of the NSG resources.
+- [UMI NSG Resource Group Role](example-silk-umi-nsg-rg-role.json)
+  - Created with the assignable scope of the Resource Group that the NSGs will be/have been created.
+  - Assigned to the UMI on the NSG resource group.
 - [UMI VNET Role](example-silk-umi-vnet-role.json)
   - Created with the assignable scope of the Resource Group that the VNET will be/has been created.
   - Assigned to the UMI on the VNET resource.
 - [UMI Subscription Logs Role](example-silk-umi-subscription-logs-role.json)
   - Created with the assignable scope of the Subscription which the target Resource Group is created.
-  - Assigned to the UMI on the empty Resource Group.
+  - Assigned to the UMI on the subscription.
+- [UMI Object Role](example-silk-umi-object-role.json) - (Optional)
+  - Created with the assignable scope of the UMI object resource.
+  - Assigned to the UMI on the UMI object resource itself.
+  - Grants permissions for the User Managed Identity to assign itself to new Flex instances during the upgrade process.

@@ -1,7 +1,7 @@
 {
   "name": "example-silk-umi-vnet-role",
   "isCustom": true,
-  "description": "Required permissions to the VNET resource group object for umi management of Silk pod deployment lifecycle.",
+  "description": "VNET resource actions required for UMI operations during Silk pod deployment and lifecycle.",
   "actions": [
     "Microsoft.Network/virtualNetworks/read",
     "Microsoft.Network/virtualNetworks/subnets/read",
@@ -12,6 +12,6 @@
   "notActions": [],
   "notDataActions": [],
   "assignableScopes": [
-    "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/example-vnet-rg"
+    "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/example-vnet-rg/providers/Microsoft.Network/virtualNetworks/example-vnet"
   ]
 }

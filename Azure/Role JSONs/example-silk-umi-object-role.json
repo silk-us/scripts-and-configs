@@ -1,7 +1,7 @@
 {
   "name": "example-silk-umi-object-role",
   "isCustom": true,
-  "description": "This role grants the necessary permissions for the User Managed Identity (UMI) to assign itself to new Flex instances during the upgrade process.",
+  "description": "UMI self-assignment permissions required for Flex instance upgrades.",
   "actions": [
     "Microsoft.ManagedIdentity/userAssignedIdentities/*/read",
     "Microsoft.ManagedIdentity/userAssignedIdentities/*/assign/action"

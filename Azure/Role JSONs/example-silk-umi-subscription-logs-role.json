@@ -1,7 +1,7 @@
 {
   "name": "example-silk-umi-subscription-logs-role",
   "isCustom": true,
-  "description": "Required permissions to the subscription for umi to read logs relating to the Silk pod resources deployment.",
+  "description": "Subscription log permissions required for UMI operations during Silk pod deployment and lifecycle.",
   "actions": [
     "Microsoft.ApiManagement/service/providers/Microsoft.Insights/logDefinitions/read",
     "Microsoft.Compute/virtualMachines/providers/Microsoft.Insights/logDefinitions/read",

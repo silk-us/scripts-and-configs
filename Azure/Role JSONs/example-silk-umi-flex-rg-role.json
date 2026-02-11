@@ -1,7 +1,7 @@
 {
   "name": "example-silk-umi-flex-resourcegroup-role",
   "isCustom": true,
-  "description": "Required permissions to the resource group to assign umi for managing a Silk cluster deployment",
+  "description": "Flex resource group permissions required for UMI to manage all cluster resources during Silk pod deployment and lifecycle.",
   "actions": [
     "Microsoft.Authorization/locks/read",
     "Microsoft.Authorization/locks/write",

@@ -1,7 +1,7 @@
 {
   "name": "example-silk-umi-nsg-role",
   "isCustom": true,
-  "description": "Required permissions to the NSG objects for umi to send to Silks Clarity.",
+  "description": "Required permissions to the NSG objects for umi to identify prerequisite configuration.",
   "actions": [
     "Microsoft.Network/networkSecurityGroups/read",
     "Microsoft.Network/networkSecurityGroups/join/action"

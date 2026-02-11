@@ -1,8 +1,9 @@
 {
-  "name": "example-silk-umi-nsg-rg-role",
+  "name": "example-silk-umi-nsg-role",
   "isCustom": true,
-  "description": "Required permissions to the NSG objects parent Resource Group for umi to perform join during NAT Creation.",
+  "description": "Required permissions to the NSG objects for umi to send to Silks Clarity.",
   "actions": [
+    "Microsoft.Network/networkSecurityGroups/read",
     "Microsoft.Network/networkSecurityGroups/join/action"
   ],
   "dataActions": [],

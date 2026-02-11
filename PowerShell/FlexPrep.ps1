@@ -112,7 +112,7 @@ $locationQuotas = @()
 foreach ($l in $allLocations) {
      try {
         $allskus = get-azComputeResourceSku -Location $l.Location 
-        $usage = Get-AzVMUsage -Location $l.Location
+        $usage = Get-AzVMUsage -Location $l.Location -ErrorAction SilentlyContinue
     } catch {
         Write-Host "    Error processing location $($l.Location): $($_.Exception.Message)" -ForegroundColor Red
         continue

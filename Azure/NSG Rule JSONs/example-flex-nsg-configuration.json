@@ -7,7 +7,7 @@
                     ],
     "nsg": [
         {
-            "name": "flex-example-nsg",
+            "name": "example-flex-nsg",
             "securityRules": [
                 {
                     "name": "default-allow-ssh",

@@ -422,631 +422,6 @@
     ]
   },
   {
-    "name": "flex-cluster-XXXX-network-external-mgmt-nsg",
-    "securityRules": [
-      {
-        "Description":  "",
-        "Protocol": "Tcp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "22"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "Access": "Allow",
-        "Priority": 200,
-        "Direction": "Inbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-ssh-in"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Tcp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "3260"
-        ],
-        "SourceAddressPrefix": [
-          "VirtualNetwork"
-        ],
-        "DestinationAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "Access": "Allow",
-        "Priority": 210,
-        "Direction": "Inbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-iscsi-in"
-      },
-      {
-        "Description":  "Allow all traffic from Flex subnet to Silk cluster external management subnet.",
-        "Protocol": "*",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "*"
-        ],
-        "SourceAddressPrefix": [
-          "flex_subnet_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "Access": "Allow",
-        "Priority": 220,
-        "Direction": "Inbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-flex-all-in"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Icmp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "*"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "Access": "Allow",
-        "Priority": 230,
-        "Direction": "Inbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-ping-in"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Tcp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "443"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "Access": "Allow",
-        "Priority": 250,
-        "Direction": "Inbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-https-in"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Tcp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "3192"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "Access": "Allow",
-        "Priority": 270,
-        "Direction": "Inbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-fna-in"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Tcp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "50505"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "Access": "Allow",
-        "Priority": 290,
-        "Direction": "Inbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-maui-in"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Tcp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "514"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "Access": "Allow",
-        "Priority": 300,
-        "Direction": "Inbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-syslog-tcp-in"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Udp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "514"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "Access": "Allow",
-        "Priority": 310,
-        "Direction": "Inbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-syslog-udp-in"
-      },
-      {
-        "Description":  "",
-        "Protocol": "*",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "*"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "Access": "Allow",
-        "Priority": 320,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-external-mgmt-out"
-      },
-      {
-        "Description":  "Allow all traffic from Silk cluster external management subnet to Flex subnet.",
-        "Protocol": "*",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "*"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "flex_subnet_cidr"
-        ],
-        "Access": "Allow",
-        "Priority": 330,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-flex-all-out"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Tcp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "25"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "VirtualNetwork"
-        ],
-        "Access": "Allow",
-        "Priority": 370,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-smtp-25-out"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Tcp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "587"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "VirtualNetwork"
-        ],
-        "Access": "Allow",
-        "Priority": 380,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-smtp-587-out"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Tcp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "389"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "VirtualNetwork"
-        ],
-        "Access": "Allow",
-        "Priority": 390,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-ldap-tcp-out"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Udp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "389"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "VirtualNetwork"
-        ],
-        "Access": "Allow",
-        "Priority": 400,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-ldap-udp-out"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Tcp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "636"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "VirtualNetwork"
-        ],
-        "Access": "Allow",
-        "Priority": 410,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-ldaps-tcp-out"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Udp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "636"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "VirtualNetwork"
-        ],
-        "Access": "Allow",
-        "Priority": 420,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-ldaps-udp-out"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Tcp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "88"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "VirtualNetwork"
-        ],
-        "Access": "Allow",
-        "Priority": 430,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-kerberos-tcp-out"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Udp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "88"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "VirtualNetwork"
-        ],
-        "Access": "Allow",
-        "Priority": 440,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-kerberos-udp-out"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Tcp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "22"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "VirtualNetwork"
-        ],
-        "Access": "Allow",
-        "Priority": 450,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-reverse-ssh-out"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Tcp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "443"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "VirtualNetwork"
-        ],
-        "Access": "Allow",
-        "Priority": 460,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-replication-https-out"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Udp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "161-162"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "VirtualNetwork"
-        ],
-        "Access": "Allow",
-        "Priority": 470,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-snmp-out"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Tcp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "53"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "VirtualNetwork"
-        ],
-        "Access": "Allow",
-        "Priority": 480,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-dns-tcp-out"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Udp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "53"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "VirtualNetwork"
-        ],
-        "Access": "Allow",
-        "Priority": 490,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-dns-udp-out"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Tcp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "123"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "VirtualNetwork"
-        ],
-        "Access": "Allow",
-        "Priority": 500,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-ntp-tcp-out"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Udp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "123"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "VirtualNetwork"
-        ],
-        "Access": "Allow",
-        "Priority": 510,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-ntp-udp-out"
-      },
-      {
-        "Description":  "",
-        "Protocol": "*",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "*"
-        ],
-        "SourceAddressPrefix": [
-          "VirtualNetwork"
-        ],
-        "DestinationAddressPrefix": [
-          "VirtualNetwork"
-        ],
-        "Access": "Deny",
-        "Priority": 4000,
-        "Direction": "Inbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-deny-all-vnet-in"
-      },
-      {
-        "Description":  "",
-        "Protocol": "*",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "*"
-        ],
-        "SourceAddressPrefix": [
-          "*"
-        ],
-        "DestinationAddressPrefix": [
-          "*"
-        ],
-        "Access": "Deny",
-        "Priority": 4000,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-deny-all-out"
-      },
-      {
-        "Description":  "",
-        "Protocol": "*",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "*"
-        ],
-        "SourceAddressPrefix": [
-          "AzureLoadBalancer"
-        ],
-        "DestinationAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "Access": "Allow",
-        "Priority": 3000,
-        "Direction": "Inbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-load-balancer-in"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Tcp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "443"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "Storage"
-        ],
-        "Access": "Allow",
-        "Priority": 3990,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-allow-https-storage-out"
-      },
-      {
-        "Description":  "",
-        "Protocol": "Tcp",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "443"
-        ],
-        "SourceAddressPrefix": [
-          "external_mgmt_cidr"
-        ],
-        "DestinationAddressPrefix": [
-          "AzureContainerRegistry"
-        ],
-        "Access": "Allow",
-        "Priority": 3980,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-allow-https-to-acr-out"
-      }
-    ]
-  },
-  {
     "name": "flex-cluster-XXXX-network-internal1-nsg",
     "securityRules": [
       {
@@ -1933,6 +1308,631 @@
         "Priority": 4000,
         "Direction": "Outbound",
         "Name": "flex-cluster-XXXX-network-internal2-deny-all-out"
+      }
+    ]
+  },
+  {
+    "name": "flex-cluster-XXXX-network-external-mgmt-nsg",
+    "securityRules": [
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "22"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "Access": "Allow",
+        "Priority": 200,
+        "Direction": "Inbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-ssh-in"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "3260"
+        ],
+        "SourceAddressPrefix": [
+          "VirtualNetwork"
+        ],
+        "DestinationAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "Access": "Allow",
+        "Priority": 210,
+        "Direction": "Inbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-iscsi-in"
+      },
+      {
+        "Description":  "Allow all traffic from Flex subnet to Silk cluster external management subnet.",
+        "Protocol": "*",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "*"
+        ],
+        "SourceAddressPrefix": [
+          "flex_subnet_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "Access": "Allow",
+        "Priority": 220,
+        "Direction": "Inbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-flex-all-in"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Icmp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "*"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "Access": "Allow",
+        "Priority": 230,
+        "Direction": "Inbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-ping-in"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "443"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "Access": "Allow",
+        "Priority": 250,
+        "Direction": "Inbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-https-in"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "3192"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "Access": "Allow",
+        "Priority": 270,
+        "Direction": "Inbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-fna-in"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "50505"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "Access": "Allow",
+        "Priority": 290,
+        "Direction": "Inbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-maui-in"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "514"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "Access": "Allow",
+        "Priority": 300,
+        "Direction": "Inbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-syslog-tcp-in"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Udp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "514"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "Access": "Allow",
+        "Priority": 310,
+        "Direction": "Inbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-syslog-udp-in"
+      },
+      {
+        "Description":  "",
+        "Protocol": "*",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "*"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "Access": "Allow",
+        "Priority": 320,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-external-mgmt-out"
+      },
+      {
+        "Description":  "Allow all traffic from Silk cluster external management subnet to Flex subnet.",
+        "Protocol": "*",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "*"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "flex_subnet_cidr"
+        ],
+        "Access": "Allow",
+        "Priority": 330,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-flex-all-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "25"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "VirtualNetwork"
+        ],
+        "Access": "Allow",
+        "Priority": 370,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-smtp-25-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "587"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "VirtualNetwork"
+        ],
+        "Access": "Allow",
+        "Priority": 380,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-smtp-587-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "389"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "VirtualNetwork"
+        ],
+        "Access": "Allow",
+        "Priority": 390,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-ldap-tcp-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Udp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "389"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "VirtualNetwork"
+        ],
+        "Access": "Allow",
+        "Priority": 400,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-ldap-udp-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "636"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "VirtualNetwork"
+        ],
+        "Access": "Allow",
+        "Priority": 410,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-ldaps-tcp-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Udp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "636"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "VirtualNetwork"
+        ],
+        "Access": "Allow",
+        "Priority": 420,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-ldaps-udp-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "88"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "VirtualNetwork"
+        ],
+        "Access": "Allow",
+        "Priority": 430,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-kerberos-tcp-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Udp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "88"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "VirtualNetwork"
+        ],
+        "Access": "Allow",
+        "Priority": 440,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-kerberos-udp-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "22"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "VirtualNetwork"
+        ],
+        "Access": "Allow",
+        "Priority": 450,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-reverse-ssh-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "443"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "VirtualNetwork"
+        ],
+        "Access": "Allow",
+        "Priority": 460,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-replication-https-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Udp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "161-162"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "VirtualNetwork"
+        ],
+        "Access": "Allow",
+        "Priority": 470,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-snmp-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "53"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "VirtualNetwork"
+        ],
+        "Access": "Allow",
+        "Priority": 480,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-dns-tcp-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Udp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "53"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "VirtualNetwork"
+        ],
+        "Access": "Allow",
+        "Priority": 490,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-dns-udp-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "123"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "VirtualNetwork"
+        ],
+        "Access": "Allow",
+        "Priority": 500,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-ntp-tcp-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Udp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "123"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "VirtualNetwork"
+        ],
+        "Access": "Allow",
+        "Priority": 510,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-ntp-udp-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "*",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "*"
+        ],
+        "SourceAddressPrefix": [
+          "VirtualNetwork"
+        ],
+        "DestinationAddressPrefix": [
+          "VirtualNetwork"
+        ],
+        "Access": "Deny",
+        "Priority": 4000,
+        "Direction": "Inbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-deny-all-vnet-in"
+      },
+      {
+        "Description":  "",
+        "Protocol": "*",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "*"
+        ],
+        "SourceAddressPrefix": [
+          "*"
+        ],
+        "DestinationAddressPrefix": [
+          "*"
+        ],
+        "Access": "Deny",
+        "Priority": 4000,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-deny-all-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "*",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "*"
+        ],
+        "SourceAddressPrefix": [
+          "AzureLoadBalancer"
+        ],
+        "DestinationAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "Access": "Allow",
+        "Priority": 3000,
+        "Direction": "Inbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-load-balancer-in"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "443"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "Storage"
+        ],
+        "Access": "Allow",
+        "Priority": 3990,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-allow-https-storage-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "443"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "AzureContainerRegistry"
+        ],
+        "Access": "Allow",
+        "Priority": 3980,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-allow-https-to-acr-out"
       }
     ]
   }

@@ -414,24 +414,24 @@ function Test-SilkResourceDeployment
                 # Increased_Logical_Capacity (Standard_E64s_v5) - Most common, high memory
                 # Read_Cache_Enabled (Standard_L64s_v3) - High-speed local SSD storage
                 # No_Increased_Logical_Capacity (Standard_D64s_v5) - Basic compute, rarely used
-                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true, HelpMessage = "Choose CNode type: Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled (Standard_L64s_v3), or No_Increased_Logical_Capacity (Standard_D64s_v5).")]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $true, HelpMessage = "Choose CNode type: Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled (Standard_L64s_v3), or No_Increased_Logical_Capacity (Standard_D64s_v5).")]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true, HelpMessage = "Choose CNode type: Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled (Standard_L64s_v3), or No_Increased_Logical_Capacity (Standard_D64s_v5).")]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true, HelpMessage = "Choose CNode type: Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled (Standard_L64s_v3), or No_Increased_Logical_Capacity (Standard_D64s_v5).")]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true, HelpMessage = "Choose CNode type: Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled (Standard_L64s_v3), or No_Increased_Logical_Capacity (Standard_D64s_v5).")]
-                [ValidateSet("Increased_Logical_Capacity", "Read_Cache_Enabled", "No_Increased_Logical_Capacity")]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true, HelpMessage = "Choose CNode type: Increased_Logical_Capacity_AMD (Standard_E64as_v6), Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled (Standard_L64s_v3), No_Increased_Logical_Capacity_AMD (Standard_D64as_v6), No_Increased_Logical_Capacity (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5).")]
+                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $true, HelpMessage = "Choose CNode type: Increased_Logical_Capacity_AMD (Standard_E64as_v6), Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled (Standard_L64s_v3), No_Increased_Logical_Capacity_AMD (Standard_D64as_v6), No_Increased_Logical_Capacity (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5).")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true, HelpMessage = "Choose CNode type: Increased_Logical_Capacity_AMD (Standard_E64as_v6), Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled (Standard_L64s_v3), No_Increased_Logical_Capacity_AMD (Standard_D64as_v6), No_Increased_Logical_Capacity (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5).")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true, HelpMessage = "Choose CNode type: Increased_Logical_Capacity_AMD (Standard_E64as_v6), Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled (Standard_L64s_v3), No_Increased_Logical_Capacity_AMD (Standard_D64as_v6), No_Increased_Logical_Capacity (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5).")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true, HelpMessage = "Choose CNode type: Increased_Logical_Capacity_AMD (Standard_E64as_v6), Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled (Standard_L64s_v3), No_Increased_Logical_Capacity_AMD (Standard_D64as_v6), No_Increased_Logical_Capacity (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5).")]
+                [ValidateSet("Increased_Logical_Capacity_AMD", "Increased_Logical_Capacity", "Read_Cache_Enabled", "No_Increased_Logical_Capacity_AMD", "No_Increased_Logical_Capacity", "Entry_Level_SDP")]
                 [string]
                 $CNodeFriendlyName,
 
                 # Explicit Azure VM SKU for CNode VMs when using direct SKU specification
                 # Standard_E64s_v5 (default) - High memory, Standard_L64s_v3 - SSD storage, Standard_D64s_v5 - Basic compute
                 # Alternative to CNodeFriendlyName for advanced scenarios requiring specific SKU control
-                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true, HelpMessage = "Choose CNode VM SKU: Standard_E64s_v5 (supports increased logical capacity), Standard_L64s_v3 (supports read cache), or Standard_D64s_v5 (basic CNode).")]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $true, HelpMessage = "Choose CNode VM SKU: Standard_E64s_v5 (supports increased logical capacity), Standard_L64s_v3 (supports read cache), or Standard_D64s_v5 (basic CNode).")]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true, HelpMessage = "Choose CNode VM SKU: Standard_E64s_v5 (supports increased logical capacity), Standard_L64s_v3 (supports read cache), or Standard_D64s_v5 (basic CNode).")]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $true, HelpMessage = "Choose CNode VM SKU: Standard_E64s_v5 (supports increased logical capacity), Standard_L64s_v3 (supports read cache), or Standard_D64s_v5 (basic CNode).")]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true, HelpMessage = "Choose CNode VM SKU: Standard_E64s_v5 (supports increased logical capacity), Standard_L64s_v3 (supports read cache), or Standard_D64s_v5 (basic CNode).")]
-                [ValidateSet("Standard_D64s_v5", "Standard_L64s_v3", "Standard_E64s_v5")]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true, HelpMessage = "Choose CNode VM SKU: Standard_E64as_v6 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64s_v3 (supports read cache), Standard_D64as_v6 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level).")]
+                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $true, HelpMessage = "Choose CNode VM SKU: Standard_E64as_v6 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64s_v3 (supports read cache), Standard_D64as_v6 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level).")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true, HelpMessage = "Choose CNode VM SKU: Standard_E64as_v6 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64s_v3 (supports read cache), Standard_D64as_v6 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level).")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $true, HelpMessage = "Choose CNode VM SKU: Standard_E64as_v6 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64s_v3 (supports read cache), Standard_D64as_v6 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level).")]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true, HelpMessage = "Choose CNode VM SKU: Standard_E64as_v6 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64s_v3 (supports read cache), Standard_D64as_v6 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level).")]
+                [ValidateSet("Standard_D64as_v6", "Standard_D64s_v5", "Standard_L64s_v3", "Standard_E64as_v6", "Standard_E64s_v5", "Standard_E32as_v5")]
                 [string]
                 $CNodeSku,
 
@@ -1412,9 +1412,12 @@ function Test-SilkResourceDeployment
                 # Production CNode SKU Configuration
                 # Actual production deployments use 64 vCPU SKUs for high performance
                 $cNodeSizeObject = @(
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "s_v5"; QuotaFamily = "Standard Dsv5 Family vCPUs"; cNodeFriendlyName = "No_Increased_Logical_Capacity"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "s_v3"; QuotaFamily = "Standard Lsv3 Family vCPUs"; cNodeFriendlyName = "Read_Cache_Enabled"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "s_v5"; QuotaFamily = "Standard Esv5 Family vCPUs"; cNodeFriendlyName = "Increased_Logical_Capacity"}
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "as_v6"; QuotaFamily = "Standard Dasv6 Family vCPUs"; cNodeFriendlyName = "No_Increased_Logical_Capacity_AMD"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "s_v5";  QuotaFamily = "Standard Dsv5 Family vCPUs";  cNodeFriendlyName = "No_Increased_Logical_Capacity"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "s_v3";  QuotaFamily = "Standard Lsv3 Family vCPUs";  cNodeFriendlyName = "Read_Cache_Enabled"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "as_v6"; QuotaFamily = "Standard Easv6 Family vCPUs"; cNodeFriendlyName = "Increased_Logical_Capacity_AMD"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "s_v5";  QuotaFamily = "Standard Esv5 Family vCPUs";  cNodeFriendlyName = "Increased_Logical_Capacity"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 32; vmSkuSuffix = "as_v5"; QuotaFamily = "Standard Lsv3 Family vCPUs";  cNodeFriendlyName = "Entry_Level"};
                                     )
 
                 if ($Development)

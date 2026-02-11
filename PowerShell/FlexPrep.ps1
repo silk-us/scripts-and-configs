@@ -347,22 +347,25 @@ try {
     throw
 }
 
-Write-Host "Uploading file to Azure Storage..." -ForegroundColor Cyan
-try {
-    # parse container name and SAS token
-    $SASuri = [Uri]$Uri
-    $containerName = $SASuri.AbsolutePath.TrimStart('/')
-    $sasToken = $SASuri.Query
-    $storageAccount = $SASuri.Host.Split('.')[0]
+if ($Uri) {
+    Write-Host "Uploading file to Azure Storage..." -ForegroundColor Cyan
+    try {
+        # parse container name and SAS token
+        $SASuri = [Uri]$Uri
+        $containerName = $SASuri.AbsolutePath.TrimStart('/')
+        $sasToken = $SASuri.Query
+        $storageAccount = $SASuri.Host.Split('.')[0]
 
-    # create storage context
-    $ctx = New-AzStorageContext -StorageAccountName $storageAccount -SasToken $sasToken
+        # create storage context
+        $ctx = New-AzStorageContext -StorageAccountName $storageAccount -SasToken $sasToken
 
-    # upload file
-    $file = Get-Item -Path $outputFile 
-    Set-AzStorageBlobContent -File $file.FullName -Container $containerName -Blob $outputFile -Context $ctx -Force | Out-Null
-    Write-Host "File uploaded successfully to $storageAccount/$containerName/$outputFile" -ForegroundColor Green
-} catch {
-    Write-Host "Error uploading file to Azure Storage: $($_.Exception.Message)" -ForegroundColor Red
-    Write-Host "Local file available at: $outputFile" -ForegroundColor Yellow
+        # upload file
+        $file = Get-Item -Path $outputFile 
+        Set-AzStorageBlobContent -File $file.FullName -Container $containerName -Blob $outputFile -Context $ctx -Force | Out-Null
+        Write-Host "File uploaded successfully to $storageAccount/$containerName/$outputFile" -ForegroundColor Green
+    } catch {
+        Write-Host "Error uploading file to Azure Storage: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "Local file available at: $outputFile" -ForegroundColor Yellow
+    }
 }
+

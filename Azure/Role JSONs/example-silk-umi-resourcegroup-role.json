@@ -57,7 +57,19 @@
     "Microsoft.Storage/storageAccounts/joinPerimeter/action",
     "Microsoft.Storage/storageAccounts/listAccountSas/action",
     "Microsoft.Storage/storageAccounts/listKeys/action",
-    "Microsoft.Storage/storageAccounts/listServiceSas/action"
+    "Microsoft.Storage/storageAccounts/listServiceSas/action",
+    "Microsoft.Network/virtualNetworks/CheckIPAddressAvailability/read",
+    "Microsoft.Network/loadBalancers/write",
+    "Microsoft.Network/loadBalancers/read",
+    "Microsoft.Network/loadBalancers/backendAddressPools/join/action",
+    "Microsoft.Network/networkSecurityGroups/join/action",
+    "Microsoft.Network/natGateways/read",
+    "Microsoft.Network/publicIPAddresses/read",
+    "Microsoft.Network/publicIPAddresses/write",
+    "Microsoft.Network/natGateways/write",
+    "Microsoft.Network/natGateways/join/action",
+    "Microsoft.ManagedIdentity/userAssignedIdentities/*/read",
+    "Microsoft.ManagedIdentity/userAssignedIdentities/*/assign/action"
   ],
   "dataActions": [
     "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/delete",

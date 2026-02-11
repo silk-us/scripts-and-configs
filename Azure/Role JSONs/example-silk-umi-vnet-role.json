@@ -5,12 +5,13 @@
   "actions": [
     "Microsoft.Network/virtualNetworks/read",
     "Microsoft.Network/virtualNetworks/subnets/read",
-    "Microsoft.Network/virtualNetworks/subnets/join/action"
+    "Microsoft.Network/virtualNetworks/subnets/join/action",
+    "Microsoft.Network/virtualNetworks/CheckIPAddressAvailability/read"
   ],
   "dataActions": [],
   "notActions": [],
   "notDataActions": [],
   "assignableScopes": [
-    "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/example-network-resource-group"
+    "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/example-vnet-rg"
   ]
 }

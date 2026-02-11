@@ -72,14 +72,17 @@ function Test-SilkResourceDeployment
 
             .PARAMETER CNodeFriendlyName
                 Friendly name for CNode SKU selection using descriptive categories:
+                - "Increased_Logical_Capacity_AMD" (Standard_E64as_v6) - AMD-based high memory SKU with increased capacity capabilities
                 - "Increased_Logical_Capacity" (Standard_E64s_v5) - High memory SKU, most commonly used due to increased capacity capabilities and cost effectiveness
                 - "Read_Cache_Enabled" (Standard_L64s_v3) - High-speed local SSD storage for read-intensive workloads
+                - "No_Increased_Logical_Capacity_AMD" (Standard_D64as_v6) - AMD-based basic compute SKU
                 - "No_Increased_Logical_Capacity" (Standard_D64s_v5) - Basic compute SKU, uncommonly used in favor of the increased logical capacity configuration
+                - "Entry_Level_SDP" (Standard_E32as_v5) - Production entry level SKU for smaller deployments
 
             .PARAMETER CNodeSku
                 Explicit Azure VM SKU for CNode VMs when using direct SKU specification.
                 Alternative to CNodeFriendlyName for advanced scenarios requiring specific SKU control.
-                Valid values: "Standard_E64s_v5", "Standard_L64s_v3", "Standard_D64s_v5"
+                Valid values: "Standard_E64as_v6", "Standard_E64s_v5", "Standard_L64s_v3", "Standard_D64as_v6", "Standard_D64s_v5", "Standard_E32as_v5"
 
             .PARAMETER CNodeCount
                 Number of CNode VMs to deploy. Silk Infrastructure requires minimum 2 CNodes for cluster quorum,

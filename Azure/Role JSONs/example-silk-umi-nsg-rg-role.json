@@ -1,14 +1,15 @@
 {
-  "name": "example-silk-umi-nsg-role",
+  "name": "example-silk-umi-nsg-rg-role",
   "isCustom": true,
   "description": "Required permissions to the NSG objects for umi to send to Silks Clarity.",
   "actions": [
-    "Microsoft.Network/networkSecurityGroups/read"
+    "Microsoft.Network/networkSecurityGroups/read",
+    "Microsoft.Network/networkSecurityGroups/join/action"
   ],
   "dataActions": [],
   "notActions": [],
   "notDataActions": [],
   "assignableScopes": [
-    "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/example-network-resource-group"
+    "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/example-umi-rg"
   ]
 }

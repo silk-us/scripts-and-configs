@@ -1355,13 +1355,13 @@
         "Name": "flex-cluster-XXXX-network-external-mgmt-iscsi-in"
       },
       {
-        "Description":  "Allow all traffic from Flex subnet to Silk cluster external management subnet.",
-        "Protocol": "*",
+        "Description":  "",
+        "Protocol": "Tcp",
         "SourcePortRange": [
           "*"
         ],
         "DestinationPortRange": [
-          "*"
+          "22"
         ],
         "SourceAddressPrefix": [
           "flex_subnet_cidr"
@@ -1372,7 +1372,7 @@
         "Access": "Allow",
         "Priority": 220,
         "Direction": "Inbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-flex-all-in"
+        "Name": "flex-cluster-XXXX-network-external-mgmt-ssh-flex-in"
       },
       {
         "Description":  "",
@@ -1393,6 +1393,26 @@
         "Priority": 230,
         "Direction": "Inbound",
         "Name": "flex-cluster-XXXX-network-external-mgmt-ping-in"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Icmp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "*"
+        ],
+        "SourceAddressPrefix": [
+          "flex_subnet_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "Access": "Allow",
+        "Priority": 240,
+        "Direction": "Inbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-ping-flex-in"
       },
       {
         "Description":  "",
@@ -1421,6 +1441,26 @@
           "*"
         ],
         "DestinationPortRange": [
+          "443"
+        ],
+        "SourceAddressPrefix": [
+          "flex_subnet_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "Access": "Allow",
+        "Priority": 260,
+        "Direction": "Inbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-https-flex-in"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
           "3192"
         ],
         "SourceAddressPrefix": [
@@ -1433,6 +1473,26 @@
         "Priority": 270,
         "Direction": "Inbound",
         "Name": "flex-cluster-XXXX-network-external-mgmt-fna-in"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "3192"
+        ],
+        "SourceAddressPrefix": [
+          "flex_subnet_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "Access": "Allow",
+        "Priority": 280,
+        "Direction": "Inbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-fna-flex-in"
       },
       {
         "Description":  "",
@@ -1515,8 +1575,48 @@
         "Name": "flex-cluster-XXXX-network-external-mgmt-external-mgmt-out"
       },
       {
-        "Description":  "Allow all traffic from Silk cluster external management subnet to Flex subnet.",
-        "Protocol": "*",
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "443"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "flex_subnet_cidr"
+        ],
+        "Access": "Allow",
+        "Priority": 330,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-https-flex-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "80"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "flex_subnet_cidr"
+        ],
+        "Access": "Allow",
+        "Priority": 340,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-http-flex-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Icmp",
         "SourcePortRange": [
           "*"
         ],
@@ -1530,9 +1630,29 @@
           "flex_subnet_cidr"
         ],
         "Access": "Allow",
-        "Priority": 330,
+        "Priority": 350,
         "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-flex-all-out"
+        "Name": "flex-cluster-XXXX-network-external-mgmt-ping-flex-out"
+      },
+      {
+        "Description":  "",
+        "Protocol": "Tcp",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "22"
+        ],
+        "SourceAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "DestinationAddressPrefix": [
+          "flex_subnet_cidr"
+        ],
+        "Access": "Allow",
+        "Priority": 360,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-ssh-flex-out"
       },
       {
         "Description":  "",

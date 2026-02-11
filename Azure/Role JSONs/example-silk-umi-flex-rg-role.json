@@ -1,5 +1,5 @@
 {
-  "name": "example-silk-umi-resourcegroup-role",
+  "name": "example-silk-umi-flex-resourcegroup-role",
   "isCustom": true,
   "description": "Required permissions to the resource group to assign umi for managing a Silk cluster deployment",
   "actions": [
@@ -38,7 +38,12 @@
     "Microsoft.Compute/virtualMachines/restart/action",
     "Microsoft.Compute/virtualMachines/runCommand/action",
     "Microsoft.Compute/virtualMachines/start/action",
+    "Microsoft.Network/loadBalancers/write",
     "Microsoft.Network/loadBalancers/read",
+    "Microsoft.Network/loadBalancers/backendAddressPools/join/action",
+    "Microsoft.Network/natGateways/read",
+    "Microsoft.Network/natGateways/write",
+    "Microsoft.Network/natGateways/join/action",
     "Microsoft.Network/networkInterfaces/read",
     "Microsoft.Network/networkInterfaces/write",
     "Microsoft.Network/networkInterfaces/delete",
@@ -48,6 +53,8 @@
     "Microsoft.Network/networkSecurityGroups/read",
     "Microsoft.Network/networkSecurityGroups/write",
     "Microsoft.Network/networkSecurityGroups/join/action",
+    "Microsoft.Network/publicIPAddresses/read",
+    "Microsoft.Network/publicIPAddresses/write",
     "Microsoft.Resources/subscriptions/resourcegroups/read",
     "Microsoft.Storage/storageAccounts/delete",
     "Microsoft.Storage/storageAccounts/read",
@@ -67,6 +74,6 @@
   "notActions": [],
   "notDataActions": [],
   "assignableScopes": [
-    "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/example-deployment-resource-group"
+    "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/example-flex-deployment-rg"
   ]
 }

@@ -828,10 +828,10 @@ function Test-SilkResourceDeployment
                 # These families are typically in preview or newly released and may not appear in Get-AzVMUsage results
                 # Update this list as new SKU families are released or when preview families become GA
                 $knownPreviewSkuFamilies =    @(
-                                                    $($"Standard Easv6 Family vCPUs"),  # AMD-based E-series v6 with increased logical capacity
-                                                    $($"Standard Dasv6 Family vCPUs")   # AMD-based D-series v6 general purpose
+                                                    $("Standard Easv6 Family vCPUs"),  # AMD-based E-series v6 with increased logical capacity
+                                                    $("Standard Dasv6 Family vCPUs")   # AMD-based D-series v6 general purpose
                                                 )
-                Write-Verbose -Message $($"Tracking {0} known preview/new SKU families that may not be in quota system" -f $knownPreviewSkuFamilies.Count)
+                Write-Verbose -Message $("Tracking {0} known preview/new SKU families that may not be in quota system" -f $knownPreviewSkuFamilies.Count)
 
                 # ========================================================================================================
                 # Existing Infrastructure Parameter Mapping

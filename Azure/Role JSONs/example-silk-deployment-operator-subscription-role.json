@@ -1,7 +1,7 @@
 {
     "name": "example-silk-deployment-operator-subscription-role",
     "isCustom": true,
-    "description": "Required permissions to the deployment operator to execute the Azure marketplace Silk Flex deployment. Applied to the scope of the subscription.",
+    "description": "Subscription permissions required for deployment operator to execute Azure Marketplace Silk deployment.",
     "actions": [
         "Microsoft.Network/virtualNetworks/read",
         "Microsoft.Resources/subscriptions/resourceGroups/read",

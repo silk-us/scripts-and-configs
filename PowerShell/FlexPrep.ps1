@@ -1,5 +1,5 @@
 param(
-    [parameter(Mandatory)]
+    [parameter()]
     [string] $URI,
     [parameter()]
     [string] $virtualNetwork,
@@ -112,7 +112,7 @@ $locationQuotas = @()
 foreach ($l in $allLocations) {
      try {
         $allskus = get-azComputeResourceSku -Location $l.Location 
-        $usage = Get-AzVMUsage -Location $l.Location
+        $usage = Get-AzVMUsage -Location $l.Location -ErrorAction SilentlyContinue
     } catch {
         Write-Host "    Error processing location $($l.Location): $($_.Exception.Message)" -ForegroundColor Red
         continue
@@ -260,7 +260,6 @@ try {
             if ($assignmentParameters) {
                 $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Assignment Parameters" -Value $assignmentParameters
             }
-
             if ($pa.PolicyDefinitionId -match "/policySetDefinitions/") {
                 $policySetDef = Get-AzPolicySetDefinition -Id $pa.PolicyDefinitionId -ErrorAction SilentlyContinue
                 if (-not $policySetDef) {
@@ -348,22 +347,25 @@ try {
     throw
 }
 
-Write-Host "Uploading file to Azure Storage..." -ForegroundColor Cyan
-try {
-    # parse container name and SAS token
-    $SASuri = [Uri]$Uri
-    $containerName = $SASuri.AbsolutePath.TrimStart('/')
-    $sasToken = $SASuri.Query
-    $storageAccount = $SASuri.Host.Split('.')[0]
+if ($Uri) {
+    Write-Host "Uploading file to Azure Storage..." -ForegroundColor Cyan
+    try {
+        # parse container name and SAS token
+        $SASuri = [Uri]$Uri
+        $containerName = $SASuri.AbsolutePath.TrimStart('/')
+        $sasToken = $SASuri.Query
+        $storageAccount = $SASuri.Host.Split('.')[0]
 
-    # create storage context
-    $ctx = New-AzStorageContext -StorageAccountName $storageAccount -SasToken $sasToken
+        # create storage context
+        $ctx = New-AzStorageContext -StorageAccountName $storageAccount -SasToken $sasToken
 
-    # upload file
-    $file = Get-Item -Path $outputFile 
-    Set-AzStorageBlobContent -File $file.FullName -Container $containerName -Blob $outputFile -Context $ctx -Force | Out-Null
-    Write-Host "File uploaded successfully to $storageAccount/$containerName/$outputFile" -ForegroundColor Green
-} catch {
-    Write-Host "Error uploading file to Azure Storage: $($_.Exception.Message)" -ForegroundColor Red
-    Write-Host "Local file available at: $outputFile" -ForegroundColor Yellow
+        # upload file
+        $file = Get-Item -Path $outputFile 
+        Set-AzStorageBlobContent -File $file.FullName -Container $containerName -Blob $outputFile -Context $ctx -Force | Out-Null
+        Write-Host "File uploaded successfully to $storageAccount/$containerName/$outputFile" -ForegroundColor Green
+    } catch {
+        Write-Host "Error uploading file to Azure Storage: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "Local file available at: $outputFile" -ForegroundColor Yellow
+    }
 }
+

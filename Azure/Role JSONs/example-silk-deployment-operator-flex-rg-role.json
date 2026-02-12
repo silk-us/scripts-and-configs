@@ -1,7 +1,7 @@
 {
     "name": "example-silk-deployment-operator-resource-group-role",
     "isCustom": true,
-    "description": "Required permissions for the deployment user to execute the Azure marketplace Silk Flex deployment. Applied to the scope of the empty flex resource group.",
+    "description": "Flex resource group permissions required for deployment operator to execute Azure Marketplace Silk deployment.",
     "actions": [
         "Microsoft.Authorization/locks/write",
         "Microsoft.Compute/disks/write",
@@ -24,19 +24,7 @@
         "Microsoft.Storage/storageAccounts/write",
         "Microsoft.Resources/deployments/cancel/action",
         "Microsoft.Resources/deployments/delete",
-        "Microsoft.Resources/deployments/exportTemplate/action",
-        "Microsoft.Network/virtualNetworks/CheckIPAddressAvailability/read",
-        "Microsoft.Network/loadBalancers/write",
-        "Microsoft.Network/loadBalancers/read",
-        "Microsoft.Network/loadBalancers/backendAddressPools/join/action",
-        "Microsoft.Network/networkSecurityGroups/join/action",
-        "Microsoft.Network/natGateways/read",
-        "Microsoft.Network/natGateways/write",
-        "Microsoft.Network/natGateways/join/action",
-        "Microsoft.Network/publicIPAddresses/read",
-        "Microsoft.Network/publicIPAddresses/write",
-        "Microsoft.ManagedIdentity/userAssignedIdentities/*/read",
-        "Microsoft.ManagedIdentity/userAssignedIdentities/*/assign/action"
+        "Microsoft.Resources/deployments/exportTemplate/action"
     ],
     "dataActions": [
         "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/add/action",
@@ -47,6 +35,6 @@
     "notActions": [],
     "notDataActions": [],
     "assignableScopes": [
-        "/subscriptions/YOUR-SUBSCRIPTION-UID/resourceGroups/EMPTY-RG-FOR-DEPLOYMENT"
+        "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/example-flex-deployment-rg"
     ]
 }

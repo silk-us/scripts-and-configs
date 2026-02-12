@@ -1,10 +1,13 @@
 
 {
-    "resource_group_name": "flex-example",
+    "resource_group_name": "example-nsg-rg",
     "azure_region": "centralus",
+    "subnet_config":[
+                        {"string": "external_mgmt_cidr","cidr": "10.0.5.0/25"}
+                    ],
     "nsg": [
         {
-            "name": "flex-example-nsg",
+            "name": "example-flex-nsg",
             "securityRules": [
                 {
                     "name": "default-allow-ssh",
@@ -58,33 +61,16 @@
                     "destinationAddressPrefixes": []
                 },
                 {
-                    "name": "allow-silk-mgmt-subnet-in",
+                    "name": "allow-to-mgmt-subnet",
                     "provisioningState": "Succeeded",
-                    "description": "Allow all traffic from Silk cluster external management subnet to Flex subnet.",
-                    "protocol": "*",
-                    "sourcePortRange": "*",
-                    "destinationPortRange": "*",
-                    "sourceAddressPrefix": "external_mgmt_cidr",
-                    "destinationAddressPrefix": "*",
-                    "access": "Allow",
-                    "priority": 103,
-                    "direction": "Inbound",
-                    "sourcePortRanges": [],
-                    "destinationPortRanges": [],
-                    "sourceAddressPrefixes": [],
-                    "destinationAddressPrefixes": []
-                },
-                {
-                    "name": "allow-silk-mgmt-subnet-out",
-                    "provisioningState": "Succeeded",
-                    "description": "Allow all traffic from Flex subnet to Silk cluster external management subnet.",
+                    "description": "Allow all outbound traffic from Flex subnet to Silk cluster external management subnet.",
                     "protocol": "*",
                     "sourcePortRange": "*",
                     "destinationPortRange": "*",
                     "sourceAddressPrefix": "*",
                     "destinationAddressPrefix": "external_mgmt_cidr",
                     "access": "Allow",
-                    "priority": 103,
+                    "priority": 100,
                     "direction": "Outbound",
                     "sourcePortRanges": [],
                     "destinationPortRanges": [],

@@ -1,14 +1,20 @@
 {
   "name": "example-silk-umi-nsg-role",
   "isCustom": true,
-  "description": "Required permissions to the NSG objects for umi to send to Silks Clarity.",
+  "description": "NSG permissions required for UMI to validate configuration and join network resources during Silk pod deployment and lifecycle.",
   "actions": [
-    "Microsoft.Network/networkSecurityGroups/read"
+    "Microsoft.Network/networkSecurityGroups/read",
+    "Microsoft.Network/networkSecurityGroups/join/action"
   ],
   "dataActions": [],
   "notActions": [],
   "notDataActions": [],
   "assignableScopes": [
-    "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/example-network-resource-group"
+    "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/example-nsg-rg/providers/Microsoft.Network/networkSecurityGroups/example-flex-cluster-xxxx-network-external-data1-nsg",
+    "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/example-nsg-rg/providers/Microsoft.Network/networkSecurityGroups/example-flex-cluster-xxxx-network-external-data2-nsg",
+    "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/example-nsg-rg/providers/Microsoft.Network/networkSecurityGroups/example-flex-cluster-xxxx-network-external-mgmt-nsg",
+    "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/example-nsg-rg/providers/Microsoft.Network/networkSecurityGroups/example-flex-cluster-xxxx-network-internal1-nsg",
+    "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/example-nsg-rg/providers/Microsoft.Network/networkSecurityGroups/example-flex-cluster-xxxx-network-internal2-nsg",
+    "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/example-nsg-rg/providers/Microsoft.Network/networkSecurityGroups/example-flex-nsg"
   ]
 }

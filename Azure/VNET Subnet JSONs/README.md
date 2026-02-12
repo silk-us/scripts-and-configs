@@ -1,16 +1,18 @@
-# Example Method for Flex Subnet Deployment
+# Virtual Network Subnet Configuration for Silk Flex
 
-This readme describes how to configure a subnet to prepare for a Silk Flex deployment and offers a method to deploy that resource via powershell.  The configuration provided in the example json files can be directly used with minor changes to suit your environment.  The examples assume an existing VNET with the corresponding IP ranges is already created.  It's also assumes [appropriately configured network security groups](<../NSG Rule JSONs/README.md>) have been created to associate to the respective subnet.
+This readme describes how to configure a subnet to prepare for a Silk Flex deployment and offers a method to deploy that resource via PowerShell. The configuration provided in the example JSON files can be directly used with minor changes to suit your environment. The examples assume an existing VNET with the corresponding IP ranges is already created. It also assumes [appropriately configured network security groups](<../NSG Rule JSONs/README.md>) have been created to associate to the respective subnet.
 
 ---
-## prerequisites for deploying the Flex Subnet
+
+## Prerequisites for Deploying the Flex Subnet
 It's assumed you've established an authenticated powershell session to azure and are operating in that session for the entirety of this process. You can use `Connect-AzAccount` to establish that connection and would need to do this in each powershell session you operate out of.
 
 
-## example configuration
-This configuration example specifies all required elements for a flex subnet, including the Microsoft.Storage.Global and Microsoft.ContainerRegistry service endpoints where applicable.  It assumes the required network security groups have been created and these subnets are being created in an existing vnet.
+## Example Configuration
 
-### example values to change
+This configuration example specifies all required elements for a flex subnet, including the Microsoft.Storage.Global and Microsoft.ContainerRegistry service endpoints where applicable. It assumes the required network security groups have been created and these subnets are being created in an existing VNET.
+
+### Example Values to Change
 The following values from the [smi-example-flex-subnet-configuration](smi-example-flex-subnet-configuration.json) or [umi-example-silk-cluster-subnet-configuration](umi-example-silk-cluster-subnet-configuration.json) can be updated according to your environment.
 
 ```json
@@ -25,26 +27,30 @@ The following values from the [smi-example-flex-subnet-configuration](smi-exampl
 ```
 
 
-### static example values
-The following values from the [example-flex-subnet-configuration](example-flex-subnet-configuration.json) are constant for any Azure flex or management subnet deployment.<br>
+### Static Example Values
+The following values from the example subnet configuration files are constant for any Azure flex or management subnet deployment.<br>
 `    "subnet_service_endpoint": ["Microsoft.Storage.Global", "Microsoft.ContainerRegistry"]`
 
 
-## powershell deployment
+## PowerShell Deployment
+
 ### SMI
-#### import the smi-example-flex-subnet-configuration.json configuration into a powershell object
+
+#### Import the smi-example-flex-subnet-configuration.json Configuration into a PowerShell Object
 This assumes the modified json file is in your working directory.  Update the `-Path` accordingly.
 ```powershell
 $config = Get-Content -Path .\smi-example-flex-subnet-configuration.json -Raw | ConvertFrom-Json -Depth 100
 ```
+
 ### UMI
-#### import the umi-example-silk-cluster-subnet-configuration.json configuration into a powershell object
+
+#### Import the umi-example-silk-cluster-subnet-configuration.json Configuration into a PowerShell Object
 This assumes the modified json file is in your working directory.  Update the `-Path` accordingly.
 ```powershell
 $config = Get-Content -Path .\umi-example-silk-cluster-subnet-configuration.json -Raw | ConvertFrom-Json -Depth 100
 ```
 
-### create the new subnets
+### Create the New Subnets
 ```powershell
 foreach ($subnet in $config.subnet_config)
     {

@@ -1,13 +1,15 @@
-# Example Method for Flex NSG Deployment
+# Network Security Group (NSG) Configuration for Silk Flex
 
-This readme offers a method to deploy an NSG and configure it's rules to prepare for a Silk Flex deployment.  The configuration provided in the example json can be directly used with minor changes to suit your environment.  The rules in the example configuration assume limited access within the scope of the VNET is permissible.
+This readme offers a method to deploy an NSG and configure its rules to prepare for a Silk Flex deployment. The configuration provided in the example JSON files can be directly used with minor changes to suit your environment. The rules in the example configuration assume limited access within the scope of the VNET is permissible.
 
+---
 
-## prerequisites for deploying the Flex NSG
+## Prerequisites for Deploying the Flex NSG
 It's assumed you've established an authenticated powershell session to azure and are operating in that session for the entirety of this process. You can use `Connect-AzAccount` to establish that connection and would need to do this in each powershell session you operate out of.
 
-## NSG Example Files Required Changes
-### example flex nsg configuration changes
+## NSG Example Files - Required Changes
+
+### Example Flex NSG Configuration Changes
 The first three values from the [example-flex-nsg-configuration](example-flex-nsg-configuration.json) can be updated according to your environment.
 Update "resource_group_name", "azure_region", and the "name" of the NSG as needed.
 
@@ -20,7 +22,7 @@ Update "resource_group_name", "azure_region", and the "name" of the NSG as neede
 ...
 ```
 
-### example Silk Cluster NSG configuration changes
+### Example Silk Cluster NSG Configuration Changes
 The first three values from the [example-silk-cluster-nsg-configuration](example-silk-cluster-nsg-configuration.json) can be updated according to your environment.
 Update "resource_group_name", "azure_region", "cluster_number", and each of the "cidr" values in the "subnet_config" hashtables to match your environments configuration.
 ```json
@@ -39,24 +41,33 @@ Update "resource_group_name", "azure_region", "cluster_number", and each of the 
 ```
 
 
-# powershell deployment
-This assumes the modified json file is in your working directory.  Update the `-Path` accordingly.
+# PowerShell Deployment
+
+This assumes the modified JSON file is in your working directory. Update the `-Path` accordingly.
+
 ## Flex Subnet NSG
-### import the modified example-flex-nsg-configuration.json configuration into a powershell object
+
+### Import the Modified example-flex-nsg-configuration.json Configuration into a PowerShell Object
 ```powershell
 $config = Get-Content -Path .\example-flex-nsg-configuration.json -Raw | ConvertFrom-Json -Depth 100
 ```
 
+---
+
 ## *OR*
 
+---
+
 ## Silk Cluster Subnet NSGs
-### import the modified example-silk-cluster-nsg-configuration.json configuration into a powershell object
+
+### Import the Modified example-silk-cluster-nsg-configuration.json Configuration into a PowerShell Object
 ```powershell
 $config = Get-Content -Path .\example-silk-cluster-nsg-configuration.json -Raw | ConvertFrom-Json -Depth 100
 ```
 
-## Powershell Command to Deploy from imported config
-### create the new network security groups (nsg) and rules
+## PowerShell Command to Deploy from Imported Config
+
+### Create the New Network Security Groups (NSG) and Rules
 ```powershell
 foreach ($nsg in $config.nsg)
     {

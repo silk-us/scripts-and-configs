@@ -45,6 +45,21 @@ function Build-MenuFromArray {
 
 # Check and/or validate subscription
 
+# Check and fix Az.Resources module if needed
+$azRes = Get-Module -Name Az.Resources 
+if ($azRes.Version.Major -lt 7) { 
+    Write-Host "Updating Az.Resources module to version 7.9.0 or later..." -ForegroundColor Yellow
+    Remove-Module Az.Resources -Force -ErrorAction SilentlyContinue
+    try {
+        Update-Module -Name Az.Resources -Force -ErrorAction Stop
+        Write-Host "Az.Resources module updated successfully." -ForegroundColor Green
+    } catch {
+        Write-Host "Error updating Az.Resources module: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "Please update the Az.Resources module to version 7.9.0 or later and re-run the script." -ForegroundColor Red
+        throw
+    }
+}
+
 Write-Host "Validating Azure subscription context..." -ForegroundColor Cyan
 
 $azContext = Get-AzContext
@@ -239,14 +254,14 @@ try {
             $policyObject | Add-Member -MemberType NoteProperty -Name "Scope" -Value $pa.Scope
             $policyObject | Add-Member -MemberType NoteProperty -Name "Enforcement Mode" -Value $pa.EnforcementMode
             $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Definition Id" -Value $pa.PolicyDefinitionId
-            $assignmentParameters = if ($pa.Properties -and $pa.Properties.Parameters) { $pa.Properties.Parameters } else { $pa.Parameters }
-            if (-not $assignmentParameters) {
-                $paRefresh = Get-AzPolicyAssignment -Name $pa.Name -Scope $pa.Scope -ErrorAction SilentlyContinue
-                if ($paRefresh -and $paRefresh.Properties -and $paRefresh.Properties.Parameters) {
-                    $assignmentParameters = $paRefresh.Properties.Parameters
-                }
-            }
-            if (-not $assignmentParameters -and $pa.Id) {
+            # $assignmentParameters = if ($pa.Properties -and $pa.Properties.Parameters) { $pa.Properties.Parameters } else { $pa.Parameters }
+            # if (-not $assignmentParameters) {
+            #     $paRefresh = Get-AzPolicyAssignment -Name $pa.Name -Scope $pa.Scope -ErrorAction SilentlyContinue
+            #     if ($paRefresh -and $paRefresh.Properties -and $paRefresh.Properties.Parameters) {
+            #         $assignmentParameters = $paRefresh.Properties.Parameters
+            #     }
+            # }
+            # if (-not $assignmentParameters -and $pa.Id) {
                 try {
                     $paRest = Invoke-AzRestMethod -Method GET -Path "$($pa.Id)?api-version=2023-04-01"
                     if ($paRest.StatusCode -eq 200 -and $paRest.Content) {
@@ -256,7 +271,7 @@ try {
                 } catch {
                     Write-Host "    Warning: Could not retrieve assignment parameters via REST for $($pa.Name)" -ForegroundColor Yellow
                 }
-            }
+            # }
             if ($assignmentParameters) {
                 $policyObject | Add-Member -MemberType NoteProperty -Name "Policy Assignment Parameters" -Value $assignmentParameters
             }

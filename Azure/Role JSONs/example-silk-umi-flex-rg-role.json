@@ -1,7 +1,7 @@
 {
-  "name": "example-silk-umi-resourcegroup-role",
+  "name": "example-silk-umi-flex-resourcegroup-role",
   "isCustom": true,
-  "description": "Required permissions to the resource group to assign umi for managing a Silk cluster deployment",
+  "description": "Flex resource group permissions required for UMI to manage all cluster resources during Silk pod deployment and lifecycle.",
   "actions": [
     "Microsoft.Authorization/locks/read",
     "Microsoft.Authorization/locks/write",
@@ -38,7 +38,12 @@
     "Microsoft.Compute/virtualMachines/restart/action",
     "Microsoft.Compute/virtualMachines/runCommand/action",
     "Microsoft.Compute/virtualMachines/start/action",
+    "Microsoft.Network/loadBalancers/write",
     "Microsoft.Network/loadBalancers/read",
+    "Microsoft.Network/loadBalancers/backendAddressPools/join/action",
+    "Microsoft.Network/natGateways/read",
+    "Microsoft.Network/natGateways/write",
+    "Microsoft.Network/natGateways/join/action",
     "Microsoft.Network/networkInterfaces/read",
     "Microsoft.Network/networkInterfaces/write",
     "Microsoft.Network/networkInterfaces/delete",
@@ -48,6 +53,8 @@
     "Microsoft.Network/networkSecurityGroups/read",
     "Microsoft.Network/networkSecurityGroups/write",
     "Microsoft.Network/networkSecurityGroups/join/action",
+    "Microsoft.Network/publicIPAddresses/read",
+    "Microsoft.Network/publicIPAddresses/write",
     "Microsoft.Resources/subscriptions/resourcegroups/read",
     "Microsoft.Storage/storageAccounts/delete",
     "Microsoft.Storage/storageAccounts/read",
@@ -57,19 +64,7 @@
     "Microsoft.Storage/storageAccounts/joinPerimeter/action",
     "Microsoft.Storage/storageAccounts/listAccountSas/action",
     "Microsoft.Storage/storageAccounts/listKeys/action",
-    "Microsoft.Storage/storageAccounts/listServiceSas/action",
-    "Microsoft.Network/virtualNetworks/CheckIPAddressAvailability/read",
-    "Microsoft.Network/loadBalancers/write",
-    "Microsoft.Network/loadBalancers/read",
-    "Microsoft.Network/loadBalancers/backendAddressPools/join/action",
-    "Microsoft.Network/networkSecurityGroups/join/action",
-    "Microsoft.Network/natGateways/read",
-    "Microsoft.Network/publicIPAddresses/read",
-    "Microsoft.Network/publicIPAddresses/write",
-    "Microsoft.Network/natGateways/write",
-    "Microsoft.Network/natGateways/join/action",
-    "Microsoft.ManagedIdentity/userAssignedIdentities/*/read",
-    "Microsoft.ManagedIdentity/userAssignedIdentities/*/assign/action"
+    "Microsoft.Storage/storageAccounts/listServiceSas/action"
   ],
   "dataActions": [
     "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/delete",
@@ -79,6 +74,6 @@
   "notActions": [],
   "notDataActions": [],
   "assignableScopes": [
-    "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/example-deployment-resource-group"
+    "/subscriptions/YOUR-SUBSCRIPTION-ID/resourceGroups/example-flex-deployment-rg"
   ]
 }

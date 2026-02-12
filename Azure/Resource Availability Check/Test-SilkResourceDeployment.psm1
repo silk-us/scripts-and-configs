@@ -77,7 +77,7 @@ function Test-SilkResourceDeployment
                 - "Read_Cache_Enabled" (Standard_L64s_v3) - High-speed local SSD storage for read-intensive workloads
                 - "No_Increased_Logical_Capacity_AMD" (Standard_D64as_v6) - AMD-based basic compute SKU
                 - "No_Increased_Logical_Capacity" (Standard_D64s_v5) - Basic compute SKU, uncommonly used in favor of the increased logical capacity configuration
-                - "Entry_Level_SDP" (Standard_E32as_v5) - Production entry level SKU for smaller deployments
+                - "Entry_Level" (Standard_E32as_v5) - Production entry level SKU for smaller deployments
 
             .PARAMETER CNodeSku
                 Explicit Azure VM SKU for CNode VMs when using direct SKU specification.
@@ -422,7 +422,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true, HelpMessage = "Choose CNode type: Increased_Logical_Capacity_AMD (Standard_E64as_v6), Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled (Standard_L64s_v3), No_Increased_Logical_Capacity_AMD (Standard_D64as_v6), No_Increased_Logical_Capacity (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5).")]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true, HelpMessage = "Choose CNode type: Increased_Logical_Capacity_AMD (Standard_E64as_v6), Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled (Standard_L64s_v3), No_Increased_Logical_Capacity_AMD (Standard_D64as_v6), No_Increased_Logical_Capacity (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5).")]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true, HelpMessage = "Choose CNode type: Increased_Logical_Capacity_AMD (Standard_E64as_v6), Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled (Standard_L64s_v3), No_Increased_Logical_Capacity_AMD (Standard_D64as_v6), No_Increased_Logical_Capacity (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5).")]
-                [ValidateSet("Increased_Logical_Capacity_AMD", "Increased_Logical_Capacity", "Read_Cache_Enabled", "No_Increased_Logical_Capacity_AMD", "No_Increased_Logical_Capacity", "Entry_Level_SDP")]
+                [ValidateSet("Increased_Logical_Capacity_AMD", "Increased_Logical_Capacity", "Read_Cache_Enabled", "No_Increased_Logical_Capacity_AMD", "No_Increased_Logical_Capacity", "Entry_Level")]
                 [string]
                 $CNodeFriendlyName,
 
@@ -2524,7 +2524,7 @@ function Test-SilkResourceDeployment
                         # Start main VM creation progress
                         Write-Progress `
                             -Status "Initializing VM Deployment" `
-                            -CurrentOperation "Starting VM deployment process..." `
+                            -CurrentOperation $("Preparing deployment for {0} VM(s) ({1} CNodes, {2} DNodes)..." -f $totalVMs, $adjustedCNodeCount, $totalDNodes) `
                             -PercentComplete 0 `
                             -Activity "VM Deployment" `
                             -Id 1
@@ -2595,7 +2595,7 @@ function Test-SilkResourceDeployment
                                 # CNode creation phase with updated progress
                                 Write-Progress `
                                     -Status "Creating CNodes" `
-                                    -CurrentOperation $("Preparing to create {0} CNode VMs..." -f $adjustedCNodeCount) `
+                                    -CurrentOperation $("Preparing to create {0} CNode VM(s) in availability set..." -f $adjustedCNodeCount) `
                                     -PercentComplete 5 `
                                     -Activity "VM Deployment" `
                                     -Id 1
@@ -2782,7 +2782,7 @@ function Test-SilkResourceDeployment
 
                                 Write-Progress `
                                     -Status $("Processing MNode Group {0} of {1} - {2} TiB ({3})" -f $currentMNode, $mNodeObject.Count, $currentMNodePhysicalSize, $currentMNodeSku) `
-                                    -CurrentOperation $("Creating {0} DNodes for {1} TiB MNode..." -f $currentDNodeCount, $currentMNodePhysicalSize) `
+                                    -CurrentOperation $("Creating {0} DNode VM(s) for {1} TiB MNode..." -f $currentDNodeCount, $currentMNodePhysicalSize) `
                                     -PercentComplete $mainPercentComplete `
                                     -Activity "VM Deployment" `
                                     -Id 1
@@ -2947,12 +2947,13 @@ function Test-SilkResourceDeployment
                         $currentVMJobs = Get-Job
                         $completedJobs = $currentVMJobs | Where-Object { $_.State -in @('Completed', 'Failed', 'Stopped') }
                         $runningJobs = $currentVMJobs | Where-Object { $_.State -in @('Running', 'NotStarted') }
-                        $initialCompletionPercent = [Math]::Round(($completedJobs.Count / $allVMJobs.Count) * 100)
+                        $initialCompletionPercent = if ($allVMJobs.Count -gt 0) { [Math]::Round(($completedJobs.Count / $allVMJobs.Count) * 100) } else { 100 }
+                        $initialRemainingJobs = [Math]::Max($allVMJobs.Count - $completedJobs.Count, 0)
 
                         # Update sub-progress immediately with current status
                         Write-Progress `
                             -Status $("VM Deployment: {0}%" -f $initialCompletionPercent) `
-                            -CurrentOperation $("Monitoring {0} running VMs..." -f $runningJobs.Count) `
+                            -CurrentOperation $("{0} completed, {1} remaining (running: {2})" -f $completedJobs.Count, $initialRemainingJobs, $runningJobs.Count) `
                             -PercentComplete $initialCompletionPercent `
                             -Activity "VM Deployment Monitoring" `
                             -ParentId 1 `
@@ -2965,12 +2966,13 @@ function Test-SilkResourceDeployment
                                 $currentVMJobs = Get-Job
                                 $completedJobs = $currentVMJobs | Where-Object { $_.State -in @('Completed', 'Failed', 'Stopped') }
                                 $runningJobs = $currentVMJobs | Where-Object { $_.State -in @('Running', 'NotStarted') }
-                                $completionPercent = [Math]::Round(($completedJobs.Count / $allVMJobs.Count) * 100)
+                                $completionPercent = if ($allVMJobs.Count -gt 0) { [Math]::Round(($completedJobs.Count / $allVMJobs.Count) * 100) } else { 100 }
+                                $remainingJobs = [Math]::Max($allVMJobs.Count - $completedJobs.Count, 0)
 
                                 # Update sub-progress for VM deployment
                                 Write-Progress `
                                     -Status $("VM Deployment: {0}%" -f $completionPercent) `
-                                    -CurrentOperation $("Waiting for {0} remaining VMs to deploy..." -f $runningJobs.Count) `
+                                    -CurrentOperation $("{0} completed, {1} remaining (running: {2})" -f $completedJobs.Count, $remainingJobs, $runningJobs.Count) `
                                     -PercentComplete $completionPercent `
                                     -Activity "VM Deployment Monitoring" `
                                     -ParentId 1 `

@@ -2,9 +2,9 @@
 
 Silk Flex deployments on Azure can utilize either a System Managed Identity (SMI) or a User Managed Identity (UMI).
 For either deployment method, if the account used during the deployment can not have `owner` role assignment to the Resource Group these roles detail the minimum required permissions to deploy from the Azure marketplace:
-- [resource-group-role](../Role%20JSONs/example-silk-deployment-operator-resource-group-role.json)
+- [resource-group-role](../Role%20JSONs/example-silk-deployment-operator-flex-rg-role.json)
 - [subscription-role](../Role%20JSONs/example-silk-deployment-operator-subscription-role.json)
-- [vnet-resource-group-role](../Role%20JSONs/example-silk-deployment-operator-vnet-resource-group-role.json)
+- [vnet-resource-group-role](../Role%20JSONs/example-silk-deployment-operator-vnet-role.json)
 
 ### UMI vs SMI Deployments
 
@@ -76,7 +76,6 @@ Custom Azure RBAC roles must be created and assigned to the User Managed Identit
 **Required Roles:**
 - [**UMI Flex Resource Group Role**](../Role%20JSONs/example-silk-umi-flex-rg-role.json) - Permissions to create and manage compute resources in the empty Flex resource group
 - [**UMI NSG Role**](../Role%20JSONs/example-silk-umi-nsg-role.json) - Read and write permissions on Network Security Groups
-- [**UMI NSG Resource Group Role**](../Role%20JSONs/example-silk-umi-nsg-rg-role.json) - Resource group level permissions for Network Security Groups
 - [**UMI VNET Role**](../Role%20JSONs/example-silk-umi-vnet-role.json) - Subnet join and read permissions on the Virtual Network
 - [**UMI Object Role**](../Role%20JSONs/example-silk-umi-object-role.json) - (Optional) - Grants permissions for the User Managed Identity (UMI) to assign itself to new Flex instances during the upgrade process.
 - [**UMI Subscription Logs Role**](../Role%20JSONs/example-silk-umi-subscription-logs-role.json) - (Optional) - Activity log read permissions at the subscription level
@@ -84,7 +83,6 @@ Custom Azure RBAC roles must be created and assigned to the User Managed Identit
 **Assignment Requirements:**
 - **UMI Flex Resource Group Role** → Assigned to UMI on the empty target resource group
 - **UMI NSG Role** → Assigned to UMI on each NSG resource
-- **UMI NSG Resource Group Role** → Assigned to UMI on the NSG resource group
 - **UMI VNET Role** → Assigned to UMI on the VNET resource
 - **UMI Object Role** → (Optional) - Assigned to UMI on the UMI object resource
 - **UMI Subscription Logs Role** → (Optional) - Assigned to UMI on the subscription

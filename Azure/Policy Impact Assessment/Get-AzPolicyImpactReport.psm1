@@ -11,16 +11,16 @@
     - Policy definitions with detailed rules and effects
     - Policy exemptions
     - Scope analysis showing which policies apply where
-    - Export to JSON format
+    - Export to JSON format with complete policy rule details for deployment assessment
 
 .PARAMETER SubscriptionId
-    The Azure Subscription ID to analyze. If not provided, uses the current context subscription.
+    The Azure Subscription ID to analyze. If not provided and FlexResourceGroupName is specified, subscription will be auto-discovered from the resource group. Otherwise, you will be prompted to select a subscription (press Enter to use current context as default).
 
 .PARAMETER SubscriptionName
-    The Azure Subscription Name to analyze (alternative to SubscriptionId). If not provided, uses the current context subscription.
+    The Azure Subscription Name to analyze (alternative to SubscriptionId). If not provided and FlexResourceGroupName is specified, subscription will be auto-discovered from the resource group. Otherwise, you will be prompted to select a subscription (press Enter to use current context as default).
 
 .PARAMETER FlexResourceGroupName
-    The Silk Resource Group name - the primary target resource group where Silk resources will be deployed.
+    The Silk Resource Group name - the primary target resource group where Silk Flex resources will be deployed.
 
 .PARAMETER VNetName
     Array of Virtual Network names. If multiple VNets with the same name exist, you'll be prompted to select.
@@ -40,14 +40,8 @@
 .PARAMETER UMIResourceGroup
     Resource group where UMI will be deployed (even if it doesn't exist yet). Use this to assess policies without existing resources.
 
-.PARAMETER IncludeRoleAssignments
-    Include role assignments at subscription and Silk Resource Group level in the report.
-
 .PARAMETER OutputPath
     Directory path where report will be saved. Default is current directory.
-
-.PARAMETER ReportName
-    Base name for the output report files. Timestamp will be appended automatically.
 
 #>
 
@@ -150,19 +144,6 @@ function Get-AzPolicyImpactReport
                 [Parameter  (
                                 Mandatory = $false,
                                 ParameterSetName = 'Default',
-                                HelpMessage = 'Include role assignments in the report'
-                            )]
-                [Parameter  (
-                                Mandatory = $false,
-                                ParameterSetName = 'WithResources',
-                                HelpMessage = 'Include role assignments in the report'
-                            )]
-                [switch]
-                $IncludeRoleAssignments,
-
-                [Parameter  (
-                                Mandatory = $false,
-                                ParameterSetName = 'Default',
                                 HelpMessage = 'Directory path for output files'
                             )]
                 [Parameter  (
@@ -171,20 +152,7 @@ function Get-AzPolicyImpactReport
                                 HelpMessage = 'Directory path for output files'
                             )]
                 [string]
-                $OutputPath = '.',
-
-                [Parameter  (
-                                Mandatory = $false,
-                                ParameterSetName = 'Default',
-                                HelpMessage = 'Base name for the output report files'
-                            )]
-                [Parameter  (
-                                Mandatory = $false,
-                                ParameterSetName = 'WithResources',
-                                HelpMessage = 'Base name for the output report files'
-                            )]
-                [string]
-                $ReportName = 'AzurePolicyImpactReport'
+                $OutputPath = '.'
             )
 
         begin
@@ -224,7 +192,7 @@ function Get-AzPolicyImpactReport
                                 Write-Host $("Searching for resource group '{0}' across all subscriptions..." -f $FlexResourceGroupName) -ForegroundColor Yellow
                                 $allSubs = Get-AzSubscription
                                 $foundRGs = @()
-                                
+
                                 foreach ($sub in $allSubs)
                                     {
                                         Set-AzContext -SubscriptionId $sub.Id | Out-Null
@@ -237,7 +205,7 @@ function Get-AzPolicyImpactReport
                                                 }
                                             }
                                     }
-                                
+
                                 if ($foundRGs.Count -eq 0)
                                     {
                                         throw $("Resource group '{0}' not found in any accessible subscription" -f $FlexResourceGroupName)
@@ -292,7 +260,7 @@ function Get-AzPolicyImpactReport
                                             }
                                         Write-Host $("  Current context: {0}" -f $context.Subscription.Name) -ForegroundColor Gray
                                         $selection = Read-Host $("Select subscription (1-{0}) or press Enter for current" -f $allSubs.Count)
-                                        
+
                                         if ($selection -and $selection -match '^\d+$')
                                             {
                                                 $selectedIndex = [int]$selection - 1
@@ -311,29 +279,8 @@ function Get-AzPolicyImpactReport
                                             {
                                                 Write-Host $("  ✓ Using current context: {0}" -f $context.Subscription.Name) -ForegroundColor Green
                                             }
-                                    }
-                                
-                                # Now prompt for resource group
-                                Write-Host $("{0}Select target resource group to analyze (or press Enter to skip for subscription-level analysis):" -f [Environment]::NewLine) -ForegroundColor Cyan
-                                $allRGs = Get-AzResourceGroup | Sort-Object ResourceGroupName
-                                for ($i = 0; $i -lt $allRGs.Count; $i++)
-                                    {
-                                        Write-Host $("  [{0}] {1} ({2})" -f ($i+1), $allRGs[$i].ResourceGroupName, $allRGs[$i].Location)
-                                    }
-                                Write-Host $("  Select resource group (1-{0}) or press Enter to skip:" -f $allRGs.Count) -ForegroundColor Cyan
-                                $selection = Read-Host
-                                if ($selection -and $selection -match '^\d+$')
-                                    {
-                                        $selectedIndex = [int]$selection - 1
-                                        if ($selectedIndex -ge 0 -and $selectedIndex -lt $allRGs.Count)
-                                            {
-                                                $FlexResourceGroupName = $allRGs[$selectedIndex].ResourceGroupName
-                                                Write-Host $("  ✓ Selected: {0}" -f $FlexResourceGroupName) -ForegroundColor Green
-                                            }
-                                    } `
-                                else
-                                    {
-                                        Write-Host $("  No resource group selected - will perform subscription-level analysis only") -ForegroundColor Gray
+
+                                        Write-Host $("  ℹ Performing subscription-level analysis") -ForegroundColor Gray
                                     }
                             }
 
@@ -843,13 +790,39 @@ function Get-AzPolicyImpactReport
                         # Get policy definition details
                         try
                             {
-                                # Use the established subscription context for policy definition retrieval
-                                $definition = Get-AzPolicyDefinition -Id $assignment.PolicyDefinitionId -SubscriptionId $context.Subscription.Id -ErrorAction Stop
-
-                                # Determine scope type
+                                # Determine scope type first to decide how to retrieve the policy definition
                                 $scopeType = if ($assignment.Scope -like $("*/managementGroups/*")) {$("ManagementGroup")} `
                                             elseif ($assignment.Scope -like $("*/resourceGroups/*")) {$("ResourceGroup")} `
                                             else {$("Subscription")}
+                                
+                                # Check if this is a policy set (initiative) or single policy
+                                $isInitiative = $assignment.PolicyDefinitionId -like $("*/policySetDefinitions/*")
+                                
+                                # Retrieve policy or policy set definition based on type and scope
+                                if ($isInitiative)
+                                    {
+                                        # Policy Set Definition (Initiative)
+                                        if ($scopeType -eq $("ManagementGroup") -or $assignment.PolicyDefinitionId -like $("*/providers/Microsoft.Authorization/policySetDefinitions/*"))
+                                            {
+                                                $definition = Get-AzPolicySetDefinition -Id $assignment.PolicyDefinitionId -ErrorAction Stop
+                                            } `
+                                        else
+                                            {
+                                                $definition = Get-AzPolicySetDefinition -Id $assignment.PolicyDefinitionId -SubscriptionId $context.Subscription.Id -ErrorAction Stop
+                                            }
+                                    } `
+                                else
+                                    {
+                                        # Single Policy Definition
+                                        if ($scopeType -eq $("ManagementGroup") -or $assignment.PolicyDefinitionId -like $("*/providers/Microsoft.Authorization/policyDefinitions/*"))
+                                            {
+                                                $definition = Get-AzPolicyDefinition -Id $assignment.PolicyDefinitionId -ErrorAction Stop
+                                            } `
+                                        else
+                                            {
+                                                $definition = Get-AzPolicyDefinition -Id $assignment.PolicyDefinitionId -SubscriptionId $context.Subscription.Id -ErrorAction Stop
+                                            }
+                                    }
 
                                 # Check if this policy impacts our target resource group
                                 $impactsTargetRG = $false
@@ -885,6 +858,11 @@ function Get-AzPolicyImpactReport
                                                                     PolicyDefinitionName = $definition.Name
                                                                     PolicyDisplayName = $definition.DisplayName
                                                                     PolicyDescription = $definition.Description
+                                                                    PolicyRule = $definition.PolicyRule
+                                                                    PolicyMetadata = $definition.Metadata
+                                                                    PolicyCategory = $definition.Metadata.category
+                                                                    PolicyVersion = $definition.Metadata.version
+                                                                    DefinitionParameters = $definition.Parameter
                                                                     Scope = $assignment.Scope
                                                                     ScopeType = $scopeType
                                                                     ImpactsTargetResourceGroup = $impactsTargetRG
@@ -893,7 +871,7 @@ function Get-AzPolicyImpactReport
                                                                     Mode = $definition.Mode
                                                                     Effect = $policyEffect
                                                                     NotScopes = ($assignment.NotScope -join $("; "))
-                                                                    Parameters = ($assignment.Parameter | ConvertTo-Json -Compress -Depth 3)
+                                                                    AssignmentParameters = ($assignment.Parameter | ConvertTo-Json -Compress -Depth 3)
                                                                 }
 
                                 $reportData.PolicyAssignments += $policyData
@@ -909,9 +887,9 @@ function Get-AzPolicyImpactReport
 
                                 $reportData.AccessIssues += [PSCustomObject]    @{
                                                                                     ResourceType = $("Policy Definition")
-                                                                                    ResourceName = $assignment.Name
-                                                                                    ResourceId = $assignment.PolicyDefinitionId
-                                                                                    Scope = $assignment.Scope
+                                                                                    ResourceName = $assignment.name
+                                                                                    ResourceId = $assignment.properties.policyDefinitionId
+                                                                                    Scope = $assignment.properties.scope
                                                                                     IssueType = $issueType
                                                                                     ErrorMessage = $errorMessage
                                                                                     Impact = $("Policy details unavailable - may affect deployment planning")
@@ -1063,36 +1041,6 @@ function Get-AzPolicyImpactReport
                         Write-Host $("")
                     }
 
-                # Get role assignments if requested
-                if ($IncludeRoleAssignments)
-                    {
-                        Write-Host $("Collecting Role Assignments...") -ForegroundColor Yellow
-
-                        # Get role assignments at subscription level
-                        $subRoles = Get-AzRoleAssignment -Scope $("/subscriptions/{0}" -f $context.Subscription.Id) -ErrorAction SilentlyContinue
-
-                        # Get role assignments at resource group level
-                        $rgRoles = Get-AzRoleAssignment -ResourceGroupName $FlexResourceGroupName -ErrorAction SilentlyContinue
-
-                        $allRoles = @($subRoles) + @($rgRoles) | Select-Object -Unique -Property RoleAssignmentId, *
-
-                        Write-Host $("  Found {0} role assignment(s){1}" -f $allRoles.Count, [Environment]::NewLine) -ForegroundColor Gray
-
-                        foreach ($role in $allRoles)
-                            {
-                                $roleData = [PSCustomObject]  @{
-                                                                DisplayName = $role.DisplayName
-                                                                SignInName = $role.SignInName
-                                                                RoleDefinitionName = $role.RoleDefinitionName
-                                                                RoleDefinitionId = $role.RoleDefinitionId
-                                                                ObjectType = $role.ObjectType
-                                                                Scope = $role.Scope
-                                                                CanDelegate = $role.CanDelegate
-                                                            }
-                                $reportData.RoleAssignments += $roleData
-                            }
-                    }
-
                 # Create scope analysis summary
                 $scopeSummary = @{
                                     TotalPolicies = $reportData.PolicyAssignments.Count
@@ -1164,12 +1112,12 @@ function Get-AzPolicyImpactReport
             {
                 # Export reports
                 $timestamp = Get-Date -Format $("yyyyMMdd-HHmmss")
-                $baseFileName = $("{0}-{1}" -f $ReportName, $timestamp)
+                $baseFileName = $("AzurePolicyImpactReport-{0}" -f $timestamp)
 
                 Write-Host $("Exporting JSON Report...") -ForegroundColor Yellow
 
                 $jsonPath = Join-Path $OutputPath $("{0}.json" -f $baseFileName)
-                $reportData | ConvertTo-Json -Depth 10 | Out-File -FilePath $jsonPath -Encoding UTF8
+                $reportData | ConvertTo-Json -Depth 20 | Out-File -FilePath $jsonPath -Encoding UTF8
                 Write-Host $("  JSON report saved: {0}" -f $jsonPath) -ForegroundColor Green
 
                 Write-Host $("{0}Report generation complete!" -f [Environment]::NewLine) -ForegroundColor Green

@@ -59,6 +59,8 @@ Install and Import the silktco module therein:
 <img width="489" height="232" alt="Screenshot 2026-02-13 160748" src="https://github.com/user-attachments/assets/19736d18-406a-402b-9462-dea9e5a9a372" />
 
 And then you should be prepared to simply run the `Export-SilkTCOAWS` function to generate a TCO report. 
+
+
 ---
 
 ## Azure TCO Export

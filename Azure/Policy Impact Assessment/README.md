@@ -1,474 +1,229 @@
 # Azure Policy Impact Assessment
 
-## Overview
+## Get-AzPolicyImpactReport PowerShell Function
 
-This PowerShell module generates comprehensive Azure Policy impact assessment reports for specified resources and scopes. It's designed to help you understand which Azure Policies could impact deployment or configuration of resources across multiple scopes including subscriptions, resource groups, VNets, NSGs, and User-Assigned Managed Identities.
+### Purpose
 
-## Purpose
-
-When deploying Azure resources like Silk Data Platform clusters, it's critical to understand:
-- Which policies will be evaluated during deployment
-- Whether policies will block or audit resource creation/configuration
-- Which scopes (Management Group, Subscription, Resource Group) policies are applied at
-- Any exemptions that may apply to your resources
-- Role assignments that govern permissions
-
-This tool collects all that information in an easy-to-review format that can be shared with customers or used for pre-deployment validation.
-
-## Features
-
-✅ **Comprehensive Policy Collection**
-- Policies at Management Group, Subscription, and Resource Group levels
-- Policy definitions with effects and rules
-- Policy exemptions
-- Scope hierarchy analysis
-
-✅ **Multi-Resource Analysis**
-- Target Resource Group
-- Virtual Networks (can be in different RGs)
-- Network Security Groups (can be in different RGs)
-- User-Assigned Managed Identities (can be in different RGs)
-
-✅ **Multiple Export Formats**
-- JSON (for programmatic processing)
-- CSV (for spreadsheet analysis)
-- HTML (for easy viewing and sharing)
-
-✅ **Optional Role Assignments**
-- Include RBAC role assignments at analyzed scopes
-
-## Prerequisites
-
-- **Azure PowerShell Modules:**
-  ```powershell
-  Install-Module -Name Az.Accounts, Az.Resources -Repository PSGallery -Scope CurrentUser
-  ```
-
-- **Azure Authentication:**
-  - Must be authenticated to Azure (`Connect-AzAccount`)
-
-- **Required Permissions:**
-  - **Minimum:** `Reader` role at Subscription level
-  - **Recommended:** `Reader` role at Management Group level (for complete policy visibility)
-  - **For Role Assignments:** Appropriate permissions to read role assignments
-
-> **⚠️ Permission Considerations:**
-> If you don't have Reader access at Management Group level, the report will still run but:
-> - Management Group-scoped policies may not be visible
-> - Policy definitions from parent scopes may be inaccessible
-> - The report will include an **Access Issues** section documenting what couldn't be retrieved
-> - This ensures transparency even when permissions are limited
-
-> **💡 Best Practice:** For complete policy visibility across all scopes, request `Reader` role assignment at the root Management Group level or at least at the Management Group that contains your subscription.
-
-## Installation
-
-### Option 1: Download from Repository
-
-1. Download the module file to your local machine or Azure Cloud Shell
-2. Import the module:
-   ```powershell
-   Import-Module .\Get-AzPolicyImpactReport.psm1
-   ```
-
-### Option 2: Azure Cloud Shell
-
-1. Upload `Get-AzPolicyImpactReport.psm1` to your Cloud Shell storage
-2. Import the module:
-   ```powershell
-   Import-Module ./Get-AzPolicyImpactReport.psm1
-   ```
-
-## Usage Examples
-
-### Example 1: Basic - Just Resource Group
-
-Simplest usage - analyze policies for your Silk deployment resource group:
-
-```powershell
-Get-AzPolicyImpactReport -ResourceGroupName 'my-silk-cluster-rg'
-```
-
-### Example 2: With External Resources (Using Friendly Names)
-
-**RECOMMENDED** - Just provide resource names, the module finds them:
-
-```powershell
-Get-AzPolicyImpactReport `
-    -ResourceGroupName 'my-silk-cluster-rg' `
-    -VNetNames 'shared-vnet' `
-    -NSGNames 'silk-flex-nsg' `
-    -UMINames 'silk-umi'
-```
-
-💡 If duplicate names exist, you'll be prompted to select which one.
-
-### Example 3: Multiple NSGs (Typical Silk Deployment)
-
-For Silk Flex + Cluster deployments with separate NSGs:
-
-```powershell
-Get-AzPolicyImpactReport `
-    -ResourceGroupName 'silk-cluster-rg' `
-    -VNetNames 'shared-vnet' `
-    -NSGNames @('silk-flex-nsg', 'silk-cluster-nsg') `
-    -UMINames 'silk-umi' `
-    -IncludeRoleAssignments
-```
-
-### Example 4: Pre-Deployment Assessment
-
-**Analyze policies BEFORE creating resources!** Perfect for planning:
-
-```powershell
-Get-AzPolicyImpactReport `
-    -ResourceGroupName 'silk-cluster-rg' `
-    -VNetResourceGroup 'network-rg' `
-    -NSGResourceGroup 'network-rg' `
-    -UMIResourceGroup 'identity-rg' `
-    -OutputFormat All
-```
-
-Use this when:
-- Planning Silk deployments
-- Understanding policy requirements before resource creation
-- Validating resource group configurations
-- Pre-deployment compliance checks
-
-### Example 5: Interactive Mode
-
-Let the module show you available resources and select from menus:
-
-```powershell
-Get-AzPolicyImpactReport `
-    -ResourceGroupName 'my-silk-cluster-rg' `
-    -Interactive `
-    -IncludeRoleAssignments
-```
-
-### Example 6: By Subscription Name
-
-Use subscription name instead of ID:
-
-```powershell
-Get-AzPolicyImpactReport `
-    -SubscriptionName 'Sales-Azure' `
-    -ResourceGroupName 'my-silk-cluster-rg' `
-    -VNetNames 'shared-vnet'
-```
-
-### Example 7: Custom Output Location
-
-Specify where reports are saved:
-
-```powershell
-Get-AzPolicyImpactReport `
-    -ResourceGroupName 'my-silk-cluster-rg' `
-    -VNetNames 'shared-vnet' `
-    -OutputPath 'C:\Reports' `
-    -ReportName 'SilkPolicyAnalysis'
-```
-
-### Example 8: HTML Only (For Quick Review)
-
-Generate just the HTML report:
-
-```powershell
-Get-AzPolicyImpactReport `
-    -ResourceGroupName 'my-silk-cluster-rg' `
-    -VNetNames 'shared-vnet' `
-    -OutputFormat HTML
-```
-
-### Example 9: Complete Analysis
-
-Full-featured report with everything enabled:
-
-```powershell
-Get-AzPolicyImpactReport `
-    -ResourceGroupName 'my-silk-cluster-rg' `
-    -VNetNames 'shared-vnet' `
-    -NSGNames @('silk-flex-nsg', 'silk-cluster-nsg') `
-    -UMINames 'silk-umi' `
-    -IncludeRoleAssignments `
-    -OutputFormat All `
-    -OutputPath '.' `
-    -ReportName 'SilkDeploymentPolicyReport'
-```
-
-### Advanced: Using Full Resource IDs
-
-If you have full resource IDs (or resources in different subscriptions):
-
-```powershell
-Get-AzPolicyImpactReport `
-    -ResourceGroupName 'my-silk-cluster-rg' `
-    -VNetResourceIds '/subscriptions/.../virtualNetworks/my-vnet' `
-    -NSGResourceIds '/subscriptions/.../networkSecurityGroups/my-nsg' `
-    -UMIResourceIds '/subscriptions/.../userAssignedIdentities/my-umi'
-```
+`Get-AzPolicyImpactReport` executed locally or from the Azure Cloud Shell generates comprehensive reports analyzing Azure Policy assignments that could impact your resource deployments. It retrieves complete policy definitions including PolicyRule, PolicyParameters, and PolicyDefinitions across Management Group, Subscription, and Resource Group scopes. The report identifies which policies will block deployments versus those that only audit, analyzes your permission context to detect potential blind spots, and exports all data in JSON format for deployment planning and exemption requests. This enables you to understand Azure Policy requirements **before** attempting deployment, eliminating trial-and-error approaches to policy compliance.
 
 ---
 
-## Output Files
+### Table of Contents
 
-The module generates the following files based on `OutputFormat`:
-
-- **JSON**: `{ReportName}-{Timestamp}.json` - Complete report data in JSON format
-- **CSV**:
-  - `{ReportName}-{Timestamp}-Policies.csv` - Policy assignments
-  - `{ReportName}-{Timestamp}-Exemptions.csv` - Policy exemptions (if any)
-  - `{ReportName}-{Timestamp}-RoleAssignments.csv` - Role assignments (if requested)
-  - `{ReportName}-{Timestamp}-AccessIssues.csv` - **Access/permission issues (if any)** ⚠️
-- **HTML**: `{ReportName}-{Timestamp}.html` - Formatted HTML report with styling
-
-## Understanding the Report
-
-### Report Sections
-
-1. **Metadata**: Report generation details, subscription info, target resources
-2. **Permission Context**: **NEW!** Your access level analysis and potential blind spots
-   - Your role assignments at various scopes
-   - Whether you have Management Group access
-   - Whether you have Subscription Reader or higher
-   - **Potential Blind Spots**: Areas where you may not have visibility
-   - Impact assessment of missing permissions
-   - Recommendations for complete visibility
-3. **Summary**: Aggregate counts of policies by scope and enforcement mode
-4. **Policy Assignments**: Detailed list of all applicable policies
-5. **Policy Exemptions**: Any exemptions that may apply (if found)
-6. **Resources Analyzed**: VNets, NSGs, UMIs that were analyzed
-7. **Role Assignments**: RBAC roles (if `-IncludeRoleAssignments` was used)
-8. **Access Issues**: Policies/scopes that couldn't be read due to permissions ⚠️
-
-### Permission Context & Blind Spots
-
-**NEW FEATURE:** The report now automatically analyzes your permissions and identifies potential blind spots!
-
-When you run the report, it will:
-- Check your role assignments at Management Group, Subscription, and Resource Group scopes
-- Identify whether you have sufficient permissions for complete policy visibility
-- List specific areas where your access may be limited
-- Provide recommendations for obtaining complete visibility
-
-**Example Output:**
-```
-Analyzing your permissions...
-  ✓ Found 3 role assignment(s)
-  MG Access: False
-  Subscription Reader: True
-  ⚠ Potential Blind Spots: 1
-
---- Permission Context ---
-Your Role Assignments: 3
-  Management Group Access: False
-  Subscription Reader+: True
-
-⚠️  Potential Blind Spots: 1
-  [High] Management Group Policies
-  ⓘ  See report for detailed blind spot analysis
-
-⚠️  Access Issues Detected: 3
-  Permission Denied: 0
-  Other Errors: 3
-  ⓘ  Some policy details may be incomplete - see report for details
-```
-
-**Blind Spot Severity Levels:**
-- **Critical**: No role assignments found - report will be severely incomplete
-- **High**: Missing Management Group access - MG policies may be invisible
-- **Medium**: Limited subscription access - some policies may not be visible
-
-Each blind spot includes specific recommendations for what permissions to request for complete visibility.
-
-### Access Issues Tracking
-
-The report automatically tracks any errors encountered while collecting policy data:
-
-- **Permission Denied**: Missing Reader access at specific scopes (e.g., Management Groups) - displays in **red**
-- **Other Access Errors**: Parameter resolution errors, API timeouts, or transient errors - displays in **yellow**
-
-**Color Coding:**
-- 🟢 **Green**: "Permission Denied: 0" indicates no permission issues (good!)  
-- 🟡 **Yellow**: Access issues header when only "Other Errors" exist (warnings)
-- 🔴 **Red**: Access issues header when "Permission Denied" > 0 (critical errors)
-
-**Exports:** Access issues are included in JSON, exported to a separate CSV, and highlighted in the HTML report with a warning banner.
-
-**Action:** If access issues are detected, request appropriate Reader permissions at the identified scopes and re-run the report.
+1. [Quick Start](#quick-start)
+1. [Output & How to Interpret Results](#output--how-to-interpret-results)
+1. [Prerequisites](#prerequisites)
+1. [Parameters](#parameters)
+1. [Example Usage & Scenarios](#example-usage--scenarios)
+1. [Understanding Policy Effects](#understanding-policy-effects)
+1. [Additional Notes](#additional-notes)
+1. [Advanced Usage](#advanced-usage)
 
 ---
 
-## Understanding the Report
+### Quick Start
 
-### Policy Assignment Fields
+1. **Connect to Azure** (if not already authenticated)
+   - **In Azure Cloud Shell:** Automatically authenticated when session starts
+   - **Locally:** Run `Connect-AzAccount` to authenticate
 
-- **AssignmentName**: Internal name of the policy assignment
-- **DisplayName**: Human-readable name
-- **ScopeType**: Level where policy is assigned (ManagementGroup, Subscription, ResourceGroup)
-- **ImpactsTargetResourceGroup**: Whether this policy applies to your target RG
-- **EnforcementMode**:
-  - `Default` - Policy is enforced (can block deployments)
-  - `DoNotEnforce` - Policy only audits (won't block)
-- **PolicyType**: `BuiltIn` or `Custom`
-- **Mode**: Policy evaluation mode (`All`, `Indexed`, etc.)
-- **Effect**: Policy effect (Deny, Audit, DeployIfNotExists, etc.)
+2. **Download and import the module**
 
-### Scope Hierarchy
+   - In a default Azure Cloud Shell or Local PowerShell Session with access to GitHub:
+     ```powershell
+     Invoke-WebRequest -Uri https://raw.githubusercontent.com/silk-us/scripts-and-configs/refs/heads/main/Azure/Policy%20Impact%20Assessment/Get-AzPolicyImpactReport.psm1 | Select-Object -ExpandProperty Content | Out-File .\Get-AzPolicyImpactReport.psm1 -Force; if (Get-Item -Path .\Get-AzPolicyImpactReport.psm1 -Stream "Zone.Identifier" -ErrorAction SilentlyContinue){ Unblock-File -Path .\Get-AzPolicyImpactReport.psm1 }; Import-Module -Force .\Get-AzPolicyImpactReport.psm1 -Verbose
+     ```
 
-Policies inherit down the scope hierarchy:
-1. **Management Group** → Applies to all subscriptions and resources below
-2. **Subscription** → Applies to all resource groups and resources in that subscription
-3. **Resource Group** → Applies only to resources in that resource group
+   - In an Isolated Azure Cloud Shell or Local PowerShell Session without internet access:
+     1. Download the [Get-AzPolicyImpactReport module file](Get-AzPolicyImpactReport.psm1) into your working directory
+     2. Import the module:
+        ```powershell
+        Import-Module ".\Get-AzPolicyImpactReport.psm1"
+        ```
+        > You may need to unblock the file: `Unblock-File -Path .\Get-AzPolicyImpactReport.psm1`
 
-### Policy Effects
+3. **Run the function**
 
-Common policy effects and their impact:
+   **Interactive mode** (easiest - prompts for selections):
+   ```powershell
+   Get-AzPolicyImpactReport
+   ```
+   > Prompts for subscription selection (if multiple available), then displays menu of resource groups to analyze. Press Enter to skip resource group and analyze subscription scope only.
 
-| Effect | Impact on Deployment |
-|--------|---------------------|
-| `Deny` | **BLOCKS** resource creation/modification if non-compliant |
-| `Audit` | Logs non-compliance but **ALLOWS** deployment |
-| `AuditIfNotExists` | Audits if condition not met, **ALLOWS** deployment |
-| `DeployIfNotExists` | **CREATES** additional resources if not present |
-| `Modify` | **CHANGES** resource properties during deployment |
-| `Disabled` | No effect |
+   **Specify a resource group directly:**
+   ```powershell
+   Get-AzPolicyImpactReport -FlexResourceGroupName "my-flex-rg"
+   ```
+   > Automatically searches for the resource group across all accessible subscriptions. If found in one subscription, uses it automatically. If found in multiple subscriptions, prompts to select which one. Analyzes all policies that apply to the specified resource group from Management Group, Subscription, and Resource Group scopes.
 
-## Common Scenarios
+   **Multi-resource group analysis:**
+   ```powershell
+   Get-AzPolicyImpactReport `
+       -FlexResourceGroupName "silk-flex-rg" `
+       -VNetResourceGroup "network-rg" `
+       -NSGResourceGroup "nsg-rg" `
+       -UMIResourceGroup "identity-rg"
+   ```
+   > Analyzes policies across multiple resource groups where your Flex deployment resources will be located. Useful when networking and identity resources are in separate resource groups.
 
-### Scenario 1: Pre-Deployment Validation
+   **Identify Scopes from individual resources:**
+   ```powershell
+   Get-AzPolicyImpactReport `
+       -FlexResourceGroupName "silk-flex-rg" `
+       -VNetName "shared-vnet" `
+       -NSGName "silk-flex-nsg", "silk-cluster-nsg" `
+       -UMIName "silk-flex-umi"
+   ```
+   > Searches for named resources across all resource groups, automatically determines their locations, and analyzes applicable policies. If multiple resources have the same name, prompts to select which one.
 
-Before deploying a Silk cluster, check what policies will apply:
+4. **Review results** in the console output and JSON report `.\AzurePolicyImpactReport-[Date_TimeStamp].json` (defaults to working directory)
 
+---
+
+### Output & How to Interpret Results
+
+- **Console Output:** Real-time policy collection status, permission analysis, scope summary showing Management Group/Subscription/Resource Group policy counts, and blind spot warnings
+- **JSON Report:** Generated by default. Includes:
+  - **Metadata:** Report timestamp, subscription, resource group (if specified), analysis scope, generated by user
+  - **PolicyAssignments:** Complete policy data including:
+    - Policy name, display name, scope, and enforcement mode
+    - **Effect:** Critical indicator - "deny" blocks deployment, "audit" only logs
+    - **PolicyRule:** Complete policy logic showing exact requirements
+    - **PolicyParameters:** Parameter definitions and allowed values
+    - **PolicyDefinitions:** For initiatives, all member policy definitions
+  - **PermissionContext:** Your role assignments and access levels
+  - **PotentialBlindSpots:** Areas where you lack visibility with severity ratings and recommendations
+  - **ScopeAnalysis:** Summary statistics showing policy counts by scope (MG/Sub/RG)
+  - **PolicyExemptions:** Any exemptions overriding policy enforcement
+  - **ResourcesAnalyzed:** VNets, NSGs, UMIs analyzed (if specified)
+  - **AccessIssues:** Policies or scopes that couldn't be accessed due to permissions
+
+> **Key Insight:** Focus on policies with `"Effect": "deny"` - these will block your deployment if requirements aren't met.
+
+> **Troubleshooting:** If you encounter issues, add `-Verbose` for detailed output. This can help identify problems with authentication, policy retrieval, permission issues, etc.
+
+---
+
+### Prerequisites
+
+> The function will validate prerequisites and guide you through missing requirements.
+
+- **Azure Account:** You must be authenticated to Azure. Use `Connect-AzAccount` to authenticate before running the function.
+  > - The function will prompt you if not authenticated in a pop-up account selection window
+  > - Azure Cloud Shell is automatically authenticated when you start your session
+- **Azure Reader Role:** An account with Reader or equivalent permissions. Minimum:
+  - **Subscription Reader** - Required to collect subscription and resource group level policies
+  - **Management Group Reader** - Recommended for complete visibility into management group policies
+  > Without Management Group Reader access, management group-scoped policies may not be visible. The module detects this and reports it as a potential blind spot.
+
+##### Azure PowerShell Module Prerequisites
+
+> **Note:** Azure Cloud Shell PowerShell environments have the full module pre-installed.
+
+- **Azure PowerShell Modules (Az):** Specifically these Azure PowerShell submodules are required. Having the [entire Az module installed](https://learn.microsoft.com/en-us/powershell/azure/install-azure-powershell) satisfies this requirement.
+  - [**Az.Accounts**](https://learn.microsoft.com/en-us/powershell/module/az.accounts/) - Provides authentication and context management for Azure sessions
+  - [**Az.Resources**](https://learn.microsoft.com/en-us/powershell/module/az.resources/) - Manages policy assignments, definitions, and exemptions
+  - [**Az.Network**](https://learn.microsoft.com/en-us/powershell/module/az.network/) - Required if analyzing VNets or NSGs
+  - [**Az.ManagedServiceIdentity**](https://learn.microsoft.com/en-us/powershell/module/az.managedserviceidentity/) - Required if analyzing User-Assigned Managed Identities
+
+**Required Azure PowerShell Modules Installation Command:**
 ```powershell
-Get-AzPolicyImpactReport -ResourceGroupName 'silk-new-cluster-rg' -OutputFormat HTML
+Install-Module -Name Az.Accounts,Az.Resources,Az.Network,Az.ManagedServiceIdentity -Repository PSGallery -Scope CurrentUser
 ```
 
-Review the HTML report to identify:
-- Any `Deny` policies that might block deployment
-- Required tags or naming conventions
-- Network restrictions
+> **Note:** The function will validate module availability on execution. Manual installation is recommended for first-time use or restricted environments.
 
-### Scenario 2: Cross-Resource Group Deployment
+---
 
-When using shared networking resources:
+### Parameters
 
+| Parameter | Description | Valid Input | Example |
+|-----------|-------------|-------------|---------|
+| `-SubscriptionId` | Azure Subscription ID to analyze | Azure Subscription GUID | "12345678-1234-1234-1234-123456789012" |
+| `-SubscriptionName` | Azure Subscription Name (alternative to SubscriptionId) | Existing subscription name | "Production-Azure" |
+| `-FlexResourceGroupName` | Target Flex resource group for deployment. **Optional** - omit for subscription-level analysis | Existing Azure RG | "silk-flex-rg" |
+| `-VNetName` | Array of Virtual Network names to analyze | VNet names | @("shared-vnet", "prod-vnet") |
+| `-VNetResourceGroup` | Resource group where VNet will be deployed | Existing Azure RG | "network-rg" |
+| `-NSGName` | Array of Network Security Group names to analyze | NSG names | @("silk-flex-nsg", "silk-cluster-nsg") |
+| `-NSGResourceGroup` | Resource group where NSGs will be deployed | Existing Azure RG | "network-rg" |
+| `-UMIName` | Array of User-Assigned Managed Identity names to analyze | UMI names | @("silk-flex-umi") |
+| `-UMIResourceGroup` | Resource group where UMIs will be deployed | Existing Azure RG | "identity-rg" |
+| `-OutputPath` | Directory path where JSON report will be saved. **Default:** Current working directory | Valid path | "C:\\Reports" |
+
+---
+
+### Example Usage & Scenarios
+
+#### 1. Subscription-Level Analysis (No Resource Group)
 ```powershell
-# Get resource IDs first
-$vnet = Get-AzVirtualNetwork -Name 'shared-vnet' -ResourceGroupName 'network-rg'
-$nsg = Get-AzNetworkSecurityGroup -Name 'silk-nsg' -ResourceGroupName 'network-rg'
-$umi = Get-AzUserAssignedIdentity -Name 'silk-umi' -ResourceGroupName 'identity-rg'
+Get-AzPolicyImpactReport -SubscriptionName "Production-Azure"
+```
+> Analyzes all policies at Management Group and Subscription scopes without targeting a specific resource group. Useful for understanding organization-wide policy landscape.
 
-# Run analysis
+#### 2. Custom Output Location
+```powershell
 Get-AzPolicyImpactReport `
-    -ResourceGroupName 'silk-cluster-rg' `
-    -VNetResourceIds $vnet.Id `
-    -NSGResourceIds $nsg.Id `
-    -UMIResourceIds $umi.Id `
-    -OutputFormat All
+    -FlexResourceGroupName "customer-flex-rg" `
+    -OutputPath "C:\\CustomerReports"
 ```
+> Saves the JSON report to a specific directory. Useful for organizing reports by customer or deployment.
 
-### Scenario 3: Customer Policy Review
-
-Generate a report for customer review:
-
+#### 3. Pre-Deployment Assessment
 ```powershell
 Get-AzPolicyImpactReport `
-    -ResourceGroupName 'customer-cluster-rg' `
-    -IncludeRoleAssignments `
-    -OutputFormat HTML `
-    -OutputPath 'C:\CustomerReports' `
-    -ReportName 'CustomerName-PolicyReview'
+    -FlexResourceGroupName "planned-deployment-rg" `
+    -VNetResourceGroup "network-rg" `
+    -NSGResourceGroup "network-rg"
 ```
+> Analyzes policies for planned deployment before any resources exist. Identifies potential blockers early in the planning phase.
 
-Send the HTML file to the customer for review and approval.
+---
 
-## Troubleshooting
+### Understanding Policy Effects
 
-### "Not connected to Azure"
+- **No Azure Resources Created:** This module only reads policy data via Azure REST API - no test resources are deployed
+- **Report Retention:** JSON reports include complete policy rules for audit trails and deployment documentation
+- **Permission Awareness:** The module automatically detects your access level and reports potential blind spots where you may lack visibility
 
-```powershell
-Connect-AzAccount
-```
-
-### "Resource Group not found"
-
-Verify the resource group name is correct and you have access:
-```powershell
-Get-AzResourceGroup -Name 'your-rg-name'
-```
-
-### "Could not find VNet/NSG/UMI"
-
-If you're using the ByName parameter set, ensure the resource names are exact:
-```powershell
-# Verify resource names exist
-Get-AzVirtualNetwork | Where-Object {$_.Name -like '*silk*'}
-Get-AzNetworkSecurityGroup | Where-Object {$_.Name -like '*silk*'}
-Get-AzUserAssignedIdentity | Where-Object {$_.Name -like '*silk*'}
-```
-
-If using resource IDs, ensure you're using the full resource ID format:
-```powershell
-# Correct
--VNetResourceIds '/subscriptions/.../resourceGroups/.../providers/Microsoft.Network/virtualNetworks/vnet-name'
-
-# Incorrect
--VNetResourceIds 'vnet-name'
-```
-
-### Management Group Policy Access Issues
-
-If you see warnings like "Parameter set cannot be resolved" for policies, this indicates:
-- Policies are assigned at Management Group level
-- You don't have Management Group Reader permissions  
-- The function correctly identifies these as "Other Errors" (not critical)
-- Request Management Group Reader role for complete visibility
-
-### Permissions Errors
-
-Ensure you have at least `Reader` role on the subscription. For role assignments, you need `Reader` or `User Access Administrator` role.
-
-## Best Practices
-
-1. **Run Early**: Execute policy analysis before starting deployment planning
-2. **Include All Resources**: Specify all VNets, NSGs, and UMIs that will be used
-3. **Review HTML Reports**: HTML format is easiest for human review
-4. **Use JSON for Automation**: JSON format is best for programmatic processing
-5. **Document Exemptions**: If policy exemptions are needed, document why in the exemption description
-6. **Regular Updates**: Re-run analysis if subscription policies change
+---
 
 ## Advanced Usage
 
-### Filtering Results with PowerShell
+### Filtering and Analyzing Report Data
 
-You can filter the returned data object:
+After generating a report, use PowerShell to filter and analyze the data:
 
 ```powershell
-# Get the report data
-$report = Get-AzPolicyImpactReport -ResourceGroupName 'my-rg' -OutputFormat JSON
+# Load the report
+$report = Get-AzPolicyImpactReport -FlexResourceGroupName "silk-flex-rg"
 
-# Show only enforced deny policies
-$report.PolicyAssignments |
-    Where-Object { $_.EnforcementMode -eq 'Default' -and $_.Effect -like '*deny*' } |
-    Select-Object AssignmentDisplayName, ScopeType, Effect
+# Show only deny policies (will block deployment)
+$report.PolicyAssignments | Where-Object { $_.Effect -eq 'deny' } |
+    Select-Object AssignmentDisplayName, ScopeType, PolicyDisplayName
 
-# Show policies impacting target RG
-$report.PolicyAssignments |
-    Where-Object { $_.ImpactsTargetResourceGroup } |
-    Format-Table AssignmentDisplayName, ScopeType, EnforcementMode
+# Show policies impacting your target resource group
+$report.PolicyAssignments | Where-Object { $_.ImpactsTargetResourceGroup -eq $true } |
+    Format-Table AssignmentDisplayName, Effect, EnforcementMode
+
+# Export Management Group policies to CSV for review
+$report.PolicyAssignments | Where-Object { $_.ScopeType -eq 'ManagementGroup' } |
+    Export-Csv -Path 'MgPolicies.csv' -NoTypeInformation
+
+# Deep dive into a specific policy's rules
+$policy = $report.PolicyAssignments | Where-Object { $_.AssignmentDisplayName -like '*Allowed locations*' }
+$policy.PolicyRule | ConvertTo-Json -Depth 10
 ```
 
-### Comparing Multiple Subscriptions
+### Comparing Policies Across Multiple Subscriptions
 
 ```powershell
-# Get policies from multiple subscriptions
-$subs = @('sub1-id', 'sub2-id', 'sub3-id')
+# Collect reports from multiple subscriptions
+$subscriptions = @('Sub-Dev', 'Sub-Test', 'Sub-Prod')
 $reports = @{}
 
-foreach ($sub in $subs) {
-    Set-AzContext -SubscriptionId $sub
-    $reports[$sub] = Get-AzPolicyImpactReport -ResourceGroupName 'test-rg' -OutputFormat JSON
+foreach ($sub in $subscriptions) {
+    Set-AzContext -SubscriptionName $sub
+    $reports[$sub] = Get-AzPolicyImpactReport -FlexResourceGroupName 'flex-rg'
 }
 
 # Compare policy counts
@@ -476,24 +231,49 @@ $reports.Keys | ForEach-Object {
     [PSCustomObject]@{
         Subscription = $_
         TotalPolicies = $reports[$_].ScopeAnalysis.TotalPolicies
-        EnforcedPolicies = $reports[$_].ScopeAnalysis.EnforcedPolicies
+        DenyPolicies = ($reports[$_].PolicyAssignments | Where-Object {$_.Effect -eq 'deny'}).Count
     }
 } | Format-Table
 ```
 
-## Support
+### Planning Policy Exemptions
 
-Relevant Support Material:
-[Azure Policy documentation](https://learn.microsoft.com/en-us/azure/governance/policy/)
+```powershell
+$report = Get-AzPolicyImpactReport -FlexResourceGroupName "silk-flex-rg"
 
-## Version History
+# Find policies that may need exemptions
+$denyPolicies = $report.PolicyAssignments | Where-Object { $_.Effect -eq 'deny' }
 
-- **1.0.0** - Initial release
-  - Policy assignment collection
-  - Policy exemption detection
-  - Multi-resource analysis
-  - JSON/CSV/HTML export
-  - Role assignment collection
+# Review each policy's requirements
+foreach ($policy in $denyPolicies) {
+    Write-Host "Policy: $($policy.AssignmentDisplayName)" -ForegroundColor Yellow
+    Write-Host "Scope: $($policy.ScopeType)" -ForegroundColor Gray
+    $policy.PolicyRule | ConvertTo-Json -Depth 5
+    Write-Host "`n---`n"
+}
+```
+
+### Using Verbose Output for Troubleshooting
+
+```powershell
+Get-AzPolicyImpactReport -FlexResourceGroupName "silk-flex-rg" -Verbose
+```
+> Provides detailed output showing policy collection progress, REST API calls, permission checks, and resource resolution steps. Useful for diagnosing issues or understanding what the module is doing.
+
+---
+
+## Best Practices
+
+1. **Run Early** - Execute policy analysis during the planning phase, before deploying any resources
+2. **Check Blind Spots** - Review the PermissionContext section to ensure you have complete visibility. Request Management Group Reader access if needed
+3. **Focus on Deny Policies** - Policies with "deny" effect will block deployment - prioritize reviewing these
+4. **Include All Resources** - Specify all VNets, NSGs, and UMIs that will be used in your deployment for complete analysis
+5. **Review PolicyRule Details** - Don't just look at effects; examine the complete PolicyRule to understand exact requirements
+6. **Document Exemptions** - Use policy rule details to justify exemption requests with specific policy logic
+7. **Re-run After Changes** - If organizational policies change, regenerate the report before deployment
+8. **Save Reports** - Keep JSON reports for audit trails and deployment documentation
+
+---
 
 ## License
 

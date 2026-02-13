@@ -1,32 +1,151 @@
-# Generating a SIlk TCO Export
-The Silk TCO export process has been revised. 
+# Generating a Silk TCO Export
+The Silk TCO export process supports both **Azure** and **AWS** cloud platforms. This guide provides instructions for generating TCO reports for each platform.
 
-## Step 1
-Simply install the `SilkTCO` module from the Powershell Gallery. 
+---
+
+## Prerequisites
+
+### Step 1: Install the SilkTCO Module
+Install the `SilkTCO` module from the PowerShell Gallery:
 
 ```powershell
-Install-Module silktco
-```
-
-## Step 2
-Import the SilkTCO module
-```Powershell
+Install-Module SilkTCO -Force
 Import-Module SilkTCO
 ```
-And then run the `Export-SilkTCO` function. This will query the current subscription for 1 day's worth of Azure cost and Performance for any disk objects. 
 
-You can specify some arguments as part of this export, including:
+### Step 2: Install Cloud Platform Modules
 
-* `-days` The number of days you would like to include in the report. By default the report exports `1` day of data. 
+#### For Azure
+Install the required Azure PowerShell modules:
+
+```powershell
+Install-Module Az.Compute -Force
+Install-Module Az.Monitor -Force
+Install-Module Az.CostManagement -Force
+Install-Module Az.Resources -Force
+```
+
+Then authenticate to Azure:
+
+```powershell
+Connect-AzAccount
+Set-AzContext -Subscription "Your-Subscription-Name"
+```
+
+#### For AWS
+Install the required AWS Tools for PowerShell modules:
+
+```powershell
+Install-Module AWS.Tools.EC2 -Force
+Install-Module AWS.Tools.CloudWatch -Force
+Install-Module AWS.Tools.Pricing -Force
+```
+
+Then configure your AWS credentials:
+
+```powershell
+Set-AWSCredential -AccessKey "YOUR_ACCESS_KEY" -SecretKey "YOUR_SECRET_KEY" -StoreAs default
+Set-DefaultAWSRegion -Region "us-east-1"
+```
+
+---
+
+## Azure TCO Export
+
+### Basic Usage
+Run the `Export-SilkTCOAzure` function to query your Azure subscription:
+
+```powershell
+Export-SilkTCOAzure
+```
+
+This will generate a report with 1 day of Azure cost and performance data for all running VMs and their disks in the current subscription.
+
+### Azure Parameters
+
+* **`-days`** - Number of days to include in the report (default: 1)
     ```powershell
-    Export-SilkTCO -days 7
+    Export-SilkTCOAzure -days 7
     ```
-* `-resourceGroupNames` A list of resource groups by name. This can be a singular name, a list seperated by commas, or a powershell array. 
+
+* **`-resourceGroupNames`** - Filter by specific resource groups (array or comma-separated list)
     ```powershell
-    Export-SilkTCO -resourceGroupNames sqlprod-rg,sqltest-rg
+    Export-SilkTCOAzure -resourceGroupNames sqlprod-rg,sqltest-rg
     # or
-    Export-SilkTCO -resourceGroupNames @("sqlprod-rg","sqltest-rg")
+    Export-SilkTCOAzure -resourceGroupNames @("sqlprod-rg","sqltest-rg")
     ```
 
-## Step 3
-There will be a date-stamped .csv file left in the directory where the Export-SilkTCO command was run. It will read something like `SilkTCO_Report_20260107_132057.csv`. Simply submit this back to the Silk account team. 
+### Example: 7-Day Report for Specific Resource Groups
+```powershell
+Export-SilkTCOAzure -days 7 -resourceGroupNames "prod-rg","test-rg"
+```
+
+---
+
+## AWS TCO Export
+
+### Basic Usage
+Run the `Export-SilkTCOAWS` function to query your AWS environment:
+
+```powershell
+Export-SilkTCOAWS
+```
+
+This will generate a report with 1 day of AWS cost and performance data for all running EC2 instances and their EBS volumes.
+
+### AWS Parameters
+
+* **`-days`** - Number of days to include in the report (default: 1)
+    ```powershell
+    Export-SilkTCOAWS -days 7
+    ```
+
+* **`-region`** - Specify AWS region (auto-detected if not provided)
+    ```powershell
+    Export-SilkTCOAWS -region "us-west-2"
+    ```
+
+* **`-TagKey`** and **`-TagValue`** - Filter EC2 instances by tag
+    ```powershell
+    Export-SilkTCOAWS -TagKey "Environment" -TagValue "Production"
+    ```
+
+* **`-inputFile`** - Read instance IDs from a file (one per line)
+    ```powershell
+    Export-SilkTCOAWS -inputFile ".\instance-list.txt"
+    ```
+
+* **`-allVMs`** - Include stopped/terminated instances (default: running only)
+    ```powershell
+    Export-SilkTCOAWS -allVMs
+    ```
+
+### Example: 7-Day Report for Tagged Instances
+```powershell
+Export-SilkTCOAWS -days 7 -TagKey "Project" -TagValue "Database" -region "us-east-1"
+```
+
+### Example: Report from Instance List File
+```powershell
+Export-SilkTCOAWS -inputFile ".\instances.txt" -days 14
+```
+
+---
+
+## Output
+
+Both export functions generate a date-stamped CSV file in the current directory:
+
+```
+SilkTCO_Report_20260213_143052.csv
+```
+
+The report includes:
+- VM/Instance names and sizes
+- Disk/Volume specifications (size, SKU/type, IOPS, throughput)
+- Performance metrics (read/write MB/s, read/write IOPS)
+- Daily cost breakdown (compute and storage)
+- Uptime percentage
+- Resource grouping information
+
+**Submit this CSV file to your Silk account team for TCO analysis.** 

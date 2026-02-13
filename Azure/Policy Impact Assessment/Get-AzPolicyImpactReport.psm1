@@ -380,7 +380,7 @@ function Get-AzPolicyImpactReport
                                     {
                                         $userPermissions.PotentialBlindSpots += [PSCustomObject]   @{
                                                                                                         Area = $("Management Group Policies")
-                                                                                                        Severity = $("High")
+                                                                                                        Severity = $("Major Gap")
                                                                                                         Description = $("No Management Group-level access detected. Policies assigned at Management Group scope may be invisible or details unavailable.")
                                                                                                         Impact = $("Management Group policies can apply to all subscriptions and resources below them. Without MG access, you cannot see policy definitions from parent Management Groups.")
                                                                                                         Recommendation = $("Request Reader role at Management Group level for complete policy visibility.")
@@ -391,7 +391,7 @@ function Get-AzPolicyImpactReport
                                     {
                                         $userPermissions.PotentialBlindSpots += [PSCustomObject]   @{
                                                                                                         Area = $("Subscription-Level Policies")
-                                                                                                        Severity = $("Medium")
+                                                                                                        Severity = $("Moderate Gap")
                                                                                                         Description = $("Limited subscription access detected. Some subscription-scoped policies may not be visible.")
                                                                                                         Impact = $("Subscription policies apply to all resource groups. Limited access may result in incomplete policy inventory.")
                                                                                                         Recommendation = $("Request Reader role at Subscription level for full subscription policy visibility.")
@@ -402,7 +402,7 @@ function Get-AzPolicyImpactReport
                                     {
                                         $userPermissions.PotentialBlindSpots += [PSCustomObject]   @{
                                                                                                         Area = $("All Scopes")
-                                                                                                        Severity = $("Critical")
+                                                                                                        Severity = $("Analysis Blocked")
                                                                                                         Description = $("No role assignments found for current user. This report may be severely incomplete.")
                                                                                                         Impact = $("Without explicit role assignments, policy data collection will fail at most scopes.")
                                                                                                         Recommendation = $("Request appropriate Reader permissions at Subscription or Management Group level.")
@@ -422,7 +422,7 @@ function Get-AzPolicyImpactReport
                                 Write-Warning $("Could not retrieve role assignments for current user")
                                 $userPermissions.PotentialBlindSpots += [PSCustomObject]   @{
                                                                                                 Area = $("Permission Analysis")
-                                                                                                Severity = $("High")
+                                                                                                Severity = $("Data Missing")
                                                                                                 Description = $("Unable to retrieve user's role assignments. Cannot determine access level or potential blind spots.")
                                                                                                 Impact = $("Report completeness cannot be assessed.")
                                                                                                 Recommendation = $("Verify you have permissions to read role assignments, or contact your Azure administrator.")
@@ -434,7 +434,7 @@ function Get-AzPolicyImpactReport
                         Write-Warning $("Failed to analyze user permissions: {0}" -f $_)
                         $userPermissions.PotentialBlindSpots += [PSCustomObject]   @{
                                                                                         Area = $("Permission Analysis")
-                                                                                        Severity = $("High")
+                                                                                        Severity = $("Analysis Error")
                                                                                         Description = $("Error analyzing user permissions: {0}" -f $_.Exception.Message)
                                                                                         Impact = $("Cannot determine what policies may be invisible to current user.")
                                                                                         Recommendation = $("Review Azure RBAC permissions and re-run report.")
@@ -1081,9 +1081,11 @@ function Get-AzPolicyImpactReport
                             {
                                 $severityColor = switch ($blindSpot.Severity)
                                     {
-                                        $("Critical") {$("Red")}
-                                        $("High") {$("Red")}
-                                        $("Medium") {$("Yellow")}
+                                        $("Analysis Blocked") {$("Red")}
+                                        $("Major Gap") {$("Red")}
+                                        $("Moderate Gap") {$("Yellow")}
+                                        $("Data Missing") {$("Yellow")}
+                                        $("Analysis Error") {$("Yellow")}
                                         default {$("Gray")}
                                     }
                                 Write-Host $("  [{0}] {1}: {2}" -f $blindSpot.Severity, $blindSpot.Area, $blindSpot.Description) -ForegroundColor $severityColor

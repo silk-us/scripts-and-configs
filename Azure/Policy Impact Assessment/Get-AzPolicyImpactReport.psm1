@@ -469,18 +469,32 @@ function Get-AzPolicyImpactReport
                         if ($VNetName)
                             {
                                 $VNetResourceIds = @()
-                                foreach ($vnetName in $VNetName)
+                                foreach ($vnet in $VNetName)
                                     {
-                                        Write-Verbose $("Searching for VNet: {0}" -f $vnetName)
-                                        $vnets = Get-AzVirtualNetwork | Where-Object {$_.Name -eq $vnetName}
+                                        Write-Verbose $("Searching for VNet: {0}" -f $vnet)
+                                        $vnets = Get-AzVirtualNetwork | Where-Object {$_.Name -eq $vnet}
 
                                         if ($vnets.Count -eq 0)
                                             {
-                                                Write-Warning $("VNet '{0}' not found" -f $vnetName)
+                                                Write-Warning $("VNet '{0}' not found" -f $vnet)
                                                 # Prompt for resource group where it will be deployed
                                                 if (-not $VNetResourceGroup)
                                                     {
-                                                        $VNetResourceGroup = Read-Host $("  Enter resource group where VNet '{0}' will be deployed (or press Enter to skip)" -f $vnetName)
+                                                        $allRGs = Get-AzResourceGroup | Sort-Object ResourceGroupName
+                                                        Write-Host ("  Select resource group where VNet '{0}' will be deployed:" -f $vnet) -ForegroundColor Cyan
+                                                        for ($i = 0; $i -lt $allRGs.Count; $i++)
+                                                            {
+                                                                Write-Host $("    [{0}] {1} ({2})" -f ($i+1), $allRGs[$i].ResourceGroupName, $allRGs[$i].Location)
+                                                            }
+                                                        $selection = Read-Host ("  Select resource group for VNet '{0}' (1-{1}) or press Enter to skip" -f $vnet, $allRGs.Count)
+                                                        if ($selection -and $selection -match '^\d+$')
+                                                            {
+                                                                $selectedIndex = [int]$selection - 1
+                                                                if ($selectedIndex -ge 0 -and $selectedIndex -lt $allRGs.Count)
+                                                                    {
+                                                                        $VNetResourceGroup = $allRGs[$selectedIndex].ResourceGroupName
+                                                                    }
+                                                            }
                                                     }
                                                 if ($VNetResourceGroup)
                                                     {
@@ -489,7 +503,7 @@ function Get-AzPolicyImpactReport
                                                         if ($rgExists)
                                                             {
                                                                 $reportData.ResourcesAnalyzed.VNets += [PSCustomObject]  @{
-                                                                                                                            Name = $vnetName
+                                                                                                                            Name = $vnet
                                                                                                                             ResourceId = $("N/A (Pre-deployment)")
                                                                                                                             ResourceGroupName = $VNetResourceGroup
                                                                                                                             Location = $rgExists.Location
@@ -506,12 +520,12 @@ function Get-AzPolicyImpactReport
                                         elseif ($vnets.Count -eq 1)
                                             {
                                                 $VNetResourceIds += $vnets[0].Id
-                                                Write-Host $("  ✓ Found VNet: {0} (RG: {1})" -f $vnetName, $vnets[0].ResourceGroupName) -ForegroundColor Green
+                                                Write-Host $("  ✓ Found VNet: {0} (RG: {1})" -f $vnets[0].Name, $vnets[0].ResourceGroupName) -ForegroundColor Green
                                             } `
                                         else
                                             {
                                                 # Multiple VNets with same name - prompt user to select
-                                                Write-Host $("  Multiple VNets named '{0}' found:" -f $vnetName) -ForegroundColor Yellow
+                                                Write-Host $("  Multiple VNets named '{0}' found:" -f $vnet) -ForegroundColor Yellow
                                                 for ($i = 0; $i -lt $vnets.Count; $i++)
                                                     {
                                                         Write-Host $("    [{0}] Resource Group: {1}, Location: {2}" -f ($i+1), $vnets[$i].ResourceGroupName, $vnets[$i].Location)
@@ -521,11 +535,11 @@ function Get-AzPolicyImpactReport
                                                 if ($selectedIndex -ge 0 -and $selectedIndex -lt $vnets.Count)
                                                     {
                                                         $VNetResourceIds += $vnets[$selectedIndex].Id
-                                                        Write-Host $("  ✓ Selected: {0} (RG: {1})" -f $vnetName, $vnets[$selectedIndex].ResourceGroupName) -ForegroundColor Green
+                                                        Write-Host $("  ✓ Selected: {0} (RG: {1})" -f $vnets[$selectedIndex].Name, $vnets[$selectedIndex].ResourceGroupName) -ForegroundColor Green
                                                     } `
                                                 else
                                                     {
-                                                        Write-Warning $("Invalid selection for VNet '{0}'" -f $vnetName)
+                                                        Write-Warning $("Invalid selection for VNet '{0}'" -f $vnet)
                                                     }
                                             }
                                     }
@@ -555,18 +569,32 @@ function Get-AzPolicyImpactReport
                         if ($NSGName)
                             {
                                 $NSGResourceIds = @()
-                                foreach ($nsgName in $NSGName)
+                                foreach ($nsg in $NSGName)
                                     {
-                                        Write-Verbose $("Searching for NSG: {0}" -f $nsgName)
-                                        $nsgs = Get-AzNetworkSecurityGroup | Where-Object {$_.Name -eq $nsgName}
+                                        Write-Verbose $("Searching for NSG: {0}" -f $nsg)
+                                        $nsgs = Get-AzNetworkSecurityGroup | Where-Object {$_.Name -eq $nsg}
 
                                         if ($nsgs.Count -eq 0)
                                             {
-                                                Write-Warning $("NSG '{0}' not found" -f $nsgName)
+                                                Write-Warning $("NSG '{0}' not found" -f $nsg)
                                                 # Prompt for resource group where it will be deployed
                                                 if (-not $NSGResourceGroup)
                                                     {
-                                                        $NSGResourceGroup = Read-Host $("  Enter resource group where NSG '{0}' will be deployed (or press Enter to skip)" -f $nsgName)
+                                                        $allRGs = Get-AzResourceGroup | Sort-Object ResourceGroupName
+                                                        Write-Host ("  Select resource group where NSG '{0}' will be deployed:" -f $nsg) -ForegroundColor Cyan
+                                                        for ($i = 0; $i -lt $allRGs.Count; $i++)
+                                                            {
+                                                                Write-Host $("    [{0}] {1} ({2})" -f ($i+1), $allRGs[$i].ResourceGroupName, $allRGs[$i].Location)
+                                                            }
+                                                        $selection = Read-Host ("  Select resource group for NSG '{0}' (1-{1}) or press Enter to skip" -f $nsg, $allRGs.Count)
+                                                        if ($selection -and $selection -match '^\d+$')
+                                                            {
+                                                                $selectedIndex = [int]$selection - 1
+                                                                if ($selectedIndex -ge 0 -and $selectedIndex -lt $allRGs.Count)
+                                                                    {
+                                                                        $NSGResourceGroup = $allRGs[$selectedIndex].ResourceGroupName
+                                                                    }
+                                                            }
                                                     }
                                                 if ($NSGResourceGroup)
                                                     {
@@ -574,7 +602,7 @@ function Get-AzPolicyImpactReport
                                                         if ($rgExists)
                                                             {
                                                                 $reportData.ResourcesAnalyzed.NSGs += [PSCustomObject]  @{
-                                                                                                                            Name = $nsgName
+                                                                                                                            Name = $nsg
                                                                                                                             ResourceId = $("N/A (Pre-deployment)")
                                                                                                                             ResourceGroupName = $NSGResourceGroup
                                                                                                                             Location = $rgExists.Location
@@ -591,12 +619,12 @@ function Get-AzPolicyImpactReport
                                         elseif ($nsgs.Count -eq 1)
                                             {
                                                 $NSGResourceIds += $nsgs[0].Id
-                                                Write-Host $("  ✓ Found NSG: {0} (RG: {1})" -f $nsgName, $nsgs[0].ResourceGroupName) -ForegroundColor Green
+                                                Write-Host $("  ✓ Found NSG: {0} (RG: {1})" -f $nsgs[0].Name, $nsgs[0].ResourceGroupName) -ForegroundColor Green
                                             } `
                                         else
                                             {
                                                 # Multiple NSGs with same name - prompt user to select
-                                                Write-Host $("  Multiple NSGs named '{0}' found:" -f $nsgName) -ForegroundColor Yellow
+                                                Write-Host $("  Multiple NSGs named '{0}' found:" -f $nsg) -ForegroundColor Yellow
                                                 for ($i = 0; $i -lt $nsgs.Count; $i++)
                                                     {
                                                         Write-Host $("    [{0}] Resource Group: {1}, Location: {2}" -f ($i+1), $nsgs[$i].ResourceGroupName, $nsgs[$i].Location)
@@ -606,11 +634,11 @@ function Get-AzPolicyImpactReport
                                                 if ($selectedIndex -ge 0 -and $selectedIndex -lt $nsgs.Count)
                                                     {
                                                         $NSGResourceIds += $nsgs[$selectedIndex].Id
-                                                        Write-Host $("  ✓ Selected: {0} (RG: {1})" -f $nsgName, $nsgs[$selectedIndex].ResourceGroupName) -ForegroundColor Green
+                                                        Write-Host $("  ✓ Selected: {0} (RG: {1})" -f $nsgs[$selectedIndex].Name, $nsgs[$selectedIndex].ResourceGroupName) -ForegroundColor Green
                                                     } `
                                                 else
                                                     {
-                                                        Write-Warning $("Invalid selection for NSG '{0}'" -f $nsgName)
+                                                        Write-Warning $("Invalid selection for NSG '{0}'" -f $nsg)
                                                     }
                                             }
                                     }
@@ -640,18 +668,32 @@ function Get-AzPolicyImpactReport
                         if ($UMIName)
                             {
                                 $UMIResourceIds = @()
-                                foreach ($umiName in $UMIName)
+                                foreach ($umi in $UMIName)
                                     {
-                                        Write-Verbose $("Searching for UMI: {0}" -f $umiName)
-                                        $umis = Get-AzUserAssignedIdentity | Where-Object {$_.Name -eq $umiName}
+                                        Write-Verbose $("Searching for UMI: {0}" -f $umi)
+                                        $umis = Get-AzUserAssignedIdentity | Where-Object {$_.Name -eq $umi}
 
                                         if ($umis.Count -eq 0)
                                             {
-                                                Write-Warning $("UMI '{0}' not found" -f $umiName)
+                                                Write-Warning $("UMI '{0}' not found" -f $umi)
                                                 # Prompt for resource group where it will be deployed
                                                 if (-not $UMIResourceGroup)
                                                     {
-                                                        $UMIResourceGroup = Read-Host $("  Enter resource group where UMI '{0}' will be deployed (or press Enter to skip)" -f $umiName)
+                                                        $allRGs = Get-AzResourceGroup | Sort-Object ResourceGroupName
+                                                        Write-Host ("  Select resource group where UMI '{0}' will be deployed:" -f $umi) -ForegroundColor Cyan
+                                                        for ($i = 0; $i -lt $allRGs.Count; $i++)
+                                                            {
+                                                                Write-Host $("    [{0}] {1} ({2})" -f ($i+1), $allRGs[$i].ResourceGroupName, $allRGs[$i].Location)
+                                                            }
+                                                        $selection = Read-Host ("  Select resource group for UMI '{0}' (1-{1}) or press Enter to skip" -f $umi, $allRGs.Count)
+                                                        if ($selection -and $selection -match '^\d+$')
+                                                            {
+                                                                $selectedIndex = [int]$selection - 1
+                                                                if ($selectedIndex -ge 0 -and $selectedIndex -lt $allRGs.Count)
+                                                                    {
+                                                                        $UMIResourceGroup = $allRGs[$selectedIndex].ResourceGroupName
+                                                                    }
+                                                            }
                                                     }
                                                 if ($UMIResourceGroup)
                                                     {
@@ -659,7 +701,7 @@ function Get-AzPolicyImpactReport
                                                         if ($rgExists)
                                                             {
                                                                 $reportData.ResourcesAnalyzed.UMIs += [PSCustomObject]  @{
-                                                                                                                            Name = $umiName
+                                                                                                                            Name = $umi
                                                                                                                             ResourceId = $("N/A (Pre-deployment)")
                                                                                                                             ResourceGroupName = $UMIResourceGroup
                                                                                                                             Location = $rgExists.Location
@@ -678,12 +720,12 @@ function Get-AzPolicyImpactReport
                                         elseif ($umis.Count -eq 1)
                                             {
                                                 $UMIResourceIds += $umis[0].Id
-                                                Write-Host $("  ✓ Found UMI: {0} (RG: {1})" -f $umiName, $umis[0].ResourceGroupName) -ForegroundColor Green
+                                                Write-Host $("  ✓ Found UMI: {0} (RG: {1})" -f $umis[0].Name, $umis[0].ResourceGroupName) -ForegroundColor Green
                                             } `
                                         else
                                             {
                                                 # Multiple UMIs with same name - prompt user to select
-                                                Write-Host $("  Multiple UMIs named '{0}' found:" -f $umiName) -ForegroundColor Yellow
+                                                Write-Host $("  Multiple UMIs named '{0}' found:" -f $umi) -ForegroundColor Yellow
                                                 for ($i = 0; $i -lt $umis.Count; $i++)
                                                     {
                                                         Write-Host $("    [{0}] Resource Group: {1}, Location: {2}" -f ($i+1), $umis[$i].ResourceGroupName, $umis[$i].Location)
@@ -693,11 +735,11 @@ function Get-AzPolicyImpactReport
                                                 if ($selectedIndex -ge 0 -and $selectedIndex -lt $umis.Count)
                                                     {
                                                         $UMIResourceIds += $umis[$selectedIndex].Id
-                                                        Write-Host $("  ✓ Selected: {0} (RG: {1})" -f $umiName, $umis[$selectedIndex].ResourceGroupName) -ForegroundColor Green
+                                                        Write-Host $("  ✓ Selected: {0} (RG: {1})" -f $umis[$selectedIndex].Name, $umis[$selectedIndex].ResourceGroupName) -ForegroundColor Green
                                                     } `
                                                 else
                                                     {
-                                                        Write-Warning $("Invalid selection for UMI '{0}'" -f $umiName)
+                                                        Write-Warning $("Invalid selection for UMI '{0}'" -f $umi)
                                                     }
                                             }
                                     }

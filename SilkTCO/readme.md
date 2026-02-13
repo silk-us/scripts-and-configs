@@ -48,6 +48,15 @@ Set-AWSCredential -AccessKey "YOUR_ACCESS_KEY" -SecretKey "YOUR_SECRET_KEY" -Sto
 Set-DefaultAWSRegion -Region "us-east-1"
 ```
 
+You can also run from within the AWS Cloud Shell. Simply fire up a cloud shell session from the desired acount and region. 
+
+Run `pwsh` to enter a PowerShell session:
+<img width="995" height="220" alt="image" src="https://github.com/user-attachments/assets/489414c3-ce8d-492e-a712-6350c8fefd78" />
+
+Install and Import the silktco module therein:
+<img width="489" height="232" alt="Screenshot 2026-02-13 160748" src="https://github.com/user-attachments/assets/19736d18-406a-402b-9462-dea9e5a9a372" />
+
+And then you should be prepared to simply run the `Export-SilkTCOAWS` function to generate a TCO report. 
 ---
 
 ## Azure TCO Export

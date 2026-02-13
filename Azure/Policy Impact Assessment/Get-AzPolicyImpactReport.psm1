@@ -1086,7 +1086,9 @@ function Get-AzPolicyImpactReport
                                         $("Medium") {$("Yellow")}
                                         default {$("Gray")}
                                     }
-                                Write-Host $("  [{0}] {1}" -f $blindSpot.Severity, $blindSpot.Area) -ForegroundColor $severityColor
+                                Write-Host $("  [{0}] {1}: {2}" -f $blindSpot.Severity, $blindSpot.Area, $blindSpot.Description) -ForegroundColor $severityColor
+                                Write-Host $("      Impact: {0}" -f $blindSpot.Impact) -ForegroundColor Gray
+                                Write-Host $("      Action: {0}" -f $blindSpot.Recommendation) -ForegroundColor Cyan
                             }
                         Write-Host $("  ⓘ  See report for detailed blind spot analysis") -ForegroundColor Cyan
                     } `

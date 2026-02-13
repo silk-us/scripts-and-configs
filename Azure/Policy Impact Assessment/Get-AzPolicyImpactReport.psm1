@@ -120,7 +120,7 @@ function Get-AzPolicyImpactReport
                                 HelpMessage = 'Array of Virtual Network names'
                             )]
                 [string[]]
-                $VNetNames,
+                $VNetName,
 
                 [Parameter  (
                                 Mandatory = $false,
@@ -136,7 +136,7 @@ function Get-AzPolicyImpactReport
                                 HelpMessage = 'Array of Network Security Group names'
                             )]
                 [string[]]
-                $NSGNames,
+                $NSGName,
 
                 [Parameter  (
                                 Mandatory = $false,
@@ -152,7 +152,7 @@ function Get-AzPolicyImpactReport
                                 HelpMessage = 'Array of User-Assigned Managed Identity names'
                             )]
                 [string[]]
-                $UMINames,
+                $UMIName,
 
                 [Parameter  (
                                 Mandatory = $false,
@@ -466,10 +466,10 @@ function Get-AzPolicyImpactReport
                         Write-Host $("Resolving resource names to IDs...") -ForegroundColor Yellow
 
                         # Resolve VNets
-                        if ($VNetNames)
+                        if ($VNetName)
                             {
                                 $VNetResourceIds = @()
-                                foreach ($vnetName in $VNetNames)
+                                foreach ($vnetName in $VNetName)
                                     {
                                         Write-Verbose $("Searching for VNet: {0}" -f $vnetName)
                                         $vnets = Get-AzVirtualNetwork | Where-Object {$_.Name -eq $vnetName}
@@ -552,10 +552,10 @@ function Get-AzPolicyImpactReport
                             }
 
                         # Resolve NSGs
-                        if ($NSGNames)
+                        if ($NSGName)
                             {
                                 $NSGResourceIds = @()
-                                foreach ($nsgName in $NSGNames)
+                                foreach ($nsgName in $NSGName)
                                     {
                                         Write-Verbose $("Searching for NSG: {0}" -f $nsgName)
                                         $nsgs = Get-AzNetworkSecurityGroup | Where-Object {$_.Name -eq $nsgName}
@@ -637,10 +637,10 @@ function Get-AzPolicyImpactReport
                             }
 
                         # Resolve UMIs
-                        if ($UMINames)
+                        if ($UMIName)
                             {
                                 $UMIResourceIds = @()
-                                foreach ($umiName in $UMINames)
+                                foreach ($umiName in $UMIName)
                                     {
                                         Write-Verbose $("Searching for UMI: {0}" -f $umiName)
                                         $umis = Get-AzUserAssignedIdentity | Where-Object {$_.Name -eq $umiName}
@@ -1389,3 +1389,4 @@ function Generate-HTMLReport
     }   # End of Generate-HTMLReport function
 
 Export-ModuleMember -Function Get-AzPolicyImpactReport
+

@@ -62,7 +62,6 @@
        -FlexResourceGroupName "silk-flex-rg" `
        -VNetResourceGroup "network-rg" `
        -NSGResourceGroup "nsg-rg" `
-       -UMIResourceGroup "identity-rg"
    ```
    > Analyzes policies across multiple resource groups where your Flex deployment resources will be located. Useful when networking and identity resources are in separate resource groups.
 
@@ -185,6 +184,16 @@ Get-AzPolicyImpactReport `
        -UMIName "silk-flex-umi"
    ```
    > Searches for named resources across all resource groups, automatically determines their locations, and analyzes applicable policies. If multiple resources have the same name, prompts to select which one.
+
+#### 5.  UMI Deployment Identify Scopes from Resource Groups:
+   ```powershell
+   Get-AzPolicyImpactReport `
+       -FlexResourceGroupName "silk-flex-rg" `
+       -VNetResourceGroup "network-rg" `
+       -NSGResourceGroup "nsg-rg" `
+       -UMIResourceGroup "identity-rg"
+   ```
+   > Analyzes policies across multiple resource groups where your Flex deployment resources will be located. Useful when networking and identity resources are in separate resource groups.
 
 
 ---

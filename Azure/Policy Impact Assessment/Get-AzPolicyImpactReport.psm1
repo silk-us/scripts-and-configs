@@ -40,9 +40,6 @@
 .PARAMETER UMIResourceGroup
     Resource group where UMI will be deployed (even if it doesn't exist yet). Use this to assess policies without existing resources.
 
-.PARAMETER Interactive
-    Enable interactive mode to select resources from a menu if not specified.
-
 .PARAMETER IncludeRoleAssignments
     Include role assignments at subscription and Silk Resource Group level in the report.
 
@@ -127,13 +124,6 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
-                                HelpMessage = 'Enable interactive mode for resource selection'
-                            )]
-                [switch]
-                $Interactive,
-
-                [Parameter  (
-                                Mandatory = $false,
                                 HelpMessage = 'Include role assignments in the report'
                             )]
                 [switch]
@@ -160,6 +150,13 @@ function Get-AzPolicyImpactReport
                 Write-Host $("Azure Policy Impact Assessment Report") -ForegroundColor Cyan
                 Write-Host $("{0}{1}" -f $("========================================"), [Environment]::NewLine) -ForegroundColor Cyan
 
+                # Validate that FlexResourceGroupName is provided when resource parameters are specified
+                if (($VNetName -or $VNetResourceGroup -or $NSGName -or $NSGResourceGroup -or $UMIName -or $UMIResourceGroup) -and -not $FlexResourceGroupName)
+                    {
+                        Write-Error "FlexResourceGroupName is required when specifying VNet, NSG, or UMI resource parameters"
+                        return
+                    }
+
                 # Validate Azure context
                 try
                     {
@@ -184,9 +181,118 @@ function Get-AzPolicyImpactReport
                             {
                                 Set-AzContext -SubscriptionId $SubscriptionId | Out-Null
                                 $context = Get-AzContext
+                            } `
+                        elseif ($FlexResourceGroupName)
+                            {
+                                # Auto-discover subscription from resource group name
+                                Write-Host $("Searching for resource group '{0}' across all subscriptions..." -f $FlexResourceGroupName) -ForegroundColor Yellow
+                                $allSubs = Get-AzSubscription
+                                $foundRGs = @()
+                                
+                                foreach ($sub in $allSubs)
+                                    {
+                                        Set-AzContext -SubscriptionId $sub.Id | Out-Null
+                                        $rg = Get-AzResourceGroup -Name $FlexResourceGroupName -ErrorAction SilentlyContinue
+                                        if ($rg)
+                                            {
+                                                $foundRGs += [PSCustomObject]@{
+                                                    Subscription = $sub
+                                                    ResourceGroup = $rg
+                                                }
+                                            }
+                                    }
+                                
+                                if ($foundRGs.Count -eq 0)
+                                    {
+                                        throw $("Resource group '{0}' not found in any accessible subscription" -f $FlexResourceGroupName)
+                                    } `
+                                elseif ($foundRGs.Count -eq 1)
+                                    {
+                                        Set-AzContext -SubscriptionId $foundRGs[0].Subscription.Id | Out-Null
+                                        $context = Get-AzContext
+                                        Write-Host $("  ✓ Found in subscription: {0}" -f $foundRGs[0].Subscription.Name) -ForegroundColor Green
+                                    } `
+                                else
+                                    {
+                                        # Multiple found - prompt user
+                                        Write-Host $("  Resource group '{0}' found in multiple subscriptions:" -f $FlexResourceGroupName) -ForegroundColor Yellow
+                                        for ($i = 0; $i -lt $foundRGs.Count; $i++)
+                                            {
+                                                Write-Host $("    [{0}] {1} (ID: {2})" -f ($i+1), $foundRGs[$i].Subscription.Name, $foundRGs[$i].Subscription.Id)
+                                            }
+                                        $selection = Read-Host $("  Select subscription (1-{0})" -f $foundRGs.Count)
+                                        $selectedIndex = [int]$selection - 1
+                                        if ($selectedIndex -ge 0 -and $selectedIndex -lt $foundRGs.Count)
+                                            {
+                                                Set-AzContext -SubscriptionId $foundRGs[$selectedIndex].Subscription.Id | Out-Null
+                                                $context = Get-AzContext
+                                                Write-Host $("  ✓ Selected: {0}" -f $foundRGs[$selectedIndex].Subscription.Name) -ForegroundColor Green
+                                            } `
+                                        else
+                                            {
+                                                throw $("Invalid selection")
+                                            }
+                                    }
+                            } `
+                        else
+                            {
+                                # No subscription or RG specified - prompt for subscription
+                                $allSubs = Get-AzSubscription
+                                if ($allSubs.Count -eq 0)
+                                    {
+                                        throw $("No Azure subscriptions found")
+                                    } `
+                                elseif ($allSubs.Count -eq 1)
+                                    {
+                                        Set-AzContext -SubscriptionId $allSubs[0].Id | Out-Null
+                                        $context = Get-AzContext
+                                    } `
+                                else
+                                    {
+                                        Write-Host $("Select subscription to analyze:") -ForegroundColor Cyan
+                                        for ($i = 0; $i -lt $allSubs.Count; $i++)
+                                            {
+                                                Write-Host $("  [{0}] {1} (ID: {2})" -f ($i+1), $allSubs[$i].Name, $allSubs[$i].Id)
+                                            }
+                                        $selection = Read-Host $("Select subscription (1-{0})" -f $allSubs.Count)
+                                        $selectedIndex = [int]$selection - 1
+                                        if ($selectedIndex -ge 0 -and $selectedIndex -lt $allSubs.Count)
+                                            {
+                                                Set-AzContext -SubscriptionId $allSubs[$selectedIndex].Id | Out-Null
+                                                $context = Get-AzContext
+                                                Write-Host $("  ✓ Selected: {0}" -f $context.Subscription.Name) -ForegroundColor Green
+                                            } `
+                                        else
+                                            {
+                                                throw $("Invalid selection")
+                                            }
+                                    }
+                                
+                                # Now prompt for resource group
+                                Write-Host $("{0}Select target resource group to analyze (or press Enter to skip for subscription-level analysis):" -f [Environment]::NewLine) -ForegroundColor Cyan
+                                $allRGs = Get-AzResourceGroup | Sort-Object ResourceGroupName
+                                for ($i = 0; $i -lt $allRGs.Count; $i++)
+                                    {
+                                        Write-Host $("  [{0}] {1} ({2})" -f ($i+1), $allRGs[$i].ResourceGroupName, $allRGs[$i].Location)
+                                    }
+                                Write-Host $("  Select resource group (1-{0}) or press Enter to skip:" -f $allRGs.Count) -ForegroundColor Cyan
+                                $selection = Read-Host
+                                if ($selection -and $selection -match '^\d+$')
+                                    {
+                                        $selectedIndex = [int]$selection - 1
+                                        if ($selectedIndex -ge 0 -and $selectedIndex -lt $allRGs.Count)
+                                            {
+                                                $FlexResourceGroupName = $allRGs[$selectedIndex].ResourceGroupName
+                                                Write-Host $("  ✓ Selected: {0}" -f $FlexResourceGroupName) -ForegroundColor Green
+                                            }
+                                    } `
+                                else
+                                    {
+                                        Write-Host $("  No resource group selected - will perform subscription-level analysis only") -ForegroundColor Gray
+                                    }
                             }
 
-                        Write-Host $("Connected to Azure") -ForegroundColor Green
+                        Write-Host $("{0}Connected to Azure" -f [Environment]::NewLine) -ForegroundColor Green
                         Write-Host $("  Subscription: {0}" -f $context.Subscription.Name) -ForegroundColor Gray
                         Write-Host $("  Account: {0}{1}" -f $context.Account.Id, [Environment]::NewLine) -ForegroundColor Gray
                     } `
@@ -196,18 +302,26 @@ function Get-AzPolicyImpactReport
                         return
                     }
 
-                # Validate resource group exists
-                try
+                # Validate resource group exists (if specified)
+                if ($FlexResourceGroupName)
                     {
-                        $rg = Get-AzResourceGroup -Name $FlexResourceGroupName -ErrorAction Stop
-                        Write-Host $("Silk Resource Group (Target): {0}" -f $FlexResourceGroupName) -ForegroundColor Green
-                        Write-Host $("  Location: {0}" -f $rg.Location) -ForegroundColor Gray
-                        Write-Host $("  ResourceId: {0}{1}" -f $rg.ResourceId, [Environment]::NewLine) -ForegroundColor Gray
+                        try
+                            {
+                                $rg = Get-AzResourceGroup -Name $FlexResourceGroupName -ErrorAction Stop
+                                Write-Host $("Silk Resource Group (Target): {0}" -f $FlexResourceGroupName) -ForegroundColor Green
+                                Write-Host $("  Location: {0}" -f $rg.Location) -ForegroundColor Gray
+                                Write-Host $("  ResourceId: {0}{1}" -f $rg.ResourceId, [Environment]::NewLine) -ForegroundColor Gray
+                            } `
+                        catch
+                            {
+                                Write-Error $("Resource Group '{0}' not found: {1}" -f $FlexResourceGroupName, $_)
+                                return
+                            }
                     } `
-                catch
+                else
                     {
-                        Write-Error $("Resource Group '{0}' not found: {1}" -f $FlexResourceGroupName, $_)
-                        return
+                        Write-Host $("No target resource group specified - performing subscription-level analysis only{0}" -f [Environment]::NewLine) -ForegroundColor Gray
+                        $rg = $null
                     }
 
 
@@ -342,8 +456,8 @@ function Get-AzPolicyImpactReport
                                                     GeneratedDate = Get-Date -Format $("yyyy-MM-dd HH:mm:ss")
                                                     SubscriptionId = $context.Subscription.Id
                                                     SubscriptionName = $context.Subscription.Name
-                                                    SilkResourceGroupName = $FlexResourceGroupName
-                                                    SilkResourceGroupId = $rg.ResourceId
+                                                    SilkResourceGroupName = if ($FlexResourceGroupName) {$FlexResourceGroupName} else {$null}
+                                                    SilkResourceGroupId = if ($rg) {$rg.ResourceId} else {$null}
                                                     GeneratedBy = $context.Account.Id
                                                 }
                                     PermissionContext = $userPermissions

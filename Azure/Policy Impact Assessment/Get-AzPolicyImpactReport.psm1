@@ -48,9 +48,9 @@
 function Get-AzPolicyImpactReport
     {
         [CmdletBinding  (
-                            DefaultParameterSetName = 'Default',
+                            DefaultParameterSetName = $('Default'),
                             PositionalBinding = $false,
-                            HelpURI = "https://github.com/silk-us/scripts-and-configs/tree/main/Azure/Policy%20Impact%20Assessment"
+                            HelpURI = $("https://github.com/silk-us/scripts-and-configs/tree/main/Azure/Policy%20Impact%20Assessment")
                         )]
 
         param

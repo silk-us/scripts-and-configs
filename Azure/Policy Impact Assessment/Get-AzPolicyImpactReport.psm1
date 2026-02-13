@@ -494,7 +494,7 @@ function Get-AzPolicyImpactReport
                                                                 Write-Host $("    [{0}] {1} ({2})" -f ($i+1), $allRGs[$i].ResourceGroupName, $allRGs[$i].Location)
                                                             }
                                                         $selection = Read-Host $("  Select resource group for VNet '{0}' (1-{1}) or press Enter to skip" -f $vnet, $allRGs.Count)
-                                                        if ($selection -and $selection -match '^\d+$')
+                                                        if ($selection -and $selection -match $('^\\d+$'))
                                                             {
                                                                 $selectedIndex = [int]$selection - 1
                                                                 if ($selectedIndex -ge 0 -and $selectedIndex -lt $allRGs.Count)
@@ -539,7 +539,7 @@ function Get-AzPolicyImpactReport
                                                         Write-Host $("    [{0}] Resource Group: {1}, Location: {2}" -f ($i+1), $vnets[$i].ResourceGroupName, $vnets[$i].Location)
                                                     }
                                                 $selection = Read-Host $("  Select resource group that contains '{0}' (1-{1}) or press Enter to skip" -f $vnet, $vnets.Count)
-                                                if ($selection -and $selection -match '^\d+$')
+                                                if ($selection -and $selection -match $('^\\d+$'))
                                                     {
                                                         $selectedIndex = [int]$selection - 1
                                                         if ($selectedIndex -ge 0 -and $selectedIndex -lt $vnets.Count)
@@ -602,7 +602,7 @@ function Get-AzPolicyImpactReport
                                                                 Write-Host $("    [{0}] {1} ({2})" -f ($i+1), $allRGs[$i].ResourceGroupName, $allRGs[$i].Location)
                                                             }
                                                         $selection = Read-Host $("  Select resource group for NSG '{0}' (1-{1}) or press Enter to skip" -f $nsg, $allRGs.Count)
-                                                        if ($selection -and $selection -match '^\d+$')
+                                                        if ($selection -and $selection -match $('^\\d+$'))
                                                             {
                                                                 $selectedIndex = [int]$selection - 1
                                                                 if ($selectedIndex -ge 0 -and $selectedIndex -lt $allRGs.Count)
@@ -646,7 +646,7 @@ function Get-AzPolicyImpactReport
                                                         Write-Host $("    [{0}] Resource Group: {1}, Location: {2}" -f ($i+1), $nsgs[$i].ResourceGroupName, $nsgs[$i].Location)
                                                     }
                                                 $selection = Read-Host $("  Select resource group that contains '{0}' (1-{1}) or press Enter to skip" -f $nsg, $nsgs.Count)
-                                                if ($selection -and $selection -match '^\d+$')
+                                                if ($selection -and $selection -match $('^\\d+$'))
                                                     {
                                                         $selectedIndex = [int]$selection - 1
                                                         if ($selectedIndex -ge 0 -and $selectedIndex -lt $nsgs.Count)
@@ -709,7 +709,7 @@ function Get-AzPolicyImpactReport
                                                                 Write-Host $("    [{0}] {1} ({2})" -f ($i+1), $allRGs[$i].ResourceGroupName, $allRGs[$i].Location)
                                                             }
                                                         $selection = Read-Host $("  Select resource group for UMI '{0}' (1-{1}) or press Enter to skip" -f $umi, $allRGs.Count)
-                                                        if ($selection -and $selection -match '^\d+$')
+                                                        if ($selection -and $selection -match $('^\\d+$'))
                                                             {
                                                                 $selectedIndex = [int]$selection - 1
                                                                 if ($selectedIndex -ge 0 -and $selectedIndex -lt $allRGs.Count)
@@ -755,7 +755,7 @@ function Get-AzPolicyImpactReport
                                                         Write-Host $("    [{0}] Resource Group: {1}, Location: {2}" -f ($i+1), $umis[$i].ResourceGroupName, $umis[$i].Location)
                                                     }
                                                 $selection = Read-Host $("  Select resource group that contains '{0}' (1-{1}) or press Enter to skip" -f $umi, $umis.Count)
-                                                if ($selection -and $selection -match '^\d+$')
+                                                if ($selection -and $selection -match $('^\\d+$'))
                                                     {
                                                         $selectedIndex = [int]$selection - 1
                                                         if ($selectedIndex -ge 0 -and $selectedIndex -lt $umis.Count)

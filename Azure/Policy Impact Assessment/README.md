@@ -216,8 +216,8 @@ After generating a report, use PowerShell to filter and analyze the data:
 # Load the report
 $report = Get-AzPolicyImpactReport -FlexResourceGroupName "silk-flex-rg"
 
-# Show only deny policies (will block deployment)
-$report.PolicyAssignments | Where-Object { $_.Effect -eq 'deny' } |
+# Show only enforced deny policies
+$report.PolicyAssignments | Where-Object { $_.Effect -eq 'deny' -and $_.EnforcementMode -eq 'Default' } |
     Select-Object AssignmentDisplayName, ScopeType, PolicyDisplayName
 
 # Show policies impacting your target resource group
@@ -236,7 +236,7 @@ $policy.PolicyRule | ConvertTo-Json -Depth 10
 $report = Get-AzPolicyImpactReport -FlexResourceGroupName "silk-flex-rg"
 
 # Find policies that may need exemptions
-$denyPolicies = $report.PolicyAssignments | Where-Object { $_.Effect -eq 'deny' }
+$denyPolicies = $report.PolicyAssignments | Where-Object { $_.Effect -eq 'deny' -and $_.EnforcementMode -eq 'Default' }
 
 # Review each policy's requirements
 foreach ($policy in $denyPolicies) {

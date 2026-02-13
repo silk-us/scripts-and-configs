@@ -192,7 +192,7 @@ function Get-AzPolicyImpactReport
                                 # Auto-discover subscription from resource group name
                                 Write-Host $("Searching for resource group '{0}' across all subscriptions..." -f $FlexResourceGroupName) -ForegroundColor Yellow
                                 $allSubs = Get-AzSubscription
-                                $foundRGs = @()
+                                $foundRGs =    @()
 
                                 foreach ($sub in $allSubs)
                                     {
@@ -263,7 +263,7 @@ function Get-AzPolicyImpactReport
                                         Write-Host $("  Current context: {0}" -f $azContext.Subscription.Name) -ForegroundColor Gray
                                         $selection = Read-Host $("Select subscription (1-{0}) or press Enter for current" -f $allSubs.Count)
 
-                                        if ($selection -and $selection -match '^\d+$')
+                                        if ($selection -and $selection -match $('^\\d+$'))
                                             {
                                                 $selectedIndex = [int]$selection - 1
                                                 if ($selectedIndex -ge 0 -and $selectedIndex -lt $allSubs.Count)

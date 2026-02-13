@@ -285,22 +285,31 @@ function Get-AzPolicyImpactReport
                                     } `
                                 else
                                     {
-                                        Write-Host $("Select subscription to analyze:") -ForegroundColor Cyan
+                                        Write-Host $("Select subscription to analyze (or press Enter to use current context):") -ForegroundColor Cyan
                                         for ($i = 0; $i -lt $allSubs.Count; $i++)
                                             {
                                                 Write-Host $("  [{0}] {1} (ID: {2})" -f ($i+1), $allSubs[$i].Name, $allSubs[$i].Id)
                                             }
-                                        $selection = Read-Host $("Select subscription (1-{0})" -f $allSubs.Count)
-                                        $selectedIndex = [int]$selection - 1
-                                        if ($selectedIndex -ge 0 -and $selectedIndex -lt $allSubs.Count)
+                                        Write-Host $("  Current context: {0}" -f $context.Subscription.Name) -ForegroundColor Gray
+                                        $selection = Read-Host $("Select subscription (1-{0}) or press Enter for current" -f $allSubs.Count)
+                                        
+                                        if ($selection -and $selection -match '^\d+$')
                                             {
-                                                Set-AzContext -SubscriptionId $allSubs[$selectedIndex].Id | Out-Null
-                                                $context = Get-AzContext
-                                                Write-Host $("  ✓ Selected: {0}" -f $context.Subscription.Name) -ForegroundColor Green
+                                                $selectedIndex = [int]$selection - 1
+                                                if ($selectedIndex -ge 0 -and $selectedIndex -lt $allSubs.Count)
+                                                    {
+                                                        Set-AzContext -SubscriptionId $allSubs[$selectedIndex].Id | Out-Null
+                                                        $context = Get-AzContext
+                                                        Write-Host $("  ✓ Selected: {0}" -f $context.Subscription.Name) -ForegroundColor Green
+                                                    } `
+                                                else
+                                                    {
+                                                        throw $("Invalid selection")
+                                                    }
                                             } `
                                         else
                                             {
-                                                throw $("Invalid selection")
+                                                Write-Host $("  ✓ Using current context: {0}" -f $context.Subscription.Name) -ForegroundColor Green
                                             }
                                     }
                                 

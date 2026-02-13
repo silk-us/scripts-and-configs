@@ -7,7 +7,7 @@
     at multiple scopes including subscription, resource groups, VNets, NSGs, UMIs, and custom roles.
 
     The report includes:
-    - Policy assignments at all hierarchy levels (Management Group, Subscription, Resource Group)
+    - Policy assignments at all hierarchy levels (Management Group, Subscription, Resource Group, and Resource)
     - Policy definitions with detailed rules and effects
     - Policy exemptions
     - Scope analysis showing which policies apply where
@@ -805,9 +805,164 @@ function Get-AzPolicyImpactReport
             {
                 Write-Host $("Collecting Policy Assignments...") -ForegroundColor Yellow
 
-                # Get all policy assignments
+                # Get all policy assignments at subscription and management group level
                 $allPolicyAssignments = Get-AzPolicyAssignment
-                Write-Host $("  Found {0} policy assignment(s){1}" -f $allPolicyAssignments.Count, [Environment]::NewLine) -ForegroundColor Gray
+                Write-Host $("  Found {0} policy assignment(s) at MG/Subscription scopes" -f $allPolicyAssignments.Count) -ForegroundColor Gray
+
+                # Collect Resource Group-level policy assignments
+                $resourceGroupLevelAssignments = @()
+                $resourceGroupScopes = @()
+                $uniqueResourceGroups = @{}
+                
+                # Add parameter-specified resource groups
+                if ($FlexResourceGroupName)
+                    {
+                        $uniqueResourceGroups[$FlexResourceGroupName] = $true
+                    }
+                if ($VNetResourceGroup)
+                    {
+                        $uniqueResourceGroups[$VNetResourceGroup] = $true
+                    }
+                if ($NSGResourceGroup)
+                    {
+                        $uniqueResourceGroups[$NSGResourceGroup] = $true
+                    }
+                if ($UMIResourceGroup)
+                    {
+                        $uniqueResourceGroups[$UMIResourceGroup] = $true
+                    }
+                
+                # Add resource groups from discovered resource IDs
+                foreach ($resourceId in $vnetResourceIds)
+                    {
+                        # Extract RG name from resource ID: /subscriptions/{sub}/resourceGroups/{rg}/providers/...
+                        if ($resourceId -match '/resourceGroups/([^/]+)/')
+                            {
+                                $uniqueResourceGroups[$Matches[1]] = $true
+                            }
+                    }
+                foreach ($resourceId in $nsgResourceIds)
+                    {
+                        if ($resourceId -match '/resourceGroups/([^/]+)/')
+                            {
+                                $uniqueResourceGroups[$Matches[1]] = $true
+                            }
+                    }
+                foreach ($resourceId in $umiResourceIds)
+                    {
+                        if ($resourceId -match '/resourceGroups/([^/]+)/')
+                            {
+                                $uniqueResourceGroups[$Matches[1]] = $true
+                            }
+                    }
+                
+                # Build resource group scopes from unique RG names
+                foreach ($rgName in $uniqueResourceGroups.Keys)
+                    {
+                        $rgResourceId = "/subscriptions/$($azContext.Subscription.Id)/resourceGroups/$rgName"
+                        $resourceGroupScopes += $rgResourceId
+                    }
+
+                if ($resourceGroupScopes.Count -gt 0)
+                    {
+                        Write-Host $("  Checking for Resource Group-level policy assignments...") -ForegroundColor Gray
+                        foreach ($rgScope in $resourceGroupScopes)
+                            {
+                                try
+                                    {
+                                        $rgPolicies = Get-AzPolicyAssignment -Scope $rgScope -ErrorAction SilentlyContinue
+                                        if ($rgPolicies)
+                                            {
+                                                $resourceGroupLevelAssignments += $rgPolicies
+                                                Write-Verbose $("    Found {0} policy assignment(s) on RG: {1}" -f $rgPolicies.Count, $rgScope)
+                                            }
+                                    } `
+                                catch
+                                    {
+                                        Write-Verbose $("    Could not retrieve policies for RG: {0}" -f $rgScope)
+                                    }
+                            }
+                        
+                        if ($resourceGroupLevelAssignments.Count -gt 0)
+                            {
+                                Write-Host $("  Found {0} Resource Group-level policy assignment(s)" -f $resourceGroupLevelAssignments.Count) -ForegroundColor Gray
+                                $allPolicyAssignments += $resourceGroupLevelAssignments
+                            } `
+                        else
+                            {
+                                Write-Host $("  No Resource Group-level policy assignments found") -ForegroundColor Gray
+                            }
+                    }
+
+                # Collect resource-level policy assignments if we have specific resources
+                $resourceLevelAssignments = @()
+                if ($vnetResourceIds.Count -gt 0 -or $nsgResourceIds.Count -gt 0 -or $umiResourceIds.Count -gt 0)
+                    {
+                        Write-Host $("  Checking for resource-level policy assignments...") -ForegroundColor Gray
+                        
+                        foreach ($resourceId in $vnetResourceIds)
+                            {
+                                try
+                                    {
+                                        $resourcePolicies = Get-AzPolicyAssignment -Scope $resourceId -ErrorAction SilentlyContinue
+                                        if ($resourcePolicies)
+                                            {
+                                                $resourceLevelAssignments += $resourcePolicies
+                                                Write-Verbose $("    Found {0} policy assignment(s) on VNet: {1}" -f $resourcePolicies.Count, $resourceId)
+                                            }
+                                    } `
+                                catch
+                                    {
+                                        Write-Verbose $("    Could not retrieve policies for VNet: {0}" -f $resourceId)
+                                    }
+                            }
+                        
+                        foreach ($resourceId in $nsgResourceIds)
+                            {
+                                try
+                                    {
+                                        $resourcePolicies = Get-AzPolicyAssignment -Scope $resourceId -ErrorAction SilentlyContinue
+                                        if ($resourcePolicies)
+                                            {
+                                                $resourceLevelAssignments += $resourcePolicies
+                                                Write-Verbose $("    Found {0} policy assignment(s) on NSG: {1}" -f $resourcePolicies.Count, $resourceId)
+                                            }
+                                    } `
+                                catch
+                                    {
+                                        Write-Verbose $("    Could not retrieve policies for NSG: {0}" -f $resourceId)
+                                    }
+                            }
+                        
+                        foreach ($resourceId in $umiResourceIds)
+                            {
+                                try
+                                    {
+                                        $resourcePolicies = Get-AzPolicyAssignment -Scope $resourceId -ErrorAction SilentlyContinue
+                                        if ($resourcePolicies)
+                                            {
+                                                $resourceLevelAssignments += $resourcePolicies
+                                                Write-Verbose $("    Found {0} policy assignment(s) on UMI: {1}" -f $resourcePolicies.Count, $resourceId)
+                                            }
+                                    } `
+                                catch
+                                    {
+                                        Write-Verbose $("    Could not retrieve policies for UMI: {0}" -f $resourceId)
+                                    }
+                            }
+                        
+                        if ($resourceLevelAssignments.Count -gt 0)
+                            {
+                                Write-Host $("  Found {0} additional resource-level policy assignment(s)" -f $resourceLevelAssignments.Count) -ForegroundColor Gray
+                                $allPolicyAssignments += $resourceLevelAssignments
+                            } `
+                        else
+                            {
+                                Write-Host $("  No resource-level policy assignments found") -ForegroundColor Gray
+                            }
+                    }
+                
+                Write-Host $("  Total policy assignments to analyze: {0}{1}" -f $allPolicyAssignments.Count, [Environment]::NewLine) -ForegroundColor Gray
 
                 foreach ($assignment in $allPolicyAssignments)
                     {
@@ -818,7 +973,8 @@ function Get-AzPolicyImpactReport
                             {
                                 # Determine scope type first to decide how to retrieve the policy definition
                                 $scopeType = if ($assignment.Scope -like $("*/managementGroups/*")) {$("ManagementGroup")} `
-                                            elseif ($assignment.Scope -like $("*/resourceGroups/*")) {$("ResourceGroup")} `
+                                            elseif ($assignment.Scope -like $("*/resourceGroups/*") -and $assignment.Scope -notlike $("*/providers/*")) {$("ResourceGroup")} `
+                                            elseif ($assignment.Scope -like $("*/providers/*")) {$("Resource")} `
                                             else {$("Subscription")}
 
                                 # Check if this is a policy set (initiative) or single policy
@@ -1073,6 +1229,7 @@ function Get-AzPolicyImpactReport
                                     ManagementGroupPolicies = ($reportData.PolicyAssignments | Where-Object {$_.ScopeType -eq $("ManagementGroup")}).Count
                                     SubscriptionPolicies = ($reportData.PolicyAssignments | Where-Object {$_.ScopeType -eq $("Subscription")}).Count
                                     ResourceGroupPolicies = ($reportData.PolicyAssignments | Where-Object {$_.ScopeType -eq $("ResourceGroup")}).Count
+                                    ResourcePolicies = ($reportData.PolicyAssignments | Where-Object {$_.ScopeType -eq $("Resource")}).Count
                                     PoliciesImpactingTargetRG = ($reportData.PolicyAssignments | Where-Object {$_.ImpactsTargetResourceGroup}).Count
                                     TotalExemptions = $reportData.PolicyExemptions.Count
                                     EnforcedPolicies = ($reportData.PolicyAssignments | Where-Object {$_.EnforcementMode -eq $("Default")}).Count
@@ -1090,6 +1247,7 @@ function Get-AzPolicyImpactReport
                 Write-Host $("  Management Group: {0}" -f $scopeSummary.ManagementGroupPolicies) -ForegroundColor Gray
                 Write-Host $("  Subscription: {0}" -f $scopeSummary.SubscriptionPolicies) -ForegroundColor Gray
                 Write-Host $("  Resource Group: {0}" -f $scopeSummary.ResourceGroupPolicies) -ForegroundColor Gray
+                Write-Host $("  Resource: {0}" -f $scopeSummary.ResourcePolicies) -ForegroundColor Gray
                 Write-Host $("Policies Impacting Target RG: {0}" -f $scopeSummary.PoliciesImpactingTargetRG) -ForegroundColor Yellow
                 Write-Host $("Policy Exemptions: {0}" -f $scopeSummary.TotalExemptions) -ForegroundColor Cyan
                 Write-Host $("Enforced: {0} | Audit Only: {1}" -f $scopeSummary.EnforcedPolicies, $scopeSummary.AuditOnlyPolicies) -ForegroundColor White

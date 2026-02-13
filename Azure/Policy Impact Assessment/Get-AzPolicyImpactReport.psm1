@@ -475,7 +475,7 @@ function Get-AzPolicyImpactReport
                 # Resolve VNets
                 if ($VNetName)
                             {
-                                $vnetResourceIds = @()
+                                $vnetResourceIds =  @()
                                 foreach ($vnet in $VNetName)
                                     {
                                         Write-Verbose $("Searching for VNet: {0}" -f $vnet)
@@ -583,7 +583,7 @@ function Get-AzPolicyImpactReport
                         # Resolve NSGs
                         if ($NSGName)
                             {
-                                $nsgResourceIds = @()
+                                $nsgResourceIds =   @()
                                 foreach ($nsg in $NSGName)
                                     {
                                         Write-Verbose $("Searching for NSG: {0}" -f $nsg)
@@ -690,7 +690,7 @@ function Get-AzPolicyImpactReport
                         # Resolve UMIs
                         if ($UMIName)
                             {
-                                $umiResourceIds = @()
+                                $umiResourceIds =   @()
                                 foreach ($umi in $UMIName)
                                     {
                                         Write-Verbose $("Searching for UMI: {0}" -f $umi)
@@ -810,9 +810,9 @@ function Get-AzPolicyImpactReport
                 Write-Host $("  Found {0} policy assignment(s) at MG/Subscription scopes" -f $allPolicyAssignments.Count) -ForegroundColor Gray
 
                 # Collect Resource Group-level policy assignments
-                $resourceGroupLevelAssignments = @()
-                $resourceGroupScopes = @()
-                $uniqueResourceGroups = @{}
+                $resourceGroupLevelAssignments =    @()
+                $resourceGroupScopes =              @()
+                $uniqueResourceGroups =             @{}
                 
                 # Add parameter-specified resource groups
                 if ($FlexResourceGroupName)

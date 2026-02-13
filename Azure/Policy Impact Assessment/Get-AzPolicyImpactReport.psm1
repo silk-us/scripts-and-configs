@@ -54,6 +54,7 @@
 function Get-AzPolicyImpactReport
     {
         [CmdletBinding  (
+                            DefaultParameterSetName = 'Default',
                             HelpURI = "https://github.com/silk-us/scripts-and-configs/tree/main/Azure/Policy%20Impact%20Assessment"
                         )]
 
@@ -61,6 +62,12 @@ function Get-AzPolicyImpactReport
             (
                 [Parameter  (
                                 Mandatory = $false,
+                                ParameterSetName = 'Default',
+                                HelpMessage = 'Azure Subscription ID'
+                            )]
+                [Parameter  (
+                                Mandatory = $false,
+                                ParameterSetName = 'WithResources',
                                 HelpMessage = 'Azure Subscription ID'
                             )]
                 [string]
@@ -68,6 +75,12 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
+                                ParameterSetName = 'Default',
+                                HelpMessage = 'Azure Subscription Name'
+                            )]
+                [Parameter  (
+                                Mandatory = $false,
+                                ParameterSetName = 'WithResources',
                                 HelpMessage = 'Azure Subscription Name'
                             )]
                 [string]
@@ -75,6 +88,12 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
+                                ParameterSetName = 'Default',
+                                HelpMessage = 'Silk Resource Group name where resources will be deployed'
+                            )]
+                [Parameter  (
+                                Mandatory = $true,
+                                ParameterSetName = 'WithResources',
                                 HelpMessage = 'Silk Resource Group name where resources will be deployed'
                             )]
                 [string]
@@ -82,6 +101,7 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
+                                ParameterSetName = 'WithResources',
                                 HelpMessage = 'Array of Virtual Network names'
                             )]
                 [string[]]
@@ -89,6 +109,7 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
+                                ParameterSetName = 'WithResources',
                                 HelpMessage = 'Resource group where VNet will be deployed'
                             )]
                 [string]
@@ -96,6 +117,7 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
+                                ParameterSetName = 'WithResources',
                                 HelpMessage = 'Array of Network Security Group names'
                             )]
                 [string[]]
@@ -103,6 +125,7 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
+                                ParameterSetName = 'WithResources',
                                 HelpMessage = 'Resource group where NSGs will be deployed'
                             )]
                 [string]
@@ -110,6 +133,7 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
+                                ParameterSetName = 'WithResources',
                                 HelpMessage = 'Array of User-Assigned Managed Identity names'
                             )]
                 [string[]]
@@ -117,6 +141,7 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
+                                ParameterSetName = 'WithResources',
                                 HelpMessage = 'Resource group where UMI will be deployed'
                             )]
                 [string]
@@ -124,6 +149,12 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
+                                ParameterSetName = 'Default',
+                                HelpMessage = 'Include role assignments in the report'
+                            )]
+                [Parameter  (
+                                Mandatory = $false,
+                                ParameterSetName = 'WithResources',
                                 HelpMessage = 'Include role assignments in the report'
                             )]
                 [switch]
@@ -131,6 +162,12 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
+                                ParameterSetName = 'Default',
+                                HelpMessage = 'Directory path for output files'
+                            )]
+                [Parameter  (
+                                Mandatory = $false,
+                                ParameterSetName = 'WithResources',
                                 HelpMessage = 'Directory path for output files'
                             )]
                 [string]
@@ -138,6 +175,12 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
+                                ParameterSetName = 'Default',
+                                HelpMessage = 'Base name for the output report files'
+                            )]
+                [Parameter  (
+                                Mandatory = $false,
+                                ParameterSetName = 'WithResources',
                                 HelpMessage = 'Base name for the output report files'
                             )]
                 [string]
@@ -149,13 +192,6 @@ function Get-AzPolicyImpactReport
                 Write-Host $("{0}{1}" -f [Environment]::NewLine, $("========================================")) -ForegroundColor Cyan
                 Write-Host $("Azure Policy Impact Assessment Report") -ForegroundColor Cyan
                 Write-Host $("{0}{1}" -f $("========================================"), [Environment]::NewLine) -ForegroundColor Cyan
-
-                # Validate that FlexResourceGroupName is provided when resource parameters are specified
-                if (($VNetName -or $VNetResourceGroup -or $NSGName -or $NSGResourceGroup -or $UMIName -or $UMIResourceGroup) -and -not $FlexResourceGroupName)
-                    {
-                        Write-Error "FlexResourceGroupName is required when specifying VNet, NSG, or UMI resource parameters"
-                        return
-                    }
 
                 # Validate Azure context
                 try
@@ -476,12 +512,10 @@ function Get-AzPolicyImpactReport
 
 
                 # Resolve resource names to IDs
-                if ($PSCmdlet.ParameterSetName -eq $('ByName'))
-                    {
-                        Write-Host $("Resolving resource names to IDs...") -ForegroundColor Yellow
+                Write-Host $("Resolving resource names to IDs...") -ForegroundColor Yellow
 
-                        # Resolve VNets
-                        if ($VNetName)
+                # Resolve VNets
+                if ($VNetName)
                             {
                                 $VNetResourceIds = @()
                                 foreach ($vnet in $VNetName)
@@ -782,10 +816,7 @@ function Get-AzPolicyImpactReport
                                     }
                             }
 
-                        Write-Host $("")
-                    }
-
-                # Interactive mode - removed duplicate section that was previously here
+                Write-Host $("")
             }
 
         process

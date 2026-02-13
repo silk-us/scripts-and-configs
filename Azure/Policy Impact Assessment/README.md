@@ -71,8 +71,7 @@
    Get-AzPolicyImpactReport `
        -FlexResourceGroupName "silk-flex-rg" `
        -VNetName "shared-vnet" `
-       -NSGName "silk-flex-nsg", "silk-cluster-nsg" `
-       -UMIName "silk-flex-umi"
+       -NSGName "silk-flex-nsg" `
    ```
    > Searches for named resources across all resource groups, automatically determines their locations, and analyzes applicable policies. If multiple resources have the same name, prompts to select which one.
 
@@ -139,8 +138,8 @@ Install-Module -Name Az.Accounts,Az.Resources,Az.Network,Az.ManagedServiceIdenti
 
 | Parameter | Description | Valid Input | Example |
 |-----------|-------------|-------------|---------|
-| `-SubscriptionId` | Azure Subscription ID to analyze | Azure Subscription GUID | "12345678-1234-1234-1234-123456789012" |
-| `-SubscriptionName` | Azure Subscription Name (alternative to SubscriptionId) | Existing subscription name | "Production-Azure" |
+| `-SubscriptionId` | Azure Subscription ID to analyze. **Optional** - if not provided, uses current context subscription | Azure Subscription GUID | "12345678-1234-1234-1234-123456789012" |
+| `-SubscriptionName` | Azure Subscription Name (alternative to SubscriptionId). **Optional** - if not provided, uses current context subscription | Existing subscription name | "Production-Azure" |
 | `-FlexResourceGroupName` | Target Flex resource group for deployment. **Optional** - omit for subscription-level analysis | Existing Azure RG | "silk-flex-rg" |
 | `-VNetName` | Array of Virtual Network names to analyze | VNet names | @("shared-vnet", "prod-vnet") |
 | `-VNetResourceGroup` | Resource group where VNet will be deployed | Existing Azure RG | "network-rg" |
@@ -177,6 +176,17 @@ Get-AzPolicyImpactReport `
 ```
 > Analyzes policies for planned deployment before any resources exist. Identifies potential blockers early in the planning phase.
 
+#### 4. UMI Deployment Identify Scopes from individual resources:
+   ```powershell
+   Get-AzPolicyImpactReport `
+       -FlexResourceGroupName "silk-flex-rg" `
+       -VNetName "shared-vnet" `
+       -NSGName "silk-flex-nsg", "silk-cluster-nsg" `
+       -UMIName "silk-flex-umi"
+   ```
+   > Searches for named resources across all resource groups, automatically determines their locations, and analyzes applicable policies. If multiple resources have the same name, prompts to select which one.
+
+
 ---
 
 ### Understanding Policy Effects
@@ -204,10 +214,6 @@ $report.PolicyAssignments | Where-Object { $_.Effect -eq 'deny' } |
 # Show policies impacting your target resource group
 $report.PolicyAssignments | Where-Object { $_.ImpactsTargetResourceGroup -eq $true } |
     Format-Table AssignmentDisplayName, Effect, EnforcementMode
-
-# Export Management Group policies to CSV for review
-$report.PolicyAssignments | Where-Object { $_.ScopeType -eq 'ManagementGroup' } |
-    Export-Csv -Path 'MgPolicies.csv' -NoTypeInformation
 
 # Deep dive into a specific policy's rules
 $policy = $report.PolicyAssignments | Where-Object { $_.AssignmentDisplayName -like '*Allowed locations*' }

@@ -11,43 +11,34 @@
     - Policy definitions with detailed rules and effects
     - Policy exemptions
     - Scope analysis showing which policies apply where
-    - Export options to JSON, CSV, and HTML formats
+    - Export to JSON format
 
 .PARAMETER SubscriptionId
     The Azure Subscription ID to analyze. If not provided, uses the current context subscription.
 
 .PARAMETER SubscriptionName
-    The Azure Subscription Name to analyze (alternative to SubscriptionId).
+    The Azure Subscription Name to analyze (alternative to SubscriptionId). If not provided, uses the current context subscription.
 
-.PARAMETER ResourceGroupName
+.PARAMETER FlexResourceGroupName
     The Silk Resource Group name - the primary target resource group where Silk resources will be deployed.
 
-.PARAMETER VNetNames
+.PARAMETER VNetName
     Array of Virtual Network names. If multiple VNets with the same name exist, you'll be prompted to select.
 
 .PARAMETER VNetResourceGroup
     Resource group where VNet will be deployed (even if it doesn't exist yet). Use this to assess policies without existing resources.
 
-.PARAMETER NSGNames
+.PARAMETER NSGName
     Array of Network Security Group names. If multiple NSGs with the same name exist, you'll be prompted to select.
 
 .PARAMETER NSGResourceGroup
     Resource group where NSGs will be deployed (even if they don't exist yet). Use this to assess policies without existing resources.
 
-.PARAMETER UMINames
+.PARAMETER UMIName
     Array of User-Assigned Managed Identity names. If multiple UMIs with the same name exist, you'll be prompted to select.
 
 .PARAMETER UMIResourceGroup
     Resource group where UMI will be deployed (even if it doesn't exist yet). Use this to assess policies without existing resources.
-
-.PARAMETER VNetResourceIds
-    (Advanced) Array of Virtual Network full resource IDs. Use this if you have the full resource IDs.
-
-.PARAMETER NSGResourceIds
-    (Advanced) Array of Network Security Group full resource IDs. Use this if you have the full resource IDs.
-
-.PARAMETER UMIResourceIds
-    (Advanced) Array of User-Assigned Managed Identity full resource IDs. Use this if you have the full resource IDs.
 
 .PARAMETER Interactive
     Enable interactive mode to select resources from a menu if not specified.
@@ -55,11 +46,8 @@
 .PARAMETER IncludeRoleAssignments
     Include role assignments at subscription and Silk Resource Group level in the report.
 
-.PARAMETER OutputFormat
-    Format for the output report. Valid values: JSON, CSV, HTML, All (default: All)
-
 .PARAMETER OutputPath
-    Directory path where reports will be saved. Default is current directory.
+    Directory path where report will be saved. Default is current directory.
 
 .PARAMETER ReportName
     Base name for the output report files. Timestamp will be appended automatically.
@@ -69,7 +57,6 @@
 function Get-AzPolicyImpactReport
     {
         [CmdletBinding  (
-                            DefaultParameterSetName = 'ByName',
                             HelpURI = "https://github.com/silk-us/scripts-and-configs/tree/main/Azure/Policy%20Impact%20Assessment"
                         )]
 
@@ -77,12 +64,6 @@ function Get-AzPolicyImpactReport
             (
                 [Parameter  (
                                 Mandatory = $false,
-                                ParameterSetName = 'ByName',
-                                HelpMessage = 'Azure Subscription ID'
-                            )]
-                [Parameter  (
-                                Mandatory = $false,
-                                ParameterSetName = 'ById',
                                 HelpMessage = 'Azure Subscription ID'
                             )]
                 [string]
@@ -90,33 +71,20 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
-                                ParameterSetName = 'ByName',
-                                HelpMessage = 'Azure Subscription Name'
-                            )]
-                [Parameter  (
-                                Mandatory = $false,
-                                ParameterSetName = 'ById',
                                 HelpMessage = 'Azure Subscription Name'
                             )]
                 [string]
                 $SubscriptionName,
 
                 [Parameter  (
-                                Mandatory = $true,
-                                ParameterSetName = 'ByName',
-                                HelpMessage = 'Silk Resource Group name where resources will be deployed'
-                            )]
-                [Parameter  (
-                                Mandatory = $true,
-                                ParameterSetName = 'ById',
+                                Mandatory = $false,
                                 HelpMessage = 'Silk Resource Group name where resources will be deployed'
                             )]
                 [string]
-                $ResourceGroupName,
+                $FlexResourceGroupName,
 
                 [Parameter  (
                                 Mandatory = $false,
-                                ParameterSetName = 'ByName',
                                 HelpMessage = 'Array of Virtual Network names'
                             )]
                 [string[]]
@@ -124,7 +92,6 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
-                                ParameterSetName = 'ByName',
                                 HelpMessage = 'Resource group where VNet will be deployed'
                             )]
                 [string]
@@ -132,7 +99,6 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
-                                ParameterSetName = 'ByName',
                                 HelpMessage = 'Array of Network Security Group names'
                             )]
                 [string[]]
@@ -140,7 +106,6 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
-                                ParameterSetName = 'ByName',
                                 HelpMessage = 'Resource group where NSGs will be deployed'
                             )]
                 [string]
@@ -148,7 +113,6 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
-                                ParameterSetName = 'ByName',
                                 HelpMessage = 'Array of User-Assigned Managed Identity names'
                             )]
                 [string[]]
@@ -156,7 +120,6 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
-                                ParameterSetName = 'ByName',
                                 HelpMessage = 'Resource group where UMI will be deployed'
                             )]
                 [string]
@@ -164,36 +127,6 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
-                                ParameterSetName = 'ById',
-                                HelpMessage = 'Array of Virtual Network resource IDs'
-                            )]
-                [string[]]
-                $VNetResourceIds,
-
-                [Parameter  (
-                                Mandatory = $false,
-                                ParameterSetName = 'ById',
-                                HelpMessage = 'Array of Network Security Group resource IDs'
-                            )]
-                [string[]]
-                $NSGResourceIds,
-
-                [Parameter  (
-                                Mandatory = $false,
-                                ParameterSetName = 'ById',
-                                HelpMessage = 'Array of User-Assigned Managed Identity resource IDs'
-                            )]
-                [string[]]
-                $UMIResourceIds,
-
-                [Parameter  (
-                                Mandatory = $false,
-                                ParameterSetName = 'ByName',
-                                HelpMessage = 'Enable interactive mode for resource selection'
-                            )]
-                [Parameter  (
-                                Mandatory = $false,
-                                ParameterSetName = 'ById',
                                 HelpMessage = 'Enable interactive mode for resource selection'
                             )]
                 [switch]
@@ -201,12 +134,6 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
-                                ParameterSetName = 'ByName',
-                                HelpMessage = 'Include role assignments in the report'
-                            )]
-                [Parameter  (
-                                Mandatory = $false,
-                                ParameterSetName = 'ById',
                                 HelpMessage = 'Include role assignments in the report'
                             )]
                 [switch]
@@ -214,26 +141,6 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
-                                ParameterSetName = 'ByName',
-                                HelpMessage = 'Output format: JSON, CSV, HTML, or All'
-                            )]
-                [Parameter  (
-                                Mandatory = $false,
-                                ParameterSetName = 'ById',
-                                HelpMessage = 'Output format: JSON, CSV, HTML, or All'
-                            )]
-                [ValidateSet('JSON', 'CSV', 'HTML', 'All')]
-                [string]
-                $OutputFormat = 'All',
-
-                [Parameter  (
-                                Mandatory = $false,
-                                ParameterSetName = 'ByName',
-                                HelpMessage = 'Directory path for output files'
-                            )]
-                [Parameter  (
-                                Mandatory = $false,
-                                ParameterSetName = 'ById',
                                 HelpMessage = 'Directory path for output files'
                             )]
                 [string]
@@ -241,12 +148,6 @@ function Get-AzPolicyImpactReport
 
                 [Parameter  (
                                 Mandatory = $false,
-                                ParameterSetName = 'ByName',
-                                HelpMessage = 'Base name for the output report files'
-                            )]
-                [Parameter  (
-                                Mandatory = $false,
-                                ParameterSetName = 'ById',
                                 HelpMessage = 'Base name for the output report files'
                             )]
                 [string]
@@ -298,14 +199,14 @@ function Get-AzPolicyImpactReport
                 # Validate resource group exists
                 try
                     {
-                        $rg = Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction Stop
-                        Write-Host $("Silk Resource Group (Target): {0}" -f $ResourceGroupName) -ForegroundColor Green
+                        $rg = Get-AzResourceGroup -Name $FlexResourceGroupName -ErrorAction Stop
+                        Write-Host $("Silk Resource Group (Target): {0}" -f $FlexResourceGroupName) -ForegroundColor Green
                         Write-Host $("  Location: {0}" -f $rg.Location) -ForegroundColor Gray
                         Write-Host $("  ResourceId: {0}{1}" -f $rg.ResourceId, [Environment]::NewLine) -ForegroundColor Gray
                     } `
                 catch
                     {
-                        Write-Error $("Resource Group '{0}' not found: {1}" -f $ResourceGroupName, $_)
+                        Write-Error $("Resource Group '{0}' not found: {1}" -f $FlexResourceGroupName, $_)
                         return
                     }
 
@@ -441,7 +342,7 @@ function Get-AzPolicyImpactReport
                                                     GeneratedDate = Get-Date -Format $("yyyy-MM-dd HH:mm:ss")
                                                     SubscriptionId = $context.Subscription.Id
                                                     SubscriptionName = $context.Subscription.Name
-                                                    SilkResourceGroupName = $ResourceGroupName
+                                                    SilkResourceGroupName = $FlexResourceGroupName
                                                     SilkResourceGroupId = $rg.ResourceId
                                                     GeneratedBy = $context.Account.Id
                                                 }
@@ -806,7 +707,7 @@ function Get-AzPolicyImpactReport
                                     {
                                         $impactsTargetRG = $true  # Subscription policies apply to all RGs in that subscription
                                     } `
-                                elseif ($scopeType -eq $("ResourceGroup") -and $assignment.Scope -like $("*{0}*" -f $ResourceGroupName))
+                                elseif ($scopeType -eq $("ResourceGroup") -and $assignment.Scope -like $("*{0}*" -f $FlexResourceGroupName))
                                     {
                                         $impactsTargetRG = $true  # Direct RG assignment
                                     }
@@ -1017,7 +918,7 @@ function Get-AzPolicyImpactReport
                         $subRoles = Get-AzRoleAssignment -Scope $("/subscriptions/{0}" -f $context.Subscription.Id) -ErrorAction SilentlyContinue
 
                         # Get role assignments at resource group level
-                        $rgRoles = Get-AzRoleAssignment -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue
+                        $rgRoles = Get-AzRoleAssignment -ResourceGroupName $FlexResourceGroupName -ErrorAction SilentlyContinue
 
                         $allRoles = @($subRoles) + @($rgRoles) | Select-Object -Unique -Property RoleAssignmentId, *
 
@@ -1111,50 +1012,11 @@ function Get-AzPolicyImpactReport
                 $timestamp = Get-Date -Format $("yyyyMMdd-HHmmss")
                 $baseFileName = $("{0}-{1}" -f $ReportName, $timestamp)
 
-                Write-Host $("Exporting Reports...") -ForegroundColor Yellow
+                Write-Host $("Exporting JSON Report...") -ForegroundColor Yellow
 
-                if ($OutputFormat -eq $('JSON') -or $OutputFormat -eq $('All'))
-                    {
-                        $jsonPath = Join-Path $OutputPath $("{0}.json" -f $baseFileName)
-                        $reportData | ConvertTo-Json -Depth 10 | Out-File -FilePath $jsonPath -Encoding UTF8
-                        Write-Host $("  JSON report saved: {0}" -f $jsonPath) -ForegroundColor Green
-                    }
-
-                if ($OutputFormat -eq $('CSV') -or $OutputFormat -eq $('All'))
-                    {
-                        $csvPath = Join-Path $OutputPath $("{0}-Policies.csv" -f $baseFileName)
-                        $reportData.PolicyAssignments | Export-Csv -Path $csvPath -NoTypeInformation -Encoding UTF8
-                        Write-Host $("  CSV report saved: {0}" -f $csvPath) -ForegroundColor Green
-
-                        if ($reportData.PolicyExemptions.Count -gt 0)
-                            {
-                                $exemptionCsvPath = Join-Path $OutputPath $("{0}-Exemptions.csv" -f $baseFileName)
-                                $reportData.PolicyExemptions | Export-Csv -Path $exemptionCsvPath -NoTypeInformation -Encoding UTF8
-                                Write-Host $("  Exemptions CSV saved: {0}" -f $exemptionCsvPath) -ForegroundColor Green
-                            }
-
-                        if ($IncludeRoleAssignments -and $reportData.RoleAssignments.Count -gt 0)
-                            {
-                                $rolesCsvPath = Join-Path $OutputPath $("{0}-RoleAssignments.csv" -f $baseFileName)
-                                $reportData.RoleAssignments | Export-Csv -Path $rolesCsvPath -NoTypeInformation -Encoding UTF8
-                                Write-Host $("  Role Assignments CSV saved: {0}" -f $rolesCsvPath) -ForegroundColor Green
-                            }
-
-                        if ($reportData.AccessIssues.Count -gt 0)
-                            {
-                                $accessIssuesCsvPath = Join-Path $OutputPath $("{0}-AccessIssues.csv" -f $baseFileName)
-                                $reportData.AccessIssues | Export-Csv -Path $accessIssuesCsvPath -NoTypeInformation -Encoding UTF8
-                                Write-Host $("  Access Issues CSV saved: {0}" -f $accessIssuesCsvPath) -ForegroundColor Yellow
-                            }
-                    }
-
-                if ($OutputFormat -eq $('HTML') -or $OutputFormat -eq $('All'))
-                    {
-                        $htmlPath = Join-Path $OutputPath $("{0}.html" -f $baseFileName)
-                        $html = Generate-HTMLReport -ReportData $reportData
-                        $html | Out-File -FilePath $htmlPath -Encoding UTF8
-                        Write-Host $("  HTML report saved: {0}" -f $htmlPath) -ForegroundColor Green
-                    }
+                $jsonPath = Join-Path $OutputPath $("{0}.json" -f $baseFileName)
+                $reportData | ConvertTo-Json -Depth 10 | Out-File -FilePath $jsonPath -Encoding UTF8
+                Write-Host $("  JSON report saved: {0}" -f $jsonPath) -ForegroundColor Green
 
                 Write-Host $("{0}Report generation complete!" -f [Environment]::NewLine) -ForegroundColor Green
                 Write-Host $("========================================{0}" -f [Environment]::NewLine) -ForegroundColor Cyan
@@ -1162,273 +1024,6 @@ function Get-AzPolicyImpactReport
                 return $reportData
             }
     }   # End of Get-AzPolicyImpactReport function
-
-function Generate-HTMLReport
-    {
-        param($ReportData)
-
-        $html = @"
-<!DOCTYPE html>
-<html>
-<head>
-    <title>$("Azure Policy Impact Assessment Report")</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f5f5f5; }
-        h1 { color: #0078d4; border-bottom: 3px solid #0078d4; padding-bottom: 10px; }
-        h2 { color: #106ebe; margin-top: 30px; border-bottom: 2px solid #e0e0e0; padding-bottom: 5px; }
-        .metadata { background-color: #e7f3ff; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-        .summary { background-color: #fff; padding: 15px; border-radius: 5px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
-        .summary-box { background-color: #f9f9f9; padding: 10px; border-left: 4px solid #0078d4; }
-        .summary-box .label { font-size: 12px; color: #666; }
-        .summary-box .value { font-size: 24px; font-weight: bold; color: #0078d4; }
-        table { width: 100%; border-collapse: collapse; background-color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        th { background-color: #0078d4; color: white; padding: 12px; text-align: left; }
-        td { padding: 10px; border-bottom: 1px solid #e0e0e0; }
-        tr:hover { background-color: #f5f5f5; }
-        .scope-mgmt { color: #d13438; font-weight: bold; }
-        .scope-sub { color: #ff8c00; font-weight: bold; }
-        .scope-rg { color: #107c10; font-weight: bold; }
-        .enforced { color: #d13438; font-weight: bold; }
-        .audit-only { color: #ff8c00; }
-        .impact-yes { background-color: #fff4ce; }
-        .impact-no { background-color: #f0f0f0; }
-    </style>
-</head>
-<body>
-    <h1>$("Azure Policy Impact Assessment Report")</h1>
-
-    <div class="metadata">
-        <strong>Generated:</strong> $($ReportData.Metadata.GeneratedDate)<br>
-        <strong>Subscription:</strong> $($ReportData.Metadata.SubscriptionName) ($($ReportData.Metadata.SubscriptionId))<br>
-        <strong>Silk Resource Group (Target):</strong> $($ReportData.Metadata.SilkResourceGroupName)<br>
-        <strong>Generated By:</strong> $($ReportData.Metadata.GeneratedBy)
-    </div>
-
-    <div style="background-color: #e7f3ff; border-left: 5px solid #0078d4; padding: 15px; margin-bottom: 20px; border-radius: 5px;">
-        <h2 style="margin-top: 0; color: #0078d4;">📋 Permission Context & Visibility</h2>
-        <p><strong>Your Identity:</strong> $($ReportData.PermissionContext.UserIdentity)</p>
-        <p><strong>Role Assignments Found:</strong> $($ReportData.PermissionContext.Roles.Count)</p>
-        <ul>
-            <li><strong>Management Group Access:</strong> $(if ($ReportData.PermissionContext.HasManagementGroupAccess) { "✓ Yes" } else { "✗ No" })</li>
-            <li><strong>Subscription Reader or Higher:</strong> $(if ($ReportData.PermissionContext.HasSubscriptionReaderOrHigher) { "✓ Yes" } else { "✗ No" })</li>
-        </ul>
-
-        $(if ($ReportData.PermissionContext.PotentialBlindSpots.Count -gt 0) {
-            "<h3 style='color: #d13438;'>⚠️ Potential Blind Spots ($($ReportData.PermissionContext.PotentialBlindSpots.Count))</h3>"
-            "<p><em>Based on your current permissions, the following areas may have limited visibility:</em></p>"
-            "<table style='margin-top: 10px;'>"
-            "<tr><th>Area</th><th>Severity</th><th>Description</th><th>Impact</th><th>Recommendation</th></tr>"
-            foreach ($blindSpot in $ReportData.PermissionContext.PotentialBlindSpots) {
-                $severityColor = switch ($blindSpot.Severity) {
-                    "Critical" { "#d13438" }
-                    "High" { "#d13438" }
-                    "Medium" { "#ff8c00" }
-                    default { "#666" }
-                }
-                "<tr>"
-                "<td><strong>$($blindSpot.Area)</strong></td>"
-                "<td><strong style='color: $severityColor;'>$($blindSpot.Severity)</strong></td>"
-                "<td>$($blindSpot.Description)</td>"
-                "<td>$($blindSpot.Impact)</td>"
-                "<td><em>$($blindSpot.Recommendation)</em></td>"
-                "</tr>"
-            }
-            "</table>"
-        } else {
-            "<p style='color: #107c10;'><strong>✓ No obvious permission gaps detected.</strong> Your access appears sufficient for comprehensive policy analysis.</p>"
-        })
-    </div>
-
-    <div class="summary">
-        <h2>Summary</h2>
-        <div class="summary-grid">
-            <div class="summary-box">
-                <div class="label">Total Policies</div>
-                <div class="value">$($ReportData.ScopeAnalysis.TotalPolicies)</div>
-            </div>
-            <div class="summary-box">
-                <div class="label">Management Group</div>
-                <div class="value">$($ReportData.ScopeAnalysis.ManagementGroupPolicies)</div>
-            </div>
-            <div class="summary-box">
-                <div class="label">Subscription</div>
-                <div class="value">$($ReportData.ScopeAnalysis.SubscriptionPolicies)</div>
-            </div>
-            <div class="summary-box">
-                <div class="label">Resource Group</div>
-                <div class="value">$($ReportData.ScopeAnalysis.ResourceGroupPolicies)</div>
-            </div>
-            <div class="summary-box">
-                <div class="label">Impacting Target RG</div>
-                <div class="value">$($ReportData.ScopeAnalysis.PoliciesImpactingTargetRG)</div>
-            </div>
-            <div class="summary-box">
-                <div class="label">Exemptions</div>
-                <div class="value">$($ReportData.ScopeAnalysis.TotalExemptions)</div>
-            </div>
-        </div>
-    </div>
-
-    <h2>Policy Assignments</h2>
-    <table>
-        <tr>
-            <th>Assignment Name</th>
-            <th>Display Name</th>
-            <th>Scope Type</th>
-            <th>Enforcement</th>
-            <th>Policy Type</th>
-            <th>Mode</th>
-            <th>Impacts Target RG</th>
-        </tr>
-"@
-
-    foreach ($policy in $ReportData.PolicyAssignments)
-        {
-            $scopeClass = switch ($policy.ScopeType)
-                {
-                    $("ManagementGroup") {$("scope-mgmt")}
-                    $("Subscription") {$("scope-sub")}
-                    $("ResourceGroup") {$("scope-rg")}
-                }
-
-            $enforcementClass = if ($policy.EnforcementMode -eq $("Default")) {$("enforced")} else {$("audit-only")}
-            $impactClass = if ($policy.ImpactsTargetResourceGroup) {$("impact-yes")} else {$("impact-no")}
-            $impactText = if ($policy.ImpactsTargetResourceGroup) {$("YES")} else {$("No")}
-
-            $html += @"
-        <tr>
-            <td>$($policy.AssignmentName)</td>
-            <td>$($policy.AssignmentDisplayName)</td>
-            <td class="$scopeClass">$($policy.ScopeType)</td>
-            <td class="$enforcementClass">$($policy.EnforcementMode)</td>
-            <td>$($policy.PolicyType)</td>
-            <td>$($policy.Mode)</td>
-            <td class="$impactClass">$impactText</td>
-        </tr>
-"@
-        }
-
-    $html += $("</table>")
-
-    if ($ReportData.PolicyExemptions.Count -gt 0)
-        {
-            $html += @"
-    <h2>$("Policy Exemptions")</h2>
-    <table>
-        <tr>
-            <th>$("Exemption Name")</th>
-            <th>$("Category")</th>
-            <th>$("Policy Assignment")</th>
-            <th>$("Scope")</th>
-            <th>$("Expires On")</th>
-        </tr>
-"@
-            foreach ($exemption in $ReportData.PolicyExemptions)
-                {
-                    $expiresText = if ($exemption.ExpiresOn) {$exemption.ExpiresOn} else {$("No Expiration")}
-                    $html += @"
-        <tr>
-            <td>$($exemption.ExemptionName)</td>
-            <td>$($exemption.ExemptionCategory)</td>
-            <td>$($exemption.PolicyAssignmentId.Split('/')[-1])</td>
-            <td>$($exemption.Scope)</td>
-            <td>$expiresText</td>
-        </tr>
-"@
-                }
-            $html += $("</table>")
-        }
-
-    if ($ReportData.ResourcesAnalyzed.VNets.Count -gt 0)
-        {
-            $html += $("<h2>Virtual Networks Analyzed</h2><table><tr><th>Name</th><th>Resource Group</th><th>Location</th></tr>")
-            foreach ($vnet in $ReportData.ResourcesAnalyzed.VNets)
-                {
-                    $html += $("<tr><td>{0}</td><td>{1}</td><td>{2}</td></tr>" -f $vnet.Name, $vnet.ResourceGroupName, $vnet.Location)
-                }
-            $html += $("</table>")
-        }
-
-    if ($ReportData.ResourcesAnalyzed.NSGs.Count -gt 0)
-        {
-            $html += $("<h2>Network Security Groups Analyzed</h2><table><tr><th>Name</th><th>Resource Group</th><th>Location</th></tr>")
-            foreach ($nsg in $ReportData.ResourcesAnalyzed.NSGs)
-                {
-                    $html += $("<tr><td>{0}</td><td>{1}</td><td>{2}</td></tr>" -f $nsg.Name, $nsg.ResourceGroupName, $nsg.Location)
-                }
-            $html += $("</table>")
-        }
-
-    if ($ReportData.ResourcesAnalyzed.UMIs.Count -gt 0)
-        {
-            $html += $("<h2>User-Assigned Managed Identities Analyzed</h2><table><tr><th>Name</th><th>Resource Group</th><th>Principal ID</th></tr>")
-            foreach ($umi in $ReportData.ResourcesAnalyzed.UMIs)
-                {
-                    $html += $("<tr><td>{0}</td><td>{1}</td><td>{2}</td></tr>" -f $umi.Name, $umi.ResourceGroupName, $umi.PrincipalId)
-                }
-            $html += $("</table>")
-        }
-
-    if ($ReportData.RoleAssignments.Count -gt 0)
-        {
-            $html += $("<h2>Role Assignments</h2><table><tr><th>Display Name</th><th>Role</th><th>Object Type</th><th>Scope</th></tr>")
-            foreach ($role in $ReportData.RoleAssignments)
-                {
-                    $html += $("<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td></tr>" -f $role.DisplayName, $role.RoleDefinitionName, $role.ObjectType, $role.Scope)
-                }
-            $html += $("</table>")
-        }
-
-    # Add Access Issues section if any issues were encountered
-    if ($ReportData.AccessIssues.Count -gt 0)
-        {
-            $permissionCount = ($ReportData.AccessIssues | Where-Object {$_.IssueType -eq $("Permission Denied")}).Count
-            $otherCount = $ReportData.AccessIssues.Count - $permissionCount
-
-            $html += @"
-    <div style="background-color: #fff4ce; border-left: 5px solid #ff8c00; padding: 15px; margin-top: 30px; border-radius: 5px;">
-        <h2 style="color: #d13438; margin-top: 0;">$("⚠️ Access Issues Detected")</h2>
-        <p><strong>$("Warning:")</strong> $("This report encountered {0} access issue(s) during data collection. Some policy information may be incomplete." -f $ReportData.AccessIssues.Count)</p>
-        <ul>
-            <li><strong>$("Permission Denied:")</strong> $permissionCount</li>
-            <li><strong>$("Other Access Errors:")</strong> $otherCount</li>
-        </ul>
-        <p><em>$("ⓘ Impact: The report may not reflect all policies that could affect your deployment. Consider running this report with an account that has Reader access at Management Group level for complete visibility.")</em></p>
-    </div>
-
-    <h2 style="color: #d13438;">$("Access Issues Details")</h2>
-    <table>
-        <tr>
-            <th>$("Resource Type")</th>
-            <th>$("Resource Name")</th>
-            <th>$("Scope")</th>
-            <th>$("Issue Type")</th>
-            <th>$("Error Message")</th>
-            <th>$("Impact")</th>
-        </tr>
-"@
-            foreach ($issue in $ReportData.AccessIssues)
-                {
-                    $issueColor = if ($issue.IssueType -eq $("Permission Denied")) {$("background-color: #fde7e9;")} else {$("background-color: #fff4ce;")}
-                    $html += @"
-        <tr style="$issueColor">
-            <td>$($issue.ResourceType)</td>
-            <td>$($issue.ResourceName)</td>
-            <td>$($issue.Scope)</td>
-            <td><strong>$($issue.IssueType)</strong></td>
-            <td><small>$($issue.ErrorMessage)</small></td>
-            <td>$($issue.Impact)</td>
-        </tr>
-"@
-                }
-            $html += $("</table>")
-        }
-
-    $html += $("</body></html>")
-
-    return $html
-    }   # End of Generate-HTMLReport function
 
 Export-ModuleMember -Function Get-AzPolicyImpactReport
 

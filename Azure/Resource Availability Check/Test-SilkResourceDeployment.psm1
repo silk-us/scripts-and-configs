@@ -1542,7 +1542,7 @@ function Test-SilkResourceDeployment
                         # Lsv3 series has minimum of 8 vCPU, others can use 2 vCPU
                         $cNodeSizeObject = $cNodeSizeObject | ForEach-Object    {
                                                                                     # Determine development vCPU based on SKU series minimum requirements
-                                                                                    $devVcpu = if ($_.vmSkuSuffix -eq $('s_v3')) { 8 } else { 2 }
+                                                                                    $devVcpu = if ($_.vmSkuPrefix -eq 'Standard_L') { 8 } else { 2 }
 
                                                                                     [pscustomobject]@{
                                                                                                         vmSkuPrefix = $_.vmSkuPrefix

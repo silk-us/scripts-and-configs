@@ -2737,103 +2737,103 @@ function Test-SilkResourceDeployment
 
                                 for ($cNode = 1; $cNode -le $adjustedCNodeCount; $cNode++)
                                     {
-                                # Calculate CNode SKU for display
-                                $currentCNodeSku = "{0}" -f $CNodeSku
+                                        # Calculate CNode SKU for display
+                                        $currentCNodeSku = "{0}" -f $CNodeSku
 
-                                # Update sub-progress for CNode creation
-                                Write-Progress `
-                                    -Status $("Creating CNode {0} of {1} ({2})" -f $cNode, $adjustedCNodeCount, $currentCNodeSku) `
-                                    -CurrentOperation $("Configuring CNode {0} with SKU {1}..." -f $cNode, $currentCNodeSku) `
-                                    -PercentComplete $(($cNode / $adjustedCNodeCount) * 100) `
-                                    -Activity $("CNode Creation") `
-                                    -ParentId 3 `
-                                    -Id 4
+                                        # Update sub-progress for CNode creation
+                                        Write-Progress `
+                                            -Status $("Creating CNode {0} of {1} ({2})" -f $cNode, $adjustedCNodeCount, $currentCNodeSku) `
+                                            -CurrentOperation $("Configuring CNode {0} with SKU {1}..." -f $cNode, $currentCNodeSku) `
+                                            -PercentComplete $(($cNode / $adjustedCNodeCount) * 100) `
+                                            -Activity $("CNode Creation") `
+                                            -ParentId 3 `
+                                            -Id 4
 
-                                # create the cnode management NIC
-                                $cNodeMGMTNIC = New-AzNetworkInterface `
-                                                    -ResourceGroupName $ResourceGroupName `
-                                                    -Location $Region `
-                                                    -Name $("{0}-cnode-mgmt-nic-{1:D2}" -f $ResourceNamePrefix, $cNode) `
-                                                    -SubnetId $mGMTSubnetID
+                                        # create the cnode management NIC
+                                        $cNodeMGMTNIC = New-AzNetworkInterface `
+                                                            -ResourceGroupName $ResourceGroupName `
+                                                            -Location $Region `
+                                                            -Name $("{0}-cnode-mgmt-nic-{1:D2}" -f $ResourceNamePrefix, $cNode) `
+                                                            -SubnetId $mGMTSubnetID
 
-                                Write-Verbose -Message $("✓ CNode {0} management NIC '{1}' successfully created with IP '{2}'" -f $cNode, $cNodeMGMTNIC.Name, $cNodeMGMTNIC.IpConfigurations[0].PrivateIpAddress)
+                                        Write-Verbose -Message $("✓ CNode {0} management NIC '{1}' successfully created with IP '{2}'" -f $cNode, $cNodeMGMTNIC.Name, $cNodeMGMTNIC.IpConfigurations[0].PrivateIpAddress)
 
-                                # create the cnode vm configuration
-                                # Use availability sets
-                                $cNodeConfig = New-AzVMConfig `
-                                                -VMName $("{0}-cnode-{1:D2}" -f $ResourceNamePrefix, $cNode) `
-                                                -VMSize $cNodeVMSku `
-                                                -AvailabilitySetId $cNodeAvailabilitySet.Id
+                                        # create the cnode vm configuration
+                                        # Use availability sets
+                                        $cNodeConfig = New-AzVMConfig `
+                                                        -VMName $("{0}-cnode-{1:D2}" -f $ResourceNamePrefix, $cNode) `
+                                                        -VMSize $cNodeVMSku `
+                                                        -AvailabilitySetId $cNodeAvailabilitySet.Id
 
-                                # set operating system details
-                                $cNodeConfig = Set-AzVMOperatingSystem `
-                                                -VM $cNodeConfig `
-                                                -Linux `
-                                                -ComputerName $("{0}-cnode-{1:D2}" -f $ResourceNamePrefix, $cNode) `
-                                                -Credential $VMInstanceCredential `
-                                                -DisablePasswordAuthentication:$false
-
-                                # set the cnode vm image
-                                if ($VMImageOffer -eq "Ubuntu2204" -or $VMImageOffer -eq "Ubuntu2404" -or $VMImageOffer -eq "UbuntuLTS")
-                                    {
-                                        # Use image alias for Ubuntu
-                                        $cNodeConfig = Set-AzVMSourceImage `
+                                        # set operating system details
+                                        $cNodeConfig = Set-AzVMOperatingSystem `
                                                         -VM $cNodeConfig `
-                                                        -Image $VMImageOffer
-                                    } `
-                                else
-                                    {
-                                        # Use traditional publisher/offer/sku/version
-                                        $cNodeConfig = Set-AzVMSourceImage `
+                                                        -Linux `
+                                                        -ComputerName $("{0}-cnode-{1:D2}" -f $ResourceNamePrefix, $cNode) `
+                                                        -Credential $VMInstanceCredential `
+                                                        -DisablePasswordAuthentication:$false
+
+                                        # set the cnode vm image
+                                        if ($VMImageOffer -eq "Ubuntu2204" -or $VMImageOffer -eq "Ubuntu2404" -or $VMImageOffer -eq "UbuntuLTS")
+                                            {
+                                                # Use image alias for Ubuntu
+                                                $cNodeConfig = Set-AzVMSourceImage `
+                                                                -VM $cNodeConfig `
+                                                                -Image $VMImageOffer
+                                            } `
+                                        else
+                                            {
+                                                # Use traditional publisher/offer/sku/version
+                                                $cNodeConfig = Set-AzVMSourceImage `
+                                                                -VM $cNodeConfig `
+                                                                -PublisherName $vMImage.PublisherName `
+                                                                -Offer $vMImage.Offer `
+                                                                -Skus $vMImage.Skus `
+                                                                -Version $vMImage.Version
+                                            }
+
+                                        # set the cnode vm os disk
+                                        $cNodeConfig = Set-AzVMOSDisk `
                                                         -VM $cNodeConfig `
-                                                        -PublisherName $vMImage.PublisherName `
-                                                        -Offer $vMImage.Offer `
-                                                        -Skus $vMImage.Skus `
-                                                        -Version $vMImage.Version
-                                    }
+                                                        -CreateOption FromImage `
+                                                        -DeleteOption "Delete"
 
-                                # set the cnode vm os disk
-                                $cNodeConfig = Set-AzVMOSDisk `
-                                                -VM $cNodeConfig `
-                                                -CreateOption FromImage `
-                                                -DeleteOption "Delete"
-
-                                # set the cnode vm diagnostics
-                                $cNodeConfig = Set-AzVMBootDiagnostic `
-                                                -VM $cNodeConfig `
-                                                -Disable:$true
-
-                                # Add the management NIC to the cnode vm configuration
-                                $cNodeConfig = Add-AzVMNetworkInterface `
-                                                -VM $cNodeConfig `
-                                                -Id $cNodeMGMTNIC.Id `
-                                                -Primary:$true `
-                                                -DeleteOption "Delete"
-
-                                try
-                                    {
-                                        # Suppress warnings specifically for VM creation
-                                        $cNodeJob = New-AzVM `
-                                                        -ResourceGroupName $ResourceGroupName `
-                                                        -Location $Region `
+                                        # set the cnode vm diagnostics
+                                        $cNodeConfig = Set-AzVMBootDiagnostic `
                                                         -VM $cNodeConfig `
-                                                        -AsJob `
-                                                        -WarningAction SilentlyContinue
+                                                        -Disable:$true
 
-                                        # Track job-to-VM mapping for meaningful error reporting
-                                        $vmJobMapping[$cNodeJob.Id] = @{
-                                            VMName = $("{0}-cnode-{1:D2}" -f $ResourceNamePrefix, $cNode)
-                                            VMSku = $cNodeVMSku
-                                            NodeType = "CNode"
-                                            NodeNumber = $cNode
-                                        }
+                                        # Add the management NIC to the cnode vm configuration
+                                        $cNodeConfig = Add-AzVMNetworkInterface `
+                                                        -VM $cNodeConfig `
+                                                        -Id $cNodeMGMTNIC.Id `
+                                                        -Primary:$true `
+                                                        -DeleteOption "Delete"
 
-                                        Write-Verbose -Message $("✓ CNode {0} VM creation job started successfully" -f $cNode)
-                                    } `
-                                catch
-                                    {
-                                        Write-Error $("✗ Failed to start CNode {0} VM creation: {1}" -f $cNode, $_.Exception.Message)
-                                    }
+                                        try
+                                            {
+                                                # Suppress warnings specifically for VM creation
+                                                $cNodeJob = New-AzVM `
+                                                                -ResourceGroupName $ResourceGroupName `
+                                                                -Location $Region `
+                                                                -VM $cNodeConfig `
+                                                                -AsJob `
+                                                                -WarningAction SilentlyContinue
+
+                                                # Track job-to-VM mapping for meaningful error reporting
+                                                $vmJobMapping[$cNodeJob.Id] = @{
+                                                    VMName = $("{0}-cnode-{1:D2}" -f $ResourceNamePrefix, $cNode)
+                                                    VMSku = $cNodeVMSku
+                                                    NodeType = "CNode"
+                                                    NodeNumber = $cNode
+                                                }
+
+                                                Write-Verbose -Message $("✓ CNode {0} VM creation job started successfully" -f $cNode)
+                                            } `
+                                        catch
+                                            {
+                                                Write-Error $("✗ Failed to start CNode {0} VM creation: {1}" -f $cNode, $_.Exception.Message)
+                                            }
                                     }
 
                                 if ($cNodeAvailabilitySet)
@@ -2855,199 +2855,199 @@ function Test-SilkResourceDeployment
                                 $currentMNode = 0
                                 foreach ($mNode in $mNodeObject)
                                     {
-                                $currentMNode++
+                                        $currentMNode++
 
-                                # Calculate MNode SKU and physical size for display
-                                $currentMNodeSku = "{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix
-                                $currentMNodePhysicalSize = $mNode.PhysicalSize
+                                        # Calculate MNode SKU and physical size for display
+                                        $currentMNodeSku = "{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix
+                                        $currentMNodePhysicalSize = $mNode.PhysicalSize
 
-                                # Check if this MNode group has quota adjustments
-                                $currentDNodeCount = $mNode.dNodeCount
-                                if ($mNodeQuotaAdjustments.ContainsKey($currentMNodePhysicalSize))
-                                    {
-                                        $currentDNodeCount = $mNodeQuotaAdjustments[$currentMNodePhysicalSize].AdjustedCount
-                                        if ($currentDNodeCount -eq 0)
+                                        # Check if this MNode group has quota adjustments
+                                        $currentDNodeCount = $mNode.dNodeCount
+                                        if ($mNodeQuotaAdjustments.ContainsKey($currentMNodePhysicalSize))
                                             {
-                                                Write-Warning $("⚠ Skipping MNode group {0} ({1} TiB) - No quota available for deployment" -f $currentMNode, $currentMNodePhysicalSize)
-                                                continue
+                                                $currentDNodeCount = $mNodeQuotaAdjustments[$currentMNodePhysicalSize].AdjustedCount
+                                                if ($currentDNodeCount -eq 0)
+                                                    {
+                                                        Write-Warning $("⚠ Skipping MNode group {0} ({1} TiB) - No quota available for deployment" -f $currentMNode, $currentMNodePhysicalSize)
+                                                        continue
+                                                    }
                                             }
-                                    }
 
-                                # create mnode proximity placement group including VM SKUs if Zoneless
-                                if($Zone -ne "Zoneless")
-                                    {
-                                        Write-Verbose -Message $("Creating Proximity Placement Group in region '{0}' with zone '{1}' and VM SKUs: {2}" -f $Region, $Zone, $currentMNodeSku)
-                                        $mNodeProximityPlacementGroup = New-AzProximityPlacementGroup `
-                                                                        -ResourceGroupName $ResourceGroupName `
-                                                                        -Location $Region `
-                                                                        -Zone $Zone `
-                                                                        -Name $("{0}-mNode-{1}-ppg" -f $ResourceNamePrefix, $currentMNode) `
-                                                                        -ProximityPlacementGroupType "Standard" `
-                                                                        -IntentVMSize $currentMNodeSku
-                                    } `
-                                else
-                                    {
-                                        Write-Verbose -Message $("Creating Proximity Placement Group in region '{0}' without zones" -f $Region)
-                                        $mNodeProximityPlacementGroup = New-AzProximityPlacementGroup `
-                                                                        -ResourceGroupName $ResourceGroupName `
-                                                                        -Location $Region `
-                                                                        -Name $("{0}-mNode-{1}-ppg" -f $ResourceNamePrefix, $currentMNode) `
-                                                                        -ProximityPlacementGroupType "Standard"
-                                    }
-
-                                Write-Verbose -Message $("✓ Proximity Placement Group '{0}' created" -f $mNodeProximityPlacementGroup.Name)
-
-                                # create availability set for current mNode
-                                $mNodeAvailabilitySet = New-AzAvailabilitySet `
-                                                            -ResourceGroupName $ResourceGroupName `
-                                                            -Location $Region `
-                                                            -Name $("{0}-mNode-{1}-avset" -f $ResourceNamePrefix, $currentMNode) `
-                                                            -ProximityPlacementGroupId $mNodeProximityPlacementGroup.Id `
-                                                            -Sku "Aligned" `
-                                                            -PlatformFaultDomainCount $maximumFaultDomains `
-                                                            -PlatformUpdateDomainCount 20
-
-                                Write-Verbose -Message $("✓ Availability Set '{0}' created" -f $mNodeAvailabilitySet.Name)
-
-                                # Update main progress for MNode group
-                                $processedCNodes = $adjustedCNodeCount
-                                $processedDNodes = $dNodeStartCount
-                                $totalProcessed = $processedCNodes + $processedDNodes
-                                $mainPercentComplete = [Math]::Min([Math]::Round(($totalProcessed / $totalVMs) * 100), 90)
-
-                                Write-Progress `
-                                    -Status $("Processing MNode Group {0} of {1} - {2} TiB ({3})" -f $currentMNode, $mNodeObject.Count, $currentMNodePhysicalSize, $currentMNodeSku) `
-                                    -CurrentOperation $("Creating {0} DNode VM(s) for {1} TiB MNode..." -f $currentDNodeCount, $currentMNodePhysicalSize) `
-                                    -PercentComplete $mainPercentComplete `
-                                    -Activity $("VM Deployment") `
-                                    -ParentId 1 `
-                                    -Id 3
-
-                                for ($dNode = 1; $dNode -le $currentDNodeCount; $dNode++)
-                                    {
-                                        # Update sub-progress for DNode creation
-                                        Write-Progress `
-                                            -Status $("Creating DNode {0} of {1} - {2} TiB ({3})" -f $dNode, $currentDNodeCount, $currentMNodePhysicalSize, $currentMNodeSku) `
-                                            -CurrentOperation $("Configuring DNode {0} with SKU {1}..." -f ($dNode + $dNodeStartCount), $currentMNodeSku) `
-                                            -PercentComplete $(($dNode / $currentDNodeCount) * 100) `
-                                            -Activity $("MNode Group {0} DNode Creation" -f $currentMNode) `
-                                            -ParentId 3 `
-                                            -Id 5
-
-                                        # set dnode number to use for naming
-                                        $dNodeNumber = $dNode + $dNodeStartCount
-
-                                        # create the dnode management
-                                        $dNodeMGMTNIC = New-AzNetworkInterface `
-                                                            -ResourceGroupName $ResourceGroupName `
-                                                        -Location $Region `
-                                                        -Name $("{0}-dnode-{1:D2}-mgmt-nic" -f $ResourceNamePrefix, $dNodeNumber) `
-                                                        -SubnetId $mGMTSubnetID
-
-                                        Write-Verbose -Message $("✓ DNode {0} management NIC '{1}' successfully created with IP '{2}'" -f $dNodeNumber, $dNodeMGMTNIC.Name, $dNodeMGMTNIC.IpConfigurations[0].PrivateIpAddress)
-
-                                        # create the dnode vm configuration
-                                        $dNodeConfig = New-AzVMConfig `
-                                                        -VMName $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNodeNumber) `
-                                                        -VMSize $("{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix) `
-                                                        -AvailabilitySetId $mNodeAvailabilitySet.Id
-
-                                        # set operating system details
-                                        $dNodeConfig = Set-AzVMOperatingSystem `
-                                                        -VM $dNodeConfig `
-                                                        -Linux `
-                                                        -ComputerName $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNodeNumber) `
-                                                        -Credential $VMInstanceCredential `
-                                                        -DisablePasswordAuthentication:$false
-
-                                        # set the dnode vm image
-                                        if ($VMImageOffer -eq "Ubuntu2204" -or $VMImageOffer -eq "Ubuntu2404" -or $VMImageOffer -eq "UbuntuLTS")
+                                        # create mnode proximity placement group including VM SKUs if Zoneless
+                                        if($Zone -ne "Zoneless")
                                             {
-                                                # Use image alias for Ubuntu
-                                                $dNodeConfig = Set-AzVMSourceImage `
-                                                                -VM $dNodeConfig `
-                                                                -Image $VMImageOffer
+                                                Write-Verbose -Message $("Creating Proximity Placement Group in region '{0}' with zone '{1}' and VM SKUs: {2}" -f $Region, $Zone, $currentMNodeSku)
+                                                $mNodeProximityPlacementGroup = New-AzProximityPlacementGroup `
+                                                                                -ResourceGroupName $ResourceGroupName `
+                                                                                -Location $Region `
+                                                                                -Zone $Zone `
+                                                                                -Name $("{0}-mNode-{1}-ppg" -f $ResourceNamePrefix, $currentMNode) `
+                                                                                -ProximityPlacementGroupType "Standard" `
+                                                                                -IntentVMSize $currentMNodeSku
                                             } `
                                         else
                                             {
-                                                # Use traditional publisher/offer/sku/version
-                                                $dNodeConfig = Set-AzVMSourceImage `
-                                                                -VM $dNodeConfig `
-                                                                -PublisherName $vMImage.PublisherName `
-                                                                -Offer $vMImage.Offer `
-                                                                -Skus $vMImage.Skus `
-                                                                -Version $vMImage.Version
+                                                Write-Verbose -Message $("Creating Proximity Placement Group in region '{0}' without zones" -f $Region)
+                                                $mNodeProximityPlacementGroup = New-AzProximityPlacementGroup `
+                                                                                -ResourceGroupName $ResourceGroupName `
+                                                                                -Location $Region `
+                                                                                -Name $("{0}-mNode-{1}-ppg" -f $ResourceNamePrefix, $currentMNode) `
+                                                                                -ProximityPlacementGroupType "Standard"
                                             }
 
-                                        # set the dnode vm os disk
-                                        $dNodeConfig = Set-AzVMOSDisk `
-                                                        -VM $dNodeConfig `
-                                                        -CreateOption FromImage `
-                                                        -DeleteOption "Delete"
+                                        Write-Verbose -Message $("✓ Proximity Placement Group '{0}' created" -f $mNodeProximityPlacementGroup.Name)
 
-                                        # set the dnode vm diagnostics
-                                        $dNodeConfig = Set-AzVMBootDiagnostic `
-                                                        -VM $dNodeConfig `
-                                                        -Disable:$true
+                                        # create availability set for current mNode
+                                        $mNodeAvailabilitySet = New-AzAvailabilitySet `
+                                                                    -ResourceGroupName $ResourceGroupName `
+                                                                    -Location $Region `
+                                                                    -Name $("{0}-mNode-{1}-avset" -f $ResourceNamePrefix, $currentMNode) `
+                                                                    -ProximityPlacementGroupId $mNodeProximityPlacementGroup.Id `
+                                                                    -Sku "Aligned" `
+                                                                    -PlatformFaultDomainCount $maximumFaultDomains `
+                                                                    -PlatformUpdateDomainCount 20
 
-                                        # Add the management NIC to the dnode vm configuration
-                                        $dNodeConfig = Add-AzVMNetworkInterface `
-                                                        -VM $dNodeConfig `
-                                                        -Id $dNodeMGMTNIC.Id `
-                                                        -Primary:$true `
-                                                        -DeleteOption "Delete"
+                                        Write-Verbose -Message $("✓ Availability Set '{0}' created" -f $mNodeAvailabilitySet.Name)
 
-                                        # Update sub-progress for VM creation
+                                        # Update main progress for MNode group
+                                        $processedCNodes = $adjustedCNodeCount
+                                        $processedDNodes = $dNodeStartCount
+                                        $totalProcessed = $processedCNodes + $processedDNodes
+                                        $mainPercentComplete = [Math]::Min([Math]::Round(($totalProcessed / $totalVMs) * 100), 90)
+
                                         Write-Progress `
-                                            -Status $("Creating DNode {0} VM ({1})..." -f $dNode, $currentMNodeSku) `
-                                            -CurrentOperation $("Starting VM creation job for DNode {0} with SKU {1}..." -f $dNodeNumber, $currentMNodeSku) `
-                                            -PercentComplete $(($dNode / $mNode.dNodeCount) * 100) `
-                                            -Activity $("MNode Group {0} DNode Creation" -f $currentMNode) `
-                                            -ParentId 3 `
-                                            -Id 5
+                                            -Status $("Processing MNode Group {0} of {1} - {2} TiB ({3})" -f $currentMNode, $mNodeObject.Count, $currentMNodePhysicalSize, $currentMNodeSku) `
+                                            -CurrentOperation $("Creating {0} DNode VM(s) for {1} TiB MNode..." -f $currentDNodeCount, $currentMNodePhysicalSize) `
+                                            -PercentComplete $mainPercentComplete `
+                                            -Activity $("VM Deployment") `
+                                            -ParentId 1 `
+                                            -Id 3
 
-                                        try
+                                        for ($dNode = 1; $dNode -le $currentDNodeCount; $dNode++)
                                             {
-                                                # Suppress warnings specifically for VM creation
-                                                $dNodeJob = New-AzVM `
-                                                                -ResourceGroupName $ResourceGroupName `
+                                                # Update sub-progress for DNode creation
+                                                Write-Progress `
+                                                    -Status $("Creating DNode {0} of {1} - {2} TiB ({3})" -f $dNode, $currentDNodeCount, $currentMNodePhysicalSize, $currentMNodeSku) `
+                                                    -CurrentOperation $("Configuring DNode {0} with SKU {1}..." -f ($dNode + $dNodeStartCount), $currentMNodeSku) `
+                                                    -PercentComplete $(($dNode / $currentDNodeCount) * 100) `
+                                                    -Activity $("MNode Group {0} DNode Creation" -f $currentMNode) `
+                                                    -ParentId 3 `
+                                                    -Id 5
+
+                                                # set dnode number to use for naming
+                                                $dNodeNumber = $dNode + $dNodeStartCount
+
+                                                # create the dnode management
+                                                $dNodeMGMTNIC = New-AzNetworkInterface `
+                                                                    -ResourceGroupName $ResourceGroupName `
                                                                 -Location $Region `
+                                                                -Name $("{0}-dnode-{1:D2}-mgmt-nic" -f $ResourceNamePrefix, $dNodeNumber) `
+                                                                -SubnetId $mGMTSubnetID
+
+                                                Write-Verbose -Message $("✓ DNode {0} management NIC '{1}' successfully created with IP '{2}'" -f $dNodeNumber, $dNodeMGMTNIC.Name, $dNodeMGMTNIC.IpConfigurations[0].PrivateIpAddress)
+
+                                                # create the dnode vm configuration
+                                                $dNodeConfig = New-AzVMConfig `
+                                                                -VMName $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNodeNumber) `
+                                                                -VMSize $("{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix) `
+                                                                -AvailabilitySetId $mNodeAvailabilitySet.Id
+
+                                                # set operating system details
+                                                $dNodeConfig = Set-AzVMOperatingSystem `
                                                                 -VM $dNodeConfig `
-                                                                -AsJob `
-                                                                -WarningAction SilentlyContinue
+                                                                -Linux `
+                                                                -ComputerName $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNodeNumber) `
+                                                                -Credential $VMInstanceCredential `
+                                                                -DisablePasswordAuthentication:$false
 
-                                                # Track job-to-VM mapping for meaningful error reporting
-                                                $vmJobMapping[$dNodeJob.Id] =  @{
-                                                                                    VMName = $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNodeNumber)
-                                                                                    VMSku = $("{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix)
-                                                                                    NodeType = "DNode"
-                                                                                    NodeNumber = $dNodeNumber
-                                                                                    MNodeGroup = $currentMNode
-                                                                                    MNodePhysicalSize = $currentMNodePhysicalSize
-                                                                                }
+                                                # set the dnode vm image
+                                                if ($VMImageOffer -eq "Ubuntu2204" -or $VMImageOffer -eq "Ubuntu2404" -or $VMImageOffer -eq "UbuntuLTS")
+                                                    {
+                                                        # Use image alias for Ubuntu
+                                                        $dNodeConfig = Set-AzVMSourceImage `
+                                                                        -VM $dNodeConfig `
+                                                                        -Image $VMImageOffer
+                                                    } `
+                                                else
+                                                    {
+                                                        # Use traditional publisher/offer/sku/version
+                                                        $dNodeConfig = Set-AzVMSourceImage `
+                                                                        -VM $dNodeConfig `
+                                                                        -PublisherName $vMImage.PublisherName `
+                                                                        -Offer $vMImage.Offer `
+                                                                        -Skus $vMImage.Skus `
+                                                                        -Version $vMImage.Version
+                                                    }
 
-                                                Write-Verbose -Message $("✓ DNode {0} VM creation job started successfully" -f $dNodeNumber)
-                                            } `
-                                        catch
-                                            {
-                                                Write-Error $("✗ Failed to start DNode {0} VM creation: {1}" -f $dNodeNumber, $_.Exception.Message)
+                                                # set the dnode vm os disk
+                                                $dNodeConfig = Set-AzVMOSDisk `
+                                                                -VM $dNodeConfig `
+                                                                -CreateOption FromImage `
+                                                                -DeleteOption "Delete"
+
+                                                # set the dnode vm diagnostics
+                                                $dNodeConfig = Set-AzVMBootDiagnostic `
+                                                                -VM $dNodeConfig `
+                                                                -Disable:$true
+
+                                                # Add the management NIC to the dnode vm configuration
+                                                $dNodeConfig = Add-AzVMNetworkInterface `
+                                                                -VM $dNodeConfig `
+                                                                -Id $dNodeMGMTNIC.Id `
+                                                                -Primary:$true `
+                                                                -DeleteOption "Delete"
+
+                                                # Update sub-progress for VM creation
+                                                Write-Progress `
+                                                    -Status $("Creating DNode {0} VM ({1})..." -f $dNode, $currentMNodeSku) `
+                                                    -CurrentOperation $("Starting VM creation job for DNode {0} with SKU {1}..." -f $dNodeNumber, $currentMNodeSku) `
+                                                    -PercentComplete $(($dNode / $mNode.dNodeCount) * 100) `
+                                                    -Activity $("MNode Group {0} DNode Creation" -f $currentMNode) `
+                                                    -ParentId 3 `
+                                                    -Id 5
+
+                                                try
+                                                    {
+                                                        # Suppress warnings specifically for VM creation
+                                                        $dNodeJob = New-AzVM `
+                                                                        -ResourceGroupName $ResourceGroupName `
+                                                                        -Location $Region `
+                                                                        -VM $dNodeConfig `
+                                                                        -AsJob `
+                                                                        -WarningAction SilentlyContinue
+
+                                                        # Track job-to-VM mapping for meaningful error reporting
+                                                        $vmJobMapping[$dNodeJob.Id] =  @{
+                                                                                            VMName = $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNodeNumber)
+                                                                                            VMSku = $("{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix)
+                                                                                            NodeType = "DNode"
+                                                                                            NodeNumber = $dNodeNumber
+                                                                                            MNodeGroup = $currentMNode
+                                                                                            MNodePhysicalSize = $currentMNodePhysicalSize
+                                                                                        }
+
+                                                        Write-Verbose -Message $("✓ DNode {0} VM creation job started successfully" -f $dNodeNumber)
+                                                    } `
+                                                catch
+                                                    {
+                                                        Write-Error $("✗ Failed to start DNode {0} VM creation: {1}" -f $dNodeNumber, $_.Exception.Message)
+                                                    }
                                             }
+
+                                        if ($mNodeAvailabilitySet)
+                                            {
+                                                # get the mnode availability set to assess its state
+                                                $mNodeAvailabilitySetComplete = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -Name $mNodeAvailabilitySet.Name
+                                                Write-Verbose -Message $("✓ MNode availability set '{0}' created with {1} MNodes." -f $mNodeAvailabilitySetComplete.Name, $mNodeAvailabilitySetComplete)
+                                                Write-Verbose -Message $("✓ MNode availability set '{0}' is assigned to proximity placement group '{1}'." -f $mNodeAvailabilitySetComplete.Name, $mNodeProximityPlacementGroup.Name)
+                                            }
+
+                                        $mNodeProximityPlacementGroup = $null
+                                        $dNodeStartCount += $currentDNodeCount
+
+                                        # Clean up this MNode group's sub-progress bar as it's complete
+                                        Write-Progress -Activity $("MNode Group {0} DNode Creation" -f $currentMNode) -Id 5 -Completed
                                     }
-
-                                if ($mNodeAvailabilitySet)
-                                    {
-                                        # get the mnode availability set to assess its state
-                                        $mNodeAvailabilitySetComplete = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -Name $mNodeAvailabilitySet.Name
-                                        Write-Verbose -Message $("✓ MNode availability set '{0}' created with {1} MNodes." -f $mNodeAvailabilitySetComplete.Name, $mNodeAvailabilitySetComplete)
-                                        Write-Verbose -Message $("✓ MNode availability set '{0}' is assigned to proximity placement group '{1}'." -f $mNodeAvailabilitySetComplete.Name, $mNodeProximityPlacementGroup.Name)
-                                    }
-
-                                $mNodeProximityPlacementGroup = $null
-                                $dNodeStartCount += $currentDNodeCount
-
-                                # Clean up this MNode group's sub-progress bar as it's complete
-                                Write-Progress -Activity $("MNode Group {0} DNode Creation" -f $currentMNode) -Id 5 -Completed
-                            }
                             }
 
                         # ========================================================================================================

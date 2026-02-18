@@ -824,6 +824,105 @@ function Test-SilkResourceDeployment
                 Write-Verbose -Message $("=== Starting Silk Resource Deployment Test Script ===")
                 Write-Verbose -Message $("Script started at: {0}" -f $StartTime.ToString("yyyy-MM-dd HH:mm:ss"))
 
+
+                # ===============================================================================
+                # CNode SKU Configuration Object
+                # ===============================================================================
+                # Maps friendly CNode names to their corresponding Azure VM SKUs
+                # CNode Types:
+                # - Standard_D*_v*: Basic compute, minimal memory (No_Increased_Logical_Capacity)
+                # - Standard_L*_v*: High-speed local SSD storage (Read_Cache_Enabled)
+                # - Standard_E*_v*: High memory, most commonly used (Increased_Logical_Capacity)
+
+                # Production CNode SKU Configuration
+                # Actual production deployments use 64 vCPU SKUs for high performance
+                $cNodeSizeObject = @(
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "as_v6"; QuotaFamily = "Standard Dav6 Family vCPUs";  cNodeFriendlyName = "No_Increased_Logical_Capacity_AMD"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "as_v5"; QuotaFamily = "Standard Dasv5 Family vCPUs"; cNodeFriendlyName = "No_Increased_Logical_Capacity_AMD_alt"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "s_v5";  QuotaFamily = "Standard Dsv5 Family vCPUs";  cNodeFriendlyName = "No_Increased_Logical_Capacity"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "as_v4"; QuotaFamily = "Standard Lasv4 Family vCPUs"; cNodeFriendlyName = "Read_Cache_Enabled_AMD"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "as_v3"; QuotaFamily = "Standard Lasv3 Family vCPUs"; cNodeFriendlyName = "Read_Cache_Enabled_AMD_alt"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "s_v3";  QuotaFamily = "Standard Lsv3 Family vCPUs";  cNodeFriendlyName = "Read_Cache_Enabled"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "as_v6"; QuotaFamily = "Standard Eav6 Family vCPUs";  cNodeFriendlyName = "Increased_Logical_Capacity_AMD"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "as_v5"; QuotaFamily = "Standard Easv5 Family vCPUs"; cNodeFriendlyName = "Increased_Logical_Capacity_AMD_alt"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "s_v5";  QuotaFamily = "Standard Esv5 Family vCPUs";  cNodeFriendlyName = "Increased_Logical_Capacity"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 32; vmSkuSuffix = "as_v5"; QuotaFamily = "Standard Easv3 Family vCPUs"; cNodeFriendlyName = "Entry_Level"};
+                                    )
+
+                if ($Development)
+                    {
+                        Write-Verbose -Message $("Running in Development Mode, dynamically generating reduced CNode configuration for faster deployment.")
+
+                        # Generate development configuration by transforming production configuration
+                        # Lsv3 series has minimum of 8 vCPU, others can use 2 vCPU
+                        $cNodeSizeObject = $cNodeSizeObject | ForEach-Object    {
+                                                                                    # Determine development vCPU based on SKU series minimum vcpu count requirements
+                                                                                    $devVcpu = if ($_.vmSkuPrefix -eq 'Standard_L' -and $_.vmSkuSuffix -match 's_v3') { 8 } else { 2 }
+
+                                                                                    [pscustomobject]@{
+                                                                                                        vmSkuPrefix = $_.vmSkuPrefix
+                                                                                                        vCPU = $devVcpu
+                                                                                                        vmSkuSuffix = $_.vmSkuSuffix
+                                                                                                        QuotaFamily = $_.QuotaFamily
+                                                                                                        cNodeFriendlyName = $_.cNodeFriendlyName
+                                                                                                    }
+                                                                                }
+                    }
+
+                # ===============================================================================
+                # MNode/DNode SKU Configuration Object
+                # ===============================================================================
+                # Maps storage capacity to Azure VM SKUs for MNode groups and their associated DNodes
+                # Each MNode manages a group of DNodes providing specific storage capacity
+                #
+                # Lsv3 Series (NVMe SSD storage - older generation, proven stability):
+                # - 19.5 TiB: Standard_L8s_v3  (8 vCPU, 64 GB RAM, local NVMe storage)
+                # - 39.1 TiB: Standard_L16s_v3 (16 vCPU, 128 GB RAM, local NVMe storage)
+                # - 78.2 TiB: Standard_L32s_v3 (32 vCPU, 256 GB RAM, local NVMe storage)
+                #
+                # Laosv4 Series (newer generation with higher density and efficiency):
+                # - 14.67 TiB: Standard_L2aos_v4  (2 vCPU, latest storage technology)
+                # - 29.34 TiB: Standard_L4aos_v4  (4 vCPU, latest storage technology)
+                # - 58.67 TiB: Standard_L8aos_v4  (8 vCPU, latest storage technology)
+                # - 88.01 TiB: Standard_L12aos_v4 (12 vCPU, latest storage technology)
+                # - 117.35 TiB: Standard_L16aos_v4 (16 vCPU, latest storage technology)
+
+                # Production MNode/DNode SKU Configuration
+                # Actual production deployments use 16 DNodes per MNode for high availability
+                $mNodeSizeObject = @(
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "s_v3";   PhysicalSize = 19.5;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "s_v3";   PhysicalSize = 39.1;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 32;   vmSkuSuffix = "s_v3";   PhysicalSize = 78.2;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 2;    vmSkuSuffix = "aos_v4"; PhysicalSize = 14.67;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 4;    vmSkuSuffix = "aos_v4"; PhysicalSize = 29.34;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "aos_v4"; PhysicalSize = 58.67;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 12;   vmSkuSuffix = "aos_v4"; PhysicalSize = 88.01;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "aos_v4"; PhysicalSize = 117.35;  QuotaFamily = "Standard Laosv4 Family vCPUs"}
+                                    )
+
+                if ($Development)
+                    {
+                        Write-Verbose -Message $("Running in Development Mode, dynamically generating reduced MNode/DNode configuration for faster deployment.")
+
+                        # Generate development configuration by transforming production configuration
+                        # Lsv3 series has minimum of 8 vCPU, Laosv4 can use 2 vCPU
+                        # Reduce dNodeCount from 16 to 1 for faster testing
+                        $mNodeSizeObject = $mNodeSizeObject | ForEach-Object    {
+                                                                                    # Determine development vCPU based on SKU series minimum vcpu count requirements
+                                                                                    $devVcpu = if ($_.vmSkuSuffix -eq $('s_v3')) { 8 } else { 2 }
+
+                                                                                    [pscustomobject]@{
+                                                                                                        dNodeCount = 1
+                                                                                                        vmSkuPrefix = $_.vmSkuPrefix
+                                                                                                        vCPU = $devVcpu
+                                                                                                        vmSkuSuffix = $_.vmSkuSuffix
+                                                                                                        PhysicalSize = $_.PhysicalSize
+                                                                                                        QuotaFamily = $_.QuotaFamily
+                                                                                                     }
+                                                                                }
+                    }
+
+
                 # ========================================================================================================
                 # Known Preview/New SKU Families Configuration
                 # ========================================================================================================
@@ -1510,108 +1609,12 @@ function Test-SilkResourceDeployment
                     }
 
 
-                # ===============================================================================
-                # CNode SKU Configuration Object
-                # ===============================================================================
-                # Maps friendly CNode names to their corresponding Azure VM SKUs
-                # CNode Types:
-                # - Standard_D*_v*: Basic compute, minimal memory (No_Increased_Logical_Capacity)
-                # - Standard_L*_v*: High-speed local SSD storage (Read_Cache_Enabled)
-                # - Standard_E*_v*: High memory, most commonly used (Increased_Logical_Capacity)
-
-                # Production CNode SKU Configuration
-                # Actual production deployments use 64 vCPU SKUs for high performance
-                $cNodeSizeObject = @(
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "as_v6"; QuotaFamily = "Standard Dav6 Family vCPUs";  cNodeFriendlyName = "No_Increased_Logical_Capacity_AMD"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "as_v5"; QuotaFamily = "Standard Dasv5 Family vCPUs"; cNodeFriendlyName = "No_Increased_Logical_Capacity_AMD_alt"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "s_v5";  QuotaFamily = "Standard Dsv5 Family vCPUs";  cNodeFriendlyName = "No_Increased_Logical_Capacity"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "as_v4"; QuotaFamily = "Standard Lasv4 Family vCPUs"; cNodeFriendlyName = "Read_Cache_Enabled_AMD"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "as_v3"; QuotaFamily = "Standard Lasv3 Family vCPUs"; cNodeFriendlyName = "Read_Cache_Enabled_AMD_alt"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "s_v3";  QuotaFamily = "Standard Lsv3 Family vCPUs";  cNodeFriendlyName = "Read_Cache_Enabled"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "as_v6"; QuotaFamily = "Standard Eav6 Family vCPUs";  cNodeFriendlyName = "Increased_Logical_Capacity_AMD"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "as_v5"; QuotaFamily = "Standard Easv5 Family vCPUs"; cNodeFriendlyName = "Increased_Logical_Capacity_AMD_alt"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "s_v5";  QuotaFamily = "Standard Esv5 Family vCPUs";  cNodeFriendlyName = "Increased_Logical_Capacity"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 32; vmSkuSuffix = "as_v5"; QuotaFamily = "Standard Easv3 Family vCPUs"; cNodeFriendlyName = "Entry_Level"};
-                                    )
-
-                if ($Development)
-                    {
-                        Write-Verbose -Message $("Running in Development Mode, dynamically generating reduced CNode configuration for faster deployment.")
-
-                        # Generate development configuration by transforming production configuration
-                        # Lsv3 series has minimum of 8 vCPU, others can use 2 vCPU
-                        $cNodeSizeObject = $cNodeSizeObject | ForEach-Object    {
-                                                                                    # Determine development vCPU based on SKU series minimum requirements
-                                                                                    $devVcpu = if ($_.vmSkuPrefix -eq 'Standard_L') { 8 } else { 2 }
-
-                                                                                    [pscustomobject]@{
-                                                                                                        vmSkuPrefix = $_.vmSkuPrefix
-                                                                                                        vCPU = $devVcpu
-                                                                                                        vmSkuSuffix = $_.vmSkuSuffix
-                                                                                                        QuotaFamily = $_.QuotaFamily
-                                                                                                        cNodeFriendlyName = $_.cNodeFriendlyName
-                                                                                                    }
-                                                                                }
-                    }
-
                 # Output current CNode size object configuration
                 foreach ($cNodeSize in $cNodeSizeObject)
                     {
                         Write-Verbose -Message $("CNode SKU: {0}{1}{2} with friendly name '{3}'" -f $cNodeSize.vmSkuPrefix, $cNodeSize.vCPU, $cNodeSize.vmSkuSuffix, $cNodeSize.cNodeFriendlyName)
                     }
 
-                # ===============================================================================
-                # MNode/DNode SKU Configuration Object
-                # ===============================================================================
-                # Maps storage capacity to Azure VM SKUs for MNode groups and their associated DNodes
-                # Each MNode manages a group of DNodes providing specific storage capacity
-                #
-                # Lsv3 Series (NVMe SSD storage - older generation, proven stability):
-                # - 19.5 TiB: Standard_L8s_v3  (8 vCPU, 64 GB RAM, local NVMe storage)
-                # - 39.1 TiB: Standard_L16s_v3 (16 vCPU, 128 GB RAM, local NVMe storage)
-                # - 78.2 TiB: Standard_L32s_v3 (32 vCPU, 256 GB RAM, local NVMe storage)
-                #
-                # Laosv4 Series (newer generation with higher density and efficiency):
-                # - 14.67 TiB: Standard_L2aos_v4  (2 vCPU, latest storage technology)
-                # - 29.34 TiB: Standard_L4aos_v4  (4 vCPU, latest storage technology)
-                # - 58.67 TiB: Standard_L8aos_v4  (8 vCPU, latest storage technology)
-                # - 88.01 TiB: Standard_L12aos_v4 (12 vCPU, latest storage technology)
-                # - 117.35 TiB: Standard_L16aos_v4 (16 vCPU, latest storage technology)
-
-                # Production MNode/DNode SKU Configuration
-                # Actual production deployments use 16 DNodes per MNode for high availability
-                $mNodeSizeObject = @(
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "s_v3";   PhysicalSize = 19.5;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "s_v3";   PhysicalSize = 39.1;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 32;   vmSkuSuffix = "s_v3";   PhysicalSize = 78.2;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 2;    vmSkuSuffix = "aos_v4"; PhysicalSize = 14.67;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 4;    vmSkuSuffix = "aos_v4"; PhysicalSize = 29.34;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "aos_v4"; PhysicalSize = 58.67;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 12;   vmSkuSuffix = "aos_v4"; PhysicalSize = 88.01;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "aos_v4"; PhysicalSize = 117.35;  QuotaFamily = "Standard Laosv4 Family vCPUs"}
-                                    )
-
-                if ($Development)
-                    {
-                        Write-Verbose -Message $("Running in Development Mode, dynamically generating reduced MNode/DNode configuration for faster deployment.")
-
-                        # Generate development configuration by transforming production configuration
-                        # Lsv3 series has minimum of 8 vCPU, Laosv4 can use 2 vCPU
-                        # Reduce dNodeCount from 16 to 1 for faster testing
-                        $mNodeSizeObject = $mNodeSizeObject | ForEach-Object    {
-                                                                                    # Determine development vCPU based on SKU series minimum requirements
-                                                                                    $devVcpu = if ($_.vmSkuSuffix -eq $('s_v3')) { 8 } else { 2 }
-
-                                                                                    [pscustomobject]@{
-                                                                                                        dNodeCount = 1
-                                                                                                        vmSkuPrefix = $_.vmSkuPrefix
-                                                                                                        vCPU = $devVcpu
-                                                                                                        vmSkuSuffix = $_.vmSkuSuffix
-                                                                                                        PhysicalSize = $_.PhysicalSize
-                                                                                                        QuotaFamily = $_.QuotaFamily
-                                                                                                     }
-                                                                                }
-                    }
 
                 # Output current MNode/DNode size object configuration
                 foreach($mNodeSizedetail in $mNodeSizeObject)

@@ -1707,28 +1707,18 @@ function Test-SilkResourceDeployment
                     } `
                 elseif ($CNodeCount -and $ConfigImport.sdp.read_cache_enabled)
                     {
-                        # JSON config fallback: read_cache_enabled maps to Read_Cache_Enabled (no AMD variant available)
-                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "Read_Cache_Enabled" }
-                    } `
-                elseif ($CNodeCount -and $ConfigImport.sdp.increased_logical_capacity -and $ConfigImport.sdp.amd_sku)
-                    {
-                        # JSON config fallback: increased_logical_capacity + amd_sku maps to Increased_Logical_Capacity_AMD
-                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "Increased_Logical_Capacity_AMD" }
+                        # JSON config fallback: read_cache_enabled maps to Read_Cache_Enabled
+                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq $("Read_Cache_Enabled{0}" -f $ConfigImport.sdp.c_node_sku_variant) }
                     } `
                 elseif ($CNodeCount -and $ConfigImport.sdp.increased_logical_capacity)
                     {
-                        # JSON config fallback: increased_logical_capacity maps to Increased_Logical_Capacity (Intel)
-                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "Increased_Logical_Capacity" }
-                    } `
-                elseif ($CNodeCount -and $ConfigImport.sdp.amd_sku -and (!$ConfigImport.sdp.increased_logical_capacity -and !$ConfigImport.sdp.read_cache_enabled))
-                    {
-                        # JSON config fallback: amd_sku with no other flags maps to No_Increased_Logical_Capacity_AMD
-                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "No_Increased_Logical_Capacity_AMD" }
+                        # JSON config fallback: increased_logical_capacity maps to Increased_Logical_Capacity
+                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq $("Increased_Logical_Capacity{0}" -f $ConfigImport.sdp.c_node_sku_variant) }
                     } `
                 elseif ($CNodeCount -and (!$ConfigImport.sdp.increased_logical_capacity -and !$ConfigImport.sdp.read_cache_enabled))
                     {
-                        # JSON config fallback: no flags set maps to No_Increased_Logical_Capacity (Intel)
-                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "No_Increased_Logical_Capacity" }
+                        # JSON config fallback: no flags maps to No_Increased_Logical_Capacity
+                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq $("No_Increased_Logical_Capacity{0}" -f $ConfigImport.sdp.c_node_sku_variant) }
                     } `
                 else
                     {

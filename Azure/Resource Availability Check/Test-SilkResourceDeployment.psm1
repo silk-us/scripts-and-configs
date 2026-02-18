@@ -408,8 +408,8 @@ function Test-SilkResourceDeployment
                 # Path to JSON configuration file containing all deployment parameters
                 # When specified, all parameters are loaded from file unless overridden by command line
                 # Enables simplified deployment management and repeatability
-                [Parameter(ParameterSetName = 'ChecklistJSON',              Mandatory = $true, HelpMessage = $("Enter the full path to a JSON configuration file containing deployment parameters. Example: C:\\\\configs\\\\silk-deployment.json"))]
-                [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON", Mandatory = $true, HelpMessage = $("Enter the full path to a JSON configuration file containing deployment parameters. Example: C:\\\\configs\\\\silk-deployment.json"))]
+                [Parameter(ParameterSetName = 'ChecklistJSON',              Mandatory = $true, HelpMessage = $("Enter the full path to a JSON configuration file containing deployment parameters. Example: C:\configs\silk-deployment.json"))]
+                [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON", Mandatory = $true, HelpMessage = $("Enter the full path to a JSON configuration file containing deployment parameters. Example: C:\configs\silk-deployment.json"))]
                 [string]
                 $ChecklistJSON,
 

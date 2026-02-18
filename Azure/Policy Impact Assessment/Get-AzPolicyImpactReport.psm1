@@ -813,7 +813,7 @@ function Get-AzPolicyImpactReport
                 $resourceGroupLevelAssignments =    @()
                 $resourceGroupScopes =              @()
                 $uniqueResourceGroups =             @{}
-                
+
                 # Add parameter-specified resource groups
                 if ($FlexResourceGroupName)
                     {
@@ -831,7 +831,7 @@ function Get-AzPolicyImpactReport
                     {
                         $uniqueResourceGroups[$UMIResourceGroup] = $true
                     }
-                
+
                 # Add resource groups from discovered resource IDs
                 foreach ($resourceId in $vnetResourceIds)
                     {
@@ -855,7 +855,7 @@ function Get-AzPolicyImpactReport
                                 $uniqueResourceGroups[$Matches[1]] = $true
                             }
                     }
-                
+
                 # Build resource group scopes from unique RG names
                 foreach ($rgName in $uniqueResourceGroups.Keys)
                     {
@@ -882,7 +882,7 @@ function Get-AzPolicyImpactReport
                                         Write-Verbose $("    Could not retrieve policies for RG: {0}" -f $rgScope)
                                     }
                             }
-                        
+
                         if ($resourceGroupLevelAssignments.Count -gt 0)
                             {
                                 Write-Host $("  Found {0} Resource Group-level policy assignment(s)" -f $resourceGroupLevelAssignments.Count) -ForegroundColor Gray
@@ -899,7 +899,7 @@ function Get-AzPolicyImpactReport
                 if ($vnetResourceIds.Count -gt 0 -or $nsgResourceIds.Count -gt 0 -or $umiResourceIds.Count -gt 0)
                     {
                         Write-Host $("  Checking for resource-level policy assignments...") -ForegroundColor Gray
-                        
+
                         foreach ($resourceId in $vnetResourceIds)
                             {
                                 try
@@ -916,7 +916,7 @@ function Get-AzPolicyImpactReport
                                         Write-Verbose $("    Could not retrieve policies for VNet: {0}" -f $resourceId)
                                     }
                             }
-                        
+
                         foreach ($resourceId in $nsgResourceIds)
                             {
                                 try
@@ -933,7 +933,7 @@ function Get-AzPolicyImpactReport
                                         Write-Verbose $("    Could not retrieve policies for NSG: {0}" -f $resourceId)
                                     }
                             }
-                        
+
                         foreach ($resourceId in $umiResourceIds)
                             {
                                 try
@@ -950,7 +950,7 @@ function Get-AzPolicyImpactReport
                                         Write-Verbose $("    Could not retrieve policies for UMI: {0}" -f $resourceId)
                                     }
                             }
-                        
+
                         if ($resourceLevelAssignments.Count -gt 0)
                             {
                                 Write-Host $("  Found {0} additional resource-level policy assignment(s)" -f $resourceLevelAssignments.Count) -ForegroundColor Gray
@@ -961,7 +961,7 @@ function Get-AzPolicyImpactReport
                                 Write-Host $("  No resource-level policy assignments found") -ForegroundColor Gray
                             }
                     }
-                
+
                 Write-Host $("  Total policy assignments to analyze: {0}{1}" -f $allPolicyAssignments.Count, [Environment]::NewLine) -ForegroundColor Gray
 
                 foreach ($assignment in $allPolicyAssignments)

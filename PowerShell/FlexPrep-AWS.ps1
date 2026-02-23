@@ -585,26 +585,31 @@ try {
 }
 
 if ($URI) {
-    Write-Host "Uploading file to S3..." -ForegroundColor Cyan
+    Write-Host "Uploading file to Azure Storage..." -ForegroundColor Cyan
     try {
-        if ($URI -match '^s3://') {
-            # s3:// URI format - parse bucket and prefix
-            $s3Path = $URI -replace '^s3://', ''
-            $bucketName = $s3Path.Split('/')[0]
-            $keyPrefix = ($s3Path.Split('/', 2) | Select-Object -Last 1).TrimEnd('/')
-            $s3Key = if ($keyPrefix -and $keyPrefix -ne $bucketName) { "$keyPrefix/$outputFile" } else { $outputFile }
+        # Parse container name and SAS token from URI
+        $SASuri = [Uri]$URI
+        $containerName = $SASuri.AbsolutePath.TrimStart('/')
+        $sasToken = $SASuri.Query
+        $storageAccount = $SASuri.Host.Split('.')[0]
 
-            Write-S3Object -BucketName $bucketName -Key $s3Key -File $outputFile
-            Write-Host "File uploaded successfully to s3://$bucketName/$s3Key" -ForegroundColor Green
-        } else {
-            # Pre-signed URL - use Invoke-WebRequest to upload
-            $filePath = (Get-Item -Path $outputFile).FullName
-            $fileBytes = [System.IO.File]::ReadAllBytes($filePath)
-            Invoke-WebRequest -Uri $URI -Method PUT -ContentType 'application/json' -Body $fileBytes -UseBasicParsing | Out-Null
-            Write-Host "File uploaded successfully via pre-signed URL." -ForegroundColor Green
+        # Build blob upload URL using Azure Blob Storage REST API
+        $blobUrl = "https://$storageAccount.blob.core.windows.net/$containerName/$outputFile$sasToken"
+        
+        # Read file as bytes
+        $file = Get-Item -Path $outputFile
+        $fileBytes = [System.IO.File]::ReadAllBytes($file.FullName)
+
+        # Upload using REST API (works without Azure modules)
+        $headers = @{
+            'x-ms-blob-type' = 'BlockBlob'
+            'Content-Type' = 'application/json'
         }
+        
+        Invoke-RestMethod -Uri $blobUrl -Method Put -Headers $headers -Body $fileBytes -UseBasicParsing | Out-Null
+        Write-Host "File uploaded successfully to $storageAccount/$containerName/$outputFile" -ForegroundColor Green
     } catch {
-        Write-Host "Error uploading file to S3: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "Error uploading file to Azure Storage: $($_.Exception.Message)" -ForegroundColor Red
         Write-Host "Local file available at: $outputFile" -ForegroundColor Yellow
     }
 }

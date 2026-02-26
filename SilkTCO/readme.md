@@ -5,7 +5,7 @@ The Silk TCO export process supports both **Azure** and **AWS** cloud platforms.
 
 ## Prerequisites
 
-### Step 1: Install the SilkTCO Module
+## Step 1: Install the SilkTCO Module
 Install the `SilkTCO` module from the PowerShell Gallery:
 
 ```powershell
@@ -13,9 +13,11 @@ Install-Module SilkTCO -Force
 Import-Module SilkTCO
 ```
 
-### Step 2: Install Cloud Platform Modules
+## Step 2: Install Cloud Platform Modules
 
-#### For Azure
+### For Azure
+
+#### Either:
 Install the required Azure PowerShell modules:
 
 ```powershell
@@ -32,7 +34,13 @@ Connect-AzAccount
 Set-AzContext -Subscription "Your-Subscription-Name"
 ```
 
-#### For AWS
+#### Or:
+
+Connect to an Azure cloud shell session and install / run the module there. 
+
+### For AWS
+
+#### Either:
 Install the required AWS Tools for PowerShell modules:
 
 ```powershell
@@ -47,6 +55,8 @@ Then configure your AWS credentials:
 Set-AWSCredential -AccessKey "YOUR_ACCESS_KEY" -SecretKey "YOUR_SECRET_KEY" -StoreAs default
 Set-DefaultAWSRegion -Region "us-east-1"
 ```
+
+#### Or:
 
 You can also run from within the AWS Cloud Shell. Simply fire up a cloud shell session from the desired acount and region. 
 

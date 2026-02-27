@@ -1564,6 +1564,46 @@
           "*"
         ],
         "SourceAddressPrefix": [
+          "AzureLoadBalancer"
+        ],
+        "DestinationAddressPrefix": [
+          "external_mgmt_cidr"
+        ],
+        "Access": "Allow",
+        "Priority": 3000,
+        "Direction": "Inbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-load-balancer-in"
+      },
+      {
+        "Description":  "",
+        "Protocol": "*",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "*"
+        ],
+        "SourceAddressPrefix": [
+          "VirtualNetwork"
+        ],
+        "DestinationAddressPrefix": [
+          "VirtualNetwork"
+        ],
+        "Access": "Deny",
+        "Priority": 4000,
+        "Direction": "Inbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-deny-all-vnet-in"
+      },
+      {
+        "Description":  "",
+        "Protocol": "*",
+        "SourcePortRange": [
+          "*"
+        ],
+        "DestinationPortRange": [
+          "*"
+        ],
+        "SourceAddressPrefix": [
           "external_mgmt_cidr"
         ],
         "DestinationAddressPrefix": [
@@ -1956,63 +1996,23 @@
       },
       {
         "Description":  "",
-        "Protocol": "*",
+        "Protocol": "Tcp",
         "SourcePortRange": [
           "*"
         ],
         "DestinationPortRange": [
-          "*"
+          "443"
         ],
         "SourceAddressPrefix": [
-          "VirtualNetwork"
-        ],
-        "DestinationAddressPrefix": [
-          "VirtualNetwork"
-        ],
-        "Access": "Deny",
-        "Priority": 4000,
-        "Direction": "Inbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-deny-all-vnet-in"
-      },
-      {
-        "Description":  "",
-        "Protocol": "*",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "*"
-        ],
-        "SourceAddressPrefix": [
-          "*"
-        ],
-        "DestinationAddressPrefix": [
-          "*"
-        ],
-        "Access": "Deny",
-        "Priority": 4000,
-        "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-deny-all-out"
-      },
-      {
-        "Description":  "",
-        "Protocol": "*",
-        "SourcePortRange": [
-          "*"
-        ],
-        "DestinationPortRange": [
-          "*"
-        ],
-        "SourceAddressPrefix": [
-          "AzureLoadBalancer"
-        ],
-        "DestinationAddressPrefix": [
           "external_mgmt_cidr"
         ],
+        "DestinationAddressPrefix": [
+          "AzureContainerRegistry"
+        ],
         "Access": "Allow",
-        "Priority": 3000,
-        "Direction": "Inbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-load-balancer-in"
+        "Priority": 3980,
+        "Direction": "Outbound",
+        "Name": "flex-cluster-XXXX-network-external-mgmt-allow-https-to-acr-out"
       },
       {
         "Description":  "",
@@ -2036,23 +2036,23 @@
       },
       {
         "Description":  "",
-        "Protocol": "Tcp",
+        "Protocol": "*",
         "SourcePortRange": [
           "*"
         ],
         "DestinationPortRange": [
-          "443"
+          "*"
         ],
         "SourceAddressPrefix": [
-          "external_mgmt_cidr"
+          "*"
         ],
         "DestinationAddressPrefix": [
-          "AzureContainerRegistry"
+          "*"
         ],
-        "Access": "Allow",
-        "Priority": 3980,
+        "Access": "Deny",
+        "Priority": 4000,
         "Direction": "Outbound",
-        "Name": "flex-cluster-XXXX-network-external-mgmt-allow-https-to-acr-out"
+        "Name": "flex-cluster-XXXX-network-external-mgmt-deny-all-out"
       }
     ]
   }

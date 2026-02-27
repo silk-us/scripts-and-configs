@@ -408,8 +408,8 @@ function Test-SilkResourceDeployment
                 # Path to JSON configuration file containing all deployment parameters
                 # When specified, all parameters are loaded from file unless overridden by command line
                 # Enables simplified deployment management and repeatability
-                [Parameter(ParameterSetName = 'ChecklistJSON',              Mandatory = $true, HelpMessage = $("Enter the full path to a JSON configuration file containing deployment parameters. Example: C:\\\\configs\\\\silk-deployment.json"))]
-                [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON", Mandatory = $true, HelpMessage = $("Enter the full path to a JSON configuration file containing deployment parameters. Example: C:\\\\configs\\\\silk-deployment.json"))]
+                [Parameter(ParameterSetName = 'ChecklistJSON',              Mandatory = $true, HelpMessage = $("Enter the full path to a JSON configuration file containing deployment parameters. Example: C:\configs\silk-deployment.json"))]
+                [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON", Mandatory = $true, HelpMessage = $("Enter the full path to a JSON configuration file containing deployment parameters. Example: C:\configs\silk-deployment.json"))]
                 [string]
                 $ChecklistJSON,
 
@@ -417,24 +417,24 @@ function Test-SilkResourceDeployment
                 # Increased_Logical_Capacity (Standard_E64s_v5) - Most common, high memory
                 # Read_Cache_Enabled (Standard_L64s_v3) - High-speed local SSD storage
                 # No_Increased_Logical_Capacity (Standard_D64s_v5) - Basic compute, rarely used
-                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_AMD (Standard_E64as_v6), Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled (Standard_L64s_v3), No_Increased_Logical_Capacity_AMD (Standard_D64as_v6), No_Increased_Logical_Capacity (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_AMD (Standard_E64as_v6), Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled (Standard_L64s_v3), No_Increased_Logical_Capacity_AMD (Standard_D64as_v6), No_Increased_Logical_Capacity (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_AMD (Standard_E64as_v6), Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled (Standard_L64s_v3), No_Increased_Logical_Capacity_AMD (Standard_D64as_v6), No_Increased_Logical_Capacity (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_AMD (Standard_E64as_v6), Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled (Standard_L64s_v3), No_Increased_Logical_Capacity_AMD (Standard_D64as_v6), No_Increased_Logical_Capacity (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_AMD (Standard_E64as_v6), Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled (Standard_L64s_v3), No_Increased_Logical_Capacity_AMD (Standard_D64as_v6), No_Increased_Logical_Capacity (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
-                [ValidateSet("Increased_Logical_Capacity_AMD", "Increased_Logical_Capacity", "Read_Cache_Enabled", "No_Increased_Logical_Capacity_AMD", "No_Increased_Logical_Capacity", "Entry_Level")]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_AMD (Standard_E64as_v6), Increased_Logical_Capacity_AMD_alt (Standard_E64as_v5), Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled_AMD (Standard_L64as_v4), Read_Cache_Enabled_AMD_alt (Standard_L64as_v3), Read_Cache_Enabled (Standard_L64s_v3), No_Increased_Logical_Capacity_AMD (Standard_D64as_v6), No_Increased_Logical_Capacity_AMD_alt (Standard_D64as_v5), No_Increased_Logical_Capacity (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_AMD (Standard_E64as_v6), Increased_Logical_Capacity_AMD_alt (Standard_E64as_v5), Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled_AMD (Standard_L64as_v4), Read_Cache_Enabled_AMD_alt (Standard_L64as_v3), Read_Cache_Enabled (Standard_L64s_v3), No_Increased_Logical_Capacity_AMD (Standard_D64as_v6), No_Increased_Logical_Capacity_AMD_alt (Standard_D64as_v5), No_Increased_Logical_Capacity (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_AMD (Standard_E64as_v6), Increased_Logical_Capacity_AMD_alt (Standard_E64as_v5), Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled_AMD (Standard_L64as_v4), Read_Cache_Enabled_AMD_alt (Standard_L64as_v3), Read_Cache_Enabled (Standard_L64s_v3), No_Increased_Logical_Capacity_AMD (Standard_D64as_v6), No_Increased_Logical_Capacity_AMD_alt (Standard_D64as_v5), No_Increased_Logical_Capacity (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_AMD (Standard_E64as_v6), Increased_Logical_Capacity_AMD_alt (Standard_E64as_v5), Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled_AMD (Standard_L64as_v4), Read_Cache_Enabled_AMD_alt (Standard_L64as_v3), Read_Cache_Enabled (Standard_L64s_v3), No_Increased_Logical_Capacity_AMD (Standard_D64as_v6), No_Increased_Logical_Capacity_AMD_alt (Standard_D64as_v5), No_Increased_Logical_Capacity (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_AMD (Standard_E64as_v6), Increased_Logical_Capacity_AMD_alt (Standard_E64as_v5), Increased_Logical_Capacity (Standard_E64s_v5), Read_Cache_Enabled_AMD (Standard_L64as_v4), Read_Cache_Enabled_AMD_alt (Standard_L64as_v3), Read_Cache_Enabled (Standard_L64s_v3), No_Increased_Logical_Capacity_AMD (Standard_D64as_v6), No_Increased_Logical_Capacity_AMD_alt (Standard_D64as_v5), No_Increased_Logical_Capacity (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
+                [ValidateSet("Increased_Logical_Capacity_AMD", "Increased_Logical_Capacity_AMD_alt", "Increased_Logical_Capacity", "Read_Cache_Enabled_AMD", "Read_Cache_Enabled_AMD_alt", "Read_Cache_Enabled", "No_Increased_Logical_Capacity_AMD", "No_Increased_Logical_Capacity_AMD_alt", "No_Increased_Logical_Capacity", "Entry_Level")]
                 [string]
                 $CNodeFriendlyName,
 
                 # Explicit Azure VM SKU for CNode VMs when using direct SKU specification
                 # Standard_E64s_v5 (default) - High memory, Standard_L64s_v3 - SSD storage, Standard_D64s_v5 - Basic compute
                 # Alternative to CNodeFriendlyName for advanced scenarios requiring specific SKU control
-                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64s_v3 (supports read cache), Standard_D64as_v6 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64s_v3 (supports read cache), Standard_D64as_v6 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64s_v3 (supports read cache), Standard_D64as_v6 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64s_v3 (supports read cache), Standard_D64as_v6 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64s_v3 (supports read cache), Standard_D64as_v6 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
-                [ValidateSet("Standard_D64as_v6", "Standard_D64s_v5", "Standard_L64s_v3", "Standard_E64as_v6", "Standard_E64s_v5", "Standard_E32as_v5")]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6, Standard_E64as_v5 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64as_v4, Standard_L64as_v3 or Standard_L64s_v3 (supports read cache), Standard_D64as_v6, Standard_D64as_v5 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6, Standard_E64as_v5 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64as_v4, Standard_L64as_v3 or Standard_L64s_v3 (supports read cache), Standard_D64as_v6, Standard_D64as_v5 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6, Standard_E64as_v5 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64as_v4, Standard_L64as_v3 or Standard_L64s_v3 (supports read cache), Standard_D64as_v6, Standard_D64as_v5 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6, Standard_E64as_v5 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64as_v4, Standard_L64as_v3 or Standard_L64s_v3 (supports read cache), Standard_D64as_v6, Standard_D64as_v5 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6, Standard_E64as_v5 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64as_v4, Standard_L64as_v3 or Standard_L64s_v3 (supports read cache), Standard_D64as_v6, Standard_D64as_v5 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
+                [ValidateSet("Standard_D64as_v6", "Standard_D64s_v5", "Standard_D64as_v5", "Standard_L64as_v4", "Standard_L64as_v3", "Standard_L64s_v3", "Standard_E64as_v6", "Standard_E64s_v5", "Standard_E64as_v5", "Standard_E32as_v5")]
                 [string]
                 $CNodeSku,
 
@@ -823,6 +823,105 @@ function Test-SilkResourceDeployment
                 $StartTime = Get-Date
                 Write-Verbose -Message $("=== Starting Silk Resource Deployment Test Script ===")
                 Write-Verbose -Message $("Script started at: {0}" -f $StartTime.ToString("yyyy-MM-dd HH:mm:ss"))
+
+
+                # ===============================================================================
+                # CNode SKU Configuration Object
+                # ===============================================================================
+                # Maps friendly CNode names to their corresponding Azure VM SKUs
+                # CNode Types:
+                # - Standard_D*_v*: Basic compute, minimal memory (No_Increased_Logical_Capacity)
+                # - Standard_L*_v*: High-speed local SSD storage (Read_Cache_Enabled)
+                # - Standard_E*_v*: High memory, most commonly used (Increased_Logical_Capacity)
+
+                # Production CNode SKU Configuration
+                # Actual production deployments use 64 vCPU SKUs for high performance
+                $cNodeSizeObject = @(
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "as_v6"; QuotaFamily = "Standard Dav6 Family vCPUs";  cNodeFriendlyName = "No_Increased_Logical_Capacity_AMD"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "as_v5"; QuotaFamily = "Standard Dasv5 Family vCPUs"; cNodeFriendlyName = "No_Increased_Logical_Capacity_AMD_alt"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "s_v5";  QuotaFamily = "Standard Dsv5 Family vCPUs";  cNodeFriendlyName = "No_Increased_Logical_Capacity"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "as_v4"; QuotaFamily = "Standard Lasv4 Family vCPUs"; cNodeFriendlyName = "Read_Cache_Enabled_AMD"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "as_v3"; QuotaFamily = "Standard Lasv3 Family vCPUs"; cNodeFriendlyName = "Read_Cache_Enabled_AMD_alt"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "s_v3";  QuotaFamily = "Standard Lsv3 Family vCPUs";  cNodeFriendlyName = "Read_Cache_Enabled"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "as_v6"; QuotaFamily = "Standard Eav6 Family vCPUs";  cNodeFriendlyName = "Increased_Logical_Capacity_AMD"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "as_v5"; QuotaFamily = "Standard Easv5 Family vCPUs"; cNodeFriendlyName = "Increased_Logical_Capacity_AMD_alt"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "s_v5";  QuotaFamily = "Standard Esv5 Family vCPUs";  cNodeFriendlyName = "Increased_Logical_Capacity"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 32; vmSkuSuffix = "as_v5"; QuotaFamily = "Standard Easv3 Family vCPUs"; cNodeFriendlyName = "Entry_Level"};
+                                    )
+
+                if ($Development)
+                    {
+                        Write-Verbose -Message $("Running in Development Mode, dynamically generating reduced CNode configuration for faster deployment.")
+
+                        # Generate development configuration by transforming production configuration
+                        # Lsv3 series has minimum of 8 vCPU, others can use 2 vCPU
+                        $cNodeSizeObject = $cNodeSizeObject | ForEach-Object    {
+                                                                                    # Determine development vCPU based on SKU series minimum vcpu count requirements
+                                                                                    $devVcpu = if ($_.vmSkuPrefix -eq 'Standard_L' -and $_.vmSkuSuffix -match 's_v3') { 8 } else { 2 }
+
+                                                                                    [pscustomobject]@{
+                                                                                                        vmSkuPrefix = $_.vmSkuPrefix
+                                                                                                        vCPU = $devVcpu
+                                                                                                        vmSkuSuffix = $_.vmSkuSuffix
+                                                                                                        QuotaFamily = $_.QuotaFamily
+                                                                                                        cNodeFriendlyName = $_.cNodeFriendlyName
+                                                                                                    }
+                                                                                }
+                    }
+
+                # ===============================================================================
+                # MNode/DNode SKU Configuration Object
+                # ===============================================================================
+                # Maps storage capacity to Azure VM SKUs for MNode groups and their associated DNodes
+                # Each MNode manages a group of DNodes providing specific storage capacity
+                #
+                # Lsv3 Series (NVMe SSD storage - older generation, proven stability):
+                # - 19.5 TiB: Standard_L8s_v3  (8 vCPU, 64 GB RAM, local NVMe storage)
+                # - 39.1 TiB: Standard_L16s_v3 (16 vCPU, 128 GB RAM, local NVMe storage)
+                # - 78.2 TiB: Standard_L32s_v3 (32 vCPU, 256 GB RAM, local NVMe storage)
+                #
+                # Laosv4 Series (newer generation with higher density and efficiency):
+                # - 14.67 TiB: Standard_L2aos_v4  (2 vCPU, latest storage technology)
+                # - 29.34 TiB: Standard_L4aos_v4  (4 vCPU, latest storage technology)
+                # - 58.67 TiB: Standard_L8aos_v4  (8 vCPU, latest storage technology)
+                # - 88.01 TiB: Standard_L12aos_v4 (12 vCPU, latest storage technology)
+                # - 117.35 TiB: Standard_L16aos_v4 (16 vCPU, latest storage technology)
+
+                # Production MNode/DNode SKU Configuration
+                # Actual production deployments use 16 DNodes per MNode for high availability
+                $mNodeSizeObject = @(
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "s_v3";   PhysicalSize = 19.5;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "s_v3";   PhysicalSize = 39.1;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 32;   vmSkuSuffix = "s_v3";   PhysicalSize = 78.2;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 2;    vmSkuSuffix = "aos_v4"; PhysicalSize = 14.67;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 4;    vmSkuSuffix = "aos_v4"; PhysicalSize = 29.34;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "aos_v4"; PhysicalSize = 58.67;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 12;   vmSkuSuffix = "aos_v4"; PhysicalSize = 88.01;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "aos_v4"; PhysicalSize = 117.35;  QuotaFamily = "Standard Laosv4 Family vCPUs"}
+                                    )
+
+                if ($Development)
+                    {
+                        Write-Verbose -Message $("Running in Development Mode, dynamically generating reduced MNode/DNode configuration for faster deployment.")
+
+                        # Generate development configuration by transforming production configuration
+                        # Lsv3 series has minimum of 8 vCPU, Laosv4 can use 2 vCPU
+                        # Reduce dNodeCount from 16 to 1 for faster testing
+                        $mNodeSizeObject = $mNodeSizeObject | ForEach-Object    {
+                                                                                    # Determine development vCPU based on SKU series minimum vcpu count requirements
+                                                                                    $devVcpu = if ($_.vmSkuSuffix -eq $('s_v3')) { 8 } else { 2 }
+
+                                                                                    [pscustomobject]@{
+                                                                                                        dNodeCount = 1
+                                                                                                        vmSkuPrefix = $_.vmSkuPrefix
+                                                                                                        vCPU = $devVcpu
+                                                                                                        vmSkuSuffix = $_.vmSkuSuffix
+                                                                                                        PhysicalSize = $_.PhysicalSize
+                                                                                                        QuotaFamily = $_.QuotaFamily
+                                                                                                     }
+                                                                                }
+                    }
+
 
                 # ========================================================================================================
                 # Known Preview/New SKU Families Configuration
@@ -1510,104 +1609,12 @@ function Test-SilkResourceDeployment
                     }
 
 
-                # ===============================================================================
-                # CNode SKU Configuration Object
-                # ===============================================================================
-                # Maps friendly CNode names to their corresponding Azure VM SKUs
-                # CNode Types:
-                # - Standard_D*_v5: Basic compute, minimal memory (No_Increased_Logical_Capacity)
-                # - Standard_L*_v3: High-speed local SSD storage (Read_Cache_Enabled)
-                # - Standard_E*_v5: High memory, most commonly used (Increased_Logical_Capacity)
-
-                # Production CNode SKU Configuration
-                # Actual production deployments use 64 vCPU SKUs for high performance
-                $cNodeSizeObject = @(
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "as_v6"; QuotaFamily = "Standard Dasv6 Family vCPUs"; cNodeFriendlyName = "No_Increased_Logical_Capacity_AMD"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "s_v5";  QuotaFamily = "Standard Dsv5 Family vCPUs";  cNodeFriendlyName = "No_Increased_Logical_Capacity"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "s_v3";  QuotaFamily = "Standard Lsv3 Family vCPUs";  cNodeFriendlyName = "Read_Cache_Enabled"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "as_v6"; QuotaFamily = "Standard Easv6 Family vCPUs"; cNodeFriendlyName = "Increased_Logical_Capacity_AMD"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "s_v5";  QuotaFamily = "Standard Esv5 Family vCPUs";  cNodeFriendlyName = "Increased_Logical_Capacity"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 32; vmSkuSuffix = "as_v5"; QuotaFamily = "Standard Lsv3 Family vCPUs";  cNodeFriendlyName = "Entry_Level"};
-                                    )
-
-                if ($Development)
-                    {
-                        Write-Verbose -Message $("Running in Development Mode, dynamically generating reduced CNode configuration for faster deployment.")
-
-                        # Generate development configuration by transforming production configuration
-                        # Lsv3 series has minimum of 8 vCPU, others can use 2 vCPU
-                        $cNodeSizeObject = $cNodeSizeObject | ForEach-Object    {
-                                                                                    # Determine development vCPU based on SKU series minimum requirements
-                                                                                    $devVcpu = if ($_.vmSkuSuffix -eq $('s_v3')) { 8 } else { 2 }
-
-                                                                                    [pscustomobject]@{
-                                                                                                        vmSkuPrefix = $_.vmSkuPrefix
-                                                                                                        vCPU = $devVcpu
-                                                                                                        vmSkuSuffix = $_.vmSkuSuffix
-                                                                                                        QuotaFamily = $_.QuotaFamily
-                                                                                                        cNodeFriendlyName = $_.cNodeFriendlyName
-                                                                                                    }
-                                                                                }
-                    }
-
                 # Output current CNode size object configuration
                 foreach ($cNodeSize in $cNodeSizeObject)
                     {
                         Write-Verbose -Message $("CNode SKU: {0}{1}{2} with friendly name '{3}'" -f $cNodeSize.vmSkuPrefix, $cNodeSize.vCPU, $cNodeSize.vmSkuSuffix, $cNodeSize.cNodeFriendlyName)
                     }
 
-                # ===============================================================================
-                # MNode/DNode SKU Configuration Object
-                # ===============================================================================
-                # Maps storage capacity to Azure VM SKUs for MNode groups and their associated DNodes
-                # Each MNode manages a group of DNodes providing specific storage capacity
-                #
-                # Lsv3 Series (NVMe SSD storage - older generation, proven stability):
-                # - 19.5 TiB: Standard_L8s_v3  (8 vCPU, 64 GB RAM, local NVMe storage)
-                # - 39.1 TiB: Standard_L16s_v3 (16 vCPU, 128 GB RAM, local NVMe storage)
-                # - 78.2 TiB: Standard_L32s_v3 (32 vCPU, 256 GB RAM, local NVMe storage)
-                #
-                # Laosv4 Series (newer generation with higher density and efficiency):
-                # - 14.67 TiB: Standard_L2aos_v4  (2 vCPU, latest storage technology)
-                # - 29.34 TiB: Standard_L4aos_v4  (4 vCPU, latest storage technology)
-                # - 58.67 TiB: Standard_L8aos_v4  (8 vCPU, latest storage technology)
-                # - 88.01 TiB: Standard_L12aos_v4 (12 vCPU, latest storage technology)
-                # - 117.35 TiB: Standard_L16aos_v4 (16 vCPU, latest storage technology)
-
-                # Production MNode/DNode SKU Configuration
-                # Actual production deployments use 16 DNodes per MNode for high availability
-                $mNodeSizeObject = @(
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "s_v3";   PhysicalSize = 19.5;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "s_v3";   PhysicalSize = 39.1;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 32;   vmSkuSuffix = "s_v3";   PhysicalSize = 78.2;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 2;    vmSkuSuffix = "aos_v4"; PhysicalSize = 14.67;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 4;    vmSkuSuffix = "aos_v4"; PhysicalSize = 29.34;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "aos_v4"; PhysicalSize = 58.67;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 12;   vmSkuSuffix = "aos_v4"; PhysicalSize = 88.01;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "aos_v4"; PhysicalSize = 117.35;  QuotaFamily = "Standard Laosv4 Family vCPUs"}
-                                    )
-
-                if ($Development)
-                    {
-                        Write-Verbose -Message $("Running in Development Mode, dynamically generating reduced MNode/DNode configuration for faster deployment.")
-
-                        # Generate development configuration by transforming production configuration
-                        # Lsv3 series has minimum of 8 vCPU, Laosv4 can use 2 vCPU
-                        # Reduce dNodeCount from 16 to 1 for faster testing
-                        $mNodeSizeObject = $mNodeSizeObject | ForEach-Object    {
-                                                                                    # Determine development vCPU based on SKU series minimum requirements
-                                                                                    $devVcpu = if ($_.vmSkuSuffix -eq $('s_v3')) { 8 } else { 2 }
-
-                                                                                    [pscustomobject]@{
-                                                                                                        dNodeCount = 1
-                                                                                                        vmSkuPrefix = $_.vmSkuPrefix
-                                                                                                        vCPU = $devVcpu
-                                                                                                        vmSkuSuffix = $_.vmSkuSuffix
-                                                                                                        PhysicalSize = $_.PhysicalSize
-                                                                                                        QuotaFamily = $_.QuotaFamily
-                                                                                                     }
-                                                                                }
-                    }
 
                 # Output current MNode/DNode size object configuration
                 foreach($mNodeSizedetail in $mNodeSizeObject)
@@ -1703,28 +1710,18 @@ function Test-SilkResourceDeployment
                     } `
                 elseif ($CNodeCount -and $ConfigImport.sdp.read_cache_enabled)
                     {
-                        # JSON config fallback: read_cache_enabled maps to Read_Cache_Enabled (no AMD variant available)
-                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "Read_Cache_Enabled" }
-                    } `
-                elseif ($CNodeCount -and $ConfigImport.sdp.increased_logical_capacity -and $ConfigImport.sdp.amd_sku)
-                    {
-                        # JSON config fallback: increased_logical_capacity + amd_sku maps to Increased_Logical_Capacity_AMD
-                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "Increased_Logical_Capacity_AMD" }
+                        # JSON config fallback: read_cache_enabled maps to Read_Cache_Enabled
+                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq $("Read_Cache_Enabled{0}" -f $ConfigImport.sdp.c_node_sku_variant) }
                     } `
                 elseif ($CNodeCount -and $ConfigImport.sdp.increased_logical_capacity)
                     {
-                        # JSON config fallback: increased_logical_capacity maps to Increased_Logical_Capacity (Intel)
-                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "Increased_Logical_Capacity" }
-                    } `
-                elseif ($CNodeCount -and $ConfigImport.sdp.amd_sku -and (!$ConfigImport.sdp.increased_logical_capacity -and !$ConfigImport.sdp.read_cache_enabled))
-                    {
-                        # JSON config fallback: amd_sku with no other flags maps to No_Increased_Logical_Capacity_AMD
-                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "No_Increased_Logical_Capacity_AMD" }
+                        # JSON config fallback: increased_logical_capacity maps to Increased_Logical_Capacity
+                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq $("Increased_Logical_Capacity{0}" -f $ConfigImport.sdp.c_node_sku_variant) }
                     } `
                 elseif ($CNodeCount -and (!$ConfigImport.sdp.increased_logical_capacity -and !$ConfigImport.sdp.read_cache_enabled))
                     {
-                        # JSON config fallback: no flags set maps to No_Increased_Logical_Capacity (Intel)
-                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq "No_Increased_Logical_Capacity" }
+                        # JSON config fallback: no flags maps to No_Increased_Logical_Capacity
+                        $cNodeObject = $cNodeSizeObject | Where-Object { $_.cNodeFriendlyName -eq $("No_Increased_Logical_Capacity{0}" -f $ConfigImport.sdp.c_node_sku_variant) }
                     } `
                 else
                     {
@@ -2740,103 +2737,103 @@ function Test-SilkResourceDeployment
 
                                 for ($cNode = 1; $cNode -le $adjustedCNodeCount; $cNode++)
                                     {
-                                # Calculate CNode SKU for display
-                                $currentCNodeSku = "{0}" -f $CNodeSku
+                                        # Calculate CNode SKU for display
+                                        $currentCNodeSku = "{0}" -f $CNodeSku
 
-                                # Update sub-progress for CNode creation
-                                Write-Progress `
-                                    -Status $("Creating CNode {0} of {1} ({2})" -f $cNode, $adjustedCNodeCount, $currentCNodeSku) `
-                                    -CurrentOperation $("Configuring CNode {0} with SKU {1}..." -f $cNode, $currentCNodeSku) `
-                                    -PercentComplete $(($cNode / $adjustedCNodeCount) * 100) `
-                                    -Activity $("CNode Creation") `
-                                    -ParentId 3 `
-                                    -Id 4
+                                        # Update sub-progress for CNode creation
+                                        Write-Progress `
+                                            -Status $("Creating CNode {0} of {1} ({2})" -f $cNode, $adjustedCNodeCount, $currentCNodeSku) `
+                                            -CurrentOperation $("Configuring CNode {0} with SKU {1}..." -f $cNode, $currentCNodeSku) `
+                                            -PercentComplete $(($cNode / $adjustedCNodeCount) * 100) `
+                                            -Activity $("CNode Creation") `
+                                            -ParentId 3 `
+                                            -Id 4
 
-                                # create the cnode management NIC
-                                $cNodeMGMTNIC = New-AzNetworkInterface `
-                                                    -ResourceGroupName $ResourceGroupName `
-                                                    -Location $Region `
-                                                    -Name $("{0}-cnode-mgmt-nic-{1:D2}" -f $ResourceNamePrefix, $cNode) `
-                                                    -SubnetId $mGMTSubnetID
+                                        # create the cnode management NIC
+                                        $cNodeMGMTNIC = New-AzNetworkInterface `
+                                                            -ResourceGroupName $ResourceGroupName `
+                                                            -Location $Region `
+                                                            -Name $("{0}-cnode-mgmt-nic-{1:D2}" -f $ResourceNamePrefix, $cNode) `
+                                                            -SubnetId $mGMTSubnetID
 
-                                Write-Verbose -Message $("✓ CNode {0} management NIC '{1}' successfully created with IP '{2}'" -f $cNode, $cNodeMGMTNIC.Name, $cNodeMGMTNIC.IpConfigurations[0].PrivateIpAddress)
+                                        Write-Verbose -Message $("✓ CNode {0} management NIC '{1}' successfully created with IP '{2}'" -f $cNode, $cNodeMGMTNIC.Name, $cNodeMGMTNIC.IpConfigurations[0].PrivateIpAddress)
 
-                                # create the cnode vm configuration
-                                # Use availability sets
-                                $cNodeConfig = New-AzVMConfig `
-                                                -VMName $("{0}-cnode-{1:D2}" -f $ResourceNamePrefix, $cNode) `
-                                                -VMSize $cNodeVMSku `
-                                                -AvailabilitySetId $cNodeAvailabilitySet.Id
+                                        # create the cnode vm configuration
+                                        # Use availability sets
+                                        $cNodeConfig = New-AzVMConfig `
+                                                        -VMName $("{0}-cnode-{1:D2}" -f $ResourceNamePrefix, $cNode) `
+                                                        -VMSize $cNodeVMSku `
+                                                        -AvailabilitySetId $cNodeAvailabilitySet.Id
 
-                                # set operating system details
-                                $cNodeConfig = Set-AzVMOperatingSystem `
-                                                -VM $cNodeConfig `
-                                                -Linux `
-                                                -ComputerName $("{0}-cnode-{1:D2}" -f $ResourceNamePrefix, $cNode) `
-                                                -Credential $VMInstanceCredential `
-                                                -DisablePasswordAuthentication:$false
-
-                                # set the cnode vm image
-                                if ($VMImageOffer -eq "Ubuntu2204" -or $VMImageOffer -eq "Ubuntu2404" -or $VMImageOffer -eq "UbuntuLTS")
-                                    {
-                                        # Use image alias for Ubuntu
-                                        $cNodeConfig = Set-AzVMSourceImage `
+                                        # set operating system details
+                                        $cNodeConfig = Set-AzVMOperatingSystem `
                                                         -VM $cNodeConfig `
-                                                        -Image $VMImageOffer
-                                    } `
-                                else
-                                    {
-                                        # Use traditional publisher/offer/sku/version
-                                        $cNodeConfig = Set-AzVMSourceImage `
+                                                        -Linux `
+                                                        -ComputerName $("{0}-cnode-{1:D2}" -f $ResourceNamePrefix, $cNode) `
+                                                        -Credential $VMInstanceCredential `
+                                                        -DisablePasswordAuthentication:$false
+
+                                        # set the cnode vm image
+                                        if ($VMImageOffer -eq "Ubuntu2204" -or $VMImageOffer -eq "Ubuntu2404" -or $VMImageOffer -eq "UbuntuLTS")
+                                            {
+                                                # Use image alias for Ubuntu
+                                                $cNodeConfig = Set-AzVMSourceImage `
+                                                                -VM $cNodeConfig `
+                                                                -Image $VMImageOffer
+                                            } `
+                                        else
+                                            {
+                                                # Use traditional publisher/offer/sku/version
+                                                $cNodeConfig = Set-AzVMSourceImage `
+                                                                -VM $cNodeConfig `
+                                                                -PublisherName $vMImage.PublisherName `
+                                                                -Offer $vMImage.Offer `
+                                                                -Skus $vMImage.Skus `
+                                                                -Version $vMImage.Version
+                                            }
+
+                                        # set the cnode vm os disk
+                                        $cNodeConfig = Set-AzVMOSDisk `
                                                         -VM $cNodeConfig `
-                                                        -PublisherName $vMImage.PublisherName `
-                                                        -Offer $vMImage.Offer `
-                                                        -Skus $vMImage.Skus `
-                                                        -Version $vMImage.Version
-                                    }
+                                                        -CreateOption FromImage `
+                                                        -DeleteOption "Delete"
 
-                                # set the cnode vm os disk
-                                $cNodeConfig = Set-AzVMOSDisk `
-                                                -VM $cNodeConfig `
-                                                -CreateOption FromImage `
-                                                -DeleteOption "Delete"
-
-                                # set the cnode vm diagnostics
-                                $cNodeConfig = Set-AzVMBootDiagnostic `
-                                                -VM $cNodeConfig `
-                                                -Disable:$true
-
-                                # Add the management NIC to the cnode vm configuration
-                                $cNodeConfig = Add-AzVMNetworkInterface `
-                                                -VM $cNodeConfig `
-                                                -Id $cNodeMGMTNIC.Id `
-                                                -Primary:$true `
-                                                -DeleteOption "Delete"
-
-                                try
-                                    {
-                                        # Suppress warnings specifically for VM creation
-                                        $cNodeJob = New-AzVM `
-                                                        -ResourceGroupName $ResourceGroupName `
-                                                        -Location $Region `
+                                        # set the cnode vm diagnostics
+                                        $cNodeConfig = Set-AzVMBootDiagnostic `
                                                         -VM $cNodeConfig `
-                                                        -AsJob `
-                                                        -WarningAction SilentlyContinue
+                                                        -Disable:$true
 
-                                        # Track job-to-VM mapping for meaningful error reporting
-                                        $vmJobMapping[$cNodeJob.Id] = @{
-                                            VMName = $("{0}-cnode-{1:D2}" -f $ResourceNamePrefix, $cNode)
-                                            VMSku = $cNodeVMSku
-                                            NodeType = "CNode"
-                                            NodeNumber = $cNode
-                                        }
+                                        # Add the management NIC to the cnode vm configuration
+                                        $cNodeConfig = Add-AzVMNetworkInterface `
+                                                        -VM $cNodeConfig `
+                                                        -Id $cNodeMGMTNIC.Id `
+                                                        -Primary:$true `
+                                                        -DeleteOption "Delete"
 
-                                        Write-Verbose -Message $("✓ CNode {0} VM creation job started successfully" -f $cNode)
-                                    } `
-                                catch
-                                    {
-                                        Write-Error $("✗ Failed to start CNode {0} VM creation: {1}" -f $cNode, $_.Exception.Message)
-                                    }
+                                        try
+                                            {
+                                                # Suppress warnings specifically for VM creation
+                                                $cNodeJob = New-AzVM `
+                                                                -ResourceGroupName $ResourceGroupName `
+                                                                -Location $Region `
+                                                                -VM $cNodeConfig `
+                                                                -AsJob `
+                                                                -WarningAction SilentlyContinue
+
+                                                # Track job-to-VM mapping for meaningful error reporting
+                                                $vmJobMapping[$cNodeJob.Id] = @{
+                                                    VMName = $("{0}-cnode-{1:D2}" -f $ResourceNamePrefix, $cNode)
+                                                    VMSku = $cNodeVMSku
+                                                    NodeType = "CNode"
+                                                    NodeNumber = $cNode
+                                                }
+
+                                                Write-Verbose -Message $("✓ CNode {0} VM creation job started successfully" -f $cNode)
+                                            } `
+                                        catch
+                                            {
+                                                Write-Error $("✗ Failed to start CNode {0} VM creation: {1}" -f $cNode, $_.Exception.Message)
+                                            }
                                     }
 
                                 if ($cNodeAvailabilitySet)
@@ -2858,199 +2855,199 @@ function Test-SilkResourceDeployment
                                 $currentMNode = 0
                                 foreach ($mNode in $mNodeObject)
                                     {
-                                $currentMNode++
+                                        $currentMNode++
 
-                                # Calculate MNode SKU and physical size for display
-                                $currentMNodeSku = "{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix
-                                $currentMNodePhysicalSize = $mNode.PhysicalSize
+                                        # Calculate MNode SKU and physical size for display
+                                        $currentMNodeSku = "{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix
+                                        $currentMNodePhysicalSize = $mNode.PhysicalSize
 
-                                # Check if this MNode group has quota adjustments
-                                $currentDNodeCount = $mNode.dNodeCount
-                                if ($mNodeQuotaAdjustments.ContainsKey($currentMNodePhysicalSize))
-                                    {
-                                        $currentDNodeCount = $mNodeQuotaAdjustments[$currentMNodePhysicalSize].AdjustedCount
-                                        if ($currentDNodeCount -eq 0)
+                                        # Check if this MNode group has quota adjustments
+                                        $currentDNodeCount = $mNode.dNodeCount
+                                        if ($mNodeQuotaAdjustments.ContainsKey($currentMNodePhysicalSize))
                                             {
-                                                Write-Warning $("⚠ Skipping MNode group {0} ({1} TiB) - No quota available for deployment" -f $currentMNode, $currentMNodePhysicalSize)
-                                                continue
+                                                $currentDNodeCount = $mNodeQuotaAdjustments[$currentMNodePhysicalSize].AdjustedCount
+                                                if ($currentDNodeCount -eq 0)
+                                                    {
+                                                        Write-Warning $("⚠ Skipping MNode group {0} ({1} TiB) - No quota available for deployment" -f $currentMNode, $currentMNodePhysicalSize)
+                                                        continue
+                                                    }
                                             }
-                                    }
 
-                                # create mnode proximity placement group including VM SKUs if Zoneless
-                                if($Zone -ne "Zoneless")
-                                    {
-                                        Write-Verbose -Message $("Creating Proximity Placement Group in region '{0}' with zone '{1}' and VM SKUs: {2}" -f $Region, $Zone, $currentMNodeSku)
-                                        $mNodeProximityPlacementGroup = New-AzProximityPlacementGroup `
-                                                                        -ResourceGroupName $ResourceGroupName `
-                                                                        -Location $Region `
-                                                                        -Zone $Zone `
-                                                                        -Name $("{0}-mNode-{1}-ppg" -f $ResourceNamePrefix, $currentMNode) `
-                                                                        -ProximityPlacementGroupType "Standard" `
-                                                                        -IntentVMSize $currentMNodeSku
-                                    } `
-                                else
-                                    {
-                                        Write-Verbose -Message $("Creating Proximity Placement Group in region '{0}' without zones" -f $Region)
-                                        $mNodeProximityPlacementGroup = New-AzProximityPlacementGroup `
-                                                                        -ResourceGroupName $ResourceGroupName `
-                                                                        -Location $Region `
-                                                                        -Name $("{0}-mNode-{1}-ppg" -f $ResourceNamePrefix, $currentMNode) `
-                                                                        -ProximityPlacementGroupType "Standard"
-                                    }
-
-                                Write-Verbose -Message $("✓ Proximity Placement Group '{0}' created" -f $mNodeProximityPlacementGroup.Name)
-
-                                # create availability set for current mNode
-                                $mNodeAvailabilitySet = New-AzAvailabilitySet `
-                                                            -ResourceGroupName $ResourceGroupName `
-                                                            -Location $Region `
-                                                            -Name $("{0}-mNode-{1}-avset" -f $ResourceNamePrefix, $currentMNode) `
-                                                            -ProximityPlacementGroupId $mNodeProximityPlacementGroup.Id `
-                                                            -Sku "Aligned" `
-                                                            -PlatformFaultDomainCount $maximumFaultDomains `
-                                                            -PlatformUpdateDomainCount 20
-
-                                Write-Verbose -Message $("✓ Availability Set '{0}' created" -f $mNodeAvailabilitySet.Name)
-
-                                # Update main progress for MNode group
-                                $processedCNodes = $adjustedCNodeCount
-                                $processedDNodes = $dNodeStartCount
-                                $totalProcessed = $processedCNodes + $processedDNodes
-                                $mainPercentComplete = [Math]::Min([Math]::Round(($totalProcessed / $totalVMs) * 100), 90)
-
-                                Write-Progress `
-                                    -Status $("Processing MNode Group {0} of {1} - {2} TiB ({3})" -f $currentMNode, $mNodeObject.Count, $currentMNodePhysicalSize, $currentMNodeSku) `
-                                    -CurrentOperation $("Creating {0} DNode VM(s) for {1} TiB MNode..." -f $currentDNodeCount, $currentMNodePhysicalSize) `
-                                    -PercentComplete $mainPercentComplete `
-                                    -Activity $("VM Deployment") `
-                                    -ParentId 1 `
-                                    -Id 3
-
-                                for ($dNode = 1; $dNode -le $currentDNodeCount; $dNode++)
-                                    {
-                                        # Update sub-progress for DNode creation
-                                        Write-Progress `
-                                            -Status $("Creating DNode {0} of {1} - {2} TiB ({3})" -f $dNode, $currentDNodeCount, $currentMNodePhysicalSize, $currentMNodeSku) `
-                                            -CurrentOperation $("Configuring DNode {0} with SKU {1}..." -f ($dNode + $dNodeStartCount), $currentMNodeSku) `
-                                            -PercentComplete $(($dNode / $currentDNodeCount) * 100) `
-                                            -Activity $("MNode Group {0} DNode Creation" -f $currentMNode) `
-                                            -ParentId 3 `
-                                            -Id 5
-
-                                        # set dnode number to use for naming
-                                        $dNodeNumber = $dNode + $dNodeStartCount
-
-                                        # create the dnode management
-                                        $dNodeMGMTNIC = New-AzNetworkInterface `
-                                                            -ResourceGroupName $ResourceGroupName `
-                                                        -Location $Region `
-                                                        -Name $("{0}-dnode-{1:D2}-mgmt-nic" -f $ResourceNamePrefix, $dNodeNumber) `
-                                                        -SubnetId $mGMTSubnetID
-
-                                        Write-Verbose -Message $("✓ DNode {0} management NIC '{1}' successfully created with IP '{2}'" -f $dNodeNumber, $dNodeMGMTNIC.Name, $dNodeMGMTNIC.IpConfigurations[0].PrivateIpAddress)
-
-                                        # create the dnode vm configuration
-                                        $dNodeConfig = New-AzVMConfig `
-                                                        -VMName $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNodeNumber) `
-                                                        -VMSize $("{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix) `
-                                                        -AvailabilitySetId $mNodeAvailabilitySet.Id
-
-                                        # set operating system details
-                                        $dNodeConfig = Set-AzVMOperatingSystem `
-                                                        -VM $dNodeConfig `
-                                                        -Linux `
-                                                        -ComputerName $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNodeNumber) `
-                                                        -Credential $VMInstanceCredential `
-                                                        -DisablePasswordAuthentication:$false
-
-                                        # set the dnode vm image
-                                        if ($VMImageOffer -eq "Ubuntu2204" -or $VMImageOffer -eq "Ubuntu2404" -or $VMImageOffer -eq "UbuntuLTS")
+                                        # create mnode proximity placement group including VM SKUs if Zoneless
+                                        if($Zone -ne "Zoneless")
                                             {
-                                                # Use image alias for Ubuntu
-                                                $dNodeConfig = Set-AzVMSourceImage `
-                                                                -VM $dNodeConfig `
-                                                                -Image $VMImageOffer
+                                                Write-Verbose -Message $("Creating Proximity Placement Group in region '{0}' with zone '{1}' and VM SKUs: {2}" -f $Region, $Zone, $currentMNodeSku)
+                                                $mNodeProximityPlacementGroup = New-AzProximityPlacementGroup `
+                                                                                -ResourceGroupName $ResourceGroupName `
+                                                                                -Location $Region `
+                                                                                -Zone $Zone `
+                                                                                -Name $("{0}-mNode-{1}-ppg" -f $ResourceNamePrefix, $currentMNode) `
+                                                                                -ProximityPlacementGroupType "Standard" `
+                                                                                -IntentVMSize $currentMNodeSku
                                             } `
                                         else
                                             {
-                                                # Use traditional publisher/offer/sku/version
-                                                $dNodeConfig = Set-AzVMSourceImage `
-                                                                -VM $dNodeConfig `
-                                                                -PublisherName $vMImage.PublisherName `
-                                                                -Offer $vMImage.Offer `
-                                                                -Skus $vMImage.Skus `
-                                                                -Version $vMImage.Version
+                                                Write-Verbose -Message $("Creating Proximity Placement Group in region '{0}' without zones" -f $Region)
+                                                $mNodeProximityPlacementGroup = New-AzProximityPlacementGroup `
+                                                                                -ResourceGroupName $ResourceGroupName `
+                                                                                -Location $Region `
+                                                                                -Name $("{0}-mNode-{1}-ppg" -f $ResourceNamePrefix, $currentMNode) `
+                                                                                -ProximityPlacementGroupType "Standard"
                                             }
 
-                                        # set the dnode vm os disk
-                                        $dNodeConfig = Set-AzVMOSDisk `
-                                                        -VM $dNodeConfig `
-                                                        -CreateOption FromImage `
-                                                        -DeleteOption "Delete"
+                                        Write-Verbose -Message $("✓ Proximity Placement Group '{0}' created" -f $mNodeProximityPlacementGroup.Name)
 
-                                        # set the dnode vm diagnostics
-                                        $dNodeConfig = Set-AzVMBootDiagnostic `
-                                                        -VM $dNodeConfig `
-                                                        -Disable:$true
+                                        # create availability set for current mNode
+                                        $mNodeAvailabilitySet = New-AzAvailabilitySet `
+                                                                    -ResourceGroupName $ResourceGroupName `
+                                                                    -Location $Region `
+                                                                    -Name $("{0}-mNode-{1}-avset" -f $ResourceNamePrefix, $currentMNode) `
+                                                                    -ProximityPlacementGroupId $mNodeProximityPlacementGroup.Id `
+                                                                    -Sku "Aligned" `
+                                                                    -PlatformFaultDomainCount $maximumFaultDomains `
+                                                                    -PlatformUpdateDomainCount 20
 
-                                        # Add the management NIC to the dnode vm configuration
-                                        $dNodeConfig = Add-AzVMNetworkInterface `
-                                                        -VM $dNodeConfig `
-                                                        -Id $dNodeMGMTNIC.Id `
-                                                        -Primary:$true `
-                                                        -DeleteOption "Delete"
+                                        Write-Verbose -Message $("✓ Availability Set '{0}' created" -f $mNodeAvailabilitySet.Name)
 
-                                        # Update sub-progress for VM creation
+                                        # Update main progress for MNode group
+                                        $processedCNodes = $adjustedCNodeCount
+                                        $processedDNodes = $dNodeStartCount
+                                        $totalProcessed = $processedCNodes + $processedDNodes
+                                        $mainPercentComplete = [Math]::Min([Math]::Round(($totalProcessed / $totalVMs) * 100), 90)
+
                                         Write-Progress `
-                                            -Status $("Creating DNode {0} VM ({1})..." -f $dNode, $currentMNodeSku) `
-                                            -CurrentOperation $("Starting VM creation job for DNode {0} with SKU {1}..." -f $dNodeNumber, $currentMNodeSku) `
-                                            -PercentComplete $(($dNode / $mNode.dNodeCount) * 100) `
-                                            -Activity $("MNode Group {0} DNode Creation" -f $currentMNode) `
-                                            -ParentId 3 `
-                                            -Id 5
+                                            -Status $("Processing MNode Group {0} of {1} - {2} TiB ({3})" -f $currentMNode, $mNodeObject.Count, $currentMNodePhysicalSize, $currentMNodeSku) `
+                                            -CurrentOperation $("Creating {0} DNode VM(s) for {1} TiB MNode..." -f $currentDNodeCount, $currentMNodePhysicalSize) `
+                                            -PercentComplete $mainPercentComplete `
+                                            -Activity $("VM Deployment") `
+                                            -ParentId 1 `
+                                            -Id 3
 
-                                        try
+                                        for ($dNode = 1; $dNode -le $currentDNodeCount; $dNode++)
                                             {
-                                                # Suppress warnings specifically for VM creation
-                                                $dNodeJob = New-AzVM `
-                                                                -ResourceGroupName $ResourceGroupName `
+                                                # Update sub-progress for DNode creation
+                                                Write-Progress `
+                                                    -Status $("Creating DNode {0} of {1} - {2} TiB ({3})" -f $dNode, $currentDNodeCount, $currentMNodePhysicalSize, $currentMNodeSku) `
+                                                    -CurrentOperation $("Configuring DNode {0} with SKU {1}..." -f ($dNode + $dNodeStartCount), $currentMNodeSku) `
+                                                    -PercentComplete $(($dNode / $currentDNodeCount) * 100) `
+                                                    -Activity $("MNode Group {0} DNode Creation" -f $currentMNode) `
+                                                    -ParentId 3 `
+                                                    -Id 5
+
+                                                # set dnode number to use for naming
+                                                $dNodeNumber = $dNode + $dNodeStartCount
+
+                                                # create the dnode management
+                                                $dNodeMGMTNIC = New-AzNetworkInterface `
+                                                                    -ResourceGroupName $ResourceGroupName `
                                                                 -Location $Region `
+                                                                -Name $("{0}-dnode-{1:D2}-mgmt-nic" -f $ResourceNamePrefix, $dNodeNumber) `
+                                                                -SubnetId $mGMTSubnetID
+
+                                                Write-Verbose -Message $("✓ DNode {0} management NIC '{1}' successfully created with IP '{2}'" -f $dNodeNumber, $dNodeMGMTNIC.Name, $dNodeMGMTNIC.IpConfigurations[0].PrivateIpAddress)
+
+                                                # create the dnode vm configuration
+                                                $dNodeConfig = New-AzVMConfig `
+                                                                -VMName $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNodeNumber) `
+                                                                -VMSize $("{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix) `
+                                                                -AvailabilitySetId $mNodeAvailabilitySet.Id
+
+                                                # set operating system details
+                                                $dNodeConfig = Set-AzVMOperatingSystem `
                                                                 -VM $dNodeConfig `
-                                                                -AsJob `
-                                                                -WarningAction SilentlyContinue
+                                                                -Linux `
+                                                                -ComputerName $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNodeNumber) `
+                                                                -Credential $VMInstanceCredential `
+                                                                -DisablePasswordAuthentication:$false
 
-                                                # Track job-to-VM mapping for meaningful error reporting
-                                                $vmJobMapping[$dNodeJob.Id] =  @{
-                                                                                    VMName = $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNodeNumber)
-                                                                                    VMSku = $("{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix)
-                                                                                    NodeType = "DNode"
-                                                                                    NodeNumber = $dNodeNumber
-                                                                                    MNodeGroup = $currentMNode
-                                                                                    MNodePhysicalSize = $currentMNodePhysicalSize
-                                                                                }
+                                                # set the dnode vm image
+                                                if ($VMImageOffer -eq "Ubuntu2204" -or $VMImageOffer -eq "Ubuntu2404" -or $VMImageOffer -eq "UbuntuLTS")
+                                                    {
+                                                        # Use image alias for Ubuntu
+                                                        $dNodeConfig = Set-AzVMSourceImage `
+                                                                        -VM $dNodeConfig `
+                                                                        -Image $VMImageOffer
+                                                    } `
+                                                else
+                                                    {
+                                                        # Use traditional publisher/offer/sku/version
+                                                        $dNodeConfig = Set-AzVMSourceImage `
+                                                                        -VM $dNodeConfig `
+                                                                        -PublisherName $vMImage.PublisherName `
+                                                                        -Offer $vMImage.Offer `
+                                                                        -Skus $vMImage.Skus `
+                                                                        -Version $vMImage.Version
+                                                    }
 
-                                                Write-Verbose -Message $("✓ DNode {0} VM creation job started successfully" -f $dNodeNumber)
-                                            } `
-                                        catch
-                                            {
-                                                Write-Error $("✗ Failed to start DNode {0} VM creation: {1}" -f $dNodeNumber, $_.Exception.Message)
+                                                # set the dnode vm os disk
+                                                $dNodeConfig = Set-AzVMOSDisk `
+                                                                -VM $dNodeConfig `
+                                                                -CreateOption FromImage `
+                                                                -DeleteOption "Delete"
+
+                                                # set the dnode vm diagnostics
+                                                $dNodeConfig = Set-AzVMBootDiagnostic `
+                                                                -VM $dNodeConfig `
+                                                                -Disable:$true
+
+                                                # Add the management NIC to the dnode vm configuration
+                                                $dNodeConfig = Add-AzVMNetworkInterface `
+                                                                -VM $dNodeConfig `
+                                                                -Id $dNodeMGMTNIC.Id `
+                                                                -Primary:$true `
+                                                                -DeleteOption "Delete"
+
+                                                # Update sub-progress for VM creation
+                                                Write-Progress `
+                                                    -Status $("Creating DNode {0} VM ({1})..." -f $dNode, $currentMNodeSku) `
+                                                    -CurrentOperation $("Starting VM creation job for DNode {0} with SKU {1}..." -f $dNodeNumber, $currentMNodeSku) `
+                                                    -PercentComplete $(($dNode / $mNode.dNodeCount) * 100) `
+                                                    -Activity $("MNode Group {0} DNode Creation" -f $currentMNode) `
+                                                    -ParentId 3 `
+                                                    -Id 5
+
+                                                try
+                                                    {
+                                                        # Suppress warnings specifically for VM creation
+                                                        $dNodeJob = New-AzVM `
+                                                                        -ResourceGroupName $ResourceGroupName `
+                                                                        -Location $Region `
+                                                                        -VM $dNodeConfig `
+                                                                        -AsJob `
+                                                                        -WarningAction SilentlyContinue
+
+                                                        # Track job-to-VM mapping for meaningful error reporting
+                                                        $vmJobMapping[$dNodeJob.Id] =  @{
+                                                                                            VMName = $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNodeNumber)
+                                                                                            VMSku = $("{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix)
+                                                                                            NodeType = "DNode"
+                                                                                            NodeNumber = $dNodeNumber
+                                                                                            MNodeGroup = $currentMNode
+                                                                                            MNodePhysicalSize = $currentMNodePhysicalSize
+                                                                                        }
+
+                                                        Write-Verbose -Message $("✓ DNode {0} VM creation job started successfully" -f $dNodeNumber)
+                                                    } `
+                                                catch
+                                                    {
+                                                        Write-Error $("✗ Failed to start DNode {0} VM creation: {1}" -f $dNodeNumber, $_.Exception.Message)
+                                                    }
                                             }
+
+                                        if ($mNodeAvailabilitySet)
+                                            {
+                                                # get the mnode availability set to assess its state
+                                                $mNodeAvailabilitySetComplete = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -Name $mNodeAvailabilitySet.Name
+                                                Write-Verbose -Message $("✓ MNode availability set '{0}' created with {1} MNodes." -f $mNodeAvailabilitySetComplete.Name, $mNodeAvailabilitySetComplete)
+                                                Write-Verbose -Message $("✓ MNode availability set '{0}' is assigned to proximity placement group '{1}'." -f $mNodeAvailabilitySetComplete.Name, $mNodeProximityPlacementGroup.Name)
+                                            }
+
+                                        $mNodeProximityPlacementGroup = $null
+                                        $dNodeStartCount += $currentDNodeCount
+
+                                        # Clean up this MNode group's sub-progress bar as it's complete
+                                        Write-Progress -Activity $("MNode Group {0} DNode Creation" -f $currentMNode) -Id 5 -Completed
                                     }
-
-                                if ($mNodeAvailabilitySet)
-                                    {
-                                        # get the mnode availability set to assess its state
-                                        $mNodeAvailabilitySetComplete = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -Name $mNodeAvailabilitySet.Name
-                                        Write-Verbose -Message $("✓ MNode availability set '{0}' created with {1} MNodes." -f $mNodeAvailabilitySetComplete.Name, $mNodeAvailabilitySetComplete)
-                                        Write-Verbose -Message $("✓ MNode availability set '{0}' is assigned to proximity placement group '{1}'." -f $mNodeAvailabilitySetComplete.Name, $mNodeProximityPlacementGroup.Name)
-                                    }
-
-                                $mNodeProximityPlacementGroup = $null
-                                $dNodeStartCount += $currentDNodeCount
-
-                                # Clean up this MNode group's sub-progress bar as it's complete
-                                Write-Progress -Activity $("MNode Group {0} DNode Creation" -f $currentMNode) -Id 5 -Completed
-                            }
                             }
 
                         # ========================================================================================================

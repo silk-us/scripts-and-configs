@@ -327,9 +327,9 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
-                [Parameter(ParameterSetName = "Report Only",                     Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format)."))]
-                [Parameter(ParameterSetName = "Report Only ChecklistJSON",                    Mandatory = $false, HelpMessage = $("Enter your Azure Subscription ID (GUID format)."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                    Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format)."))]
+                [Parameter(ParameterSetName = "Report Only",                    Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format)."))]
+                [Parameter(ParameterSetName = "Report Only ChecklistJSON",      Mandatory = $false, HelpMessage = $("Enter your Azure Subscription ID (GUID format)."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format)."))]
                 [ValidatePattern('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')]
                 [ValidateNotNullOrEmpty()]
                 [string]
@@ -354,9 +354,9 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
-                [Parameter(ParameterSetName = "Report Only",                     Mandatory = $false, HelpMessage = $("Resource Group name. Not required for report-only mode."))]
-                [Parameter(ParameterSetName = "Report Only ChecklistJSON",                    Mandatory = $false, HelpMessage = $("Resource Group name. Not required for report-only mode."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                    Mandatory = $true,  HelpMessage = $("Resource Group for test resources."))]
+                [Parameter(ParameterSetName = "Report Only",                    Mandatory = $false, HelpMessage = $("Resource Group name. Not required for report-only mode."))]
+                [Parameter(ParameterSetName = "Report Only ChecklistJSON",      Mandatory = $false, HelpMessage = $("Resource Group name. Not required for report-only mode."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $true,  HelpMessage = $("Resource Group for test resources."))]
                 [ValidatePattern('^[a-z][a-z0-9\-]{1,61}[a-z0-9]$')]
                 [ValidateNotNullOrEmpty()]
                 [string]
@@ -381,9 +381,9 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
-                [Parameter(ParameterSetName = "Report Only",                     Mandatory = $true,  HelpMessage = $("Choose an Azure region."))]
-                [Parameter(ParameterSetName = "Report Only ChecklistJSON",                    Mandatory = $false, HelpMessage = $("Choose an Azure region."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                    Mandatory = $true,  HelpMessage = $("Choose an Azure region."))]
+                [Parameter(ParameterSetName = "Report Only",                    Mandatory = $true,  HelpMessage = $("Choose an Azure region."))]
+                [Parameter(ParameterSetName = "Report Only ChecklistJSON",      Mandatory = $false, HelpMessage = $("Choose an Azure region."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $true,  HelpMessage = $("Choose an Azure region."))]
                 [ValidateSet("asia", "asiapacific", "australia", "australiacentral", "australiacentral2", "australiaeast", "australiasoutheast", "austriaeast", "brazil", "brazilsouth", "brazilsoutheast", "canada", "canadacentral", "canadaeast", "centralindia", "centralus", "centraluseuap", "chilecentral", "eastasia", "eastus", "eastus2", "eastus2euap", "europe", "france", "francecentral", "francesouth", "germany", "germanynorth", "germanywestcentral", "global", "india", "indonesiacentral", "israel", "israelcentral", "italy", "italynorth", "japan", "japaneast", "japanwest", "korea", "koreacentral", "koreasouth", "malaysiawest", "mexicocentral", "newzealand", "newzealandnorth", "northcentralus", "northeurope", "norway", "norwayeast", "norwaywest", "poland", "polandcentral", "qatar", "qatarcentral", "singapore", "southafrica", "southafricanorth", "southafricawest", "southcentralus", "southeastasia", "southindia", "spaincentral", "sweden", "swedencentral", "switzerland", "switzerlandnorth", "switzerlandwest", "uaecentral", "uaenorth", "uksouth", "ukwest", "unitedstates", "westcentralus", "westeurope", "westindia", "westus", "westus2", "westus3")]
                 [ValidateNotNullOrEmpty()]
                 [string]
@@ -409,9 +409,9 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Report Only",                     Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 or Zoneless."))]
-                [Parameter(ParameterSetName = "Report Only ChecklistJSON",                    Mandatory = $false, HelpMessage = $("Select an Availability Zone: 1, 2, 3 or Zoneless."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 or Zoneless."))]
+                [Parameter(ParameterSetName = "Report Only",                    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 or Zoneless."))]
+                [Parameter(ParameterSetName = "Report Only ChecklistJSON",      Mandatory = $false, HelpMessage = $("Select an Availability Zone: 1, 2, 3 or Zoneless."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 or Zoneless."))]
                 [ValidateSet("1", "2", "3", "Zoneless")]
                 [ValidateNotNullOrEmpty()]
                 [string]
@@ -606,9 +606,9 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
-                [Parameter(ParameterSetName = "Report Only",                     Mandatory = $false, HelpMessage = $("Disable HTML report generation."))]
-                [Parameter(ParameterSetName = "Report Only ChecklistJSON",                    Mandatory = $false, HelpMessage = $("Disable HTML report generation."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                    Mandatory = $false, HelpMessage = $("Disable HTML report generation."))]
+                [Parameter(ParameterSetName = "Report Only",                    Mandatory = $false, HelpMessage = $("Disable HTML report generation."))]
+                [Parameter(ParameterSetName = "Report Only ChecklistJSON",      Mandatory = $false, HelpMessage = $("Disable HTML report generation."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Disable HTML report generation."))]
                 [Switch]
                 $NoHTMLReport,
 
@@ -629,9 +629,9 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
-                [Parameter(ParameterSetName = "Report Only",                     Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved."))]
-                [Parameter(ParameterSetName = "Report Only ChecklistJSON",                    Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                    Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved."))]
+                [Parameter(ParameterSetName = "Report Only",                    Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved."))]
+                [Parameter(ParameterSetName = "Report Only ChecklistJSON",      Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved."))]
                 [ValidateNotNullOrEmpty()]
                 [string]
                 $ReportOutputPath = (Get-Location).Path,
@@ -653,7 +653,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                    Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources."))]
                 [Switch]
                 $DisableCleanup,
 
@@ -682,7 +682,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
-                [Parameter(ParameterSetName = "SKU Family Test",                    Mandatory = $false, HelpMessage = $("Specify VNet CIDR range. Example: 10.0.0.0/24"))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Specify VNet CIDR range. Example: 10.0.0.0/24"))]
                 [ValidatePattern('^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(3[0-2]|[1-2][0-9]|[0-9]))$')]
                 [ValidateNotNullOrEmpty()]
                 [string]
@@ -706,7 +706,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                    Mandatory = $false, HelpMessage = $("Create resource group if it does not exist."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Create resource group if it does not exist."))]
                 [Switch]
                 $CreateResourceGroup,
 
@@ -727,7 +727,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
-                [Parameter(ParameterSetName = "SKU Family Test",                    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Advanced use only."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Advanced use only."))]
                 [ValidateNotNullOrEmpty()]
                 [string]
                 $VMImageOffer = "0001-com-ubuntu-server-jammy",
@@ -749,7 +749,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
-                [Parameter(ParameterSetName = "SKU Family Test",                    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Advanced use only."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Advanced use only."))]
                 [ValidateNotNullOrEmpty()]
                 [string]
                 $VMImagePublisher = "Canonical",
@@ -771,7 +771,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
-                [Parameter(ParameterSetName = "SKU Family Test",                    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Advanced use only."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Advanced use only."))]
                 [string]
                 $VMImageSku,
 
@@ -792,7 +792,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
-                [Parameter(ParameterSetName = "SKU Family Test",                    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest."))]
                 [ValidateNotNullOrEmpty()]
                 [string]
                 $VMImageVersion = "latest",
@@ -877,7 +877,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                    Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes."))]
                 [Switch]
                 $Development,
 
@@ -898,7 +898,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                    Mandatory = $false, HelpMessage = $("Credential for VM local administrator."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Credential for VM local administrator."))]
                 [ValidateNotNullOrEmpty()]
                 [pscredential]
                 $VMInstanceCredential = (New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "azureuser", (ConvertTo-SecureString 'sdpD3ploym3ntT3$t' -AsPlainText -Force))
@@ -923,16 +923,16 @@ function Test-SilkResourceDeployment
                 # Production CNode SKU Configuration
                 # Actual production deployments use 64 vCPU SKUs for high performance
                 $cNodeSizeObject = @(
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "as_v6"; QuotaFamily = "Standard Dav6 Family vCPUs";  cNodeFriendlyName = "No_Increased_Logical_Capacity_Dav6"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "as_v5"; QuotaFamily = "Standard Dasv5 Family vCPUs"; cNodeFriendlyName = "No_Increased_Logical_Capacity_Dasv5"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "s_v5";  QuotaFamily = "Standard Dsv5 Family vCPUs";  cNodeFriendlyName = "No_Increased_Logical_Capacity_Dsv5"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "as_v4"; QuotaFamily = "Standard Lasv4 Family vCPUs"; cNodeFriendlyName = "Read_Cache_Enabled_Lasv4"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "as_v3"; QuotaFamily = "Standard Lasv3 Family vCPUs"; cNodeFriendlyName = "Read_Cache_Enabled_Lasv3"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "s_v3";  QuotaFamily = "Standard Lsv3 Family vCPUs";  cNodeFriendlyName = "Read_Cache_Enabled_Lsv3"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "as_v6"; QuotaFamily = "Standard Eav6 Family vCPUs";  cNodeFriendlyName = "Increased_Logical_Capacity_Eav6"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "as_v5"; QuotaFamily = "Standard Easv5 Family vCPUs"; cNodeFriendlyName = "Increased_Logical_Capacity_Easv5"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "s_v5";  QuotaFamily = "Standard Esv5 Family vCPUs";  cNodeFriendlyName = "Increased_Logical_Capacity_Esv5"};
-                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 32; vmSkuSuffix = "as_v5"; QuotaFamily = "Standard Easv3 Family vCPUs"; cNodeFriendlyName = "Entry_Level_Easv3"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "as_v6"; QuotaFamily = "Standard Dav6 Family vCPUs";     cNodeFriendlyName = "No_Increased_Logical_Capacity_Dav6"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "as_v5"; QuotaFamily = "Standard Dasv5 Family vCPUs";    cNodeFriendlyName = "No_Increased_Logical_Capacity_Dasv5"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_D"; vCPU = 64; vmSkuSuffix = "s_v5";  QuotaFamily = "Standard Dsv5 Family vCPUs";     cNodeFriendlyName = "No_Increased_Logical_Capacity_Dsv5"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "as_v4"; QuotaFamily = "Standard Lasv 4 Family vCPUs";   cNodeFriendlyName = "Read_Cache_Enabled_Lasv4"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "as_v3"; QuotaFamily = "Standard Lasv3 Family vCPUs";    cNodeFriendlyName = "Read_Cache_Enabled_Lasv3"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_L"; vCPU = 64; vmSkuSuffix = "s_v3";  QuotaFamily = "Standard Lsv3 Family vCPUs";     cNodeFriendlyName = "Read_Cache_Enabled_Lsv3"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "as_v6"; QuotaFamily = "Standard Eav6 Family vCPUs";     cNodeFriendlyName = "Increased_Logical_Capacity_Eav6"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "as_v5"; QuotaFamily = "Standard Easv5 Family vCPUs";    cNodeFriendlyName = "Increased_Logical_Capacity_Easv5"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 64; vmSkuSuffix = "s_v5";  QuotaFamily = "Standard Esv5 Family vCPUs";     cNodeFriendlyName = "Increased_Logical_Capacity_Esv5"};
+                                        [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 32; vmSkuSuffix = "as_v5"; QuotaFamily = "Standard Easv5 Family vCPUs";    cNodeFriendlyName = "Entry_Level_Easv5"};
                                     )
 
                 # SKU Family Test mode implicitly uses development-sized configurations
@@ -1539,6 +1539,85 @@ function Test-SilkResourceDeployment
                                 $totalWarning = ($ReportData.SKUFamilyTesting.Results | Where-Object { $_.ZoneSupportStatus -eq $("Warning") }).Count
                                 $totalUnsupported = ($ReportData.SKUFamilyTesting.Results | Where-Object { $_.ZoneSupportStatus -eq $("Error") }).Count
                                 Write-Host $("`nSummary: {0} supported in zone, {1} available elsewhere, {2} not in region" -f $totalSupported, $totalWarning, $totalUnsupported) -ForegroundColor Cyan
+                            }
+
+                        # ---------------------------------------------------------------
+                        # Multi-Zone Analysis Results (Zone Support Matrix)
+                        # ---------------------------------------------------------------
+                        if ($ReportData.ZoneResults -and $ReportData.ZoneResults.Zones.Count -gt 0)
+                            {
+                                $zones = $ReportData.ZoneResults.Zones
+                                Write-Host $("`n=== Multi-Zone SKU Support Matrix ===") -ForegroundColor Cyan
+                                Write-Host $("Region: {0} | Zones: {1}" -f $ReportData.Configuration.Region, ($zones -join $(", "))) -ForegroundColor Yellow
+
+                                # CNode zone matrix
+                                if ($ReportData.ZoneResults.CNodeMatrix.Count -gt 0)
+                                    {
+                                        Write-Host $("`nCNode VM Families:") -ForegroundColor Yellow
+
+                                        # Header
+                                        $headerZones = ($zones | ForEach-Object { $("Z{0}" -f $_) }) -join $("  ")
+                                        Write-Host $("  {0,-45} {1,-22} {2}  {3}" -f $("Configuration"), $("VM SKU"), $headerZones, $("Quota")) -ForegroundColor Gray
+                                        Write-Host $("  {0}" -f $("-" * 100)) -ForegroundColor DarkGray
+
+                                        foreach ($entry in $ReportData.ZoneResults.CNodeMatrix)
+                                            {
+                                                # Build zone indicator string
+                                                $zoneIndicators = $("")
+                                                foreach ($z in $zones)
+                                                    {
+                                                        if ($entry.ZoneSupport[$z])
+                                                            {
+                                                                $zoneIndicators += $(" ✓ ")
+                                                            } `
+                                                        else
+                                                            {
+                                                                $zoneIndicators += $(" ✗ ")
+                                                            }
+                                                    }
+
+                                                $lineColor = if ($entry.SupportedZoneCount -eq $zones.Count) { "Green" } `
+                                                    elseif ($entry.SupportedZoneCount -gt 0) { "Yellow" } `
+                                                    elseif (-not $entry.InRegion) { "Red" } `
+                                                    else { "Red" }
+                                                Write-Host $("  {0,-45} {1,-22} {2}  {3}" -f $entry.FriendlyName, $entry.SKUName, $zoneIndicators, $entry.QuotaDisplay) -ForegroundColor $lineColor
+                                            }
+                                    }
+
+                                # MNode zone matrix
+                                if ($ReportData.ZoneResults.MNodeMatrix.Count -gt 0)
+                                    {
+                                        Write-Host $("`nMNode VM Families:") -ForegroundColor Yellow
+
+                                        # Header
+                                        $headerZones = ($zones | ForEach-Object { $("Z{0}" -f $_) }) -join $("  ")
+                                        Write-Host $("  {0,-45} {1,-22} {2}  {3}" -f $("Configuration"), $("VM SKU"), $headerZones, $("Quota")) -ForegroundColor Gray
+                                        Write-Host $("  {0}" -f $("-" * 100)) -ForegroundColor DarkGray
+
+                                        foreach ($entry in $ReportData.ZoneResults.MNodeMatrix)
+                                            {
+                                                # Build zone indicator string
+                                                $zoneIndicators = $("")
+                                                foreach ($z in $zones)
+                                                    {
+                                                        if ($entry.ZoneSupport[$z])
+                                                            {
+                                                                $zoneIndicators += $(" ✓ ")
+                                                            } `
+                                                        else
+                                                            {
+                                                                $zoneIndicators += $(" ✗ ")
+                                                            }
+                                                    }
+
+                                                $displayName = $("{0} ({1})" -f $entry.FriendlyName, $entry.SKUName)
+                                                $lineColor = if ($entry.SupportedZoneCount -eq $zones.Count) { "Green" } `
+                                                    elseif ($entry.SupportedZoneCount -gt 0) { "Yellow" } `
+                                                    elseif (-not $entry.InRegion) { "Red" } `
+                                                    else { "Red" }
+                                                Write-Host $("  {0,-45} {1,-22} {2}  {3}" -f $entry.FriendlyName, $entry.SKUName, $zoneIndicators, $entry.QuotaDisplay) -ForegroundColor $lineColor
+                                            }
+                                    }
                             }
 
                         # ---------------------------------------------------------------
@@ -2519,6 +2598,116 @@ function Test-SilkResourceDeployment
 "@
                                     }
 
+                                # Build Multi-Zone Analysis HTML (conditional on ZoneResults)
+                                $zoneTestingHtml = $("")
+                                if ($ReportData.ZoneResults -and $ReportData.ZoneResults.Zones.Count -gt 0)
+                                    {
+                                        $zones = $ReportData.ZoneResults.Zones
+
+                                        # Build dynamic zone column headers
+                                        $zoneHeaderCells = $("")
+                                        foreach ($z in $zones)
+                                            {
+                                                $zoneHeaderCells += $("<th>Zone {0}</th>" -f $z)
+                                            }
+
+                                        # CNode matrix rows
+                                        $cNodeMatrixRows = $("")
+                                        foreach ($entry in $ReportData.ZoneResults.CNodeMatrix)
+                                            {
+                                                $zoneCells = $("")
+                                                foreach ($z in $zones)
+                                                    {
+                                                        if ($entry.ZoneSupport[$z])
+                                                            {
+                                                                $zoneCells += $("<td><span class='status-success'>✓</span></td>")
+                                                            } `
+                                                        else
+                                                            {
+                                                                $zoneCells += $("<td><span class='status-error'>✗</span></td>")
+                                                            }
+                                                    }
+                                                $cNodeMatrixRows += @"
+                <tr>
+                    <td>$($entry.FriendlyName)</td>
+                    <td>$($entry.SKUName)</td>
+                    <td>$($entry.vCPU)</td>
+                    $zoneCells
+                    <td>$($entry.QuotaFamily)</td>
+                    <td>$($entry.QuotaDisplay)</td>
+                </tr>
+"@
+                                            }
+
+                                        # MNode matrix rows
+                                        $mNodeMatrixRows = $("")
+                                        foreach ($entry in $ReportData.ZoneResults.MNodeMatrix)
+                                            {
+                                                $zoneCells = $("")
+                                                foreach ($z in $zones)
+                                                    {
+                                                        if ($entry.ZoneSupport[$z])
+                                                            {
+                                                                $zoneCells += $("<td><span class='status-success'>✓</span></td>")
+                                                            } `
+                                                        else
+                                                            {
+                                                                $zoneCells += $("<td><span class='status-error'>✗</span></td>")
+                                                            }
+                                                    }
+                                                $mNodeMatrixRows += @"
+                <tr>
+                    <td>$($entry.FriendlyName)</td>
+                    <td>$($entry.SKUName)</td>
+                    <td>$($entry.vCPU)</td>
+                    <td>$($entry.DNodeCount)</td>
+                    $zoneCells
+                    <td>$($entry.QuotaFamily)</td>
+                    <td>$($entry.QuotaDisplay)</td>
+                </tr>
+"@
+                                            }
+
+                                        $zoneTestingHtml = @"
+        <h2>$("🌍 Multi-Zone SKU Support Matrix")</h2>
+
+        <h3>$("CNode VM Families")</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>$("Configuration")</th>
+                    <th>$("VM SKU")</th>
+                    <th>$("vCPU")</th>
+                    $zoneHeaderCells
+                    <th>$("Quota Family")</th>
+                    <th>$("Quota (Region)")</th>
+                </tr>
+            </thead>
+            <tbody>
+                $cNodeMatrixRows
+            </tbody>
+        </table>
+
+        <h3>$("MNode VM Families")</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>$("Configuration")</th>
+                    <th>$("VM SKU")</th>
+                    <th>$("vCPU")</th>
+                    <th>$("DNodes")</th>
+                    $zoneHeaderCells
+                    <th>$("Quota Family")</th>
+                    <th>$("Quota (Region)")</th>
+                </tr>
+            </thead>
+            <tbody>
+                $mNodeMatrixRows
+            </tbody>
+        </table>
+"@
+                                    }
+
                                 # Build VNet/NSG status strings and infrastructure HTML (conditional on deployment)
                                 $infrastructureHtml = $("")
                                 if ($ReportData.Deployment.Attempted)
@@ -2658,6 +2847,8 @@ function Test-SilkResourceDeployment
         </div>
 
         $skuFamilyTestingHtml
+
+        $zoneTestingHtml
 
         $infrastructureHtml
 
@@ -3967,7 +4158,7 @@ function Test-SilkResourceDeployment
 
                                 if ($supportedSKU)
                                     {
-                                        $availableZones = if ($supportedSKU.LocationInfo.Zones) { @($supportedSKU.LocationInfo.Zones) } else { @() }
+                                        $availableZones = if ($supportedSKU.LocationInfo.Zones) { @($supportedSKU.LocationInfo.Zones | Sort-Object) } else { @() }
                                         if ($Zone -eq $("Zoneless"))
                                             {
                                                 $zoneSupport = $("✓ Available (Zoneless)")
@@ -4041,7 +4232,7 @@ function Test-SilkResourceDeployment
 
                                 if ($supportedSKU)
                                     {
-                                        $availableZones = if ($supportedSKU.LocationInfo.Zones) { @($supportedSKU.LocationInfo.Zones) } else { @() }
+                                        $availableZones = if ($supportedSKU.LocationInfo.Zones) { @($supportedSKU.LocationInfo.Zones | Sort-Object) } else { @() }
                                         if ($Zone -eq $("Zoneless"))
                                             {
                                                 $zoneSupport = $("✓ Available (Zoneless)")
@@ -4107,12 +4298,136 @@ function Test-SilkResourceDeployment
                     }
 
                 # ===============================================================================
+                # Multi-Zone Analysis - Per-SKU Zone Support Matrix
+                # ===============================================================================
+                # When TestAllZones is specified, build a matrix of which zones support each
+                # CNode and MNode SKU. Each SKU gets a ZoneSupport hashtable (zone → bool)
+                # plus regional quota data (quota is per-region, not per-zone).
+                if ($TestAllZones)
+                    {
+                        # Build sorted list of all zones in the region
+                        $allRegionZones = @($locationSupportedSKU.LocationInfo.Zones | Sort-Object | Select-Object -Unique)
+                        Write-Verbose -Message $("Multi-Zone Analysis mode - checking all {0} zones in region '{1}': {2}" -f $allRegionZones.Count, $Region, ($allRegionZones -join $(", ")))
+
+                        $zoneMatrixCNode = New-Object -TypeName 'System.Collections.Generic.List[PSCustomObject]'
+                        $zoneMatrixMNode = New-Object -TypeName 'System.Collections.Generic.List[PSCustomObject]'
+
+                        # ----- CNode Families Zone Matrix -----
+                        foreach ($cNodeEntry in $cNodeSizeObject)
+                            {
+                                $skuName = $("{0}{1}{2}" -f $cNodeEntry.vmSkuPrefix, $cNodeEntry.vCPU, $cNodeEntry.vmSkuSuffix)
+                                $supportedSKU = $locationSupportedSKU | Where-Object { $_.Name -eq $skuName -and $_.ResourceType -eq $("virtualMachines") }
+                                $familyQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $cNodeEntry.QuotaFamily }
+
+                                # Build zone support map
+                                $perZoneSupport = @{}
+                                $skuZones = @()
+                                if ($supportedSKU)
+                                    {
+                                        $skuZones = if ($supportedSKU.LocationInfo.Zones) { @($supportedSKU.LocationInfo.Zones | Sort-Object) } else { @() }
+                                    }
+                                foreach ($z in $allRegionZones)
+                                    {
+                                        $perZoneSupport[$z] = ($skuZones -contains $z)
+                                    }
+
+                                # Regional quota
+                                $quotaAvailable = $null
+                                $quotaLimit = $null
+                                $quotaDisplay = $("-")
+                                if ($familyQuota)
+                                    {
+                                        $quotaAvailable = $familyQuota.Limit - $familyQuota.CurrentValue
+                                        $quotaLimit = $familyQuota.Limit
+                                        $quotaDisplay = $("{0}/{1}" -f $quotaAvailable, $quotaLimit)
+                                    }
+
+                                $supportedZoneCount = ($perZoneSupport.Values | Where-Object { $_ }).Count
+
+                                $zoneMatrixCNode.Add([PSCustomObject]@{
+                                    FriendlyName        = $cNodeEntry.cNodeFriendlyName
+                                    SKUName             = $skuName
+                                    QuotaFamily         = $cNodeEntry.QuotaFamily
+                                    vCPU                = $cNodeEntry.vCPU
+                                    ZoneSupport         = $perZoneSupport
+                                    SupportedZoneCount  = $supportedZoneCount
+                                    InRegion            = ($supportedSKU -ne $null)
+                                    QuotaAvailable      = $quotaAvailable
+                                    QuotaLimit          = $quotaLimit
+                                    QuotaDisplay        = $quotaDisplay
+                                })
+
+                                Write-Verbose -Message $("  CNode {0} ({1}): {2}/{3} zones supported" -f $cNodeEntry.cNodeFriendlyName, $skuName, $supportedZoneCount, $allRegionZones.Count)
+                            }
+
+                        # ----- MNode Families Zone Matrix -----
+                        foreach ($mNodeEntry in $mNodeSizeObject)
+                            {
+                                $skuName = $("{0}{1}{2}" -f $mNodeEntry.vmSkuPrefix, $mNodeEntry.vCPU, $mNodeEntry.vmSkuSuffix)
+                                $supportedSKU = $locationSupportedSKU | Where-Object { $_.Name -eq $skuName -and $_.ResourceType -eq $("virtualMachines") }
+                                $familyQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $mNodeEntry.QuotaFamily }
+
+                                # Build zone support map
+                                $perZoneSupport = @{}
+                                $skuZones = @()
+                                if ($supportedSKU)
+                                    {
+                                        $skuZones = if ($supportedSKU.LocationInfo.Zones) { @($supportedSKU.LocationInfo.Zones | Sort-Object) } else { @() }
+                                    }
+                                foreach ($z in $allRegionZones)
+                                    {
+                                        $perZoneSupport[$z] = ($skuZones -contains $z)
+                                    }
+
+                                # Regional quota
+                                $quotaAvailable = $null
+                                $quotaLimit = $null
+                                $quotaDisplay = $("-")
+                                if ($familyQuota)
+                                    {
+                                        $quotaAvailable = $familyQuota.Limit - $familyQuota.CurrentValue
+                                        $quotaLimit = $familyQuota.Limit
+                                        $quotaDisplay = $("{0}/{1}" -f $quotaAvailable, $quotaLimit)
+                                    }
+
+                                $supportedZoneCount = ($perZoneSupport.Values | Where-Object { $_ }).Count
+
+                                $zoneMatrixMNode.Add([PSCustomObject]@{
+                                    FriendlyName        = $("{0} TiB" -f $mNodeEntry.PhysicalSize)
+                                    SKUName             = $skuName
+                                    QuotaFamily         = $mNodeEntry.QuotaFamily
+                                    vCPU                = $mNodeEntry.vCPU
+                                    DNodeCount          = $mNodeEntry.dNodeCount
+                                    PhysicalSize        = $mNodeEntry.PhysicalSize
+                                    ZoneSupport         = $perZoneSupport
+                                    SupportedZoneCount  = $supportedZoneCount
+                                    InRegion            = ($supportedSKU -ne $null)
+                                    QuotaAvailable      = $quotaAvailable
+                                    QuotaLimit          = $quotaLimit
+                                    QuotaDisplay        = $quotaDisplay
+                                })
+
+                                Write-Verbose -Message $("  MNode {0} TiB ({1}): {2}/{3} zones supported" -f $mNodeEntry.PhysicalSize, $skuName, $supportedZoneCount, $allRegionZones.Count)
+                            }
+
+                        # Package results as a single object with the zone list and matrix data
+                        $zoneResults = [PSCustomObject]@{
+                            Zones           = $allRegionZones
+                            CNodeMatrix     = @($zoneMatrixCNode)
+                            MNodeMatrix     = @($zoneMatrixMNode)
+                        }
+
+                        Write-Verbose -Message $("Multi-Zone Analysis complete - {0} zones, {1} CNode entries, {2} MNode entries" -f $allRegionZones.Count, $zoneMatrixCNode.Count, $zoneMatrixMNode.Count)
+                    }
+
+                # ===============================================================================
                 # Report Only Mode - Early Return from Begin Block
                 # ===============================================================================
-                # In report-only or SKU family test mode, all needed data (raw SKU support and quota)
-                # has been collected. Skip VM image discovery and remaining begin block setup.
-                # The process block will populate $reportData and call report functions.
-                if ($GenerateReportOnly -or $TestAllSKUFamilies)
+                # In report-only, SKU family test, or multi-zone analysis mode, all needed data
+                # (raw SKU support and quota) has been collected. Skip VM image discovery and
+                # remaining begin block setup. The process block will populate $reportData and
+                # call report functions.
+                if ($GenerateReportOnly -or $TestAllSKUFamilies -or $TestAllZones)
                     {
                         Write-Verbose -Message $("Report/analysis mode - environment validation and SKU/quota data collection complete. Skipping VM image discovery.")
                         return
@@ -4381,12 +4696,12 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 # Populates the centralized report data object with all available analysis
                 # data collected during the begin block, then renders reports and returns.
-                if ($GenerateReportOnly -or $TestAllSKUFamilies)
+                if ($GenerateReportOnly -or $TestAllSKUFamilies -or $TestAllZones)
                     {
                         Write-Verbose -Message $("Report/analysis mode - generating report without deployment")
 
                         # Report metadata
-                        $reportData.Metadata.ReportMode         = if ($TestAllSKUFamilies) { $("SKU Family Test") } else { $("Report Only") }
+                        $reportData.Metadata.ReportMode         = if ($TestAllSKUFamilies -and $TestAllZones) { $("SKU Family Test + Multi-Zone") } elseif ($TestAllSKUFamilies) { $("SKU Family Test") } elseif ($TestAllZones) { $("Multi-Zone Analysis") } else { $("Report Only") }
                         $reportData.Metadata.StartTime          = Get-Date
                         $reportData.Metadata.ParameterSetName   = $PSCmdlet.ParameterSetName
 
@@ -4537,6 +4852,12 @@ function Test-SilkResourceDeployment
                         if ($TestAllSKUFamilies -and $skuFamilyResults)
                             {
                                 $reportData.SKUFamilyTesting.Results = @($skuFamilyResults)
+                            }
+
+                        # Multi-Zone Analysis results (populated in begin block)
+                        if ($TestAllZones -and $zoneResults)
+                            {
+                                $reportData.ZoneResults = $zoneResults
                             }
 
                         # Zone alignment (simplified for report only)

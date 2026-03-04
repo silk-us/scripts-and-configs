@@ -18,6 +18,7 @@ Set-MPIOSetting -CustomPathRecovery Enabled
 Set-MPIOSetting -NewPathRecoveryInterval 20
 Set-MPIOSetting -NewPDORemovePeriod 20
 Get-ScheduledTask ScheduledDefrag | Disable-ScheduledTask
+Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\FileSystem" -Name DisableDeleteNotification -Value 1
 ```
 Reboot
 

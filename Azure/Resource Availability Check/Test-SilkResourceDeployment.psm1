@@ -5244,7 +5244,62 @@ function Test-SilkResourceDeployment
 
                 if (!$DisableCleanup)
                     {
-                        Read-Host -Prompt "Press Enter to continue with cleanup or Ctrl+C to exit without cleanup."
+                        # Build the cleanup-only command so the user can copy it if they Ctrl+C
+                        $cleanupCmd = $("Test-SilkResourceDeployment -SubscriptionId '{0}' -ResourceGroupName '{1}' -Region '{2}' -Zone '{3}' -RunCleanupOnly" -f $SubscriptionId, $ResourceGroupName, $Region, $Zone)
+                        if ($ResourceNamePrefix -ne $("sdp-test"))
+                            {
+                                $cleanupCmd = $("{0} -ResourceNamePrefix '{1}'" -f $cleanupCmd, $ResourceNamePrefix)
+                            }
+
+                        Write-Host $("")
+                        Write-Host $("If you need to run cleanup manually later, use the following command:") -ForegroundColor Yellow
+                        Write-Host $("")
+                        Write-Host $("  {0}" -f $cleanupCmd) -ForegroundColor Cyan
+                        Write-Host $("")
+                        Write-Host $("Cleanup will begin automatically in 60 seconds.") -ForegroundColor Yellow
+                        Write-Host $("Press [Enter] to proceed immediately, or [Ctrl+C] to exit without cleanup.") -ForegroundColor Yellow
+                        Write-Host $("")
+
+                        # 60-second countdown with keypress detection
+                        $countdownSeconds = 60
+                        $userProceeded = $false
+
+                        for ($i = $countdownSeconds; $i -gt 0; $i--)
+                            {
+                                # Overwrite the same line with updated countdown
+                                Write-Host $("`r  Cleanup begins in {0,2} seconds...  " -f $i) -NoNewline -ForegroundColor DarkGray
+
+                                # Poll for Enter keypress once per second (10 checks x 100ms)
+                                for ($poll = 0; $poll -lt 10; $poll++)
+                                    {
+                                        if ([Console]::KeyAvailable)
+                                            {
+                                                $key = [Console]::ReadKey($true)
+                                                if ($key.Key -eq [ConsoleKey]::Enter)
+                                                    {
+                                                        $userProceeded = $true
+                                                        break
+                                                    }
+                                            }
+                                        Start-Sleep -Milliseconds 100
+                                    }
+
+                                if ($userProceeded)
+                                    {
+                                        break
+                                    }
+                            }
+
+                        # Clear the countdown line and confirm
+                        Write-Host $("`r{0}`r" -f $(" " * 60)) -NoNewline
+                        if ($userProceeded)
+                            {
+                                Write-Host $("Proceeding with cleanup...") -ForegroundColor Green
+                            }
+                        else
+                            {
+                                Write-Host $("Countdown complete. Proceeding with cleanup...") -ForegroundColor Green
+                            }
                     }
             }
         end

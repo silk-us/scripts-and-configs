@@ -1459,6 +1459,89 @@ function Test-SilkResourceDeployment
                             }
 
                         # ---------------------------------------------------------------
+                        # SKU Family Testing Results (All Silk-Supported Families)
+                        # ---------------------------------------------------------------
+                        if ($ReportData.SKUFamilyTesting.Results.Count -gt 0)
+                            {
+                                Write-Host $("`n=== SKU Family Testing - All Silk-Supported VM Families ===") -ForegroundColor Cyan
+                                Write-Verbose -Message $("Rendering comprehensive SKU family analysis for {0} entries" -f $ReportData.SKUFamilyTesting.Results.Count)
+
+                                # CNode Families
+                                $cNodeFamilyResults = $ReportData.SKUFamilyTesting.Results | Where-Object { $_.ComponentType -eq $("CNode") }
+                                if ($cNodeFamilyResults)
+                                    {
+                                        Write-Host $("`nCNode VM Families ({0} configurations):" -f $cNodeFamilyResults.Count) -ForegroundColor Yellow
+
+                                        foreach ($entry in $cNodeFamilyResults)
+                                            {
+                                                $skuColor = switch ($entry.ZoneSupportStatus)
+                                                    {
+                                                        "Success" { "Green" }
+                                                        "Warning" { "Yellow" }
+                                                        "Error"   { "Red" }
+                                                    }
+                                                $quotaColor = switch ($entry.QuotaStatusLevel)
+                                                    {
+                                                        "Success" { "Green" }
+                                                        "Warning" { "Yellow" }
+                                                        "Error"   { "Red" }
+                                                    }
+
+                                                Write-Host $("  {0}" -f $entry.FriendlyName) -ForegroundColor White
+                                                Write-Host $("    SKU: {0} | vCPU: {1}" -f $entry.SKUName, $entry.vCPU)
+                                                Write-Host $("    Zone: ") -NoNewline
+                                                Write-Host $entry.ZoneSupport -ForegroundColor $skuColor
+                                                Write-Host $("    Quota ({0}): " -f $entry.QuotaFamily) -NoNewline
+                                                Write-Host $entry.QuotaStatus -ForegroundColor $quotaColor
+                                                if ($entry.AvailableZones.Count -gt 0)
+                                                    {
+                                                        Write-Host $("    Available Zones: {0}" -f ($entry.AvailableZones -join $(", ")))
+                                                    }
+                                            }
+                                    }
+
+                                # MNode Families
+                                $mNodeFamilyResults = $ReportData.SKUFamilyTesting.Results | Where-Object { $_.ComponentType -eq $("MNode") }
+                                if ($mNodeFamilyResults)
+                                    {
+                                        Write-Host $("`nMNode VM Families ({0} configurations):" -f $mNodeFamilyResults.Count) -ForegroundColor Yellow
+
+                                        foreach ($entry in $mNodeFamilyResults)
+                                            {
+                                                $skuColor = switch ($entry.ZoneSupportStatus)
+                                                    {
+                                                        "Success" { "Green" }
+                                                        "Warning" { "Yellow" }
+                                                        "Error"   { "Red" }
+                                                    }
+                                                $quotaColor = switch ($entry.QuotaStatusLevel)
+                                                    {
+                                                        "Success" { "Green" }
+                                                        "Warning" { "Yellow" }
+                                                        "Error"   { "Red" }
+                                                    }
+
+                                                Write-Host $("  {0} ({1})" -f $entry.FriendlyName, $entry.SKUName) -ForegroundColor White
+                                                Write-Host $("    vCPU: {0} | DNodes: {1}" -f $entry.vCPU, $entry.DNodeCount)
+                                                Write-Host $("    Zone: ") -NoNewline
+                                                Write-Host $entry.ZoneSupport -ForegroundColor $skuColor
+                                                Write-Host $("    Quota ({0}): " -f $entry.QuotaFamily) -NoNewline
+                                                Write-Host $entry.QuotaStatus -ForegroundColor $quotaColor
+                                                if ($entry.AvailableZones.Count -gt 0)
+                                                    {
+                                                        Write-Host $("    Available Zones: {0}" -f ($entry.AvailableZones -join $(", ")))
+                                                    }
+                                            }
+                                    }
+
+                                # Summary counts
+                                $totalSupported = ($ReportData.SKUFamilyTesting.Results | Where-Object { $_.ZoneSupportStatus -eq $("Success") }).Count
+                                $totalWarning = ($ReportData.SKUFamilyTesting.Results | Where-Object { $_.ZoneSupportStatus -eq $("Warning") }).Count
+                                $totalUnsupported = ($ReportData.SKUFamilyTesting.Results | Where-Object { $_.ZoneSupportStatus -eq $("Error") }).Count
+                                Write-Host $("`nSummary: {0} supported in zone, {1} available elsewhere, {2} not in region" -f $totalSupported, $totalWarning, $totalUnsupported) -ForegroundColor Cyan
+                            }
+
+                        # ---------------------------------------------------------------
                         # VM Deployment Report
                         # ---------------------------------------------------------------
                         if ($ReportData.Deployment.VMReport.Count -gt 0)
@@ -2311,6 +2394,131 @@ function Test-SilkResourceDeployment
 "@
                                     }
 
+                                # Build SKU Family Testing HTML (conditional on TestAllSKUFamilies results)
+                                $skuFamilyTestingHtml = $("")
+                                if ($ReportData.SKUFamilyTesting.Results.Count -gt 0)
+                                    {
+                                        $cNodeFamilyResults = $ReportData.SKUFamilyTesting.Results | Where-Object { $_.ComponentType -eq $("CNode") }
+                                        $mNodeFamilyResults = $ReportData.SKUFamilyTesting.Results | Where-Object { $_.ComponentType -eq $("MNode") }
+
+                                        $totalSupported = ($ReportData.SKUFamilyTesting.Results | Where-Object { $_.ZoneSupportStatus -eq $("Success") }).Count
+                                        $totalWarning = ($ReportData.SKUFamilyTesting.Results | Where-Object { $_.ZoneSupportStatus -eq $("Warning") }).Count
+                                        $totalUnsupported = ($ReportData.SKUFamilyTesting.Results | Where-Object { $_.ZoneSupportStatus -eq $("Error") }).Count
+
+                                        # CNode family table rows
+                                        $cNodeFamilyRows = $("")
+                                        foreach ($entry in $cNodeFamilyResults)
+                                            {
+                                                $zoneClass = switch ($entry.ZoneSupportStatus)
+                                                    {
+                                                        "Success" { $("status-success") }
+                                                        "Warning" { $("status-warning") }
+                                                        "Error"   { $("status-error") }
+                                                    }
+                                                $quotaClass = switch ($entry.QuotaStatusLevel)
+                                                    {
+                                                        "Success" { $("status-success") }
+                                                        "Warning" { $("status-warning") }
+                                                        "Error"   { $("status-error") }
+                                                    }
+                                                $zonesDisplay = if ($entry.AvailableZones.Count -gt 0) { $entry.AvailableZones -join $(", ") } else { $("-") }
+                                                $cNodeFamilyRows += @"
+                <tr>
+                    <td>$($entry.FriendlyName)</td>
+                    <td>$($entry.SKUName)</td>
+                    <td>$($entry.vCPU)</td>
+                    <td><span class="$zoneClass">$($entry.ZoneSupport)</span></td>
+                    <td>$($zonesDisplay)</td>
+                    <td>$($entry.QuotaFamily)</td>
+                    <td><span class="$quotaClass">$($entry.QuotaStatus)</span></td>
+                </tr>
+"@
+                                            }
+
+                                        # MNode family table rows
+                                        $mNodeFamilyRows = $("")
+                                        foreach ($entry in $mNodeFamilyResults)
+                                            {
+                                                $zoneClass = switch ($entry.ZoneSupportStatus)
+                                                    {
+                                                        "Success" { $("status-success") }
+                                                        "Warning" { $("status-warning") }
+                                                        "Error"   { $("status-error") }
+                                                    }
+                                                $quotaClass = switch ($entry.QuotaStatusLevel)
+                                                    {
+                                                        "Success" { $("status-success") }
+                                                        "Warning" { $("status-warning") }
+                                                        "Error"   { $("status-error") }
+                                                    }
+                                                $zonesDisplay = if ($entry.AvailableZones.Count -gt 0) { $entry.AvailableZones -join $(", ") } else { $("-") }
+                                                $mNodeFamilyRows += @"
+                <tr>
+                    <td>$($entry.FriendlyName)</td>
+                    <td>$($entry.SKUName)</td>
+                    <td>$($entry.vCPU)</td>
+                    <td>$($entry.DNodeCount)</td>
+                    <td><span class="$zoneClass">$($entry.ZoneSupport)</span></td>
+                    <td>$($zonesDisplay)</td>
+                    <td>$($entry.QuotaFamily)</td>
+                    <td><span class="$quotaClass">$($entry.QuotaStatus)</span></td>
+                </tr>
+"@
+                                            }
+
+                                        $skuFamilyTestingHtml = @"
+        <h2>$("🔬 SKU Family Testing - All Silk-Supported VM Families")</h2>
+        <div class="info-grid">
+            <div class="info-card">
+                <h4>$("📊 Family Testing Summary")</h4>
+                <strong>$("Total Families Tested:")</strong> $($ReportData.SKUFamilyTesting.Results.Count)<br>
+                <strong>$("CNode Configurations:")</strong> $($cNodeFamilyResults.Count)<br>
+                <strong>$("MNode Configurations:")</strong> $($mNodeFamilyResults.Count)<br>
+                <strong>$("Supported in Zone:")</strong> <span class="status-success">$($totalSupported)</span><br>
+                <strong>$("Available Elsewhere:")</strong> <span class="status-warning">$($totalWarning)</span><br>
+                <strong>$("Not in Region:")</strong> <span class="status-error">$($totalUnsupported)</span>
+            </div>
+        </div>
+
+        <h3>$("CNode VM Families")</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>$("Configuration")</th>
+                    <th>$("VM SKU")</th>
+                    <th>$("vCPU")</th>
+                    <th>$("Zone Support")</th>
+                    <th>$("Available Zones")</th>
+                    <th>$("Quota Family")</th>
+                    <th>$("Quota Status")</th>
+                </tr>
+            </thead>
+            <tbody>
+                $cNodeFamilyRows
+            </tbody>
+        </table>
+
+        <h3>$("MNode VM Families")</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>$("Configuration")</th>
+                    <th>$("VM SKU")</th>
+                    <th>$("vCPU")</th>
+                    <th>$("DNodes")</th>
+                    <th>$("Zone Support")</th>
+                    <th>$("Available Zones")</th>
+                    <th>$("Quota Family")</th>
+                    <th>$("Quota Status")</th>
+                </tr>
+            </thead>
+            <tbody>
+                $mNodeFamilyRows
+            </tbody>
+        </table>
+"@
+                                    }
+
                                 # Build VNet/NSG status strings and infrastructure HTML (conditional on deployment)
                                 $infrastructureHtml = $("")
                                 if ($ReportData.Deployment.Attempted)
@@ -2448,6 +2656,8 @@ function Test-SilkResourceDeployment
         <div class="info-grid">
             $quotaSummaryCardsHtml
         </div>
+
+        $skuFamilyTestingHtml
 
         $infrastructureHtml
 
@@ -3732,14 +3942,179 @@ function Test-SilkResourceDeployment
                     }
 
                 # ===============================================================================
+                # SKU Family Testing - Comprehensive Analysis of All Silk-Supported Families
+                # ===============================================================================
+                # When TestAllSKUFamilies is specified, iterate ALL entries in cNodeSizeObject
+                # and mNodeSizeObject to produce a complete support matrix for the target
+                # region and zone. Results feed into the SKUFamilyTesting report section.
+                if ($TestAllSKUFamilies)
+                    {
+                        Write-Verbose -Message $("SKU Family Testing mode - analyzing all Silk-supported VM families for region '{0}'" -f $Region)
+
+                        $skuFamilyResults = New-Object -TypeName 'System.Collections.Generic.List[PSCustomObject]'
+
+                        # ----- CNode Family Analysis -----
+                        foreach ($cNodeEntry in $cNodeSizeObject)
+                            {
+                                $skuName = $("{0}{1}{2}" -f $cNodeEntry.vmSkuPrefix, $cNodeEntry.vCPU, $cNodeEntry.vmSkuSuffix)
+                                $supportedSKU = $locationSupportedSKU | Where-Object { $_.Name -eq $skuName -and $_.ResourceType -eq $("virtualMachines") }
+                                $familyQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $cNodeEntry.QuotaFamily }
+
+                                # Determine zone support
+                                $zoneSupport = $("✗ Not available in region")
+                                $zoneSupportStatus = $("Error")
+                                $availableZones = @()
+
+                                if ($supportedSKU)
+                                    {
+                                        $availableZones = if ($supportedSKU.LocationInfo.Zones) { @($supportedSKU.LocationInfo.Zones) } else { @() }
+                                        if ($Zone -eq $("Zoneless"))
+                                            {
+                                                $zoneSupport = $("✓ Available (Zoneless)")
+                                                $zoneSupportStatus = $("Success")
+                                            } `
+                                        elseif ($availableZones -contains $Zone)
+                                            {
+                                                $zoneSupport = $("✓ Available in zone {0}" -f $Zone)
+                                                $zoneSupportStatus = $("Success")
+                                            } `
+                                        else
+                                            {
+                                                $zoneSupport = $("⚠ Not in zone {0} (available: {1})" -f $Zone, $(if ($availableZones.Count -gt 0) { $availableZones -join $(", ") } else { $("none") }))
+                                                $zoneSupportStatus = $("Warning")
+                                            }
+                                    }
+
+                                # Determine quota status
+                                $quotaStatus = $("Unknown")
+                                $quotaStatusLevel = $("Warning")
+                                $quotaAvailable = $null
+                                $quotaLimit = $null
+
+                                if ($familyQuota)
+                                    {
+                                        $quotaAvailable = $familyQuota.Limit - $familyQuota.CurrentValue
+                                        $quotaLimit = $familyQuota.Limit
+                                        $quotaStatus = $("{0}/{1} available" -f $quotaAvailable, $quotaLimit)
+                                        $quotaStatusLevel = if ($quotaAvailable -gt 0) { $("Success") } else { $("Error") }
+                                    } `
+                                elseif ($knownPreviewSkuFamilies -contains $cNodeEntry.QuotaFamily)
+                                    {
+                                        $quotaStatus = $("Preview/Unregistered family")
+                                        $quotaStatusLevel = $("Warning")
+                                    } `
+                                else
+                                    {
+                                        $quotaStatus = $("No quota data available")
+                                        $quotaStatusLevel = $("Warning")
+                                    }
+
+                                $skuFamilyResults.Add([PSCustomObject]@{
+                                    ComponentType       = $("CNode")
+                                    FriendlyName        = $cNodeEntry.cNodeFriendlyName
+                                    SKUName             = $skuName
+                                    QuotaFamily         = $cNodeEntry.QuotaFamily
+                                    vCPU                = $cNodeEntry.vCPU
+                                    ZoneSupport         = $zoneSupport
+                                    ZoneSupportStatus   = $zoneSupportStatus
+                                    AvailableZones      = $availableZones
+                                    QuotaStatus         = $quotaStatus
+                                    QuotaStatusLevel    = $quotaStatusLevel
+                                    QuotaAvailable      = $quotaAvailable
+                                    QuotaLimit          = $quotaLimit
+                                })
+
+                                Write-Verbose -Message $("  CNode {0} ({1}): {2} | Quota: {3}" -f $cNodeEntry.cNodeFriendlyName, $skuName, $zoneSupport, $quotaStatus)
+                            }
+
+                        # ----- MNode Family Analysis -----
+                        foreach ($mNodeEntry in $mNodeSizeObject)
+                            {
+                                $skuName = $("{0}{1}{2}" -f $mNodeEntry.vmSkuPrefix, $mNodeEntry.vCPU, $mNodeEntry.vmSkuSuffix)
+                                $supportedSKU = $locationSupportedSKU | Where-Object { $_.Name -eq $skuName -and $_.ResourceType -eq $("virtualMachines") }
+                                $familyQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $mNodeEntry.QuotaFamily }
+
+                                # Determine zone support
+                                $zoneSupport = $("✗ Not available in region")
+                                $zoneSupportStatus = $("Error")
+                                $availableZones = @()
+
+                                if ($supportedSKU)
+                                    {
+                                        $availableZones = if ($supportedSKU.LocationInfo.Zones) { @($supportedSKU.LocationInfo.Zones) } else { @() }
+                                        if ($Zone -eq $("Zoneless"))
+                                            {
+                                                $zoneSupport = $("✓ Available (Zoneless)")
+                                                $zoneSupportStatus = $("Success")
+                                            } `
+                                        elseif ($availableZones -contains $Zone)
+                                            {
+                                                $zoneSupport = $("✓ Available in zone {0}" -f $Zone)
+                                                $zoneSupportStatus = $("Success")
+                                            } `
+                                        else
+                                            {
+                                                $zoneSupport = $("⚠ Not in zone {0} (available: {1})" -f $Zone, $(if ($availableZones.Count -gt 0) { $availableZones -join $(", ") } else { $("none") }))
+                                                $zoneSupportStatus = $("Warning")
+                                            }
+                                    }
+
+                                # Determine quota status
+                                $quotaStatus = $("Unknown")
+                                $quotaStatusLevel = $("Warning")
+                                $quotaAvailable = $null
+                                $quotaLimit = $null
+
+                                if ($familyQuota)
+                                    {
+                                        $quotaAvailable = $familyQuota.Limit - $familyQuota.CurrentValue
+                                        $quotaLimit = $familyQuota.Limit
+                                        $quotaStatus = $("{0}/{1} available" -f $quotaAvailable, $quotaLimit)
+                                        $quotaStatusLevel = if ($quotaAvailable -gt 0) { $("Success") } else { $("Error") }
+                                    } `
+                                elseif ($knownPreviewSkuFamilies -contains $mNodeEntry.QuotaFamily)
+                                    {
+                                        $quotaStatus = $("Preview/Unregistered family")
+                                        $quotaStatusLevel = $("Warning")
+                                    } `
+                                else
+                                    {
+                                        $quotaStatus = $("No quota data available")
+                                        $quotaStatusLevel = $("Warning")
+                                    }
+
+                                $skuFamilyResults.Add([PSCustomObject]@{
+                                    ComponentType       = $("MNode")
+                                    FriendlyName        = $("{0} TiB" -f $mNodeEntry.PhysicalSize)
+                                    SKUName             = $skuName
+                                    QuotaFamily         = $mNodeEntry.QuotaFamily
+                                    vCPU                = $mNodeEntry.vCPU
+                                    DNodeCount          = $mNodeEntry.dNodeCount
+                                    PhysicalSize        = $mNodeEntry.PhysicalSize
+                                    ZoneSupport         = $zoneSupport
+                                    ZoneSupportStatus   = $zoneSupportStatus
+                                    AvailableZones      = $availableZones
+                                    QuotaStatus         = $quotaStatus
+                                    QuotaStatusLevel    = $quotaStatusLevel
+                                    QuotaAvailable      = $quotaAvailable
+                                    QuotaLimit          = $quotaLimit
+                                })
+
+                                Write-Verbose -Message $("  MNode {0} TiB ({1}): {2} | Quota: {3}" -f $mNodeEntry.PhysicalSize, $skuName, $zoneSupport, $quotaStatus)
+                            }
+
+                        Write-Verbose -Message $("SKU Family Testing complete - {0} total entries analyzed ({1} CNode, {2} MNode)" -f $skuFamilyResults.Count, ($skuFamilyResults | Where-Object { $_.ComponentType -eq $("CNode") }).Count, ($skuFamilyResults | Where-Object { $_.ComponentType -eq $("MNode") }).Count)
+                    }
+
+                # ===============================================================================
                 # Report Only Mode - Early Return from Begin Block
                 # ===============================================================================
-                # In report-only mode, all needed data (raw SKU support and quota) has been
-                # collected. Skip VM image discovery and remaining begin block setup.
+                # In report-only or SKU family test mode, all needed data (raw SKU support and quota)
+                # has been collected. Skip VM image discovery and remaining begin block setup.
                 # The process block will populate $reportData and call report functions.
-                if ($GenerateReportOnly)
+                if ($GenerateReportOnly -or $TestAllSKUFamilies)
                     {
-                        Write-Verbose -Message $("Report Only mode - environment validation and SKU/quota data collection complete. Skipping VM image discovery.")
+                        Write-Verbose -Message $("Report/analysis mode - environment validation and SKU/quota data collection complete. Skipping VM image discovery.")
                         return
                     }
 
@@ -4006,12 +4381,12 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 # Populates the centralized report data object with all available analysis
                 # data collected during the begin block, then renders reports and returns.
-                if ($GenerateReportOnly)
+                if ($GenerateReportOnly -or $TestAllSKUFamilies)
                     {
-                        Write-Verbose -Message $("Report Only mode - generating report without deployment")
+                        Write-Verbose -Message $("Report/analysis mode - generating report without deployment")
 
                         # Report metadata
-                        $reportData.Metadata.ReportMode         = $("Report Only")
+                        $reportData.Metadata.ReportMode         = if ($TestAllSKUFamilies) { $("SKU Family Test") } else { $("Report Only") }
                         $reportData.Metadata.StartTime          = Get-Date
                         $reportData.Metadata.ParameterSetName   = $PSCmdlet.ParameterSetName
 
@@ -4157,6 +4532,12 @@ function Test-SilkResourceDeployment
                             }
 
                         $reportData.QuotaAnalysisData = $quotaAnalysisData
+
+                        # SKU Family Testing results (populated in begin block)
+                        if ($TestAllSKUFamilies -and $skuFamilyResults)
+                            {
+                                $reportData.SKUFamilyTesting.Results = @($skuFamilyResults)
+                            }
 
                         # Zone alignment (simplified for report only)
                         $reportData.EnvironmentValidation.ZoneAlignment.FinalZone = $Zone

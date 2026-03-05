@@ -313,6 +313,14 @@ function Test-SilkResourceDeployment
                 Deploys test VMs for each SKU in every supported zone and produces a multi-zone deployment
                 results matrix showing per-zone pass/fail status for each SKU family.
 
+            .EXAMPLE
+                Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -MnodeSizeLsv3 @("19.5","39.1") -TestAllZones
+
+                Tests a specific deployment configuration across all availability zones simultaneously.
+                Deploys the full CNode and MNode configuration into every zone where all requested SKUs are
+                supported, producing a multi-zone deployment comparison showing pass/fail per zone.
+                The -Zone parameter is still used for zone alignment reporting.
+
             .INPUTS
                 Command line parameters or JSON configuration file containing deployment specifications.
                 Supports both individual parameter specification and bulk configuration via JSON import.

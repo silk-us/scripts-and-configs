@@ -1762,7 +1762,7 @@ function Test-SilkResourceDeployment
                                 # Non-successful VMs
                                 if ($ReportData.Deployment.VMReport.Count -gt 0)
                             {
-                                $nonSuccessfulVMs = $ReportData.Deployment.VMReport | Where-Object { $_.ProvisioningState -ne $("Succeeded") -and $_.ProvisioningState -ne $("Not Found") }
+                                $nonSuccessfulVMs = $ReportData.Deployment.VMReport | Where-Object { $_.ProvisioningState -ne $("Succeeded") -and $_.ProvisioningState -ne $("Not Found") -and $_.ProvisioningState -ne $("Allocation Failed") }
                                 if ($nonSuccessfulVMs.Count -gt 0)
                                     {
                                         Write-Host $("`nVMs with Non-Successful Provisioning States:") -ForegroundColor Yellow
@@ -1780,9 +1780,12 @@ function Test-SilkResourceDeployment
                                 if ($findings.NoCapacityIssues.Count -gt 0)
                                     {
                                         $affectedSkus = $findings.NoCapacityIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne $("") }
-                                        Write-Host $("  ⚠️ No SKU Capacity Available: {0} VM(s) affected ({1})" -f $findings.NoCapacityIssues.Count, ($affectedSkus -join $(", "))) -ForegroundColor Gray
-                                        Write-Host $("      → Azure has no available capacity for these VM SKUs in the target zone/region") -ForegroundColor DarkGray
-                                        Write-Host $("      → Try: Different availability zone, different region, or wait and retry") -ForegroundColor DarkGray
+                                        $zoneGrouping = $findings.NoCapacityIssues | Group-Object -Property TestedZone | Sort-Object Name
+                                        $zoneDetails = ($zoneGrouping | ForEach-Object { $("Zone {0}: {1}" -f $_.Name, $_.Count) }) -join ", "
+                                        Write-Host $("  ⚠️ No SKU Capacity Available: {0} VM(s) affected ({1})" -f $findings.NoCapacityIssues.Count, ($affectedSkus -join $(", "))) -ForegroundColor Yellow
+                                        Write-Host $("      Affected Zones: {0}" -f $zoneDetails) -ForegroundColor Gray
+                                        Write-Host $("      → SKU quota is available and SKU is listed as supported, but Azure could not allocate capacity") -ForegroundColor DarkGray
+                                        Write-Host $("      → Try: Different availability zone, different region, or retry later") -ForegroundColor DarkGray
                                     }
 
                                 if ($findings.QuotaIssues.Count -gt 0)
@@ -1813,6 +1816,25 @@ function Test-SilkResourceDeployment
                                         Write-Host $("  ⚙️ Other Constraints: {0} VM(s) affected ({1})" -f $findings.OtherIssues.Count, ($affectedSkus -join $(", "))) -ForegroundColor Gray
                                         Write-Host $("      → Deployment failed due to other Azure constraints or configuration issues") -ForegroundColor DarkGray
                                         Write-Host $("      → Try: Review error details in HTML report for specific troubleshooting steps") -ForegroundColor DarkGray
+                                    }
+
+                                # Show per-VM error details only for failures that could not be automatically classified
+                                $unresolvedConsoleFindings = @($ReportData.Deployment.ValidationFindings | Where-Object { $_.FailureCategory -in @("Other", "Unknown") })
+                                if ($unresolvedConsoleFindings.Count -gt 0)
+                                    {
+                                        Write-Host $("`n  Unresolved Failure Details:") -ForegroundColor Yellow
+                                        foreach ($finding in $unresolvedConsoleFindings)
+                                            {
+                                                $findingColor = if ($finding.FailureCategory -eq "Unknown") { "Red" } else { "Gray" }
+                                                Write-Host $("    {0} ({1}, Zone {2}): [{3}] {4}" -f $finding.VMName, $finding.VMSku, $finding.TestedZone, $finding.FailureCategory, $finding.ErrorMessage) -ForegroundColor $findingColor
+                                            }
+                                    }
+
+                                # Hint about -DisableCleanup for deeper investigation
+                                if (-not $ReportData.Configuration.DisableCleanup)
+                                    {
+                                        Write-Host $("`n  💡 Tip: Re-run with -DisableCleanup to keep failed resources for investigation in the Azure portal.") -ForegroundColor Cyan
+                                        Write-Host $("     Check Azure Activity Log for the resource group to see detailed allocation failure reasons.") -ForegroundColor DarkCyan
                                     }
                             }
 
@@ -2658,11 +2680,14 @@ function Test-SilkResourceDeployment
                                         if ($findings.NoCapacityIssues.Count -gt 0)
                                             {
                                                 $affectedSkus = $findings.NoCapacityIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne $("") }
+                                                $zoneGrouping = $findings.NoCapacityIssues | Group-Object -Property TestedZone | Sort-Object Name
+                                                $zoneDetails = ($zoneGrouping | ForEach-Object { $("Zone {0}: {1} VM(s)" -f $_.Name, $_.Count) }) -join ", "
                                                 $validationFindingsHtml += @"
                 <strong>$("⚠️ No SKU Capacity Available:")</strong> <span class="status-warning">$($findings.NoCapacityIssues.Count) $("VM(s) affected")</span><br>
                 <strong>$("Affected SKUs:")</strong> $($affectedSkus -join ", ")<br>
-                <strong>$("Issue:")</strong> $("Azure has no available capacity for these VM SKUs in the target zone/region")<br>
-                <strong>$("Solutions:")</strong> $("Try different availability zone, different region, or wait and retry")<br><br>
+                <strong>$("Affected Zones:")</strong> $($zoneDetails)<br>
+                <strong>$("Assessment:")</strong> $("SKU quota is available and the SKU is listed as supported, but Azure could not allocate capacity for deployment.")<br>
+                <strong>$("Solutions:")</strong> $("Try a different availability zone, different region, or retry later when capacity becomes available.")<br><br>
 "@
                                             }
 
@@ -2705,6 +2730,67 @@ function Test-SilkResourceDeployment
                 <strong>$("Affected SKUs:")</strong> $($affectedSkus -join ", ")<br>
                 <strong>$("Issue:")</strong> $("Deployment failed due to other Azure constraints or configuration issues")<br>
                 <strong>$("Solutions:")</strong> $("Review detailed error messages below for specific troubleshooting steps")<br><br>
+"@
+                                            }
+
+                                        if ($findings.UnknownIssues.Count -gt 0)
+                                            {
+                                                $affectedSkus = $findings.UnknownIssues | Select-Object -ExpandProperty VMSku -Unique | Where-Object { $_ -ne $("") }
+                                                $validationFindingsHtml += @"
+                <strong>$("❓ Unclassified Failures:")</strong> <span class="status-error">$($findings.UnknownIssues.Count) $("VM(s) affected")</span><br>
+                <strong>$("Affected SKUs:")</strong> $($affectedSkus -join ", ")<br>
+                <strong>$("Issue:")</strong> $("Azure did not return a classifiable error and failure could not be deduced from quota/SKU context.")<br>
+                <strong>$("Solutions:")</strong> $("Re-run with -DisableCleanup and check Azure Activity Log for detailed error information.")<br><br>
+"@
+                                            }
+
+                                        # Per-VM detail table: only show if there are Other/Unknown issues that
+                                        # could not be reclassified, so the user has granular detail to investigate
+                                        $unresolvedFindings = @($ReportData.Deployment.ValidationFindings | Where-Object { $_.FailureCategory -in @("Other", "Unknown") })
+                                        if ($unresolvedFindings.Count -gt 0)
+                                            {
+                                                $validationFindingsHtml += @"
+                <br><strong>$("Unresolved Failure Details:")</strong><br>
+                <table style="margin-top: 5px; font-size: 0.9em;">
+                    <thead>
+                        <tr>
+                            <th>$("VM Name")</th>
+                            <th>$("SKU")</th>
+                            <th>$("Zone")</th>
+                            <th>$("Category")</th>
+                            <th>$("Error Details")</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+"@
+                                                foreach ($finding in $unresolvedFindings)
+                                                    {
+                                                        $errorDisplay = if ($finding.ErrorMessage) { $finding.ErrorMessage } else { $("No error details available") }
+                                                        $errorCodeDisplay = if ($finding.ErrorCode) { $(" [{0}]" -f $finding.ErrorCode) } else { $("") }
+                                                        $zoneDisplay = if ($finding.TestedZone) { $finding.TestedZone } else { $("N/A") }
+
+                                                        $validationFindingsHtml += @"
+                        <tr>
+                            <td>$($finding.VMName)</td>
+                            <td>$($finding.VMSku)</td>
+                            <td>$($zoneDisplay)</td>
+                            <td><span class="status-error">$($finding.FailureCategory)</span></td>
+                            <td>$($errorDisplay)$($errorCodeDisplay)</td>
+                        </tr>
+"@
+                                                    }
+
+                                                $validationFindingsHtml += @"
+                    </tbody>
+                </table>
+"@
+                                            }
+
+                                        # DisableCleanup tip
+                                        if (-not $ReportData.Configuration.DisableCleanup)
+                                            {
+                                                $validationFindingsHtml += @"
+                <br><span class="text-muted" style="font-size: 0.9em;">$("💡 Tip: Re-run with -DisableCleanup to keep failed resources for investigation. Check the Azure Activity Log for detailed error reasons.")</span><br>
 "@
                                             }
 
@@ -5948,9 +6034,81 @@ function Test-SilkResourceDeployment
                                             } `
                                         else
                                             {
-                                                # Extract error details
-                                                $jobErrorRaw = Receive-Job -Job $job -ErrorAction SilentlyContinue 2>&1
-                                                $jobErrorString = $jobErrorRaw | Out-String
+                                                # Extract error details from multiple sources
+                                                # IMPORTANT: Check child job streams BEFORE Receive-Job to avoid data consumption
+                                                $errorSources = @()
+
+                                                # Source 1: Child job streams (check BEFORE Receive-Job)
+                                                if ($job.ChildJobs -and $job.ChildJobs.Count -gt 0)
+                                                    {
+                                                        foreach ($childJob in $job.ChildJobs)
+                                                            {
+                                                                if ($childJob.Error -and $childJob.Error.Count -gt 0)
+                                                                    {
+                                                                        $errorSources += ($childJob.Error | Out-String)
+                                                                    }
+                                                                if ($childJob.Output -and $childJob.Output.Count -gt 0)
+                                                                    {
+                                                                        $outputStr = $childJob.Output | Out-String
+                                                                        if ($outputStr -match 'error|fail|exception|allocat|capacity|quota|constrained')
+                                                                            {
+                                                                                $errorSources += $outputStr
+                                                                            }
+                                                                    }
+                                                                if ($childJob.Warning -and $childJob.Warning.Count -gt 0)
+                                                                    {
+                                                                        $warnStr = $childJob.Warning | Out-String
+                                                                        if ($warnStr.Trim().Length -gt 0) { $errorSources += $warnStr }
+                                                                    }
+                                                                if ($childJob.JobStateInfo.Reason)
+                                                                    {
+                                                                        $errorSources += $childJob.JobStateInfo.Reason.ToString()
+                                                                        $innerEx = $childJob.JobStateInfo.Reason.InnerException
+                                                                        while ($innerEx) { $errorSources += $innerEx.Message; $innerEx = $innerEx.InnerException }
+                                                                    }
+                                                                if ($childJob.ChildJobs -and $childJob.ChildJobs.Count -gt 0)
+                                                                    {
+                                                                        foreach ($nested in $childJob.ChildJobs)
+                                                                            {
+                                                                                if ($nested.Error -and $nested.Error.Count -gt 0) { $errorSources += ($nested.Error | Out-String) }
+                                                                                if ($nested.JobStateInfo.Reason) { $errorSources += $nested.JobStateInfo.Reason.ToString() }
+                                                                            }
+                                                                    }
+                                                            }
+                                                    }
+
+                                                # Source 2: Receive-Job with -Keep
+                                                $jobErrorRaw = $null
+                                                try { $jobErrorRaw = Receive-Job -Job $job -Keep -ErrorAction SilentlyContinue 2>&1 }
+                                                catch { $errorSources += $_.Exception.Message }
+                                                $receiveJobString = $jobErrorRaw | Out-String
+                                                if ($receiveJobString -and $receiveJobString.Trim().Length -gt 0)
+                                                    {
+                                                        $errorSources += $receiveJobString
+                                                    }
+
+                                                # Source 3: Main job state reason
+                                                if ($job.JobStateInfo.Reason)
+                                                    {
+                                                        $errorSources += $job.JobStateInfo.Reason.ToString()
+                                                        if ($job.JobStateInfo.Reason.InnerException)
+                                                            {
+                                                                $innerEx = $job.JobStateInfo.Reason.InnerException
+                                                                while ($innerEx) { $errorSources += $innerEx.Message; $innerEx = $innerEx.InnerException }
+                                                            }
+                                                    }
+
+                                                # Source 4: StatusMessage
+                                                if ($job.StatusMessage -and $job.StatusMessage.Trim().Length -gt 0)
+                                                    {
+                                                        $errorSources += $job.StatusMessage
+                                                    }
+
+                                                $jobErrorString = ($errorSources | Where-Object { $_ -and $_.Trim().Length -gt 0 }) -join "`n"
+
+                                                # Log raw error output for debugging
+                                                $rawPreview = if ($jobErrorString.Trim().Length -gt 0) { $jobErrorString.Trim().Substring(0, [Math]::Min(500, $jobErrorString.Trim().Length)) } else { "(no error output captured)" }
+                                                Write-Verbose -Message $("  SKU test VM '{0}' job error: {1}" -f $vmDetails.VMName, $rawPreview)
 
                                                 $errorCode = $("")
                                                 $errorMessage = $("")
@@ -5969,7 +6127,7 @@ function Test-SilkResourceDeployment
                                                                 $errorMessage = $errorMessage -replace "\s*For more information.*$", ""
                                                             }
 
-                                                        if ($jobErrorString -match "AllocationFailed" -or $jobErrorString -match "allocation.*failed" -or $jobErrorString -match "OverconstrainedAllocationRequest")
+                                                        if ($jobErrorString -match "AllocationFailed" -or $jobErrorString -match "allocation.*failed" -or $jobErrorString -match "OverconstrainedAllocationRequest" -or $jobErrorString -match "OverconstrainedZonalAllocationRequest")
                                                             {
                                                                 $failureCategory = $("Allocation Failed")
                                                                 if ([string]::IsNullOrWhiteSpace($errorCode)) { $errorCode = $("AllocationFailed") }
@@ -5991,7 +6149,7 @@ function Test-SilkResourceDeployment
                                                         # Fallback error message
                                                         if ([string]::IsNullOrWhiteSpace($errorMessage))
                                                             {
-                                                                $errorLines = $jobErrorString -split "`n" | Where-Object { $_ -match "error|failed|exception" -and $_ -notmatch "^VERBOSE:|^DEBUG:" } | Select-Object -First 2
+                                                                $errorLines = $jobErrorString -split "`n" | Where-Object { $_ -match "error|failed|exception|capacity|allocation|quota|constrained" -and $_ -notmatch "^VERBOSE:|^DEBUG:" } | Select-Object -First 2
                                                                 if ($errorLines)
                                                                     {
                                                                         $errorMessage = ($errorLines -join "; ").Trim()
@@ -5999,7 +6157,17 @@ function Test-SilkResourceDeployment
                                                                     } `
                                                                 else
                                                                     {
-                                                                        $errorMessage = $("Deployment failed - check Azure portal for details")
+                                                                        # Last resort: take first non-empty line
+                                                                        $firstLine = ($jobErrorString -split "`n" | Where-Object { $_.Trim().Length -gt 0 } | Select-Object -First 1)
+                                                                        if ($firstLine)
+                                                                            {
+                                                                                $errorMessage = $firstLine.Trim()
+                                                                                if ($errorMessage.Length -gt 200) { $errorMessage = $errorMessage.Substring(0, 200) + "..." }
+                                                                            } `
+                                                                        else
+                                                                            {
+                                                                                $errorMessage = $("Deployment failed - use -DisableCleanup and check Azure portal for details")
+                                                                            }
                                                                     }
                                                             }
                                                     }
@@ -6807,15 +6975,131 @@ function Test-SilkResourceDeployment
                             {
                                 foreach ($failedJob in $failedJobs)
                                     {
-                                        # Get the job error details and categorize the failure
-                                        $jobErrorRaw = Receive-Job -Job $failedJob -ErrorAction SilentlyContinue 2>&1
-                                        $jobErrorString = $jobErrorRaw | Out-String
+                                        # Get the job error details from multiple sources for robust error extraction
+                                        # IMPORTANT: Check child job streams BEFORE Receive-Job, which can consume them
+                                        $errorSources = @()
+
+                                        # Source 1: Child job streams (check BEFORE Receive-Job to avoid data consumption)
+                                        if ($failedJob.ChildJobs -and $failedJob.ChildJobs.Count -gt 0)
+                                            {
+                                                foreach ($childJob in $failedJob.ChildJobs)
+                                                    {
+                                                        # Error stream - primary source for Azure PowerShell job failures
+                                                        if ($childJob.Error -and $childJob.Error.Count -gt 0)
+                                                            {
+                                                                $errorSources += ($childJob.Error | Out-String)
+                                                            }
+
+                                                        # Output stream - Azure may return error info as output objects
+                                                        if ($childJob.Output -and $childJob.Output.Count -gt 0)
+                                                            {
+                                                                $outputString = $childJob.Output | Out-String
+                                                                if ($outputString -match 'error|fail|exception|allocat|capacity|quota|constrained')
+                                                                    {
+                                                                        $errorSources += $outputString
+                                                                    }
+                                                            }
+
+                                                        # Warning stream - may contain allocation warnings
+                                                        if ($childJob.Warning -and $childJob.Warning.Count -gt 0)
+                                                            {
+                                                                $warningString = $childJob.Warning | Out-String
+                                                                if ($warningString.Trim().Length -gt 0)
+                                                                    {
+                                                                        $errorSources += $warningString
+                                                                    }
+                                                            }
+
+                                                        # Information stream
+                                                        if ($childJob.Information -and $childJob.Information.Count -gt 0)
+                                                            {
+                                                                $infoString = $childJob.Information | Out-String
+                                                                if ($infoString -match 'error|fail|exception|allocat|capacity|quota|constrained')
+                                                                    {
+                                                                        $errorSources += $infoString
+                                                                    }
+                                                            }
+
+                                                        # JobStateInfo.Reason (contains the terminating exception - NOT consumed by Receive-Job)
+                                                        if ($childJob.JobStateInfo.Reason)
+                                                            {
+                                                                $errorSources += $childJob.JobStateInfo.Reason.ToString()
+                                                                # Walk inner exceptions for full error chain
+                                                                $innerEx = $childJob.JobStateInfo.Reason.InnerException
+                                                                while ($innerEx)
+                                                                    {
+                                                                        $errorSources += $innerEx.Message
+                                                                        $innerEx = $innerEx.InnerException
+                                                                    }
+                                                            }
+
+                                                        # Check for nested child jobs (ARM deployment jobs can be hierarchical)
+                                                        if ($childJob.ChildJobs -and $childJob.ChildJobs.Count -gt 0)
+                                                            {
+                                                                foreach ($nestedChild in $childJob.ChildJobs)
+                                                                    {
+                                                                        if ($nestedChild.Error -and $nestedChild.Error.Count -gt 0)
+                                                                            {
+                                                                                $errorSources += ($nestedChild.Error | Out-String)
+                                                                            }
+                                                                        if ($nestedChild.JobStateInfo.Reason)
+                                                                            {
+                                                                                $errorSources += $nestedChild.JobStateInfo.Reason.ToString()
+                                                                            }
+                                                                    }
+                                                            }
+                                                    }
+                                            }
+
+                                        # Source 2: Receive-Job output (use -Keep to preserve streams for diagnostics)
+                                        $jobErrorRaw = $null
+                                        try
+                                            {
+                                                $jobErrorRaw = Receive-Job -Job $failedJob -Keep -ErrorAction SilentlyContinue 2>&1
+                                            }
+                                        catch
+                                            {
+                                                # Receive-Job itself threw - capture this error
+                                                $errorSources += $_.Exception.Message
+                                            }
+                                        $receiveJobString = $jobErrorRaw | Out-String
+                                        if ($receiveJobString -and $receiveJobString.Trim().Length -gt 0)
+                                            {
+                                                $errorSources += $receiveJobString
+                                            }
+
+                                        # Source 3: Main job state reason (not affected by Receive-Job)
+                                        if ($failedJob.JobStateInfo.Reason)
+                                            {
+                                                $errorSources += $failedJob.JobStateInfo.Reason.ToString()
+                                                if ($failedJob.JobStateInfo.Reason.InnerException)
+                                                    {
+                                                        $innerEx = $failedJob.JobStateInfo.Reason.InnerException
+                                                        while ($innerEx)
+                                                            {
+                                                                $errorSources += $innerEx.Message
+                                                                $innerEx = $innerEx.InnerException
+                                                            }
+                                                    }
+                                            }
+
+                                        # Source 4: StatusMessage property
+                                        if ($failedJob.StatusMessage -and $failedJob.StatusMessage.Trim().Length -gt 0)
+                                            {
+                                                $errorSources += $failedJob.StatusMessage
+                                            }
+
+                                        $jobErrorString = ($errorSources | Where-Object { $_ -and $_.Trim().Length -gt 0 }) -join "`n"
 
                                         # Extract VM details from job mapping
                                         $vmDetails = $vmJobMapping[$failedJob.Id]
                                         $vmName = if ($vmDetails) { $vmDetails.VMName } else { "Unknown VM" }
                                         $vmSku = if ($vmDetails) { $vmDetails.VMSku } else { "Unknown SKU" }
                                         $jobZone = if ($vmDetails -and $vmDetails.Zone) { $vmDetails.Zone } else { $Zone }
+
+                                        # Log raw error output for debugging (truncated for readability)
+                                        $rawErrorPreview = if ($jobErrorString.Trim().Length -gt 0) { $jobErrorString.Trim().Substring(0, [Math]::Min(800, $jobErrorString.Trim().Length)) } else { "(no error output captured)" }
+                                        Write-Verbose -Message $("  VM '{0}' job error output: {1}" -f $vmName, $rawErrorPreview)
 
                                         # Extract meaningful deployment validation information
                                         $errorCode = ""
@@ -6838,18 +7122,18 @@ function Test-SilkResourceDeployment
                                                         $errorMessage = $errorMessage -replace "\s*For more information.*$", ""
                                                     }
 
-                                                # Also look for allocation failure patterns
-                                                if ($jobErrorString -match "AllocationFailed" -or $jobErrorString -match "allocation.*failed")
+                                                # Also look for allocation failure patterns (multiple Azure error codes)
+                                                if ($jobErrorString -match "AllocationFailed" -or $jobErrorString -match "allocation.*failed" -or $jobErrorString -match "OverconstrainedAllocationRequest" -or $jobErrorString -match "OverconstrainedZonalAllocationRequest")
                                                     {
-                                                        $errorCode = "AllocationFailed"
+                                                        if ([string]::IsNullOrWhiteSpace($errorCode)) { $errorCode = "AllocationFailed" }
                                                         if ([string]::IsNullOrWhiteSpace($errorMessage))
                                                             {
-                                                                $errorMessage = "VM allocation failed due to insufficient capacity"
+                                                                $errorMessage = "VM allocation failed - no capacity available for this SKU in the target zone/region"
                                                             }
                                                     }
 
                                                 # Categorize the failure type for better reporting
-                                                if ($errorCode -eq "AllocationFailed" -or $errorMessage -match "sufficient capacity|allocation failed")
+                                                if ($errorCode -match "AllocationFailed|OverconstrainedAllocationRequest|OverconstrainedZonalAllocationRequest" -or $errorMessage -match "sufficient capacity|allocation failed|overconstrained")
                                                     {
                                                         $failureCategory = "No SKU Capacity Available"
                                                         if ([string]::IsNullOrWhiteSpace($errorMessage))
@@ -6884,7 +7168,7 @@ function Test-SilkResourceDeployment
                                                 if ([string]::IsNullOrWhiteSpace($errorMessage))
                                                     {
                                                         # Try to find any meaningful error text
-                                                        $errorLines = $jobErrorString -split "`n" | Where-Object { $_ -match "error|failed|exception" -and $_ -notmatch "^VERBOSE:|^DEBUG:" } | Select-Object -First 3
+                                                        $errorLines = $jobErrorString -split "`n" | Where-Object { $_ -match "error|failed|exception|capacity|allocation|quota|constrained" -and $_ -notmatch "^VERBOSE:|^DEBUG:" } | Select-Object -First 3
                                                         if ($errorLines)
                                                             {
                                                                 $errorMessage = ($errorLines -join "; ").Trim()
@@ -6896,13 +7180,23 @@ function Test-SilkResourceDeployment
                                                             } `
                                                         else
                                                             {
-                                                                $errorMessage = "Deployment failed - check Azure portal for detailed error information"
+                                                                # Last resort: take first non-empty line from error output
+                                                                $firstLine = ($jobErrorString -split "`n" | Where-Object { $_.Trim().Length -gt 0 } | Select-Object -First 1)
+                                                                if ($firstLine)
+                                                                    {
+                                                                        $errorMessage = $firstLine.Trim()
+                                                                        if ($errorMessage.Length -gt 300) { $errorMessage = $errorMessage.Substring(0, 300) + "..." }
+                                                                    } `
+                                                                else
+                                                                    {
+                                                                        $errorMessage = "Deployment failed — no classifiable error returned by Azure"
+                                                                    }
                                                             }
                                                     }
                                             } `
                                         else
                                             {
-                                                $errorMessage = "Deployment failed without detailed information"
+                                                $errorMessage = "Deployment failed — no error details captured from job"
                                                 $failureCategory = "Unknown"
                                             }
 
@@ -6973,6 +7267,242 @@ function Test-SilkResourceDeployment
                 $deployedVMs = Get-AzVM -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
                 $deployedNICs = Get-AzNetworkInterface -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
                 $deployedVNet = Get-AzVirtualNetwork -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
+
+                # ---------------------------------------------------------------
+                # Enrich validation findings for VMs with ProvisioningState='Failed'
+                # Query Azure directly for the provisioning error when job-level
+                # error extraction returned Unknown or when no finding exists yet
+                # (e.g., job completed but VM provisioning failed)
+                # ---------------------------------------------------------------
+                $failedProvisioningVMs = $deployedVMs | Where-Object { $_.ProvisioningState -eq "Failed" }
+                if ($failedProvisioningVMs)
+                    {
+                        Write-Verbose -Message $("Querying Azure for detailed provisioning errors on {0} failed VM(s)..." -f @($failedProvisioningVMs).Count)
+                        foreach ($failedVM in $failedProvisioningVMs)
+                            {
+                                try
+                                    {
+                                        $vmStatusDetail = Get-AzVM -ResourceGroupName $ResourceGroupName -Name $failedVM.Name -Status -ErrorAction SilentlyContinue
+                                        $provisioningError = $null
+                                        $azureErrorCode = ""
+                                        $azureErrorMessage = ""
+
+                                        if ($vmStatusDetail -and $vmStatusDetail.Statuses)
+                                            {
+                                                # Look for the provisioning failure status
+                                                $failedStatus = $vmStatusDetail.Statuses | Where-Object { $_.Code -like "ProvisioningState/failed*" -or ($_.Level -and $_.Level.ToString() -eq "Error") }
+                                                if ($failedStatus)
+                                                    {
+                                                        $azureErrorMessage = ($failedStatus | Select-Object -First 1).DisplayStatus
+                                                        if (-not $azureErrorMessage) { $azureErrorMessage = ($failedStatus | Select-Object -First 1).Message }
+                                                    }
+                                            }
+
+                                        # Also check the VM's InstanceView for more details
+                                        if ($vmStatusDetail.InstanceView -and $vmStatusDetail.InstanceView.Statuses)
+                                            {
+                                                $instanceFailedStatus = $vmStatusDetail.InstanceView.Statuses | Where-Object { $_.Code -like "*failed*" -or $_.Code -like "*error*" }
+                                                if ($instanceFailedStatus -and -not $azureErrorMessage)
+                                                    {
+                                                        $azureErrorMessage = ($instanceFailedStatus | Select-Object -First 1).Message
+                                                        if (-not $azureErrorMessage) { $azureErrorMessage = ($instanceFailedStatus | Select-Object -First 1).DisplayStatus }
+                                                    }
+                                            }
+
+                                        # Categorize the Azure error
+                                        $azureFailureCategory = "Other"
+                                        if ($azureErrorMessage)
+                                            {
+                                                if ($azureErrorMessage -match "AllocationFailed|allocation.*failed|OverconstrainedAllocationRequest|OverconstrainedZonalAllocationRequest|capacity")
+                                                    {
+                                                        $azureFailureCategory = "No SKU Capacity Available"
+                                                        $azureErrorCode = "AllocationFailed"
+                                                    } `
+                                                elseif ($azureErrorMessage -match "quota|limit")
+                                                    {
+                                                        $azureFailureCategory = "Quota Exceeded"
+                                                        $azureErrorCode = "QuotaExceeded"
+                                                    } `
+                                                elseif ($azureErrorMessage -match "SKUNotAvailable|NotAvailableForSubscription")
+                                                    {
+                                                        $azureFailureCategory = "SKU Support"
+                                                        $azureErrorCode = "SKUNotAvailable"
+                                                    }
+                                            }
+
+                                        # Check if there's an existing validation finding for this VM
+                                        $existingFinding = $deploymentValidationResults | Where-Object { $_.VMName -eq $failedVM.Name }
+                                        if ($existingFinding)
+                                            {
+                                                # Update existing finding if it was "Unknown" and we now have better info
+                                                if ($existingFinding.FailureCategory -eq "Unknown" -and $azureErrorMessage)
+                                                    {
+                                                        $existingFinding.FailureCategory = $azureFailureCategory
+                                                        $existingFinding.ErrorMessage = $azureErrorMessage
+                                                        if ($azureErrorCode) { $existingFinding.ErrorCode = $azureErrorCode }
+                                                        Write-Verbose -Message $("  Updated validation finding for '{0}' from Azure VM status: {1} - {2}" -f $failedVM.Name, $azureFailureCategory, $azureErrorMessage)
+                                                    }
+                                            } `
+                                        else
+                                            {
+                                                # No finding exists - create one from Azure VM status
+                                                # This covers cases where the job completed but VM provisioning failed
+                                                $vmSku = if ($failedVM.HardwareProfile) { $failedVM.HardwareProfile.VmSize } else { "Unknown" }
+                                                # Try to extract zone from VM name pattern (e.g. prefix-z2-cnode-01)
+                                                $vmTestedZone = $Zone
+                                                if ($failedVM.Name -match '-z(\d+)-')
+                                                    {
+                                                        $vmTestedZone = $Matches[1]
+                                                    } `
+                                                elseif ($failedVM.Zones -and $failedVM.Zones.Count -gt 0)
+                                                    {
+                                                        $vmTestedZone = $failedVM.Zones[0]
+                                                    }
+                                                $deploymentValidationResults += [PSCustomObject]@{
+                                                    VMName = $failedVM.Name
+                                                    VMSku = $vmSku
+                                                    JobName = ""
+                                                    ErrorCode = $azureErrorCode
+                                                    ErrorMessage = if ($azureErrorMessage) { $azureErrorMessage } else { "VM provisioning failed - check Azure portal Activity Log for details" }
+                                                    FailureCategory = if ($azureErrorMessage) { $azureFailureCategory } else { "Unknown" }
+                                                    AlternativeZones = @()
+                                                    TestedZone = $vmTestedZone
+                                                    TestedRegion = $Region
+                                                    Timestamp = $StartTime
+                                                }
+                                                Write-Verbose -Message $("  Created validation finding for '{0}' from Azure VM status: {1}" -f $failedVM.Name, $(if ($azureErrorMessage) { $azureErrorMessage } else { "No detailed status available" }))
+                                            }
+                                    } `
+                                catch
+                                    {
+                                        Write-Verbose -Message $("  Could not query Azure VM status for '{0}': {1}" -f $failedVM.Name, $_.Exception.Message)
+                                    }
+                            }
+                    }
+                # ---------------------------------------------------------------
+                # Azure Activity Log fallback for "Not Found" VMs
+                # When VMs were never created (job failed, no VM in Azure),
+                # Get-AzVM -Status can't help. Query the Activity Log instead
+                # to find the actual ARM deployment error.
+                # ---------------------------------------------------------------
+                $unknownFindings = @($deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Unknown" })
+                if ($unknownFindings.Count -gt 0)
+                    {
+                        Write-Verbose -Message $("Querying Azure Activity Log for {0} remaining unknown failure(s)..." -f $unknownFindings.Count)
+                        try
+                            {
+                                # Query activity log for failed VM creation operations in this resource group
+                                $activityLogStartTime = $StartTime.AddMinutes(-2)
+                                $activityLogs = Get-AzLog -ResourceGroupName $ResourceGroupName -StartTime $activityLogStartTime -WarningAction SilentlyContinue -ErrorAction SilentlyContinue |
+                                    Where-Object {
+                                        $_.Status.Value -eq "Failed" -and
+                                        $_.OperationName.Value -like "*Microsoft.Compute/virtualMachines/write*"
+                                    }
+
+                                if ($activityLogs)
+                                    {
+                                        Write-Verbose -Message $("  Found {0} failed VM creation activity log entries" -f @($activityLogs).Count)
+                                        foreach ($logEntry in $activityLogs)
+                                            {
+                                                # Extract VM name from resource ID (last segment)
+                                                $logVMName = ""
+                                                if ($logEntry.ResourceId)
+                                                    {
+                                                        $logVMName = ($logEntry.ResourceId -split '/')[-1]
+                                                    }
+
+                                                # Match to an unknown finding
+                                                $matchingFinding = $unknownFindings | Where-Object { $_.VMName -eq $logVMName }
+                                                if ($matchingFinding)
+                                                    {
+                                                        # Extract error details from the activity log properties
+                                                        $logErrorMessage = ""
+                                                        $logErrorCode = ""
+
+                                                        # Try Properties.statusMessage (contains JSON error details)
+                                                        if ($logEntry.Properties -and $logEntry.Properties.ContainsKey("statusMessage"))
+                                                            {
+                                                                $statusMsgRaw = $logEntry.Properties["statusMessage"]
+                                                                try
+                                                                    {
+                                                                        $statusMsgObj = $statusMsgRaw | ConvertFrom-Json -ErrorAction SilentlyContinue
+                                                                        if ($statusMsgObj.error)
+                                                                            {
+                                                                                $logErrorCode = $statusMsgObj.error.code
+                                                                                $logErrorMessage = $statusMsgObj.error.message
+                                                                                # Check for inner error details
+                                                                                if ($statusMsgObj.error.details -and $statusMsgObj.error.details.Count -gt 0)
+                                                                                    {
+                                                                                        $innerDetail = $statusMsgObj.error.details[0]
+                                                                                        if ($innerDetail.code) { $logErrorCode = $innerDetail.code }
+                                                                                        if ($innerDetail.message) { $logErrorMessage = $innerDetail.message }
+                                                                                    }
+                                                                            }
+                                                                    }
+                                                                catch
+                                                                    {
+                                                                        # Not JSON — use raw string
+                                                                        $logErrorMessage = $statusMsgRaw.ToString()
+                                                                    }
+                                                            }
+
+                                                        # Fallback to SubStatus if statusMessage empty
+                                                        if (-not $logErrorMessage -and $logEntry.SubStatus -and $logEntry.SubStatus.Value)
+                                                            {
+                                                                $logErrorMessage = $logEntry.SubStatus.LocalizedValue
+                                                                if (-not $logErrorMessage) { $logErrorMessage = $logEntry.SubStatus.Value }
+                                                            }
+
+                                                        # Categorize the error
+                                                        $logCategory = "Other"
+                                                        if ($logErrorCode -match "AllocationFailed|OverconstrainedAllocationRequest|OverconstrainedZonalAllocationRequest" -or
+                                                            $logErrorMessage -match "AllocationFailed|allocation.*failed|OverconstrainedAllocationRequest|OverconstrainedZonalAllocationRequest|sufficient capacity|over.?constrained")
+                                                            {
+                                                                $logCategory = "No SKU Capacity Available"
+                                                            } `
+                                                        elseif ($logErrorCode -match "Quota|OperationNotAllowed" -or $logErrorMessage -match "quota|limit|exceeded")
+                                                            {
+                                                                $logCategory = "Quota Exceeded"
+                                                            } `
+                                                        elseif ($logErrorCode -match "SKUNotAvailable|NotAvailableForSubscription" -or $logErrorMessage -match "sku.*not.*available|not.*available.*subscription")
+                                                            {
+                                                                $logCategory = "SKU Support"
+                                                            }
+
+                                                        # Clean up error message
+                                                        if ($logErrorMessage)
+                                                            {
+                                                                $logErrorMessage = $logErrorMessage -replace "\s*Read more about.*$", ""
+                                                                $logErrorMessage = $logErrorMessage -replace "\s*For more information.*$", ""
+                                                                if ($logErrorMessage.Length -gt 400) { $logErrorMessage = $logErrorMessage.Substring(0, 400) + "..." }
+                                                            }
+
+                                                        # Update the finding
+                                                        if ($logErrorMessage)
+                                                            {
+                                                                $matchingFinding.FailureCategory = $logCategory
+                                                                $matchingFinding.ErrorMessage = $logErrorMessage
+                                                                if ($logErrorCode) { $matchingFinding.ErrorCode = $logErrorCode }
+                                                                Write-Verbose -Message $("  Updated validation finding for '{0}' from Activity Log: [{1}] {2}" -f $logVMName, $logCategory, $logErrorMessage.Substring(0, [Math]::Min(200, $logErrorMessage.Length)))
+                                                            } `
+                                                        else
+                                                            {
+                                                                Write-Verbose -Message $("  Activity Log entry found for '{0}' but no error details extracted" -f $logVMName)
+                                                            }
+                                                    }
+                                            }
+                                    } `
+                                else
+                                    {
+                                        Write-Verbose -Message $("  No failed VM creation entries found in Activity Log")
+                                    }
+                            }
+                        catch
+                            {
+                                Write-Verbose -Message $("  Could not query Azure Activity Log: {0}" -f $_.Exception.Message)
+                            }
+                    }
+
                 $deployedNSG = Get-AzNetworkSecurityGroup -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
 
                 # Create deployment report
@@ -7002,7 +7532,8 @@ function Test-SilkResourceDeployment
                                         {
                                             if ($vmValidationFinding)
                                                 {
-                                                    "✗ Not Found ($($vmValidationFinding.FailureCategory))"
+                                                    # Job was submitted but VM was never created — allocation failure, NOT "not found"
+                                                    "✗ Not Allocated ($($vmValidationFinding.FailureCategory))"
                                                 }
                                             else
                                                 {
@@ -7039,9 +7570,9 @@ function Test-SilkResourceDeployment
                                                                     NodeNumber = $cNode
                                                                     VMName = $expectedVMName
                                                                     ExpectedSKU = $cNodeVMSku
-                                                                    DeployedSKU = if ($vm) { $vm.HardwareProfile.VmSize } else { "Not Found" }
+                                                                    DeployedSKU = if ($vm) { $vm.HardwareProfile.VmSize } elseif ($vmValidationFinding) { "Not Allocated" } else { "Not Found" }
                                                                     VMStatus = $vmStatus
-                                                                    ProvisioningState = if ($vm) { $vm.ProvisioningState } else { "Not Found" }
+                                                                    ProvisioningState = if ($vm) { $vm.ProvisioningState } elseif ($vmValidationFinding) { "Allocation Failed" } else { "Not Found" }
                                                                     NICStatus = if ($nic) { "✓ Created" } else { "✗ Failed" }
                                                                     AvailabilitySet = $avSetStatus
                                                                     ValidationFinding = if ($vmValidationFinding) { $vmValidationFinding.ErrorMessage } else { "" }
@@ -7084,7 +7615,8 @@ function Test-SilkResourceDeployment
                                                 {
                                                     if ($vmValidationFinding)
                                                         {
-                                                            "✗ Not Found ($($vmValidationFinding.FailureCategory))"
+                                                            # Job was submitted but VM was never created — allocation failure, NOT "not found"
+                                                            "✗ Not Allocated ($($vmValidationFinding.FailureCategory))"
                                                         } `
                                                     else
                                                         {
@@ -7121,9 +7653,9 @@ function Test-SilkResourceDeployment
                                                                             NodeNumber = $dNodeNumber
                                                                             VMName = $expectedVMName
                                                                             ExpectedSKU = $reportMNodeSku
-                                                                            DeployedSKU = if ($vm) { $vm.HardwareProfile.VmSize } else { "Not Found" }
+                                                                            DeployedSKU = if ($vm) { $vm.HardwareProfile.VmSize } elseif ($vmValidationFinding) { "Not Allocated" } else { "Not Found" }
                                                                             VMStatus = $vmStatus
-                                                                            ProvisioningState = if ($vm) { $vm.ProvisioningState } else { "Not Found" }
+                                                                            ProvisioningState = if ($vm) { $vm.ProvisioningState } elseif ($vmValidationFinding) { "Allocation Failed" } else { "Not Found" }
                                                                             NICStatus = if ($nic) { "✓ Created" } else { "✗ Failed" }
                                                                             AvailabilitySet = $avSetStatus
                                                                             ValidationFinding = if ($vmValidationFinding) { $vmValidationFinding.ErrorMessage } else { "" }
@@ -7146,8 +7678,8 @@ function Test-SilkResourceDeployment
                 # Infrastructure Summary Data
                 $totalExpectedVMs = ($CNodeCount + ($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum) * $zonesToDeploy.Count
                 $successfulVMs = ($deploymentReport | Where-Object { $_.VMStatus -eq "✓ Deployed" }).Count
-                $failedVMs = ($deploymentReport | Where-Object { $_.VMStatus -like "*Failed*" }).Count
-                $nonSuccessfulVMs = $deploymentReport | Where-Object { $_.ProvisioningState -ne "Succeeded" -and $_.ProvisioningState -ne "Not Found" }
+                $failedVMs = ($deploymentReport | Where-Object { $_.VMStatus -like "*Failed*" -or $_.VMStatus -like "*Not Allocated*" }).Count
+                $nonSuccessfulVMs = $deploymentReport | Where-Object { $_.ProvisioningState -ne "Succeeded" -and $_.ProvisioningState -ne "Not Found" -and $_.ProvisioningState -ne "Allocation Failed" }
 
                 # Zone Alignment Reporting Information
                 # Capture zone alignment details for console and HTML reporting
@@ -7393,11 +7925,99 @@ function Test-SilkResourceDeployment
                 $totalResourcesCreated = $deployedVMs.Count + $deployedNICs.Count + $(if($deployedPPG){@($deployedPPG).Count}else{0}) + $deployedAvailabilitySets.Count + $(if($deployedVNet){1}else{0}) + $(if($deployedNSG){1}else{0})
 
                 # Deployment Validation Findings Analysis
+                # ---------------------------------------------------------------
+                # Smart failure reclassification: If SKU quota is sufficient AND
+                # the SKU is supported in the target zone, but deployment still
+                # failed with Unknown/Other, it's almost certainly a capacity
+                # allocation issue. Azure often doesn't return meaningful errors
+                # from job streams for allocation failures.
+                # ---------------------------------------------------------------
+                if ($deploymentValidationResults.Count -gt 0)
+                    {
+                        # Build lookup tables for SKU quota sufficiency and available zones
+                        $skuQuotaSufficient = @{}
+                        $skuAvailableZones = @{}
+
+                        foreach ($skuData in $skuSupportData)
+                            {
+                                $skuQuotaSufficient[$skuData.SKUName] = $false
+                                $skuAvailableZones[$skuData.SKUName] = if ($skuData.AvailableZones) { @($skuData.AvailableZones) } else { @() }
+
+                                # Check family quota sufficiency
+                                if ($skuData.SKUFamilyQuota)
+                                    {
+                                        $availableQuota = $skuData.SKUFamilyQuota.Limit - $skuData.SKUFamilyQuota.CurrentValue
+                                        $skuQuotaSufficient[$skuData.SKUName] = ($availableQuota -ge $skuData.vCPUCount)
+                                    }
+                            }
+
+                        foreach ($finding in $deploymentValidationResults)
+                            {
+                                if ($finding.FailureCategory -in @("Unknown", "Other"))
+                                    {
+                                        $sku = $finding.VMSku
+                                        $vmZone = $finding.TestedZone
+                                        $quotaOk = $skuQuotaSufficient.ContainsKey($sku) -and $skuQuotaSufficient[$sku]
+                                        # Check zone support for the SPECIFIC zone this VM was deployed to
+                                        $zoneOk = $skuAvailableZones.ContainsKey($sku) -and ($skuAvailableZones[$sku] -contains "$vmZone")
+
+                                        $originalCategory = $finding.FailureCategory
+                                        if ($quotaOk -and $zoneOk)
+                                            {
+                                                # SKU is supported in this zone, quota is available, but VM still failed — capacity allocation issue
+                                                $finding.FailureCategory = "No SKU Capacity Available"
+                                                if ([string]::IsNullOrWhiteSpace($finding.ErrorCode)) { $finding.ErrorCode = "AllocationFailed" }
+                                                $finding.ErrorMessage = "Unable to allocate capacity in zone $vmZone — SKU is supported and quota is sufficient, but Azure could not fulfill the allocation request."
+                                                Write-Verbose -Message $("  Reclassified '{0}' (zone {1}) from {2} → No SKU Capacity Available (quota sufficient, SKU zone-supported)" -f $finding.VMName, $vmZone, $originalCategory)
+                                            } `
+                                        elseif ($quotaOk -and -not $zoneOk)
+                                            {
+                                                $finding.FailureCategory = "SKU Support"
+                                                $finding.ErrorMessage = "SKU $sku is not supported in zone $vmZone"
+                                                Write-Verbose -Message $("  Reclassified '{0}' (zone {1}) from {2} → SKU Support" -f $finding.VMName, $vmZone, $originalCategory)
+                                            } `
+                                        elseif (-not $quotaOk -and $zoneOk)
+                                            {
+                                                $finding.FailureCategory = "Quota Exceeded"
+                                                $finding.ErrorMessage = "Insufficient quota for the $sku SKU family"
+                                                Write-Verbose -Message $("  Reclassified '{0}' (zone {1}) from {2} → Quota Exceeded" -f $finding.VMName, $vmZone, $originalCategory)
+                                            }
+                                        # If both quota and zone support are unknown/unresolvable, leave as-is
+                                    }
+                            }
+
+                        # Also update the deployment report entries to reflect reclassified findings
+                        foreach ($reportEntry in $deploymentReport)
+                            {
+                                if ($reportEntry.VMStatus -like "*Unknown*" -or $reportEntry.VMStatus -like "*Other*" -or $reportEntry.FailureCategory -in @("Unknown", "Other"))
+                                    {
+                                        $matchingFinding = $deploymentValidationResults | Where-Object { $_.VMName -eq $reportEntry.VMName } | Select-Object -First 1
+                                        if ($matchingFinding -and $matchingFinding.FailureCategory -notin @("Unknown", "Other"))
+                                            {
+                                                # Update the VMStatus display text — use "Not Allocated" when job ran but VM doesn't exist
+                                                if ($reportEntry.VMStatus -like "*Not Allocated*" -or $reportEntry.VMStatus -like "*Not Found*")
+                                                    {
+                                                        $reportEntry.VMStatus = $("✗ Not Allocated ({0})" -f $matchingFinding.FailureCategory)
+                                                        $reportEntry.DeployedSKU = "Not Allocated"
+                                                        $reportEntry.ProvisioningState = "Allocation Failed"
+                                                    } `
+                                                elseif ($reportEntry.VMStatus -like "*Failed*")
+                                                    {
+                                                        $reportEntry.VMStatus = $("✗ Failed ({0})" -f $matchingFinding.FailureCategory)
+                                                    }
+                                                $reportEntry.FailureCategory = $matchingFinding.FailureCategory
+                                                $reportEntry.ValidationFinding = $matchingFinding.ErrorMessage
+                                            }
+                                    }
+                            }
+                    }
+
                 $validationFindings = @{
                     NoCapacityIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "No SKU Capacity Available" }
                     QuotaIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Quota Exceeded" }
                     SKUSupportIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "SKU Support" }
                     OtherIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Other" }
+                    UnknownIssues = $deploymentValidationResults | Where-Object { $_.FailureCategory -eq "Unknown" }
                 }
 
                 # Silk Component Summary Data
@@ -7496,6 +8116,7 @@ function Test-SilkResourceDeployment
                                                                         QuotaIssues         = $validationFindings.QuotaIssues
                                                                         SKUSupportIssues    = $validationFindings.SKUSupportIssues
                                                                         OtherIssues         = $validationFindings.OtherIssues
+                                                                        UnknownIssues       = $validationFindings.UnknownIssues
                                                                     }
 
                 # Infrastructure

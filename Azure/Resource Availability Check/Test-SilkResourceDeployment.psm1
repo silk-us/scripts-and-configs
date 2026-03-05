@@ -217,6 +217,36 @@ function Test-SilkResourceDeployment
                 ChecklistJSON configuration with different deployment subscription. Use this switch to maintain the
                 originally specified zone. Availability Zone alignment will still be reported on if available.
 
+            .PARAMETER GenerateReportOnly
+                Switch parameter to generate an SKU availability and quota analysis report without deploying any resources.
+                Performs comprehensive SKU support checking across all Silk-supported VM families, quota analysis,
+                and zone availability validation. Produces both console output and an HTML report.
+                Useful for pre-deployment capacity planning and environment validation.
+                Can be combined with -TestAllZones for multi-zone analysis.
+
+            .PARAMETER TestAllSKUFamilies
+                Switch parameter to test all Silk-supported VM SKU families in the specified region and zone.
+                Deploys a single reduced-size test VM for each unique SKU family to validate actual deployment
+                capacity beyond what quota and zone availability data alone can confirm.
+                Automatically enables Development Mode to minimize quota consumption and deployment time.
+                Results include per-SKU deployment pass/fail status with failure categorization.
+                Can be combined with -TestAllZones to test all SKU families across all availability zones.
+
+            .PARAMETER TestAllZones
+                Switch parameter to expand testing across all availability zones in the specified region.
+                When combined with -TestAllSKUFamilies, deploys test VMs for each SKU in every supported zone.
+                When combined with -GenerateReportOnly, produces a multi-zone SKU support matrix.
+                The -Zone parameter is still used for zone alignment reporting purposes.
+                Results include a per-zone availability matrix in both console and HTML report output.
+
+            .PARAMETER Development
+                Switch parameter to enable Development Mode with reduced VM sizes and instance counts.
+                When enabled, CNode VMs use 2 vCPU SKUs instead of production 64 vCPU, and MNode groups
+                deploy 1 DNode instead of 16. Significantly reduces deployment time, cost, and quota
+                consumption for faster testing iterations.
+                Automatically enabled by -TestAllSKUFamilies. The SKU reference table in the HTML report
+                always displays full production SKU sizes regardless of this setting.
+
             .EXAMPLE
                 Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -MnodeSizeLaosv4 @("14.67","29.34") -Verbose
 
@@ -231,7 +261,7 @@ function Test-SilkResourceDeployment
                 Parameters that override these imported values are -SubscriptionId, -ResourceGroupName, -Region, -Zone, and -IPRangeCIDR.
 
             .EXAMPLE
-                Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -RunCleanupOnly
+                Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -RunCleanupOnly
 
                 Performs cleanup-only operation, removing all test resources created by previous runs in the specified resource group.
                 Uses the standard resource name prefix "sdp-test" to identify and remove test resources.
@@ -262,6 +292,27 @@ function Test-SilkResourceDeployment
                 Tests deployment capacity within the specified Proximity Placement Group and Availability Set.
                 Useful for validating cluster expansion scenarios before actual production deployment.
 
+            .EXAMPLE
+                Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -GenerateReportOnly
+
+                Generates an SKU availability and quota analysis report without deploying any resources.
+                Analyzes all Silk-supported VM families for zone support, quota availability, and region presence.
+                Produces console output and an HTML report with a comprehensive SKU reference table.
+
+            .EXAMPLE
+                Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -TestAllSKUFamilies
+
+                Tests all Silk-supported VM SKU families by deploying a reduced-size test VM for each unique SKU.
+                Validates actual deployment capacity and produces a deployment test results report showing
+                pass/fail status per SKU family with failure categorization (capacity, quota, SKU restriction).
+
+            .EXAMPLE
+                Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -TestAllSKUFamilies -TestAllZones
+
+                Tests all Silk-supported VM SKU families across all availability zones in the region.
+                Deploys test VMs for each SKU in every supported zone and produces a multi-zone deployment
+                results matrix showing per-zone pass/fail status for each SKU family.
+
             .INPUTS
                 Command line parameters or JSON configuration file containing deployment specifications.
                 Supports both individual parameter specification and bulk configuration via JSON import.
@@ -271,8 +322,9 @@ function Test-SilkResourceDeployment
                 SKU availability reports, quota validation summaries (including adjusted deployment counts when
                 quota is insufficient), and deployment progress tracking.
                 Additionally, an HTML report is generated (unless -NoHTMLReport is specified) summarizing deployment status,
-                quota usage, SKU support, and resource validation results. The report is saved to the path specified by -ReportOutputPath
-                or defaults to the current working directory in the format 'SilkDeploymentReport_[timestamp].html'.
+                quota usage, SKU support, and resource validation results. The HTML report includes a light/dark theme
+                toggle switch and persists the user's theme preference. The report is saved to the path specified by
+                -ReportOutputPath or defaults to the current working directory in the format 'SilkDeploymentReport_[timestamp].html'.
                 No objects are returned to the pipeline; all output is informational console display and/or HTML report file.
 
             .NOTES
@@ -367,7 +419,7 @@ function Test-SilkResourceDeployment
                 # Overrides JSON configuration values when specified via command line
                 [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON",     Mandatory = $false, HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
-                [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
+                [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $false, HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
@@ -395,7 +447,7 @@ function Test-SilkResourceDeployment
                 # if -ZoneAlignmentSubscriptionId specified, zone alignment will occur unless -DisableZoneAlignment is also specified
                 [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON",     Mandatory = $false, HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $false, HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
@@ -935,6 +987,10 @@ function Test-SilkResourceDeployment
                                         [pscustomobject]@{vmSkuPrefix = "Standard_E"; vCPU = 32; vmSkuSuffix = "as_v5"; QuotaFamily = "Standard Easv5 Family vCPUs";    cNodeFriendlyName = "Entry_Level_Easv5"};
                                     )
 
+                # Preserve full-size (production) CNode SKU objects for the SKU Support & Quota Reference
+                # table so it always reports production-grade VM SKUs regardless of Development mode
+                $cNodeSizeObjectFullSize = $cNodeSizeObject
+
                 # SKU Family Test mode implicitly uses development-sized configurations
                 # to minimize quota consumption and deployment time when testing all families
                 if ($TestAllSKUFamilies -and (-not $Development))
@@ -993,6 +1049,10 @@ function Test-SilkResourceDeployment
                                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 12;   vmSkuSuffix = "aos_v4"; PhysicalSize = 88.01;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
                                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "aos_v4"; PhysicalSize = 117.35;  QuotaFamily = "Standard Laosv4 Family vCPUs"}
                                     )
+
+                # Preserve full-size (production) MNode SKU objects for the SKU Support & Quota Reference
+                # table so it always reports production-grade VM SKUs regardless of Development mode
+                $mNodeSizeObjectFullSize = $mNodeSizeObject
 
                 if ($Development)
                     {
@@ -1566,11 +1626,11 @@ function Test-SilkResourceDeployment
                                         $mNodeCovers = $skuEntries | Where-Object { $_.NodeType -eq $("MNode") }
                                         if ($cNodeCovers.Count -gt 0)
                                             {
-                                                $coversList += $cNodeCovers | ForEach-Object { $("CNode: {0}" -f $_.FriendlyName) }
+                                                $coversList += $cNodeCovers | ForEach-Object { $("CNode: {0}" -f $_.FriendlyName) } | Select-Object -Unique
                                             }
                                         if ($mNodeCovers.Count -gt 0)
                                             {
-                                                $coversList += $mNodeCovers | ForEach-Object { $("MNode: {0}" -f $_.FriendlyName) }
+                                                $coversList += $mNodeCovers | ForEach-Object { $("MNode: {0}" -f $_.FriendlyName) } | Select-Object -Unique
                                             }
 
                                         if ($skuResult -eq $("Success"))
@@ -2382,7 +2442,7 @@ function Test-SilkResourceDeployment
                                                     {
                                                         $quotaStatus = $("⚠ Quota Information Unavailable")
                                                         $quotaStatusClass = $("status-warning")
-                                                        $quotaWarning = $("<br><em style='color: #ff9800;'>$("This SKU family is not yet registered in Azure quota system (expected for preview/new families). Quota validation was skipped.")</em>")
+                                                        $quotaWarning = $("<br><em style='color: var(--warning);'>$("This SKU family is not yet registered in Azure quota system (expected for preview/new families). Quota validation was skipped.")</em>")
                                                     } `
                                                 else
                                                     {
@@ -2524,7 +2584,7 @@ function Test-SilkResourceDeployment
                                         foreach ($mapping in $alignment.ZoneMappings)
                                             {
                                                 $isDeployZone = ($mapping.DeploymentZone -eq $alignment.FinalZone)
-                                                $rowStyle = if ($isDeployZone) { $("background-color: #e8f5e9; font-weight: bold;") } else { $("") }
+                                                $rowStyle = if ($isDeployZone) { $("background-color: var(--bg-deploy-zone); font-weight: bold;") } else { $("") }
                                                 $deployMarker = if ($isDeployZone) { $(" ◄") } else { $("") }
                                                 $peerColumn = if ($hasPeerAlignment) { @"
                             <td style="padding: 5px; font-size: 0.9em; $rowStyle">$($mapping.AlignmentZone)</td>
@@ -2695,9 +2755,9 @@ function Test-SilkResourceDeployment
                                                             }
                                                         $zonesDisplay = if ($skuEntry.AvailableZones.Count -gt 0) { $skuEntry.AvailableZones -join $(", ") } else { $("-") }
 
-                                                        # Build covers list
+                                                        # Build covers list (deduplicated for multi-zone)
                                                         $coversList = @()
-                                                        foreach ($entry in $skuGroup.Group)
+                                                        foreach ($entry in $skuGroup.Group | Select-Object -Property ComponentType, FriendlyName -Unique)
                                                             {
                                                                 if ($entry.ComponentType -eq $("CNode"))
                                                                     {
@@ -2715,8 +2775,8 @@ function Test-SilkResourceDeployment
                                                             {
                                                                 $skuReferenceRows += @"
                 <tr>
-                    <td rowspan="$familyRowSpan" style="vertical-align: middle; border-bottom: 2px solid #ddd;">$($familyGroup.Name)</td>
-                    <td rowspan="$familyRowSpan" style="vertical-align: middle; border-bottom: 2px solid #ddd;"><span class="$quotaClass">$($familyRepresentative.QuotaStatus)</span></td>
+                    <td rowspan="$familyRowSpan" style="vertical-align: middle; border-bottom: 2px solid var(--border);">$($familyGroup.Name)</td>
+                    <td rowspan="$familyRowSpan" style="vertical-align: middle; border-bottom: 2px solid var(--border);"><span class="$quotaClass">$($familyRepresentative.QuotaStatus)</span></td>
                     <td>$($skuGroup.Name)</td>
                     <td>$($skuEntry.vCPU)</td>
                     <td><span class="$zoneClass">$($skuEntry.ZoneSupport)</span></td>
@@ -2908,13 +2968,13 @@ function Test-SilkResourceDeployment
                                                         $statusClass = if ($firstEntry.DeploymentResult -eq $("Success")) { $("status-success") } else { $("status-error") }
                                                         $statusText = if ($firstEntry.DeploymentResult -eq $("Success")) { $("✓ Deployed") } else { $("✗ {0}" -f $firstEntry.FailureCategory) }
                                                         $errorDetail = if ($firstEntry.DeploymentResult -eq $("Failed") -and $firstEntry.ErrorMessage) { $firstEntry.ErrorMessage } else { $("-") }
-                                                        $coversList = ($skuEntries | ForEach-Object { $("{0}: {1}" -f $_.NodeType, $_.FriendlyName) }) -join $("<br>")
+                                                        $coversList = ($skuEntries | ForEach-Object { $("{0}: {1}" -f $_.NodeType, $_.FriendlyName) } | Select-Object -Unique) -join $("<br>")
 
                                                         if ($isFirstDeployInFamily)
                                                             {
                                                                 $skuDeployRows += @"
                 <tr>
-                    <td rowspan="$deployFamilyRowSpan" style="vertical-align: middle; border-bottom: 2px solid #ddd;">$($deployFamilyGroup.Name)</td>
+                    <td rowspan="$deployFamilyRowSpan" style="vertical-align: middle; border-bottom: 2px solid var(--border);">$($deployFamilyGroup.Name)</td>
                     <td>$($deploySkuGroup.Name)</td>
                     <td>$($firstEntry.vCPU)</td>
                     <td><span class="$statusClass">$statusText</span></td>
@@ -3042,34 +3102,53 @@ function Test-SilkResourceDeployment
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>$( if ($ReportData.Metadata.StartTime) { $("Silk Azure Deployment Report - {0}" -f $ReportData.Metadata.StartTime.ToString("yyyy-MM-dd HH:mm:ss")) } else { $("Silk Azure Report - {0}" -f $ReportData.Metadata.ReportMode) } )</title>
+    <title>$( if ($ReportData.Metadata.StartTime) { $("Silk Azure SKU Availability Report - {0}" -f $ReportData.Metadata.StartTime.ToString("yyyy-MM-dd HH:mm:ss")) } else { $("Silk Azure SKU Availability Report - {0}" -f $ReportData.Metadata.ReportMode) } )</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 12pt; margin: 0; padding: 15px; background-color: #f5f5f5; line-height: 1.4; }
-        .container { max-width: 1600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; border-bottom: 3px solid #FF00FF; padding-bottom: 8px; margin-bottom: 15px; }
-        h2 { color: #34495e; border-left: 4px solid #FF00FF; padding-left: 15px; margin-top: 20px; }
-        h3 { color: #7f8c8d; margin-top: 15px; }
-        .status-success { color: #27ae60; font-weight: bold; }
-        .status-warning { color: #f39c12; font-weight: bold; }
-        .status-error { color: #e74c3c; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin: 10px 0; background: white; }
-        th, td { padding: 8px 10px; text-align: left; border: 1px solid #ddd; }
-        th { background-color: #FF00FF; color: white; font-weight: 600; }
-        tr:nth-child(even) { background-color: #f8f9fa; }
-        tr:hover { background-color: #e8f4f8; }
+        :root { --bg-body: #0f1923; --bg-container: #1c2733; --bg-card: #232f3e; --bg-quota: #2d3748; --bg-row-even: #232f3e; --bg-row-hover: #2a3a4e; --bg-deploy-zone: #1a3a2a; --text-primary: #e2e8f0; --text-heading: #f7fafc; --text-muted: #a0aec0; --accent: #e91e78; --success: #48bb78; --warning: #ed8936; --error: #fc5c65; --border: #2d3748; --shadow: 0 2px 10px rgba(0,0,0,0.4); --toggle-bg: #2d3748; --toggle-knob: #e2e8f0; }
+        body.light-theme { --bg-body: #f5f5f5; --bg-container: #ffffff; --bg-card: #f8f9fa; --bg-quota: #f0f0f0; --bg-row-even: #f9f9f9; --bg-row-hover: #eef2f7; --bg-deploy-zone: #e8f5e9; --text-primary: #333333; --text-heading: #2d3748; --text-muted: #666666; --accent: #e91e78; --success: #28a745; --warning: #e67e00; --error: #dc3545; --border: #dee2e6; --shadow: 0 2px 10px rgba(0,0,0,0.1); --toggle-bg: #dee2e6; --toggle-knob: #ffffff; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 12pt; margin: 0; padding: 15px; background-color: var(--bg-body); color: var(--text-primary); line-height: 1.4; transition: background-color 0.3s, color 0.3s; }
+        .container { max-width: 1600px; margin: 0 auto; background: var(--bg-container); padding: 20px; border-radius: 8px; box-shadow: var(--shadow); transition: background 0.3s, box-shadow 0.3s; }
+        .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--accent); padding-bottom: 8px; margin-bottom: 15px; }
+        .report-header h1 { border: none; padding: 0; margin: 0; font-size: 1.8em; }
+        h1 { color: var(--text-heading); border-bottom: 3px solid var(--accent); padding-bottom: 8px; margin-bottom: 15px; }
+        h2 { color: var(--text-primary); border-left: 4px solid var(--accent); padding-left: 15px; margin-top: 20px; }
+        h3 { color: var(--text-muted); margin-top: 15px; }
+        .status-success { color: var(--success); font-weight: bold; }
+        .status-warning { color: var(--warning); font-weight: bold; }
+        .status-error { color: var(--error); font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; background: var(--bg-container); }
+        th, td { padding: 8px 10px; text-align: left; border: 1px solid var(--border); color: var(--text-primary); transition: background-color 0.3s, color 0.3s, border-color 0.3s; }
+        th { background-color: var(--accent); color: white; font-weight: 600; }
+        tr:nth-child(even) { background-color: var(--bg-row-even); }
+        tr:hover { background-color: var(--bg-row-hover); }
         .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin: 12px 0; }
-        .info-card { background: #f8f9fa; padding: 14px; border-radius: 6px; border-left: 4px solid #FF00FF; }
-        .info-card h4 { margin-top: 0; color: #2c3e50; }
-        .quota-item { margin: 4px 0; padding: 6px; background: #ecf0f1; border-radius: 4px; }
-        .timestamp { color: #7f8c8d; font-size: 0.9em; text-align: right; margin-top: 15px; }
-        .checkmark { color: #27ae60; }
-        .warning-mark { color: #f39c12; }
-        .error-mark { color: #e74c3c; }
+        .info-card { background: var(--bg-card); padding: 14px; border-radius: 6px; border-left: 4px solid var(--accent); transition: background 0.3s; }
+        .info-card h4 { margin-top: 0; color: var(--text-heading); }
+        .quota-item { margin: 4px 0; padding: 6px; background: var(--bg-quota); border-radius: 4px; transition: background 0.3s; }
+        .timestamp { color: var(--text-muted); font-size: 0.9em; text-align: right; margin-top: 15px; }
+        .checkmark { color: var(--success); }
+        .warning-mark { color: var(--warning); }
+        .error-mark { color: var(--error); }
+        .theme-switch { display: flex; align-items: center; gap: 8px; cursor: default; }
+        .theme-switch span { font-size: 1.1em; line-height: 1; }
+        .theme-switch label { position: relative; display: inline-block; width: 44px; height: 24px; cursor: pointer; margin: 0; }
+        .theme-switch input { opacity: 0; width: 0; height: 0; }
+        .theme-switch .slider { position: absolute; inset: 0; background: var(--toggle-bg); border-radius: 24px; transition: background 0.3s; }
+        .theme-switch .slider::before { content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: var(--toggle-knob); border-radius: 50%; transition: transform 0.3s, background 0.3s; }
+        .theme-switch input:checked + .slider { background: var(--accent); }
+        .theme-switch input:checked + .slider::before { transform: translateX(20px); }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>$("🏗️ Silk Azure Deployment Report")</h1>
+        <div class="report-header">
+            <h1>$("🏗️ Silk Azure SKU Availability Report")</h1>
+            <div class="theme-switch">
+                <span>$("☀️")</span>
+                <label><input type="checkbox" id="themeToggle" checked><span class="slider"></span></label>
+                <span>$("🌙")</span>
+            </div>
+        </div>
 
         <div class="info-grid">
             <div class="info-card">
@@ -3147,6 +3226,26 @@ function Test-SilkResourceDeployment
             $( if ($ReportData.Metadata.Duration -and $ReportData.Metadata.StartTime) { $("⏱️ Total Time: {0} | Report generated on {1} by Silk Test-SilkResourceDeployment PowerShell module" -f $ReportData.Metadata.Duration.ToString("hh\:mm\:ss"), $ReportData.Metadata.StartTime.ToString("yyyy-MM-dd HH:mm:ss")) } else { $("Report generated by Silk Test-SilkResourceDeployment PowerShell module ({0})" -f $ReportData.Metadata.ReportMode) } )
         </div>
     </div>
+    <script>
+        (function() {
+            var toggle = document.getElementById('themeToggle');
+            var stored = null;
+            try { stored = localStorage.getItem('silk-report-theme'); } catch(e) {}
+            if (stored === 'light') {
+                document.body.classList.add('light-theme');
+                toggle.checked = false;
+            }
+            toggle.addEventListener('change', function() {
+                if (this.checked) {
+                    document.body.classList.remove('light-theme');
+                    try { localStorage.setItem('silk-report-theme', 'dark'); } catch(e) {}
+                } else {
+                    document.body.classList.add('light-theme');
+                    try { localStorage.setItem('silk-report-theme', 'light'); } catch(e) {}
+                }
+            });
+        })();
+    </script>
 </body>
 </html>
 "@
@@ -3568,6 +3667,14 @@ function Test-SilkResourceDeployment
                         Update-StagedProgress -SectionName 'EnvironmentValidation' -SectionCurrentStep 2 -SectionTotalSteps 4 `
                             -DetailMessage $("Checking region and zones...")
 
+                        # Cleanup only mode does not require region or zone validation
+                        if ($RunCleanupOnly)
+                            {
+                                Update-StagedProgress -SectionName 'EnvironmentValidation' -SectionCurrentStep 4 -SectionTotalSteps 4 `
+                                    -DetailMessage $("Cleanup only mode - skipping region and zone validation...")
+                                return
+                            }
+
                         # Check region and get supported SKUs
                         $locationSupportedSKU = Get-AzComputeResourceSku -Location $Region -ErrorAction Stop
 
@@ -3609,12 +3716,6 @@ function Test-SilkResourceDeployment
                 # Update progress: Environment validation complete
                 Update-StagedProgress -SectionName 'EnvironmentValidation' -SectionCurrentStep 4 -SectionTotalSteps 4 `
                     -DetailMessage $("Subscription, region, and zones verified...")
-
-                # Do not run the rest of begin block if cleanup only
-                if ($RunCleanupOnly)
-                    {
-                        return
-                    }
 
                 # ===============================================================================
                 # Existing Infrastructure Validation
@@ -4450,8 +4551,8 @@ function Test-SilkResourceDeployment
 
                         $skuFamilyResults = New-Object -TypeName 'System.Collections.Generic.List[PSCustomObject]'
 
-                        # ----- CNode Family Analysis -----
-                        foreach ($cNodeEntry in $cNodeSizeObject)
+                        # ----- CNode Family Analysis (always uses full-size production SKUs) -----
+                        foreach ($cNodeEntry in $cNodeSizeObjectFullSize)
                             {
                                 $skuName = $("{0}{1}{2}" -f $cNodeEntry.vmSkuPrefix, $cNodeEntry.vCPU, $cNodeEntry.vmSkuSuffix)
                                 $supportedSKU = $locationSupportedSKU | Where-Object { $_.Name -eq $skuName -and $_.ResourceType -eq $("virtualMachines") }
@@ -4524,8 +4625,8 @@ function Test-SilkResourceDeployment
                                 Write-Verbose -Message $("  CNode {0} ({1}): {2} | Quota: {3}" -f $cNodeEntry.cNodeFriendlyName, $skuName, $zoneSupport, $quotaStatus)
                             }
 
-                        # ----- MNode Family Analysis -----
-                        foreach ($mNodeEntry in $mNodeSizeObject)
+                        # ----- MNode Family Analysis (always uses full-size production SKUs) -----
+                        foreach ($mNodeEntry in $mNodeSizeObjectFullSize)
                             {
                                 $skuName = $("{0}{1}{2}" -f $mNodeEntry.vmSkuPrefix, $mNodeEntry.vCPU, $mNodeEntry.vmSkuSuffix)
                                 $supportedSKU = $locationSupportedSKU | Where-Object { $_.Name -eq $skuName -and $_.ResourceType -eq $("virtualMachines") }
@@ -5647,7 +5748,7 @@ function Test-SilkResourceDeployment
 
                         foreach ($skuFamily in $uniqueSKUDeploys)
                             {
-                                $progressStatus = if ($isMultiZoneDeploy) { $("Creating {0} {1}/{2} ({3} → zone {4})" -f $skuFamily.NodeType, $skuFamily.VMNumber, $totalTestVMs, $skuFamily.SKUName, $skuFamily.Zone) } else { $("Creating {0} {1}/{2} ({3})" -f $skuFamily.NodeType, $skuFamily.VMNumber, $totalTestVMs, $skuFamily.SKUName) }
+                                $progressStatus = if ($isMultiZoneDeploy) { $("Creating {0} {1}/{2} ({3} - zone {4})" -f $skuFamily.NodeType, $skuFamily.VMNumber, $totalTestVMs, $skuFamily.SKUName, $skuFamily.Zone) } else { $("Creating {0} {1}/{2} ({3})" -f $skuFamily.NodeType, $skuFamily.VMNumber, $totalTestVMs, $skuFamily.SKUName) }
                                 Write-Progress `
                                     -Id 4 `
                                     -ParentId 3 `
@@ -5840,7 +5941,7 @@ function Test-SilkResourceDeployment
                                         else
                                             {
                                                 # Extract error details
-                                                $jobErrorRaw = Receive-Job -Job $job 2>&1
+                                                $jobErrorRaw = Receive-Job -Job $job -ErrorAction SilentlyContinue 2>&1
                                                 $jobErrorString = $jobErrorRaw | Out-String
 
                                                 $errorCode = $("")
@@ -6699,7 +6800,7 @@ function Test-SilkResourceDeployment
                                 foreach ($failedJob in $failedJobs)
                                     {
                                         # Get the job error details and categorize the failure
-                                        $jobErrorRaw = Receive-Job -Job $failedJob 2>&1
+                                        $jobErrorRaw = Receive-Job -Job $failedJob -ErrorAction SilentlyContinue 2>&1
                                         $jobErrorString = $jobErrorRaw | Out-String
 
                                         # Extract VM details from job mapping
@@ -7479,7 +7580,7 @@ function Test-SilkResourceDeployment
                 if (!$DisableCleanup)
                     {
                         # Build the cleanup-only command so the user can copy it if they Ctrl+C
-                        $cleanupCmd = $("Test-SilkResourceDeployment -SubscriptionId '{0}' -ResourceGroupName '{1}' -Region '{2}' -Zone '{3}' -RunCleanupOnly" -f $SubscriptionId, $ResourceGroupName, $Region, $Zone)
+                        $cleanupCmd = $("Test-SilkResourceDeployment -SubscriptionId '{0}' -ResourceGroupName '{1}' -RunCleanupOnly" -f $SubscriptionId, $ResourceGroupName)
                         if ($ResourceNamePrefix -ne $("sdp-test"))
                             {
                                 $cleanupCmd = $("{0} -ResourceNamePrefix '{1}'" -f $cleanupCmd, $ResourceNamePrefix)

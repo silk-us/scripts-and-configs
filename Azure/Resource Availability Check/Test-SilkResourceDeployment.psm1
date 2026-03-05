@@ -1268,6 +1268,7 @@ function Test-SilkResourceDeployment
                             SKUFamilyTesting =     [PSCustomObject]@{
                                                         Plan                    = @()
                                                         Results                 = @()
+                                                        DeploymentResults       = @()
                                                     }
 
                             # ===== Cleanup =====
@@ -1459,89 +1460,6 @@ function Test-SilkResourceDeployment
                             }
 
                         # ---------------------------------------------------------------
-                        # SKU Family Testing Results (All Silk-Supported Families)
-                        # ---------------------------------------------------------------
-                        if ($ReportData.SKUFamilyTesting.Results.Count -gt 0)
-                            {
-                                Write-Host $("`n=== SKU Family Testing - All Silk-Supported VM Families ===") -ForegroundColor Cyan
-                                Write-Verbose -Message $("Rendering comprehensive SKU family analysis for {0} entries" -f $ReportData.SKUFamilyTesting.Results.Count)
-
-                                # CNode Families
-                                $cNodeFamilyResults = $ReportData.SKUFamilyTesting.Results | Where-Object { $_.ComponentType -eq $("CNode") }
-                                if ($cNodeFamilyResults)
-                                    {
-                                        Write-Host $("`nCNode VM Families ({0} configurations):" -f $cNodeFamilyResults.Count) -ForegroundColor Yellow
-
-                                        foreach ($entry in $cNodeFamilyResults)
-                                            {
-                                                $skuColor = switch ($entry.ZoneSupportStatus)
-                                                    {
-                                                        "Success" { "Green" }
-                                                        "Warning" { "Yellow" }
-                                                        "Error"   { "Red" }
-                                                    }
-                                                $quotaColor = switch ($entry.QuotaStatusLevel)
-                                                    {
-                                                        "Success" { "Green" }
-                                                        "Warning" { "Yellow" }
-                                                        "Error"   { "Red" }
-                                                    }
-
-                                                Write-Host $("  {0}" -f $entry.FriendlyName) -ForegroundColor White
-                                                Write-Host $("    SKU: {0} | vCPU: {1}" -f $entry.SKUName, $entry.vCPU)
-                                                Write-Host $("    Zone: ") -NoNewline
-                                                Write-Host $entry.ZoneSupport -ForegroundColor $skuColor
-                                                Write-Host $("    Quota ({0}): " -f $entry.QuotaFamily) -NoNewline
-                                                Write-Host $entry.QuotaStatus -ForegroundColor $quotaColor
-                                                if ($entry.AvailableZones.Count -gt 0)
-                                                    {
-                                                        Write-Host $("    Available Zones: {0}" -f ($entry.AvailableZones -join $(", ")))
-                                                    }
-                                            }
-                                    }
-
-                                # MNode Families
-                                $mNodeFamilyResults = $ReportData.SKUFamilyTesting.Results | Where-Object { $_.ComponentType -eq $("MNode") }
-                                if ($mNodeFamilyResults)
-                                    {
-                                        Write-Host $("`nMNode VM Families ({0} configurations):" -f $mNodeFamilyResults.Count) -ForegroundColor Yellow
-
-                                        foreach ($entry in $mNodeFamilyResults)
-                                            {
-                                                $skuColor = switch ($entry.ZoneSupportStatus)
-                                                    {
-                                                        "Success" { "Green" }
-                                                        "Warning" { "Yellow" }
-                                                        "Error"   { "Red" }
-                                                    }
-                                                $quotaColor = switch ($entry.QuotaStatusLevel)
-                                                    {
-                                                        "Success" { "Green" }
-                                                        "Warning" { "Yellow" }
-                                                        "Error"   { "Red" }
-                                                    }
-
-                                                Write-Host $("  {0} ({1})" -f $entry.FriendlyName, $entry.SKUName) -ForegroundColor White
-                                                Write-Host $("    vCPU: {0} | DNodes: {1}" -f $entry.vCPU, $entry.DNodeCount)
-                                                Write-Host $("    Zone: ") -NoNewline
-                                                Write-Host $entry.ZoneSupport -ForegroundColor $skuColor
-                                                Write-Host $("    Quota ({0}): " -f $entry.QuotaFamily) -NoNewline
-                                                Write-Host $entry.QuotaStatus -ForegroundColor $quotaColor
-                                                if ($entry.AvailableZones.Count -gt 0)
-                                                    {
-                                                        Write-Host $("    Available Zones: {0}" -f ($entry.AvailableZones -join $(", ")))
-                                                    }
-                                            }
-                                    }
-
-                                # Summary counts
-                                $totalSupported = ($ReportData.SKUFamilyTesting.Results | Where-Object { $_.ZoneSupportStatus -eq $("Success") }).Count
-                                $totalWarning = ($ReportData.SKUFamilyTesting.Results | Where-Object { $_.ZoneSupportStatus -eq $("Warning") }).Count
-                                $totalUnsupported = ($ReportData.SKUFamilyTesting.Results | Where-Object { $_.ZoneSupportStatus -eq $("Error") }).Count
-                                Write-Host $("`nSummary: {0} supported in zone, {1} available elsewhere, {2} not in region" -f $totalSupported, $totalWarning, $totalUnsupported) -ForegroundColor Cyan
-                            }
-
-                        # ---------------------------------------------------------------
                         # Multi-Zone Analysis Results (Zone Support Matrix)
                         # ---------------------------------------------------------------
                         if ($ReportData.ZoneResults -and $ReportData.ZoneResults.Zones.Count -gt 0)
@@ -1616,6 +1534,64 @@ function Test-SilkResourceDeployment
                                                     elseif (-not $entry.InRegion) { "Red" } `
                                                     else { "Red" }
                                                 Write-Host $("  {0,-45} {1,-22} {2}  {3}" -f $entry.FriendlyName, $entry.SKUName, $zoneIndicators, $entry.QuotaDisplay) -ForegroundColor $lineColor
+                                            }
+                                    }
+                            }
+
+                        # ---------------------------------------------------------------
+                        # SKU Family Deployment Test Results (Actual VM Allocation Tests)
+                        # ---------------------------------------------------------------
+                        if ($ReportData.SKUFamilyTesting.DeploymentResults -and $ReportData.SKUFamilyTesting.DeploymentResults.Count -gt 0)
+                            {
+                                $deployResults = $ReportData.SKUFamilyTesting.DeploymentResults
+                                $uniqueSKUs = $deployResults | Select-Object -ExpandProperty SKUName -Unique
+                                $uniqueSKUCount = $uniqueSKUs.Count
+                                $uniqueSuccessCount = ($uniqueSKUs | Where-Object { $sku = $_; ($deployResults | Where-Object { $_.SKUName -eq $sku } | Select-Object -First 1).DeploymentResult -eq $("Success") }).Count
+                                $uniqueFailedCount = $uniqueSKUCount - $uniqueSuccessCount
+
+                                Write-Host $("{0}=== SKU Family Deployment Test Results ===" -f "`n") -ForegroundColor Cyan
+                                Write-Host $("Region: {0} | Zone: {1} | Unique SKUs: {2} | Succeeded: {3} | Failed: {4}" -f $ReportData.Configuration.Region, $ReportData.Configuration.Zone, $uniqueSKUCount, $uniqueSuccessCount, $uniqueFailedCount) -ForegroundColor Yellow
+
+                                # Group results by unique SKU — show what each SKU covers
+                                foreach ($skuName in $uniqueSKUs)
+                                    {
+                                        $skuEntries = $deployResults | Where-Object { $_.SKUName -eq $skuName }
+                                        $skuResult = ($skuEntries | Select-Object -First 1).DeploymentResult
+                                        $quotaFamily = ($skuEntries | Select-Object -First 1).QuotaFamily
+                                        $vCPU = ($skuEntries | Select-Object -First 1).vCPU
+
+                                        # Build covers list
+                                        $coversList = @()
+                                        $cNodeCovers = $skuEntries | Where-Object { $_.NodeType -eq $("CNode") }
+                                        $mNodeCovers = $skuEntries | Where-Object { $_.NodeType -eq $("MNode") }
+                                        if ($cNodeCovers.Count -gt 0)
+                                            {
+                                                $coversList += $cNodeCovers | ForEach-Object { $("CNode: {0}" -f $_.FriendlyName) }
+                                            }
+                                        if ($mNodeCovers.Count -gt 0)
+                                            {
+                                                $coversList += $mNodeCovers | ForEach-Object { $("MNode: {0}" -f $_.FriendlyName) }
+                                            }
+
+                                        if ($skuResult -eq $("Success"))
+                                            {
+                                                Write-Host $("  ✓ {0,-28} vCPU: {1,-4} {2}" -f $skuName, $vCPU, $quotaFamily) -ForegroundColor Green
+                                            } `
+                                        else
+                                            {
+                                                $failureCategory = ($skuEntries | Select-Object -First 1).FailureCategory
+                                                Write-Host $("  ✗ {0,-28} vCPU: {1,-4} {2} — {3}" -f $skuName, $vCPU, $quotaFamily, $failureCategory) -ForegroundColor Red
+                                                $errorMessage = ($skuEntries | Select-Object -First 1).ErrorMessage
+                                                if ($errorMessage)
+                                                    {
+                                                        Write-Host $("    Error: {0}" -f $errorMessage) -ForegroundColor DarkRed
+                                                    }
+                                            }
+
+                                        # Show covers indented
+                                        foreach ($cover in $coversList)
+                                            {
+                                                Write-Host $("      └─ {0}" -f $cover) -ForegroundColor DarkGray
                                             }
                                     }
                             }
@@ -1822,9 +1798,44 @@ function Test-SilkResourceDeployment
                         Write-Host $("`n=== Zone Alignment Information ===") -ForegroundColor Cyan
                         Write-Host $("Deployment Zone: ") -NoNewline
                         Write-Host $("{0}" -f $ReportData.EnvironmentValidation.ZoneAlignment.FinalZone) -ForegroundColor Green
+                        Write-Host $("Subscription: ") -NoNewline
+                        Write-Host $("{0}" -f $ReportData.Configuration.SubscriptionId) -ForegroundColor Gray
 
                         $alignment = $ReportData.EnvironmentValidation.ZoneAlignment
 
+                        # Always show zone mapping table when mappings are available
+                        if ($alignment.ZoneMappings.Count -gt 0)
+                            {
+                                $hasPeerAlignment = [bool]$alignment.AlignmentSubId
+                                if ($hasPeerAlignment)
+                                    {
+                                        Write-Host $("Azure Zone  Deployment Zone  Peer Zone ({0})" -f $alignment.AlignmentSubId.Substring(0, 8)) -ForegroundColor Gray
+                                        Write-Host $("─────────── ──────────────── ─────────────────────" ) -ForegroundColor DarkGray
+                                    } `
+                                else
+                                    {
+                                        Write-Host $("Azure Zone  Deployment Zone") -ForegroundColor Gray
+                                        Write-Host $("─────────── ────────────────") -ForegroundColor DarkGray
+                                    }
+
+                                foreach ($mapping in $alignment.ZoneMappings)
+                                    {
+                                        $isDeployZone = ($mapping.DeploymentZone -eq $alignment.FinalZone)
+                                        $zoneColor = if ($isDeployZone) { $("Green") } else { $("DarkGray") }
+                                        $marker = if ($isDeployZone) { $("  ◄") } else { $("   ") }
+
+                                        if ($hasPeerAlignment)
+                                            {
+                                                Write-Host $("  Zone {0}     Zone {1}          Zone {2}{3}" -f $mapping.DeploymentZone, $mapping.DeploymentZone, $mapping.AlignmentZone, $marker) -ForegroundColor $zoneColor
+                                            } `
+                                        else
+                                            {
+                                                Write-Host $("  Zone {0}     Zone {1}{2}" -f $mapping.DeploymentZone, $mapping.DeploymentZone, $marker) -ForegroundColor $zoneColor
+                                            }
+                                    }
+                            }
+
+                        # Cross-subscription alignment details (only when peer sub provided)
                         if ($alignment.AlignmentSubId)
                             {
                                 Write-Host $("Alignment Subscription: ") -NoNewline
@@ -1848,27 +1859,42 @@ function Test-SilkResourceDeployment
                                     }
 
                                 Write-Host $("Reason: {0}" -f $alignment.Reason) -ForegroundColor Gray
-
-                                if ($alignment.ZoneMappings.Count -gt 0)
-                                    {
-                                        Write-Host $("Zone Mappings:") -ForegroundColor Gray
-                                        foreach ($mapping in $alignment.ZoneMappings)
-                                            {
-                                                Write-Host $("  Deployment Zone {0} ↔ Alignment Zone {1}" -f $mapping.DeploymentZone, $mapping.AlignmentZone) -ForegroundColor DarkGray
-                                            }
-                                    }
                             } `
                         else
                             {
-                                Write-Host $("Zone Alignment: ") -NoNewline
-                                Write-Host $("- Not Applicable") -ForegroundColor Gray
                                 Write-Host $("Reason: {0}" -f $alignment.Reason) -ForegroundColor Gray
                             }
 
                         # ---------------------------------------------------------------
                         # Results Status
                         # ---------------------------------------------------------------
-                        if ($ReportData.Deployment.Attempted)
+                        if ($ReportData.SKUFamilyTesting.DeploymentResults -and $ReportData.SKUFamilyTesting.DeploymentResults.Count -gt 0)
+                            {
+                                # SKU Family Deployment Test mode — results already printed in dedicated section above
+                                $deployResults = $ReportData.SKUFamilyTesting.DeploymentResults
+                                $uniqueSKUs = $deployResults | Select-Object -ExpandProperty SKUName -Unique
+                                $uniqueSKUCount = $uniqueSKUs.Count
+                                $uniqueSuccessCount = ($uniqueSKUs | Where-Object { $sku = $_; ($deployResults | Where-Object { $_.SKUName -eq $sku } | Select-Object -First 1).DeploymentResult -eq $("Success") }).Count
+                                $uniqueFailedCount = $uniqueSKUCount - $uniqueSuccessCount
+
+                                Write-Host $("`n=== SKU Family Deployment Test Summary ===") -ForegroundColor Cyan
+                                if ($uniqueFailedCount -eq 0)
+                                    {
+                                        Write-Host $("✓ ALL {0} UNIQUE SKUs DEPLOYED SUCCESSFULLY in region: {1} zone: {2}" -f $uniqueSKUCount, $ReportData.Configuration.Region, $ReportData.Configuration.Zone) -ForegroundColor Green
+                                        Write-Host $("📊 No allocation or capacity constraints detected") -ForegroundColor Green
+                                    } `
+                                elseif ($uniqueSuccessCount -gt 0)
+                                    {
+                                        Write-Host $("⚠ {0}/{1} unique SKUs deployed, {2} failed in region: {3} zone: {4}" -f $uniqueSuccessCount, $uniqueSKUCount, $uniqueFailedCount, $ReportData.Configuration.Region, $ReportData.Configuration.Zone) -ForegroundColor Yellow
+                                        Write-Host $("📊 Review failed SKUs above for allocation or capacity constraints") -ForegroundColor Yellow
+                                    } `
+                                else
+                                    {
+                                        Write-Host $("✗ ALL {0} UNIQUE SKUs FAILED in region: {1} zone: {2}" -f $uniqueSKUCount, $ReportData.Configuration.Region, $ReportData.Configuration.Zone) -ForegroundColor Red
+                                        Write-Host $("📊 No SKU families could be allocated - check capacity and quota") -ForegroundColor Red
+                                    }
+                            } `
+                        elseif ($ReportData.Deployment.Attempted)
                             {
                                 Write-Verbose -Message $("Analyzing final deployment results and generating readiness assessment")
                                 Write-Host $("`n=== Deployment Results Status ===") -ForegroundColor Cyan
@@ -1919,6 +1945,91 @@ function Test-SilkResourceDeployment
                                 Write-Host $("📊 No deployment was attempted. Review SKU support and quota data above.") -ForegroundColor Cyan
                             }
 
+                        # ---------------------------------------------------------------
+                        # SKU Support & Quota Reference (All Silk-Supported Families)
+                        # ---------------------------------------------------------------
+                        # Always rendered at the bottom of every report as a reference
+                        # section grouped by quota family. Quota is per-family; zone
+                        # support is per-individual-SKU within a family.
+                        if ($ReportData.SKUFamilyTesting.Results.Count -gt 0)
+                            {
+                                Write-Host $("`n=== SKU Support & Quota Reference ===") -ForegroundColor Cyan
+                                Write-Verbose -Message $("Rendering SKU support reference for {0} entries" -f $ReportData.SKUFamilyTesting.Results.Count)
+
+                                # Group by quota family first, then by unique SKU within each family
+                                $familyGroups = $ReportData.SKUFamilyTesting.Results | Group-Object -Property QuotaFamily
+                                $uniqueSKUCount = ($ReportData.SKUFamilyTesting.Results | Select-Object -Property SKUName -Unique).Count
+
+                                Write-Host $("Region: {0} | Zone: {1} | Quota Families: {2} | Unique SKUs: {3}" -f $ReportData.Configuration.Region, $ReportData.Configuration.Zone, $familyGroups.Count, $uniqueSKUCount) -ForegroundColor Yellow
+
+                                $allSKUStatuses = @()
+
+                                foreach ($familyGroup in $familyGroups)
+                                    {
+                                        # Family header - show quota once
+                                        $familyRepresentative = $familyGroup.Group[0]
+                                        $quotaColor = switch ($familyRepresentative.QuotaStatusLevel)
+                                            {
+                                                "Success" { "Green" }
+                                                "Warning" { "Yellow" }
+                                                "Error"   { "Red" }
+                                            }
+
+                                        Write-Host $("")
+                                        Write-Host $("  {0}: " -f $familyGroup.Name) -ForegroundColor White -NoNewline
+                                        Write-Host $familyRepresentative.QuotaStatus -ForegroundColor $quotaColor
+
+                                        # Group SKUs within this family
+                                        $skuGroups = $familyGroup.Group | Group-Object -Property SKUName
+
+                                        foreach ($skuGroup in $skuGroups)
+                                            {
+                                                $skuEntry = $skuGroup.Group[0]
+                                                $allSKUStatuses += $skuEntry.ZoneSupportStatus
+                                                $statusIcon = switch ($skuEntry.ZoneSupportStatus)
+                                                    {
+                                                        "Success" { "✓" }
+                                                        "Warning" { "⚠" }
+                                                        "Error"   { "✗" }
+                                                    }
+                                                $skuColor = switch ($skuEntry.ZoneSupportStatus)
+                                                    {
+                                                        "Success" { "Green" }
+                                                        "Warning" { "Yellow" }
+                                                        "Error"   { "Red" }
+                                                    }
+
+                                                Write-Host $("    {0} " -f $statusIcon) -NoNewline -ForegroundColor $skuColor
+                                                Write-Host $("{0}" -f $skuGroup.Name) -ForegroundColor White -NoNewline
+                                                Write-Host $("  vCPU: {0}" -f $skuEntry.vCPU) -NoNewline
+                                                if ($skuEntry.AvailableZones.Count -gt 0)
+                                                    {
+                                                        Write-Host $("  Zones: {0}" -f ($skuEntry.AvailableZones -join $(", "))) -NoNewline
+                                                    }
+                                                Write-Host $("")
+
+                                                # Covers list for this SKU
+                                                foreach ($entry in $skuGroup.Group)
+                                                    {
+                                                        if ($entry.ComponentType -eq $("CNode"))
+                                                            {
+                                                                Write-Host $("        └─ CNode: {0}" -f $entry.FriendlyName) -ForegroundColor DarkGray
+                                                            } `
+                                                        else
+                                                            {
+                                                                Write-Host $("        └─ MNode: {0} ({1} DNode{2})" -f $entry.FriendlyName, $entry.DNodeCount, $(if([int]$entry.DNodeCount -ne 1){"s"}else{""})) -ForegroundColor DarkGray
+                                                            }
+                                                    }
+                                            }
+                                    }
+
+                                # Summary counts (by unique SKU across all families)
+                                $totalSKUSupported = ($allSKUStatuses | Where-Object { $_ -eq $("Success") }).Count
+                                $totalSKUWarning = ($allSKUStatuses | Where-Object { $_ -eq $("Warning") }).Count
+                                $totalSKUUnsupported = ($allSKUStatuses | Where-Object { $_ -eq $("Error") }).Count
+                                Write-Host $("`nSKU Reference: {0} available in zone, {1} available elsewhere, {2} not in region" -f $totalSKUSupported, $totalSKUWarning, $totalSKUUnsupported) -ForegroundColor Cyan
+                            }
+
                         # Duration (null-safe)
                         if ($ReportData.Metadata.Duration)
                             {
@@ -1964,7 +2075,13 @@ function Test-SilkResourceDeployment
                 <strong>$("Availability Zone:")</strong> $($ReportData.Configuration.Zone)<br>
 "@
 
-                                if ($ReportData.Configuration.CNodeSKU -and $ReportData.Configuration.CNodeCount -gt 0)
+                                if ($ReportData.SKUFamilyTesting.DeploymentResults -and $ReportData.SKUFamilyTesting.DeploymentResults.Count -gt 0)
+                                    {
+                                        $configCardContent += @"
+                <strong>$("Mode:")</strong> SKU Family Deployment Test<br>
+"@
+                                    } `
+                                elseif ($ReportData.Configuration.CNodeSKU -and $ReportData.Configuration.CNodeCount -gt 0)
                                     {
                                         $configCardContent += @"
                 <strong>$("CNode Count:")</strong> $($ReportData.Configuration.CNodeCount)<br>
@@ -1972,18 +2089,21 @@ function Test-SilkResourceDeployment
 "@
                                     }
 
-                                if ($ReportData.Configuration.MNodeSizes.Count -gt 0)
+                                if (-not ($ReportData.SKUFamilyTesting.DeploymentResults -and $ReportData.SKUFamilyTesting.DeploymentResults.Count -gt 0))
                                     {
-                                        $mNodeSizeDisplay = ($ReportData.Configuration.MNodeSizes | ForEach-Object { $_ }) -join $(", ")
-                                        $totalDNodes = 0
-                                        foreach ($mNodeSku in $ReportData.Configuration.MNodeSKUs)
+                                        if ($ReportData.Configuration.MNodeSizes.Count -gt 0)
                                             {
-                                                $totalDNodes += $mNodeSku.dNodeCount
-                                            }
-                                        $configCardContent += @"
+                                                $mNodeSizeDisplay = ($ReportData.Configuration.MNodeSizes | ForEach-Object { $_ }) -join $(", ")
+                                                $totalDNodes = 0
+                                                foreach ($mNodeSku in $ReportData.Configuration.MNodeSKUs)
+                                                    {
+                                                        $totalDNodes += $mNodeSku.dNodeCount
+                                                    }
+                                                $configCardContent += @"
                 <strong>$("MNode Sizes:")</strong> $($mNodeSizeDisplay) TiB<br>
                 <strong>$("Total DNodes:")</strong> $($totalDNodes)<br>
 "@
+                                            }
                                     }
 
                                 # Build summary card content
@@ -1992,7 +2112,19 @@ function Test-SilkResourceDeployment
                                 $totalFailed = $ReportData.Deployment.TotalFailedVMs
                                 $infra = $ReportData.Deployment.Infrastructure
 
-                                if ($ReportData.Deployment.Attempted)
+                                if ($ReportData.SKUFamilyTesting.DeploymentResults -and $ReportData.SKUFamilyTesting.DeploymentResults.Count -gt 0)
+                                    {
+                                        $deploySkuResults = $ReportData.SKUFamilyTesting.DeploymentResults
+                                        $skuUniqueNames = $deploySkuResults | Select-Object -ExpandProperty SKUName -Unique
+                                        $skuUniqueCount = $skuUniqueNames.Count
+                                        $skuUniqueSuccessCount = ($skuUniqueNames | Where-Object { $sku = $_; ($deploySkuResults | Where-Object { $_.SKUName -eq $sku } | Select-Object -First 1).DeploymentResult -eq $("Success") }).Count
+                                        $skuUniqueFailedCount = $skuUniqueCount - $skuUniqueSuccessCount
+                                        $summaryStatusClass = if ($skuUniqueFailedCount -eq 0) { $("status-success") } else { $("status-warning") }
+                                        $summaryStatusText = if ($skuUniqueFailedCount -eq 0) { $("✓ ALL {0} SKUs DEPLOYED" -f $skuUniqueCount) } else { $("⚠ {0} SKU(s) FAILED" -f $skuUniqueFailedCount) }
+                                        $deployedCountClass = if ($skuUniqueFailedCount -eq 0) { $("status-success") } else { $("status-warning") }
+                                        $isSKUTestMode = $true
+                                    } `
+                                elseif ($ReportData.Deployment.Attempted)
                                     {
                                         $summaryStatusClass = if ($totalDeployed -eq $totalExpected -and $infra.VNetCreated -and $infra.NSGCreated) { $("status-success") } else { $("status-warning") }
                                         $summaryStatusText = if ($totalDeployed -eq $totalExpected -and $infra.VNetCreated -and $infra.NSGCreated) { $("✓ SUCCESSFUL") } else { $("⚠ ISSUES DETECTED") }
@@ -2334,14 +2466,59 @@ function Test-SilkResourceDeployment
 
                                 # Build Zone Alignment card content
                                 $alignment = $ReportData.EnvironmentValidation.ZoneAlignment
+                                $hasPeerAlignment = [bool]$alignment.AlignmentSubId
                                 $zoneAlignmentHtml = @"
                 <strong>$("Deployment Zone:")</strong> <span class="status-success">$($alignment.FinalZone)</span><br>
+                <strong>$("Subscription:")</strong> $($ReportData.Configuration.SubscriptionId)<br>
 "@
 
-                                if ($alignment.AlignmentSubId)
+                                # Always show zone mapping table when mappings are available
+                                if ($alignment.ZoneMappings.Count -gt 0)
+                                    {
+                                        $peerColumnHeader = if ($hasPeerAlignment) { @"
+                            <th style="padding: 5px; font-size: 0.9em;">$("Peer Zone ({0}...)" -f $alignment.AlignmentSubId.Substring(0, 8))</th>
+"@ } else { $("") }
+
+                                        $zoneAlignmentHtml += @"
+                <br><strong>$("Zone Mappings:")</strong><br>
+                <table style="margin: 5px 0; width: 100%;">
+                    <thead>
+                        <tr>
+                            <th style="padding: 5px; font-size: 0.9em;">$("Azure Zone")</th>
+                            <th style="padding: 5px; font-size: 0.9em;">$("Deployment Zone")</th>
+                            $peerColumnHeader
+                        </tr>
+                    </thead>
+                    <tbody>
+"@
+                                        foreach ($mapping in $alignment.ZoneMappings)
+                                            {
+                                                $isDeployZone = ($mapping.DeploymentZone -eq $alignment.FinalZone)
+                                                $rowStyle = if ($isDeployZone) { $("background-color: #e8f5e9; font-weight: bold;") } else { $("") }
+                                                $deployMarker = if ($isDeployZone) { $(" ◄") } else { $("") }
+                                                $peerColumn = if ($hasPeerAlignment) { @"
+                            <td style="padding: 5px; font-size: 0.9em; $rowStyle">$($mapping.AlignmentZone)</td>
+"@ } else { $("") }
+
+                                                $zoneAlignmentHtml += @"
+                        <tr>
+                            <td style="padding: 5px; font-size: 0.9em; $rowStyle">$("Zone {0}" -f $mapping.DeploymentZone)</td>
+                            <td style="padding: 5px; font-size: 0.9em; $rowStyle">$("Zone {0}{1}" -f $mapping.DeploymentZone, $deployMarker)</td>
+                            $peerColumn
+                        </tr>
+"@
+                                            }
+                                        $zoneAlignmentHtml += @"
+                    </tbody>
+                </table>
+"@
+                                    }
+
+                                # Cross-subscription alignment details (only when peer sub provided)
+                                if ($hasPeerAlignment)
                                     {
                                         $zoneAlignmentHtml += @"
-                <strong>$("Alignment Subscription:")</strong> $($alignment.AlignmentSubId)<br>
+                <br><strong>$("Alignment Subscription:")</strong> $($alignment.AlignmentSubId)<br>
 "@
 
                                         if ($alignment.AlignmentPerformed)
@@ -2363,46 +2540,11 @@ function Test-SilkResourceDeployment
                 <strong>$("Zone Alignment:")</strong> <span class="status-success">$("- No adjustment needed")</span><br>
 "@
                                             }
-                                    } `
-                                else
-                                    {
-                                        $zoneAlignmentHtml += @"
-                <strong>$("Zone Alignment:")</strong> <span class="status-success">$("- Not Applicable")</span><br>
-"@
                                     }
 
                                 $zoneAlignmentHtml += @"
                 <strong>$("Reason:")</strong> $($alignment.Reason)<br>
 "@
-
-                                # Zone mappings table
-                                if ($alignment.ZoneMappings.Count -gt 0)
-                                    {
-                                        $zoneAlignmentHtml += @"
-                <br><strong>$("Zone Mappings:")</strong><br>
-                <table style="margin: 5px 0; width: 100%;">
-                    <thead>
-                        <tr>
-                            <th style="padding: 5px; font-size: 0.9em;">$("Deployment Zone")</th>
-                            <th style="padding: 5px; font-size: 0.9em;">$("Alignment Zone")</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-"@
-                                        foreach ($mapping in $alignment.ZoneMappings)
-                                            {
-                                                $zoneAlignmentHtml += @"
-                        <tr>
-                            <td style="padding: 5px; font-size: 0.9em;">$($mapping.DeploymentZone)</td>
-                            <td style="padding: 5px; font-size: 0.9em;">$($mapping.AlignmentZone)</td>
-                        </tr>
-"@
-                                            }
-                                        $zoneAlignmentHtml += @"
-                    </tbody>
-                </table>
-"@
-                                    }
 
                                 # Build Validation Findings card
                                 $validationFindingsHtml = $("")
@@ -2473,126 +2615,129 @@ function Test-SilkResourceDeployment
 "@
                                     }
 
-                                # Build SKU Family Testing HTML (conditional on TestAllSKUFamilies results)
+                                # Build SKU Support & Quota Reference HTML (always present when results exist)
+                                # Uses rowspan on Quota Family and Quota Status columns to show shared
+                                # family quota once, spanning all SKU rows that belong to that family.
                                 $skuFamilyTestingHtml = $("")
                                 if ($ReportData.SKUFamilyTesting.Results.Count -gt 0)
                                     {
-                                        $cNodeFamilyResults = $ReportData.SKUFamilyTesting.Results | Where-Object { $_.ComponentType -eq $("CNode") }
-                                        $mNodeFamilyResults = $ReportData.SKUFamilyTesting.Results | Where-Object { $_.ComponentType -eq $("MNode") }
+                                        # Group by quota family, then by unique SKU within each family
+                                        $familyGroups = $ReportData.SKUFamilyTesting.Results | Group-Object -Property QuotaFamily
+                                        $uniqueSKUCount = ($ReportData.SKUFamilyTesting.Results | Select-Object -Property SKUName -Unique).Count
 
-                                        $totalSupported = ($ReportData.SKUFamilyTesting.Results | Where-Object { $_.ZoneSupportStatus -eq $("Success") }).Count
-                                        $totalWarning = ($ReportData.SKUFamilyTesting.Results | Where-Object { $_.ZoneSupportStatus -eq $("Warning") }).Count
-                                        $totalUnsupported = ($ReportData.SKUFamilyTesting.Results | Where-Object { $_.ZoneSupportStatus -eq $("Error") }).Count
-
-                                        # CNode family table rows
-                                        $cNodeFamilyRows = $("")
-                                        foreach ($entry in $cNodeFamilyResults)
+                                        $allSKUStatuses = @()
+                                        foreach ($fg in $familyGroups)
                                             {
-                                                $zoneClass = switch ($entry.ZoneSupportStatus)
+                                                foreach ($sg in ($fg.Group | Group-Object -Property SKUName))
                                                     {
-                                                        "Success" { $("status-success") }
-                                                        "Warning" { $("status-warning") }
-                                                        "Error"   { $("status-error") }
+                                                        $allSKUStatuses += $sg.Group[0].ZoneSupportStatus
                                                     }
-                                                $quotaClass = switch ($entry.QuotaStatusLevel)
-                                                    {
-                                                        "Success" { $("status-success") }
-                                                        "Warning" { $("status-warning") }
-                                                        "Error"   { $("status-error") }
-                                                    }
-                                                $zonesDisplay = if ($entry.AvailableZones.Count -gt 0) { $entry.AvailableZones -join $(", ") } else { $("-") }
-                                                $cNodeFamilyRows += @"
-                <tr>
-                    <td>$($entry.FriendlyName)</td>
-                    <td>$($entry.SKUName)</td>
-                    <td>$($entry.vCPU)</td>
-                    <td><span class="$zoneClass">$($entry.ZoneSupport)</span></td>
-                    <td>$($zonesDisplay)</td>
-                    <td>$($entry.QuotaFamily)</td>
-                    <td><span class="$quotaClass">$($entry.QuotaStatus)</span></td>
-                </tr>
-"@
                                             }
+                                        $totalSKUSupported = ($allSKUStatuses | Where-Object { $_ -eq $("Success") }).Count
+                                        $totalSKUWarning = ($allSKUStatuses | Where-Object { $_ -eq $("Warning") }).Count
+                                        $totalSKUUnsupported = ($allSKUStatuses | Where-Object { $_ -eq $("Error") }).Count
 
-                                        # MNode family table rows
-                                        $mNodeFamilyRows = $("")
-                                        foreach ($entry in $mNodeFamilyResults)
+                                        # Build table rows with rowspan on Quota Family and Quota Status
+                                        $skuReferenceRows = $("")
+                                        foreach ($familyGroup in $familyGroups)
                                             {
-                                                $zoneClass = switch ($entry.ZoneSupportStatus)
+                                                $familyRepresentative = $familyGroup.Group[0]
+                                                $quotaClass = switch ($familyRepresentative.QuotaStatusLevel)
                                                     {
                                                         "Success" { $("status-success") }
                                                         "Warning" { $("status-warning") }
                                                         "Error"   { $("status-error") }
                                                     }
-                                                $quotaClass = switch ($entry.QuotaStatusLevel)
+
+                                                # Get unique SKUs in this family for rowspan count
+                                                $skuGroups = @($familyGroup.Group | Group-Object -Property SKUName)
+                                                $familyRowSpan = $skuGroups.Count
+                                                $isFirstInFamily = $true
+
+                                                foreach ($skuGroup in $skuGroups)
                                                     {
-                                                        "Success" { $("status-success") }
-                                                        "Warning" { $("status-warning") }
-                                                        "Error"   { $("status-error") }
-                                                    }
-                                                $zonesDisplay = if ($entry.AvailableZones.Count -gt 0) { $entry.AvailableZones -join $(", ") } else { $("-") }
-                                                $mNodeFamilyRows += @"
+                                                        $skuEntry = $skuGroup.Group[0]
+                                                        $zoneClass = switch ($skuEntry.ZoneSupportStatus)
+                                                            {
+                                                                "Success" { $("status-success") }
+                                                                "Warning" { $("status-warning") }
+                                                                "Error"   { $("status-error") }
+                                                            }
+                                                        $zonesDisplay = if ($skuEntry.AvailableZones.Count -gt 0) { $skuEntry.AvailableZones -join $(", ") } else { $("-") }
+
+                                                        # Build covers list
+                                                        $coversList = @()
+                                                        foreach ($entry in $skuGroup.Group)
+                                                            {
+                                                                if ($entry.ComponentType -eq $("CNode"))
+                                                                    {
+                                                                        $coversList += $("CNode: {0}" -f $entry.FriendlyName)
+                                                                    } `
+                                                                else
+                                                                    {
+                                                                        $coversList += $("MNode: {0}" -f $entry.FriendlyName)
+                                                                    }
+                                                            }
+                                                        $coversDisplay = $coversList -join $("<br>")
+
+                                                        # First SKU in family gets the rowspan cells
+                                                        if ($isFirstInFamily)
+                                                            {
+                                                                $skuReferenceRows += @"
                 <tr>
-                    <td>$($entry.FriendlyName)</td>
-                    <td>$($entry.SKUName)</td>
-                    <td>$($entry.vCPU)</td>
-                    <td>$($entry.DNodeCount)</td>
-                    <td><span class="$zoneClass">$($entry.ZoneSupport)</span></td>
+                    <td rowspan="$familyRowSpan" style="vertical-align: middle; border-bottom: 2px solid #ddd;">$($familyGroup.Name)</td>
+                    <td rowspan="$familyRowSpan" style="vertical-align: middle; border-bottom: 2px solid #ddd;"><span class="$quotaClass">$($familyRepresentative.QuotaStatus)</span></td>
+                    <td>$($skuGroup.Name)</td>
+                    <td>$($skuEntry.vCPU)</td>
+                    <td><span class="$zoneClass">$($skuEntry.ZoneSupport)</span></td>
                     <td>$($zonesDisplay)</td>
-                    <td>$($entry.QuotaFamily)</td>
-                    <td><span class="$quotaClass">$($entry.QuotaStatus)</span></td>
+                    <td>$($coversDisplay)</td>
                 </tr>
 "@
+                                                                $isFirstInFamily = $false
+                                                            } `
+                                                        else
+                                                            {
+                                                                $skuReferenceRows += @"
+                <tr>
+                    <td>$($skuGroup.Name)</td>
+                    <td>$($skuEntry.vCPU)</td>
+                    <td><span class="$zoneClass">$($skuEntry.ZoneSupport)</span></td>
+                    <td>$($zonesDisplay)</td>
+                    <td>$($coversDisplay)</td>
+                </tr>
+"@
+                                                            }
+                                                    }
                                             }
 
                                         $skuFamilyTestingHtml = @"
-        <h2>$("🔬 SKU Family Testing - All Silk-Supported VM Families")</h2>
+        <h2>$("📋 SKU Support & Quota Reference")</h2>
         <div class="info-grid">
             <div class="info-card">
-                <h4>$("📊 Family Testing Summary")</h4>
-                <strong>$("Total Families Tested:")</strong> $($ReportData.SKUFamilyTesting.Results.Count)<br>
-                <strong>$("CNode Configurations:")</strong> $($cNodeFamilyResults.Count)<br>
-                <strong>$("MNode Configurations:")</strong> $($mNodeFamilyResults.Count)<br>
-                <strong>$("Supported in Zone:")</strong> <span class="status-success">$($totalSupported)</span><br>
-                <strong>$("Available Elsewhere:")</strong> <span class="status-warning">$($totalWarning)</span><br>
-                <strong>$("Not in Region:")</strong> <span class="status-error">$($totalUnsupported)</span>
+                <h4>$("📊 SKU Reference Summary")</h4>
+                <strong>$("Quota Families:")</strong> $($familyGroups.Count)<br>
+                <strong>$("Unique SKUs:")</strong> $($uniqueSKUCount)<br>
+                <strong>$("Available in Zone:")</strong> <span class="status-success">$($totalSKUSupported)</span><br>
+                <strong>$("Available Elsewhere:")</strong> <span class="status-warning">$($totalSKUWarning)</span><br>
+                <strong>$("Not in Region:")</strong> <span class="status-error">$($totalSKUUnsupported)</span>
             </div>
         </div>
 
-        <h3>$("CNode VM Families")</h3>
         <table>
             <thead>
                 <tr>
-                    <th>$("Configuration")</th>
+                    <th>$("Quota Family")</th>
+                    <th>$("Quota Status")</th>
                     <th>$("VM SKU")</th>
                     <th>$("vCPU")</th>
                     <th>$("Zone Support")</th>
                     <th>$("Available Zones")</th>
-                    <th>$("Quota Family")</th>
-                    <th>$("Quota Status")</th>
+                    <th>$("Covers")</th>
                 </tr>
             </thead>
             <tbody>
-                $cNodeFamilyRows
-            </tbody>
-        </table>
-
-        <h3>$("MNode VM Families")</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>$("Configuration")</th>
-                    <th>$("VM SKU")</th>
-                    <th>$("vCPU")</th>
-                    <th>$("DNodes")</th>
-                    <th>$("Zone Support")</th>
-                    <th>$("Available Zones")</th>
-                    <th>$("Quota Family")</th>
-                    <th>$("Quota Status")</th>
-                </tr>
-            </thead>
-            <tbody>
-                $mNodeFamilyRows
+                $skuReferenceRows
             </tbody>
         </table>
 "@
@@ -2708,6 +2853,97 @@ function Test-SilkResourceDeployment
 "@
                                     }
 
+                                # Build SKU Family Deployment Test Results HTML (conditional on DeploymentResults)
+                                $skuDeploymentTestHtml = $("")
+                                if ($ReportData.SKUFamilyTesting.DeploymentResults -and $ReportData.SKUFamilyTesting.DeploymentResults.Count -gt 0)
+                                    {
+                                        $deployResults = $ReportData.SKUFamilyTesting.DeploymentResults
+                                        $deploySuccessCount = ($deployResults | Where-Object { $_.DeploymentResult -eq $("Success") }).Count
+                                        $deployFailedCount = ($deployResults | Where-Object { $_.DeploymentResult -eq $("Failed") }).Count
+
+                                        # Group deployment results by Quota Family, then unique SKU within each
+                                        $deployFamilyGroups = $deployResults | Group-Object -Property QuotaFamily
+                                        $uniqueSKUNames = $deployResults | Select-Object -ExpandProperty SKUName -Unique
+                                        $skuDeployRows = $("")
+                                        foreach ($deployFamilyGroup in $deployFamilyGroups)
+                                            {
+                                                $deploySkuGroups = @($deployFamilyGroup.Group | Group-Object -Property SKUName)
+                                                $deployFamilyRowSpan = $deploySkuGroups.Count
+                                                $isFirstDeployInFamily = $true
+
+                                                foreach ($deploySkuGroup in $deploySkuGroups)
+                                                    {
+                                                        $skuEntries = $deploySkuGroup.Group
+                                                        $firstEntry = $skuEntries | Select-Object -First 1
+                                                        $statusClass = if ($firstEntry.DeploymentResult -eq $("Success")) { $("status-success") } else { $("status-error") }
+                                                        $statusText = if ($firstEntry.DeploymentResult -eq $("Success")) { $("✓ Deployed") } else { $("✗ {0}" -f $firstEntry.FailureCategory) }
+                                                        $errorDetail = if ($firstEntry.DeploymentResult -eq $("Failed") -and $firstEntry.ErrorMessage) { $firstEntry.ErrorMessage } else { $("-") }
+                                                        $coversList = ($skuEntries | ForEach-Object { $("{0}: {1}" -f $_.NodeType, $_.FriendlyName) }) -join $("<br>")
+
+                                                        if ($isFirstDeployInFamily)
+                                                            {
+                                                                $skuDeployRows += @"
+                <tr>
+                    <td rowspan="$deployFamilyRowSpan" style="vertical-align: middle; border-bottom: 2px solid #ddd;">$($deployFamilyGroup.Name)</td>
+                    <td>$($deploySkuGroup.Name)</td>
+                    <td>$($firstEntry.vCPU)</td>
+                    <td><span class="$statusClass">$statusText</span></td>
+                    <td>$coversList</td>
+                    <td>$errorDetail</td>
+                </tr>
+"@
+                                                                $isFirstDeployInFamily = $false
+                                                            } `
+                                                        else
+                                                            {
+                                                                $skuDeployRows += @"
+                <tr>
+                    <td>$($deploySkuGroup.Name)</td>
+                    <td>$($firstEntry.vCPU)</td>
+                    <td><span class="$statusClass">$statusText</span></td>
+                    <td>$coversList</td>
+                    <td>$errorDetail</td>
+                </tr>
+"@
+                                                            }
+                                                    }
+                                            }
+
+                                        $htmlUniqueSKUCount = $uniqueSKUNames.Count
+                                        $htmlUniqueSuccessCount = ($uniqueSKUNames | Where-Object { $sku = $_; ($deployResults | Where-Object { $_.SKUName -eq $sku } | Select-Object -First 1).DeploymentResult -eq $("Success") }).Count
+                                        $htmlUniqueFailedCount = $htmlUniqueSKUCount - $htmlUniqueSuccessCount
+
+                                        $skuDeploymentTestHtml = @"
+        <h2>$("🚀 SKU Family Deployment Test Results")</h2>
+        <div class="info-grid">
+            <div class="info-card">
+                <h4>$("📋 Deployment Test Summary")</h4>
+                <strong>$("Region:")</strong> $($ReportData.Configuration.Region)<br>
+                <strong>$("Zone:")</strong> $($ReportData.Configuration.Zone)<br>
+                <strong>$("Unique SKUs Tested:")</strong> $($htmlUniqueSKUCount)<br>
+                <strong>$("Succeeded:")</strong> <span class="status-success">$htmlUniqueSuccessCount</span><br>
+                <strong>$("Failed:")</strong> $(if ($htmlUniqueFailedCount -gt 0) { $("<span class='status-error'>{0}</span>" -f $htmlUniqueFailedCount) } else { $("<span class='status-success'>0</span>") })
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>$("Quota Family")</th>
+                    <th>$("VM SKU")</th>
+                    <th>$("vCPU")</th>
+                    <th>$("Deployment Result")</th>
+                    <th>$("Covers")</th>
+                    <th>$("Details")</th>
+                </tr>
+            </thead>
+            <tbody>
+                $skuDeployRows
+            </tbody>
+        </table>
+"@
+                                    }
+
                                 # Build VNet/NSG status strings and infrastructure HTML (conditional on deployment)
                                 $infrastructureHtml = $("")
                                 if ($ReportData.Deployment.Attempted)
@@ -2749,17 +2985,25 @@ function Test-SilkResourceDeployment
                 <strong>$("Network Resources:")</strong> $($(if($infra.VNetCreated){1}else{0}) + $(if($infra.NSGCreated){1}else{0}))<br>
                 <strong>$("Placement Resources:")</strong> $($networkPPGCount + $infra.AvSetsCreated.Count)
             </div>
-            <div class="info-card">
-                <h4>$("🔄 Zone Alignment Information")</h4>
-                $zoneAlignmentHtml
-            </div>
             $validationFindingsHtml
         </div>
 "@
                                     }
 
+                                # Zone Alignment section - always rendered regardless of deployment mode
+                                $zoneAlignmentSectionHtml = @"
+        <h2>$("🔄 Zone Alignment Information")</h2>
+        <div class="info-grid">
+            <div class="info-card">
+                <h4>$("🗺️ Zone Mapping")</h4>
+                $zoneAlignmentHtml
+            </div>
+        </div>
+"@
+
                                 # Failed VMs line
-                                $failedVMsHtml = if ($totalFailed -gt 0) { $("<strong>$("Failed Deployments:")</strong> <span class='status-error'>{0}</span><br>" -f $totalFailed) } else { $("") }
+                                $isSKUTestMode = if (-not $isSKUTestMode) { $false } else { $isSKUTestMode }
+                                $failedVMsHtml = if ($isSKUTestMode) { if ($skuUniqueFailedCount -gt 0) { $("<strong>$("Failed:")</strong> <span class='status-error'>{0}</span><br>" -f $skuUniqueFailedCount) } else { $("") } } elseif ($totalFailed -gt 0) { $("<strong>$("Failed Deployments:")</strong> <span class='status-error'>{0}</span><br>" -f $totalFailed) } else { $("") }
 
                                 # Assemble the full HTML document
                                 $htmlContent = @"
@@ -2770,24 +3014,24 @@ function Test-SilkResourceDeployment
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>$( if ($ReportData.Metadata.StartTime) { $("Silk Azure Deployment Report - {0}" -f $ReportData.Metadata.StartTime.ToString("yyyy-MM-dd HH:mm:ss")) } else { $("Silk Azure Report - {0}" -f $ReportData.Metadata.ReportMode) } )</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5; line-height: 1.6; }
-        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h1 { color: #2c3e50; border-bottom: 3px solid #FF00FF; padding-bottom: 10px; margin-bottom: 30px; }
-        h2 { color: #34495e; border-left: 4px solid #FF00FF; padding-left: 15px; margin-top: 30px; }
-        h3 { color: #7f8c8d; margin-top: 25px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 12pt; margin: 0; padding: 15px; background-color: #f5f5f5; line-height: 1.4; }
+        .container { max-width: 1600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; border-bottom: 3px solid #FF00FF; padding-bottom: 8px; margin-bottom: 15px; }
+        h2 { color: #34495e; border-left: 4px solid #FF00FF; padding-left: 15px; margin-top: 20px; }
+        h3 { color: #7f8c8d; margin-top: 15px; }
         .status-success { color: #27ae60; font-weight: bold; }
         .status-warning { color: #f39c12; font-weight: bold; }
         .status-error { color: #e74c3c; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin: 15px 0; background: white; }
-        th, td { padding: 12px; text-align: left; border: 1px solid #ddd; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; background: white; }
+        th, td { padding: 8px 10px; text-align: left; border: 1px solid #ddd; }
         th { background-color: #FF00FF; color: white; font-weight: 600; }
         tr:nth-child(even) { background-color: #f8f9fa; }
         tr:hover { background-color: #e8f4f8; }
-        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin: 20px 0; }
-        .info-card { background: #f8f9fa; padding: 20px; border-radius: 6px; border-left: 4px solid #FF00FF; }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin: 12px 0; }
+        .info-card { background: #f8f9fa; padding: 14px; border-radius: 6px; border-left: 4px solid #FF00FF; }
         .info-card h4 { margin-top: 0; color: #2c3e50; }
-        .quota-item { margin: 8px 0; padding: 8px; background: #ecf0f1; border-radius: 4px; }
-        .timestamp { color: #7f8c8d; font-size: 0.9em; text-align: right; margin-top: 30px; }
+        .quota-item { margin: 4px 0; padding: 6px; background: #ecf0f1; border-radius: 4px; }
+        .timestamp { color: #7f8c8d; font-size: 0.9em; text-align: right; margin-top: 15px; }
         .checkmark { color: #27ae60; }
         .warning-mark { color: #f39c12; }
         .error-mark { color: #e74c3c; }
@@ -2804,14 +3048,22 @@ function Test-SilkResourceDeployment
             </div>
             <div class="info-card">
                 <h4>$("📊 Deployment Summary")</h4>
+                $(if ($isSKUTestMode) { @"
+                <strong>$("Unique SKUs Tested:")</strong> $($skuUniqueCount)<br>
+                <strong>$("Succeeded:")</strong> <span class="$deployedCountClass">$($skuUniqueSuccessCount)</span><br>
+                $failedVMsHtml
+                <strong>$("Overall Status:")</strong> <span class="$summaryStatusClass">$($summaryStatusText)</span>
+"@ } else { @"
                 <strong>$("Total Expected VMs:")</strong> $($totalExpected)<br>
                 <strong>$("Successfully Deployed:")</strong> <span class="$deployedCountClass">$($totalDeployed)</span><br>
                 $failedVMsHtml
                 <strong>$("Network Interfaces:")</strong> $($infra.NICsCreated)<br>
                 <strong>$("Overall Status:")</strong> <span class="$summaryStatusClass">$($summaryStatusText)</span>
+"@ })
             </div>
         </div>
 
+        $(if ($silkSummaryRows) { @"
         <h2>$("🏗️ Silk Component Summary")</h2>
         <table>
             <thead>
@@ -2827,30 +3079,39 @@ function Test-SilkResourceDeployment
                 $silkSummaryRows
             </tbody>
         </table>
+"@ })
 
         $cNodeTableHtml
         $mNodeTablesHtml
 
+        $(if ($skuSupportCardsHtml) { @"
         <h2>$("🔧 SKU Support Analysis")</h2>
         <div class="info-grid">
             $skuSupportCardsHtml
         </div>
+"@ })
 
+        $(if ($quotaFamilyCardsHtml) { @"
         <h2>$("📊 Quota Family Summary")</h2>
         <div class="info-grid">
             $quotaFamilyCardsHtml
         </div>
+"@ })
 
         <h2>$("📊 Quota Summary")</h2>
         <div class="info-grid">
             $quotaSummaryCardsHtml
         </div>
 
-        $skuFamilyTestingHtml
-
         $zoneTestingHtml
 
+        $skuDeploymentTestHtml
+
         $infrastructureHtml
+
+        $zoneAlignmentSectionHtml
+
+        $skuFamilyTestingHtml
 
         <div class="timestamp">
             $( if ($ReportData.Metadata.Duration -and $ReportData.Metadata.StartTime) { $("⏱️ Total Time: {0} | Report generated on {1} by Silk Test-SilkResourceDeployment PowerShell module" -f $ReportData.Metadata.Duration.ToString("hh\:mm\:ss"), $ReportData.Metadata.StartTime.ToString("yyyy-MM-dd HH:mm:ss")) } else { $("Report generated by Silk Test-SilkResourceDeployment PowerShell module ({0})" -f $ReportData.Metadata.ReportMode) } )
@@ -3600,10 +3861,10 @@ function Test-SilkResourceDeployment
                     } `
                 else
                     {
-                        if ($GenerateReportOnly)
+                        if ($GenerateReportOnly -or $TestAllSKUFamilies)
                             {
-                                # Report Only mode - no CNode/MNode configuration required
-                                Write-Verbose -Message $("Report Only mode - CNode/MNode configuration skipped. SKU/Quota analysis will use raw region data only.")
+                                # Report Only / SKU Family Test mode - no specific CNode/MNode configuration required
+                                Write-Verbose -Message $("Report/SKU test mode - CNode/MNode configuration skipped. All families will be tested from the full size object arrays.")
                                 $cNodeObject = $null
                             } `
                         else
@@ -3645,6 +3906,11 @@ function Test-SilkResourceDeployment
                         # Report Only mode - no CNode/MNode configuration required
                         Write-Verbose -Message $("Report Only mode - no CNode/MNode configuration specified. SKU/Quota analysis will use raw region data only.")
                     } `
+                elseif ($TestAllSKUFamilies -and !$CNodeCount -and !$MnodeSizeLsv3 -and !$MnodeSizeLaosv4 -and !$MNodeSku)
+                    {
+                        # SKU Family Test mode - no specific MNode configuration required, all families tested from size objects
+                        Write-Verbose -Message $("SKU Family Test mode - all MNode families will be tested from the full size object array.")
+                    } `
                 elseif (!$CNodeCount -and !$MnodeSizeLsv3 -and !$MnodeSizeLaosv4 -and !$MNodeSku)
                     {
                         Write-Error $("No valid configuration specified. Please specify either CNode parameters (CNodeFriendlyName/CNodeSku with CNodeCount) or MNode parameters (MnodeSizeLsv3/MnodeSizeLaosv4/MNodeSku), or both.")
@@ -3678,43 +3944,57 @@ function Test-SilkResourceDeployment
                 $sectionStep = ""
                 $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
                 Write-Verbose -Message $("{0}Starting zone alignment check." -f $messagePrefix)
-                if ($ZoneAlignmentSubscriptionId -and $Zone -ne "Zoneless" -and $ZoneAlignmentSubscriptionId -ne $SubscriptionId)
+                if ($Zone -ne "Zoneless")
                     {
-                        $sectionStep = "Check AvailabilityZonePeering Feature"
-                        $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
-                        # Validate AvailabilityZonePeering feature registration - required for cross-subscription zone querying
-                        Write-Verbose -Message $("{0}Validating AvailabilityZonePeering feature registration for zone alignment capabilities..." -f $messagePrefix)
-                        try
+                        # Determine peer subscription for zone mapping query
+                        $isCrossSubscription = ($ZoneAlignmentSubscriptionId -and $ZoneAlignmentSubscriptionId -ne $SubscriptionId)
+                        $peerSubscriptionId = if ($isCrossSubscription) { $ZoneAlignmentSubscriptionId } else { $SubscriptionId }
+
+                        # Feature check only needed for cross-subscription alignment
+                        if ($isCrossSubscription)
                             {
-                                $featureCheckAvailabilityZonePeering = Get-AzProviderFeature -ProviderNamespace "Microsoft.Compute" -FeatureName "AvailabilityZonePeering" -ErrorAction Stop
-                                if ($featureCheckAvailabilityZonePeering.RegistrationState -ne "Registered")
+                                $sectionStep = "Check AvailabilityZonePeering Feature"
+                                $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
+                                Write-Verbose -Message $("{0}Validating AvailabilityZonePeering feature registration for zone alignment capabilities..." -f $messagePrefix)
+                                try
                                     {
-                                        Write-Warning -Message $("{0}AvailabilityZonePeering feature status: '{1}' in deployment subscription '{2}' - zone alignment cannot be performed." -f $messagePrefix, $featureCheckAvailabilityZonePeering.RegistrationState, $SubscriptionId)
-                                        Write-Warning -Message $("{0}To enable zone alignment, register the feature using: Register-AzProviderFeature -FeatureName AvailabilityZonePeering -ProviderNamespace Microsoft.Compute" -f $messagePrefix)
-                                        Write-Verbose -Message $("{0}Proceeding without zone alignment due to missing feature registration." -f $messagePrefix)
+                                        $featureCheckAvailabilityZonePeering = Get-AzProviderFeature -ProviderNamespace "Microsoft.Compute" -FeatureName "AvailabilityZonePeering" -ErrorAction Stop
+                                        if ($featureCheckAvailabilityZonePeering.RegistrationState -ne "Registered")
+                                            {
+                                                Write-Warning -Message $("{0}AvailabilityZonePeering feature status: '{1}' in deployment subscription '{2}' - zone alignment cannot be performed." -f $messagePrefix, $featureCheckAvailabilityZonePeering.RegistrationState, $SubscriptionId)
+                                                Write-Warning -Message $("{0}To enable zone alignment, register the feature using: Register-AzProviderFeature -FeatureName AvailabilityZonePeering -ProviderNamespace Microsoft.Compute" -f $messagePrefix)
+                                                Write-Verbose -Message $("{0}Proceeding without zone alignment due to missing feature registration." -f $messagePrefix)
+                                            } `
+                                        else
+                                            {
+                                                Write-Verbose -Message $("{0}AvailabilityZonePeering feature status: '{1}' and available for zone alignment operations." -f $messagePrefix, $featureCheckAvailabilityZonePeering.RegistrationState)
+                                            }
                                     } `
-                                else
+                                catch
                                     {
-                                        Write-Verbose -Message $("{0}AvailabilityZonePeering feature status: '{1}' and available for zone alignment operations." -f $messagePrefix, $featureCheckAvailabilityZonePeering.RegistrationState)
+                                        Write-Warning -Message $("{0}Failed to validate AvailabilityZonePeering feature status: {1}" -f $messagePrefix, $_.Exception.Message)
+                                        Write-Verbose -Message $("{0}Proceeding without Availability Zone alignment due to feature validation error." -f $messagePrefix)
                                     }
-                            } `
-                        catch
-                            {
-                                Write-Warning -Message $("{0}Failed to validate AvailabilityZonePeering feature status: {1}" -f $messagePrefix, $_.Exception.Message)
-                                Write-Verbose -Message $("{0}Proceeding without Availability Zone alignment due to feature validation error." -f $messagePrefix)
                             }
 
-                        # Query Azure checkZonePeers REST API for cross-subscription zone mapping data
+                        # Query Azure checkZonePeers REST API for zone mapping data
                         $sectionStep = "Request Zone Alignment Info"
                         $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
-                        Write-Verbose -Message $("{0}Requesting availablity zone peer mappings between deployment subscription '{1}' and alignment subscription '{2}' in region '{3}'..." -f $messagePrefix, $SubscriptionId, $ZoneAlignmentSubscriptionId, $Region)
+                        if ($isCrossSubscription)
+                            {
+                                Write-Verbose -Message $("{0}Requesting availability zone peer mappings between deployment subscription '{1}' and alignment subscription '{2}' in region '{3}'..." -f $messagePrefix, $SubscriptionId, $peerSubscriptionId, $Region)
+                            } `
+                        else
+                            {
+                                Write-Verbose -Message $("{0}Requesting availability zone mapping for subscription '{1}' in region '{2}'..." -f $messagePrefix, $SubscriptionId, $Region)
+                            }
 
                         # Generate REST API request URI for checkZonePeers endpoint
                         $zoneAlignmentRequestUri = $("https://management.azure.com/subscriptions/{0}/providers/Microsoft.Resources/checkZonePeers?api-version=2022-12-01" -f $SubscriptionId)
 
-                        # Generate request payload with alignment subscription and target region
+                        # Generate request payload with peer subscription and target region
                         $zoneAlignmentRequestPayload = @{
-                                                            subscriptionIds = @( $("subscriptions/{0}" -f $ZoneAlignmentSubscriptionId) )
+                                                            subscriptionIds = @( $("subscriptions/{0}" -f $peerSubscriptionId) )
                                                             location = $Region
                                                         } | ConvertTo-Json
 
@@ -3727,59 +4007,57 @@ function Test-SilkResourceDeployment
                                 $sectionStep = "Mapping"
                                 $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
 
-                                # Parse zone peer mappings to identify cross subscription Availability Zone alignment
-                                Write-Verbose -Message $("{0}Analyzing Availability Zone peer relationships for production deployment testing accuracy..." -f $messagePrefix)
+                                # Parse zone peer mappings
+                                Write-Verbose -Message $("{0}Analyzing Availability Zone peer relationships..." -f $messagePrefix)
                                 foreach ($peer in $zoneAlignmentResponse.availabilityZonePeers)
                                     {
-                                        Write-Verbose -Message $("{0}Deployment Subscription Availability Zone '{1}' corresponds to Alignment Subscription Availability Zone '{2}'" -f $messagePrefix, $peer.availabilityZone, $peer.peers.availabilityZone)
-                                        # Find the deployment zone that aligns with the current zone in the alignment subscription
+                                        Write-Verbose -Message $("{0}Deployment Subscription Availability Zone '{1}' corresponds to Peer Subscription Availability Zone '{2}'" -f $messagePrefix, $peer.availabilityZone, $peer.peers.availabilityZone)
+                                        # Find the deployment zone that aligns with the current zone in the peer subscription
                                         if ($peer.peers.availabilityZone -eq $Zone)
                                             {
                                                 $alignedZone = $peer.availabilityZone
                                                 $remoteZone = $peer.peers.availabilityZone
-                                                Write-Verbose -Message $("{0}Found alignment match: Deployment Subscription Availability Zone '{1}' aligns with Alignment Subscription Availability Zone '{2}'" -f $messagePrefix, $alignedZone, $remoteZone)
+                                                Write-Verbose -Message $("{0}Found alignment match: Deployment Subscription Availability Zone '{1}' aligns with Peer Subscription Availability Zone '{2}'" -f $messagePrefix, $alignedZone, $remoteZone)
                                             }
                                     }
 
-                                # Apply zone alignment decision based on analysis results
-                                $sectionStep = "Apply Alignment"
-                                $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
-                                if ($DisableZoneAlignment)
+                                # Apply zone alignment decision only for cross-subscription scenarios
+                                if ($isCrossSubscription)
                                     {
-                                        Write-Verbose -Message $("{0}Zone alignment disabled by parameter - maintaining original Availability Zone '{1}' (Alignment would be Availability Zone '{2}' with Alignment Subscription '{3}')" -f $messagePrefix, $Zone, $alignedZone, $ZoneAlignmentSubscriptionId)
-                                    } `
-                                elseif ($alignedZone -and $alignedZone -eq $Zone)
-                                    {
-                                        Write-Verbose -Message $("{0}Zone Aligned: Current Deployment Availability Zone '{1}' is already aligned with  Alignment Subscription Availability Zone '{2}' in Region '{3}'" -f $messagePrefix, $Zone, $alignedZone, $Region)
-                                    } `
-                                elseif($alignedZone)
-                                    {
-                                        $originalZone = $Zone
-                                        $Zone = $alignedZone
-                                        Write-Verbose -Message $("{0}Zone alignment applied: Changed Deployment Availability Zone from '{1}' to '{2}' for alignment with Subscription '{3}' Availability Zone '{4}' in Region '{5}'" -f $messagePrefix, $originalZone, $Zone, $ZoneAlignmentSubscriptionId, $remoteZone, $Region)
+                                        $sectionStep = "Apply Alignment"
+                                        $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))
+                                        if ($DisableZoneAlignment)
+                                            {
+                                                Write-Verbose -Message $("{0}Zone alignment disabled by parameter - maintaining original Availability Zone '{1}' (Alignment would be Availability Zone '{2}' with Alignment Subscription '{3}')" -f $messagePrefix, $Zone, $alignedZone, $ZoneAlignmentSubscriptionId)
+                                            } `
+                                        elseif ($alignedZone -and $alignedZone -eq $Zone)
+                                            {
+                                                Write-Verbose -Message $("{0}Zone Aligned: Current Deployment Availability Zone '{1}' is already aligned with Alignment Subscription Availability Zone '{2}' in Region '{3}'" -f $messagePrefix, $Zone, $alignedZone, $Region)
+                                            } `
+                                        elseif($alignedZone)
+                                            {
+                                                $originalZone = $Zone
+                                                $Zone = $alignedZone
+                                                Write-Verbose -Message $("{0}Zone alignment applied: Changed Deployment Availability Zone from '{1}' to '{2}' for alignment with Subscription '{3}' Availability Zone '{4}' in Region '{5}'" -f $messagePrefix, $originalZone, $Zone, $ZoneAlignmentSubscriptionId, $remoteZone, $Region)
+                                            } `
+                                        else
+                                            {
+                                                Write-Warning -Message $("{0}Alignment data inconclusive: Unable to determine Availability Zone mapping for Region '{1}'. Proceeding with original Availability Zone '{2}' in Deployment Subscription '{3}'" -f $messagePrefix, $Region, $Zone, $SubscriptionId)
+                                            }
                                     } `
                                 else
                                     {
-                                        Write-Warning -Message $("{0}Alignment data inconclusive: Unable to determine Availability Zone mapping for Region '{1}'. Proceeding with original Availability Zone '{2}' in Deployment Subscription '{3}'" -f $messagePrefix, $Region, $Zone, $SubscriptionId)
+                                        Write-Verbose -Message $("{0}Zone mapping retrieved for subscription '{1}' (self-reference)" -f $messagePrefix, $SubscriptionId)
                                     }
                             } `
                         catch
                             {
-                                Write-Warning -Message $("{0}Alignment API call failed: {1}. Proceeding with original Availability Zone '{2}' in Deployment Subscription '{3}'" -f $messagePrefix, $_.Exception.Message, $Zone, $SubscriptionId)
-                                return
+                                Write-Warning -Message $("{0}Zone mapping API call failed: {1}. Proceeding with original Availability Zone '{2}' in Deployment Subscription '{3}'" -f $messagePrefix, $_.Exception.Message, $Zone, $SubscriptionId)
                             }
-                    } `
-                elseif ($Zone -eq "Zoneless")
-                    {
-                        Write-Verbose -Message $("{0}Alignment skipped: Deployment configured for 'Zoneless' Region - cross-subscription Zone optimization not applicable" -f $messagePrefix)
-                    } `
-                elseif ($ZoneAlignmentSubscriptionId -eq $SubscriptionId)
-                    {
-                        Write-Verbose -Message $("{0}Deployment Subscription : '{1}' is identical to Availability Zone Alignment Subscription ID: '{2}'. Availability Zone alignment not necessary." -f $messagePrefix, $Zone)
                     } `
                 else
                     {
-                        Write-Verbose -Message $("{0}Alignment skipped: No Alignment Subscription specified - using original Availability Zone '{1}' in Region '{2}'" -f $messagePrefix, $Zone, $Region)
+                        Write-Verbose -Message $("{0}Alignment skipped: Deployment configured for 'Zoneless' Region - zone mapping not applicable" -f $messagePrefix)
                     }
 
 
@@ -4115,7 +4393,7 @@ function Test-SilkResourceDeployment
                             }
 
                         # Track deployment mode for reporting purposes
-                        if(-not $anyDeploymentPossible)
+                        if(-not $anyDeploymentPossible -and -not $TestAllSKUFamilies)
                             {
                                 Write-Warning $("⚠ Zero VM deployment mode: Function will analyze environment and report quota deficiencies without deploying resources.")
                                 # Set adjusted counts to 0 to ensure no deployment attempts
@@ -4133,14 +4411,12 @@ function Test-SilkResourceDeployment
                     }
 
                 # ===============================================================================
-                # SKU Family Testing - Comprehensive Analysis of All Silk-Supported Families
+                # SKU Support & Quota Reference - All Silk-Supported Families
                 # ===============================================================================
-                # When TestAllSKUFamilies is specified, iterate ALL entries in cNodeSizeObject
-                # and mNodeSizeObject to produce a complete support matrix for the target
-                # region and zone. Results feed into the SKUFamilyTesting report section.
-                if ($TestAllSKUFamilies)
-                    {
-                        Write-Verbose -Message $("SKU Family Testing mode - analyzing all Silk-supported VM families for region '{0}'" -f $Region)
+                # Always iterate ALL entries in cNodeSizeObject and mNodeSizeObject to produce
+                # a complete support matrix for the target region and zone. Results feed into
+                # the SKUFamilyTesting report section for every report mode.
+                Write-Verbose -Message $("Analyzing all Silk-supported VM families for region '{0}'" -f $Region)
 
                         $skuFamilyResults = New-Object -TypeName 'System.Collections.Generic.List[PSCustomObject]'
 
@@ -4294,8 +4570,7 @@ function Test-SilkResourceDeployment
                                 Write-Verbose -Message $("  MNode {0} TiB ({1}): {2} | Quota: {3}" -f $mNodeEntry.PhysicalSize, $skuName, $zoneSupport, $quotaStatus)
                             }
 
-                        Write-Verbose -Message $("SKU Family Testing complete - {0} total entries analyzed ({1} CNode, {2} MNode)" -f $skuFamilyResults.Count, ($skuFamilyResults | Where-Object { $_.ComponentType -eq $("CNode") }).Count, ($skuFamilyResults | Where-Object { $_.ComponentType -eq $("MNode") }).Count)
-                    }
+                        Write-Verbose -Message $("SKU support analysis complete - {0} total entries analyzed ({1} CNode, {2} MNode)" -f $skuFamilyResults.Count, ($skuFamilyResults | Where-Object { $_.ComponentType -eq $("CNode") }).Count, ($skuFamilyResults | Where-Object { $_.ComponentType -eq $("MNode") }).Count)
 
                 # ===============================================================================
                 # Multi-Zone Analysis - Per-SKU Zone Support Matrix
@@ -4421,13 +4696,16 @@ function Test-SilkResourceDeployment
                     }
 
                 # ===============================================================================
-                # Report Only Mode - Early Return from Begin Block
+                # Report/Analysis Mode - Early Return from Begin Block
                 # ===============================================================================
-                # In report-only, SKU family test, or multi-zone analysis mode, all needed data
-                # (raw SKU support and quota) has been collected. Skip VM image discovery and
-                # remaining begin block setup. The process block will populate $reportData and
-                # call report functions.
-                if ($GenerateReportOnly -or $TestAllSKUFamilies -or $TestAllZones)
+                # In report-only mode, all needed data has been collected. Skip VM image
+                # discovery and remaining begin block setup. The process block will populate
+                # $reportData, render reports, and return.
+                #
+                # TestAllZones alone is report-only (no deployment path).
+                # TestAllSKUFamilies WITHOUT GenerateReportOnly proceeds to deployment,
+                # so we let it continue through VM image discovery below.
+                if ($GenerateReportOnly -or ($TestAllZones -and (-not $TestAllSKUFamilies)))
                     {
                         Write-Verbose -Message $("Report/analysis mode - environment validation and SKU/quota data collection complete. Skipping VM image discovery.")
                         return
@@ -4696,7 +4974,8 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 # Populates the centralized report data object with all available analysis
                 # data collected during the begin block, then renders reports and returns.
-                if ($GenerateReportOnly -or $TestAllSKUFamilies -or $TestAllZones)
+                # TestAllSKUFamilies WITHOUT GenerateReportOnly falls through to deployment.
+                if ($GenerateReportOnly -or ($TestAllZones -and (-not $TestAllSKUFamilies)))
                     {
                         Write-Verbose -Message $("Report/analysis mode - generating report without deployment")
 
@@ -4848,8 +5127,8 @@ function Test-SilkResourceDeployment
 
                         $reportData.QuotaAnalysisData = $quotaAnalysisData
 
-                        # SKU Family Testing results (populated in begin block)
-                        if ($TestAllSKUFamilies -and $skuFamilyResults)
+                        # SKU Family Testing results (always populated from begin block analysis)
+                        if ($skuFamilyResults)
                             {
                                 $reportData.SKUFamilyTesting.Results = @($skuFamilyResults)
                             }
@@ -4860,9 +5139,73 @@ function Test-SilkResourceDeployment
                                 $reportData.ZoneResults = $zoneResults
                             }
 
-                        # Zone alignment (simplified for report only)
-                        $reportData.EnvironmentValidation.ZoneAlignment.FinalZone = $Zone
-                        $reportData.EnvironmentValidation.ZoneAlignment.Reason = $("Report Only mode - no zone alignment performed")
+                        # Zone alignment - reuse begin block variables to build full alignment info
+                        $zoneAlignmentInfo =    @{
+                                                    AlignmentPerformed      = $false
+                                                    AlignmentDisabled       = $DisableZoneAlignment
+                                                    AlignmentSubscription   = $ZoneAlignmentSubscriptionId
+                                                    OriginalZone            = $("")
+                                                    FinalZone               = $Zone
+                                                    ZoneMappings            = @()
+                                                    AlignmentReason         = $("Not applicable")
+                                                }
+
+                        if ($ZoneAlignmentSubscriptionId -and $Zone -ne "Zoneless" -and $ZoneAlignmentSubscriptionId -ne $SubscriptionId)
+                            {
+                                $zoneAlignmentInfo.AlignmentSubscription = $ZoneAlignmentSubscriptionId
+
+                                if ($originalZone)
+                                    {
+                                        $zoneAlignmentInfo.AlignmentPerformed = $true
+                                        $zoneAlignmentInfo.OriginalZone = $originalZone
+                                        $zoneAlignmentInfo.AlignmentReason = $("Zone alignment applied")
+                                    } `
+                                elseif ($DisableZoneAlignment -and $alignedZone)
+                                    {
+                                        $zoneAlignmentInfo.AlignmentReason = $("Zone alignment available but disabled by parameter")
+                                        $zoneAlignmentInfo.OriginalZone = $Zone
+                                    } `
+                                elseif ($alignedZone -eq $Zone)
+                                    {
+                                        $zoneAlignmentInfo.AlignmentReason = $("Zone already aligned - no adjustment needed")
+                                    } `
+                                else
+                                    {
+                                        $zoneAlignmentInfo.AlignmentReason = $("Zone alignment data unavailable or inconclusive")
+                                    }
+                            } `
+                        elseif ($Zone -ne "Zoneless" -and $zoneAlignmentResponse)
+                            {
+                                $zoneAlignmentInfo.AlignmentReason = $("Zone mapping retrieved (subscription self-reference)")
+                            } `
+                        elseif ($Zone -eq "Zoneless")
+                            {
+                                $zoneAlignmentInfo.AlignmentReason = $("Zoneless deployment - alignment not applicable")
+                            } `
+                        else
+                            {
+                                $zoneAlignmentInfo.AlignmentReason = $("No alignment subscription specified")
+                            }
+
+                        # Capture zone mappings for reporting if available
+                        if ($zoneAlignmentResponse -and $zoneAlignmentResponse.availabilityZonePeers)
+                            {
+                                foreach ($peer in $zoneAlignmentResponse.availabilityZonePeers)
+                                    {
+                                        $zoneAlignmentInfo.ZoneMappings += [PSCustomObject]@{
+                                            DeploymentZone = $peer.availabilityZone
+                                            AlignmentZone = $peer.peers.availabilityZone
+                                        }
+                                    }
+                            }
+
+                        $reportData.EnvironmentValidation.ZoneAlignment.AlignmentPerformed  = $zoneAlignmentInfo.AlignmentPerformed
+                        $reportData.EnvironmentValidation.ZoneAlignment.AlignmentDisabled   = $zoneAlignmentInfo.AlignmentDisabled
+                        $reportData.EnvironmentValidation.ZoneAlignment.AlignmentSubId      = if ($zoneAlignmentInfo.AlignmentSubscription) { $zoneAlignmentInfo.AlignmentSubscription } else { $("") }
+                        $reportData.EnvironmentValidation.ZoneAlignment.OriginalZone        = $zoneAlignmentInfo.OriginalZone
+                        $reportData.EnvironmentValidation.ZoneAlignment.FinalZone           = $zoneAlignmentInfo.FinalZone
+                        $reportData.EnvironmentValidation.ZoneAlignment.ZoneMappings        = $zoneAlignmentInfo.ZoneMappings
+                        $reportData.EnvironmentValidation.ZoneAlignment.Reason              = $zoneAlignmentInfo.AlignmentReason
 
                         # Timing
                         $reportData.Metadata.EndTime    = Get-Date
@@ -4893,6 +5236,633 @@ function Test-SilkResourceDeployment
                                 Write-SilkHTMLReport -ReportData $reportData -OutputPath $ReportFullPath
                             }
 
+                        return
+                    }
+
+                # ===============================================================================
+                # SKU Family Deployment Test - Actual VM Allocation Testing
+                # ===============================================================================
+                # When TestAllSKUFamilies is set WITHOUT GenerateReportOnly, deploy one test VM
+                # per SKU family to validate real allocation availability. Each VM is deployed
+                # as a standalone instance (no PPG or Availability Set) since we are testing
+                # individual SKU families that cannot share placement constraints.
+                if ($TestAllSKUFamilies)
+                    {
+                        Write-Verbose -Message $("SKU Family Deployment Test mode - deploying one test VM per SKU family")
+
+                        # Report metadata
+                        $reportData.Metadata.ReportMode         = if ($TestAllZones) { $("SKU Family Deployment Test + Multi-Zone") } else { $("SKU Family Deployment Test") }
+                        $reportData.Metadata.StartTime          = Get-Date
+                        $reportData.Metadata.ParameterSetName   = $PSCmdlet.ParameterSetName
+
+                        # Configuration
+                        $reportData.Configuration.SubscriptionId        = $SubscriptionId
+                        $reportData.Configuration.ResourceGroupName     = $ResourceGroupName
+                        $reportData.Configuration.Region                = $Region
+                        $reportData.Configuration.Zone                  = $Zone
+                        $reportData.Configuration.CNodeSKU              = $("All Families")
+                        $reportData.Configuration.CNodeFriendlyName     = $("SKU Family Deployment Test")
+                        $reportData.Configuration.CNodeCount            = 0
+                        $reportData.Configuration.CNodeCountAdjusted    = 0
+                        $reportData.Configuration.MNodeSizes            = @($mNodeSizeObject | ForEach-Object { $_.PhysicalSize })
+                        $reportData.Configuration.MNodeSKUs             = @($mNodeSizeObject)
+                        $reportData.Configuration.IPRange               = $IPRangeCIDR
+                        $reportData.Configuration.ResourceNamePrefix    = $ResourceNamePrefix
+                        $reportData.Configuration.DevelopmentMode       = [bool]$Development
+                        $reportData.Configuration.NoHTMLReport          = [bool]$NoHTMLReport
+
+                        # Raw data from begin block
+                        $reportData.SKUSupport.RawRegionSKUs            = $locationSupportedSKU
+                        $reportData.QuotaAnalysis.RawQuotaData          = $computeQuotaUsage
+
+                        # SKU Family Testing results (from begin block analysis)
+                        if ($skuFamilyResults)
+                            {
+                                $reportData.SKUFamilyTesting.Results = @($skuFamilyResults)
+                            }
+
+                        # Multi-Zone Analysis results (from begin block)
+                        if ($TestAllZones -and $zoneResults)
+                            {
+                                $reportData.ZoneResults = $zoneResults
+                            }
+
+                        # Build quota analysis
+                        $quotaAnalysisData = @()
+                        $totalVMQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $("Virtual Machines") }
+                        if ($totalVMQuota)
+                            {
+                                $availableVMQuota = $totalVMQuota.Limit - $totalVMQuota.CurrentValue
+                                $quotaAnalysisData += [PSCustomObject]@{
+                                    QuotaType   = $("Virtual Machines")
+                                    Required    = $("N/A")
+                                    Available   = $availableVMQuota
+                                    Limit       = $totalVMQuota.Limit
+                                    Status      = $("ℹ Available: {0}/{1}" -f $availableVMQuota, $totalVMQuota.Limit)
+                                    StatusLevel = $("Success")
+                                }
+                            }
+                        $totalVCPUQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $("Total Regional vCPUs") }
+                        if ($totalVCPUQuota)
+                            {
+                                $availableVCPUQuota = $totalVCPUQuota.Limit - $totalVCPUQuota.CurrentValue
+                                $quotaAnalysisData += [PSCustomObject]@{
+                                    QuotaType   = $("Regional vCPUs")
+                                    Required    = $("N/A")
+                                    Available   = $availableVCPUQuota
+                                    Limit       = $totalVCPUQuota.Limit
+                                    Status      = $("ℹ Available: {0}/{1}" -f $availableVCPUQuota, $totalVCPUQuota.Limit)
+                                    StatusLevel = $("Success")
+                                }
+                            }
+                        $reportData.QuotaAnalysisData = $quotaAnalysisData
+
+                        # Zone alignment - reuse begin block variables to build full alignment info
+                        $zoneAlignmentInfo =    @{
+                                                    AlignmentPerformed      = $false
+                                                    AlignmentDisabled       = $DisableZoneAlignment
+                                                    AlignmentSubscription   = $ZoneAlignmentSubscriptionId
+                                                    OriginalZone            = $("")
+                                                    FinalZone               = $Zone
+                                                    ZoneMappings            = @()
+                                                    AlignmentReason         = $("Not applicable")
+                                                }
+
+                        if ($ZoneAlignmentSubscriptionId -and $Zone -ne "Zoneless" -and $ZoneAlignmentSubscriptionId -ne $SubscriptionId)
+                            {
+                                $zoneAlignmentInfo.AlignmentSubscription = $ZoneAlignmentSubscriptionId
+
+                                if ($originalZone)
+                                    {
+                                        $zoneAlignmentInfo.AlignmentPerformed = $true
+                                        $zoneAlignmentInfo.OriginalZone = $originalZone
+                                        $zoneAlignmentInfo.AlignmentReason = $("Zone alignment applied")
+                                    } `
+                                elseif ($DisableZoneAlignment -and $alignedZone)
+                                    {
+                                        $zoneAlignmentInfo.AlignmentReason = $("Zone alignment available but disabled by parameter")
+                                        $zoneAlignmentInfo.OriginalZone = $Zone
+                                    } `
+                                elseif ($alignedZone -eq $Zone)
+                                    {
+                                        $zoneAlignmentInfo.AlignmentReason = $("Zone already aligned - no adjustment needed")
+                                    } `
+                                else
+                                    {
+                                        $zoneAlignmentInfo.AlignmentReason = $("Zone alignment data unavailable or inconclusive")
+                                    }
+                            } `
+                        elseif ($Zone -ne "Zoneless" -and $zoneAlignmentResponse)
+                            {
+                                $zoneAlignmentInfo.AlignmentReason = $("Zone mapping retrieved (subscription self-reference)")
+                            } `
+                        elseif ($Zone -eq "Zoneless")
+                            {
+                                $zoneAlignmentInfo.AlignmentReason = $("Zoneless deployment - alignment not applicable")
+                            } `
+                        else
+                            {
+                                $zoneAlignmentInfo.AlignmentReason = $("No alignment subscription specified")
+                            }
+
+                        # Capture zone mappings for reporting if available
+                        if ($zoneAlignmentResponse -and $zoneAlignmentResponse.availabilityZonePeers)
+                            {
+                                foreach ($peer in $zoneAlignmentResponse.availabilityZonePeers)
+                                    {
+                                        $zoneAlignmentInfo.ZoneMappings += [PSCustomObject]@{
+                                            DeploymentZone = $peer.availabilityZone
+                                            AlignmentZone = $peer.peers.availabilityZone
+                                        }
+                                    }
+                            }
+
+                        $reportData.EnvironmentValidation.ZoneAlignment.AlignmentPerformed  = $zoneAlignmentInfo.AlignmentPerformed
+                        $reportData.EnvironmentValidation.ZoneAlignment.AlignmentDisabled   = $zoneAlignmentInfo.AlignmentDisabled
+                        $reportData.EnvironmentValidation.ZoneAlignment.AlignmentSubId      = if ($zoneAlignmentInfo.AlignmentSubscription) { $zoneAlignmentInfo.AlignmentSubscription } else { $("") }
+                        $reportData.EnvironmentValidation.ZoneAlignment.OriginalZone        = $zoneAlignmentInfo.OriginalZone
+                        $reportData.EnvironmentValidation.ZoneAlignment.FinalZone           = $zoneAlignmentInfo.FinalZone
+                        $reportData.EnvironmentValidation.ZoneAlignment.ZoneMappings        = $zoneAlignmentInfo.ZoneMappings
+                        $reportData.EnvironmentValidation.ZoneAlignment.Reason              = $zoneAlignmentInfo.AlignmentReason
+
+                        # ---------------------------------------------------------------
+                        # Create Shared Network Infrastructure (NSG + VNet + Subnet)
+                        # ---------------------------------------------------------------
+                        $deploymentStarted = $true
+                        Write-Host $("Creating shared network infrastructure for SKU family deployment tests...") -ForegroundColor Yellow
+
+                        try
+                            {
+                                # NSG with deny-all rules for complete isolation
+                                $nSGDenyAllOutboundRule = New-AzNetworkSecurityRuleConfig `
+                                                            -Name "DenyAllOutbound" `
+                                                            -Description "Deny All Outbound Traffic" `
+                                                            -Access Deny `
+                                                            -Protocol * `
+                                                            -Direction Outbound `
+                                                            -Priority 100 `
+                                                            -SourceAddressPrefix * `
+                                                            -SourcePortRange * `
+                                                            -DestinationAddressPrefix * `
+                                                            -DestinationPortRange *
+
+                                $nSGDenyAllInboundRule = New-AzNetworkSecurityRuleConfig `
+                                                            -Name "DenyAllInbound" `
+                                                            -Description "Deny All Inbound Traffic" `
+                                                            -Access Deny `
+                                                            -Protocol * `
+                                                            -Direction Inbound `
+                                                            -Priority 100 `
+                                                            -SourceAddressPrefix * `
+                                                            -SourcePortRange * `
+                                                            -DestinationAddressPrefix * `
+                                                            -DestinationPortRange *
+
+                                $nSG = New-AzNetworkSecurityGroup `
+                                        -ResourceGroupName $ResourceGroupName `
+                                        -Location $Region `
+                                        -Name $("{0}-nsg" -f $ResourceNamePrefix) `
+                                        -SecurityRules $nSGDenyAllOutboundRule, $nSGDenyAllInboundRule
+
+                                Write-Verbose -Message $("✓ NSG '{0}' created" -f $nSG.Name)
+
+                                # Subnet + VNet
+                                $mGMTSubnet = New-AzVirtualNetworkSubnetConfig `
+                                                -Name $("{0}-mgmt-subnet" -f $ResourceNamePrefix) `
+                                                -AddressPrefix $IPRangeCIDR `
+                                                -NetworkSecurityGroup $nSG
+
+                                $vNET = New-AzVirtualNetwork `
+                                            -ResourceGroupName $ResourceGroupName `
+                                            -Location $Region `
+                                            -Name $("{0}-vnet" -f $ResourceNamePrefix) `
+                                            -AddressPrefix $IPRangeCIDR `
+                                            -Subnet $mGMTSubnet
+
+                                $mGMTSubnetID = $vNET.Subnets | Where-Object { $_.Name -eq $mGMTSubnet.Name } | Select-Object -ExpandProperty Id
+
+                                Write-Verbose -Message $("✓ VNet '{0}' created with subnet '{1}'" -f $vNET.Name, $mGMTSubnet.Name)
+                                Write-Host $("✓ Shared network infrastructure created") -ForegroundColor Green
+                            } `
+                        catch
+                            {
+                                Write-Error $("Failed to create shared infrastructure for SKU family deployment tests: {0}" -f $_)
+                                return
+                            }
+
+                        # ---------------------------------------------------------------
+                        # Deploy One Test VM Per Unique SKU (No PPG / No Availability Set)
+                        # ---------------------------------------------------------------
+                        # Deduplicate: only deploy one VM per unique SKU name across CNode + MNode
+                        # If a SKU is used by both CNode and MNode configs, one test covers both
+                        Get-Job | Remove-Job -Force
+                        $vmJobMapping = @{}
+                        $skuDeploymentResults = New-Object -TypeName 'System.Collections.Generic.List[PSCustomObject]'
+                        $testedSKUs = @{}
+                        $skippedEntries = New-Object -TypeName 'System.Collections.Generic.List[PSCustomObject]'
+
+                        # Build unique SKU deploy list from CNode entries first, then MNode
+                        $uniqueSKUDeploys = @()
+                        $vmCounter = 0
+
+                        foreach ($cNodeEntry in $cNodeSizeObject)
+                            {
+                                $skuName = $("{0}{1}{2}" -f $cNodeEntry.vmSkuPrefix, $cNodeEntry.vCPU, $cNodeEntry.vmSkuSuffix)
+                                if ($testedSKUs.ContainsKey($skuName))
+                                    {
+                                        Write-Verbose -Message $("Skipping duplicate CNode SKU {0} ({1}) - already tested" -f $skuName, $cNodeEntry.cNodeFriendlyName)
+                                        $skippedEntries.Add([PSCustomObject]@{
+                                            NodeType        = $("CNode")
+                                            FriendlyName    = $cNodeEntry.cNodeFriendlyName
+                                            SKUName         = $skuName
+                                            QuotaFamily     = $cNodeEntry.QuotaFamily
+                                            vCPU            = $cNodeEntry.vCPU
+                                            TestedBy        = $testedSKUs[$skuName]
+                                        })
+                                        continue
+                                    }
+
+                                $vmCounter++
+                                $testedSKUs[$skuName] = $cNodeEntry.cNodeFriendlyName
+                                $uniqueSKUDeploys += [PSCustomObject]@{
+                                    NodeType        = $("CNode")
+                                    FriendlyName    = $cNodeEntry.cNodeFriendlyName
+                                    SKUName         = $skuName
+                                    QuotaFamily     = $cNodeEntry.QuotaFamily
+                                    vCPU            = $cNodeEntry.vCPU
+                                    VMNumber        = $vmCounter
+                                    VMName          = $("{0}-skutest-{1:D2}" -f $ResourceNamePrefix, $vmCounter)
+                                    NICName         = $("{0}-skutest-nic-{1:D2}" -f $ResourceNamePrefix, $vmCounter)
+                                }
+                            }
+
+                        foreach ($mNodeEntry in $mNodeSizeObject)
+                            {
+                                $skuName = $("{0}{1}{2}" -f $mNodeEntry.vmSkuPrefix, $mNodeEntry.vCPU, $mNodeEntry.vmSkuSuffix)
+                                if ($testedSKUs.ContainsKey($skuName))
+                                    {
+                                        Write-Verbose -Message $("Skipping duplicate MNode SKU {0} ({1} TiB) - already tested via {2}" -f $skuName, $mNodeEntry.PhysicalSize, $testedSKUs[$skuName])
+                                        $skippedEntries.Add([PSCustomObject]@{
+                                            NodeType        = $("MNode")
+                                            FriendlyName    = $("{0} TiB" -f $mNodeEntry.PhysicalSize)
+                                            SKUName         = $skuName
+                                            QuotaFamily     = $mNodeEntry.QuotaFamily
+                                            vCPU            = $mNodeEntry.vCPU
+                                            TestedBy        = $testedSKUs[$skuName]
+                                        })
+                                        continue
+                                    }
+
+                                $vmCounter++
+                                $testedSKUs[$skuName] = $("{0} TiB" -f $mNodeEntry.PhysicalSize)
+                                $uniqueSKUDeploys += [PSCustomObject]@{
+                                    NodeType        = $("MNode")
+                                    FriendlyName    = $("{0} TiB" -f $mNodeEntry.PhysicalSize)
+                                    SKUName         = $skuName
+                                    QuotaFamily     = $mNodeEntry.QuotaFamily
+                                    vCPU            = $mNodeEntry.vCPU
+                                    VMNumber        = $vmCounter
+                                    VMName          = $("{0}-skutest-{1:D2}" -f $ResourceNamePrefix, $vmCounter)
+                                    NICName         = $("{0}-skutest-nic-{1:D2}" -f $ResourceNamePrefix, $vmCounter)
+                                }
+                            }
+
+                        $totalTestVMs = $uniqueSKUDeploys.Count
+                        $totalOriginalEntries = $cNodeSizeObject.Count + $mNodeSizeObject.Count
+
+                        if ($skippedEntries.Count -gt 0)
+                            {
+                                Write-Verbose -Message $("Deduplicated {0} configurations to {1} unique SKUs ({2} shared)" -f $totalOriginalEntries, $totalTestVMs, $skippedEntries.Count)
+                            }
+
+                        # Deploy using Write-Progress
+                        Update-StagedProgress -SectionName 'VMDeployment' -SectionCurrentStep 0 -SectionTotalSteps 3 `
+                            -DetailMessage $("Deploying {0} unique SKU test VMs..." -f $totalTestVMs)
+
+                        Write-Progress `
+                            -Id 3 `
+                            -ParentId 1 `
+                            -Activity $("SKU Family Deployment Test") `
+                            -Status $("Deploying {0} unique SKU test VMs..." -f $totalTestVMs) `
+                            -PercentComplete 0
+
+                        foreach ($skuFamily in $uniqueSKUDeploys)
+                            {
+                                Write-Progress `
+                                    -Id 4 `
+                                    -ParentId 3 `
+                                    -Activity $("SKU Test VM Creation") `
+                                    -Status $("Creating {0} {1}/{2} ({3})" -f $skuFamily.NodeType, $skuFamily.VMNumber, $totalTestVMs, $skuFamily.SKUName) `
+                                    -CurrentOperation $("{0} - vCPU: {1}" -f $skuFamily.FriendlyName, $skuFamily.vCPU) `
+                                    -PercentComplete $(($skuFamily.VMNumber / $totalTestVMs) * 100)
+
+                                try
+                                    {
+                                        # Create NIC
+                                        $testNIC = New-AzNetworkInterface `
+                                                        -ResourceGroupName $ResourceGroupName `
+                                                        -Location $Region `
+                                                        -Name $skuFamily.NICName `
+                                                        -SubnetId $mGMTSubnetID
+
+                                        Write-Verbose -Message $("  ✓ NIC '{0}' created" -f $testNIC.Name)
+
+                                        # Build VM config — NO AvailabilitySetId, standalone instance
+                                        $vmConfig = New-AzVMConfig `
+                                                        -VMName $skuFamily.VMName `
+                                                        -VMSize $skuFamily.SKUName
+
+                                        $vmConfig = Set-AzVMOperatingSystem `
+                                                        -VM $vmConfig `
+                                                        -Linux `
+                                                        -ComputerName $skuFamily.VMName `
+                                                        -Credential $VMInstanceCredential `
+                                                        -DisablePasswordAuthentication:$false
+
+                                        # Set VM image (same logic as existing deployment)
+                                        if ($VMImageOffer -eq "Ubuntu2204" -or $VMImageOffer -eq "Ubuntu2404" -or $VMImageOffer -eq "UbuntuLTS")
+                                            {
+                                                $vmConfig = Set-AzVMSourceImage `
+                                                                -VM $vmConfig `
+                                                                -Image $VMImageOffer
+                                            } `
+                                        else
+                                            {
+                                                $vmConfig = Set-AzVMSourceImage `
+                                                                -VM $vmConfig `
+                                                                -PublisherName $vMImage.PublisherName `
+                                                                -Offer $vMImage.Offer `
+                                                                -Skus $vMImage.Skus `
+                                                                -Version $vMImage.Version
+                                            }
+
+                                        $vmConfig = Set-AzVMOSDisk `
+                                                        -VM $vmConfig `
+                                                        -CreateOption FromImage `
+                                                        -DeleteOption "Delete"
+
+                                        $vmConfig = Set-AzVMBootDiagnostic `
+                                                        -VM $vmConfig `
+                                                        -Disable:$true
+
+                                        $vmConfig = Add-AzVMNetworkInterface `
+                                                        -VM $vmConfig `
+                                                        -Id $testNIC.Id `
+                                                        -Primary:$true `
+                                                        -DeleteOption "Delete"
+
+                                        # Deploy as background job
+                                        $vmJob = New-AzVM `
+                                                        -ResourceGroupName $ResourceGroupName `
+                                                        -Location $Region `
+                                                        -VM $vmConfig `
+                                                        -Zone $Zone `
+                                                        -AsJob `
+                                                        -WarningAction SilentlyContinue
+
+                                        $vmJobMapping[$vmJob.Id] = @{
+                                            VMName          = $skuFamily.VMName
+                                            VMSku           = $skuFamily.SKUName
+                                            NodeType        = $skuFamily.NodeType
+                                            FriendlyName    = $skuFamily.FriendlyName
+                                            QuotaFamily     = $skuFamily.QuotaFamily
+                                            vCPU            = $skuFamily.vCPU
+                                        }
+
+                                        Write-Verbose -Message $("  ✓ VM creation job submitted for '{0}'" -f $skuFamily.VMName)
+                                    } `
+                                catch
+                                    {
+                                        Write-Warning $("  ✗ Failed to submit job for {0} ({1}): {2}" -f $skuFamily.FriendlyName, $skuFamily.SKUName, $_.Exception.Message)
+
+                                        # Record pre-deployment failure
+                                        $skuDeploymentResults.Add([PSCustomObject]@{
+                                            NodeType        = $skuFamily.NodeType
+                                            FriendlyName    = $skuFamily.FriendlyName
+                                            SKUName         = $skuFamily.SKUName
+                                            QuotaFamily     = $skuFamily.QuotaFamily
+                                            vCPU            = $skuFamily.vCPU
+                                            VMName          = $skuFamily.VMName
+                                            DeploymentResult = $("Failed")
+                                            FailureCategory = $("Pre-Deployment")
+                                            ErrorCode       = $("SubmissionFailure")
+                                            ErrorMessage    = $_.Exception.Message
+                                        })
+                                    }
+                            }
+
+                        Write-Progress -Id 4 -Activity $("SKU Test VM Creation") -Completed
+
+                        # ---------------------------------------------------------------
+                        # Monitor All SKU Test VM Deployment Jobs
+                        # ---------------------------------------------------------------
+                        Update-StagedProgress -SectionName 'VMDeployment' -SectionCurrentStep 2 -SectionTotalSteps 3 `
+                            -DetailMessage $("Monitoring {0} deployment jobs..." -f $vmJobMapping.Count)
+
+                        Write-Progress `
+                            -Id 3 `
+                            -ParentId 1 `
+                            -Activity $("SKU Family Deployment Test") `
+                            -Status $("Monitoring {0} VM creation jobs..." -f $vmJobMapping.Count) `
+                            -PercentComplete 50
+
+                        $allVMJobs = Get-Job
+                        if ($allVMJobs.Count -gt 0)
+                            {
+                                # Initial status
+                                $currentVMJobs = Get-Job
+                                $completedJobs = $currentVMJobs | Where-Object { $_.State -in @('Completed', 'Failed', 'Stopped') }
+                                $runningJobs = $currentVMJobs | Where-Object { $_.State -in @('Running', 'NotStarted') }
+
+                                Write-Progress `
+                                    -Id 3 `
+                                    -ParentId 1 `
+                                    -Activity $("SKU Family Deployment Test") `
+                                    -Status $("Monitoring VM creation jobs") `
+                                    -CurrentOperation $("{0} completed, {1} remaining" -f $completedJobs.Count, $runningJobs.Count) `
+                                    -PercentComplete $(if ($allVMJobs.Count -gt 0) { [Math]::Round(($completedJobs.Count / $allVMJobs.Count) * 100) } else { 100 })
+
+                                do
+                                    {
+                                        Start-Sleep -Seconds 3
+                                        $currentVMJobs = Get-Job
+                                        $completedJobs = $currentVMJobs | Where-Object { $_.State -in @('Completed', 'Failed', 'Stopped') }
+                                        $runningJobs = $currentVMJobs | Where-Object { $_.State -in @('Running', 'NotStarted') }
+                                        $completionPercent = if ($allVMJobs.Count -gt 0) { [Math]::Round(($completedJobs.Count / $allVMJobs.Count) * 100) } else { 100 }
+                                        $remainingJobs = [Math]::Max($allVMJobs.Count - $completedJobs.Count, 0)
+
+                                        Write-Progress `
+                                            -Id 3 `
+                                            -ParentId 1 `
+                                            -Activity $("SKU Family Deployment Test") `
+                                            -Status $("Monitoring VM creation jobs") `
+                                            -CurrentOperation $("{0} completed, {1} remaining (running: {2})" -f $completedJobs.Count, $remainingJobs, $runningJobs.Count) `
+                                            -PercentComplete $completionPercent
+                                    } `
+                                while ($runningJobs.Count -gt 0)
+
+                                Write-Progress `
+                                    -Id 3 `
+                                    -ParentId 1 `
+                                    -Activity $("SKU Family Deployment Test") `
+                                    -Status $("All deployment jobs complete") `
+                                    -PercentComplete 100
+
+                                Start-Sleep -Seconds 2
+                                Write-Progress -Id 3 -Activity $("SKU Family Deployment Test") -Completed
+
+                                # ---------------------------------------------------------------
+                                # Analyze Results Per SKU
+                                # ---------------------------------------------------------------
+                                $finalVMJobs = Get-Job
+                                foreach ($job in $finalVMJobs)
+                                    {
+                                        $vmDetails = $vmJobMapping[$job.Id]
+                                        if (-not $vmDetails) { continue }
+
+                                        if ($job.State -eq 'Completed')
+                                            {
+                                                $skuDeploymentResults.Add([PSCustomObject]@{
+                                                    NodeType        = $vmDetails.NodeType
+                                                    FriendlyName    = $vmDetails.FriendlyName
+                                                    SKUName         = $vmDetails.VMSku
+                                                    QuotaFamily     = $vmDetails.QuotaFamily
+                                                    vCPU            = $vmDetails.vCPU
+                                                    VMName          = $vmDetails.VMName
+                                                    DeploymentResult = $("Success")
+                                                    FailureCategory = $("")
+                                                    ErrorCode       = $("")
+                                                    ErrorMessage    = $("")
+                                                })
+                                            } `
+                                        else
+                                            {
+                                                # Extract error details
+                                                $jobErrorRaw = Receive-Job -Job $job 2>&1
+                                                $jobErrorString = $jobErrorRaw | Out-String
+
+                                                $errorCode = $("")
+                                                $errorMessage = $("")
+                                                $failureCategory = $("Unknown")
+
+                                                if ($jobErrorString)
+                                                    {
+                                                        if ($jobErrorString -match "ErrorCode[:\s]*([^\s,\r\n]+)")
+                                                            {
+                                                                $errorCode = $matches[1]
+                                                            }
+                                                        if ($jobErrorString -match "ErrorMessage[:\s]*([^\r\n]+)")
+                                                            {
+                                                                $errorMessage = $matches[1].Trim()
+                                                                $errorMessage = $errorMessage -replace "\s*Read more about.*$", ""
+                                                                $errorMessage = $errorMessage -replace "\s*For more information.*$", ""
+                                                            }
+
+                                                        if ($jobErrorString -match "AllocationFailed" -or $jobErrorString -match "allocation.*failed" -or $jobErrorString -match "OverconstrainedAllocationRequest")
+                                                            {
+                                                                $failureCategory = $("Allocation Failed")
+                                                                if ([string]::IsNullOrWhiteSpace($errorCode)) { $errorCode = $("AllocationFailed") }
+                                                                if ([string]::IsNullOrWhiteSpace($errorMessage)) { $errorMessage = $("No capacity available for this SKU in the target zone") }
+                                                            } `
+                                                        elseif ($jobErrorString -match "quota|limit" -and $jobErrorString -notmatch "AllocationFailed")
+                                                            {
+                                                                $failureCategory = $("Quota Exceeded")
+                                                            } `
+                                                        elseif ($jobErrorString -match "SKUNotAvailable|NotAvailableForSubscription")
+                                                            {
+                                                                $failureCategory = $("SKU Not Available")
+                                                            } `
+                                                        else
+                                                            {
+                                                                $failureCategory = $("Other")
+                                                            }
+
+                                                        # Fallback error message
+                                                        if ([string]::IsNullOrWhiteSpace($errorMessage))
+                                                            {
+                                                                $errorLines = $jobErrorString -split "`n" | Where-Object { $_ -match "error|failed|exception" -and $_ -notmatch "^VERBOSE:|^DEBUG:" } | Select-Object -First 2
+                                                                if ($errorLines)
+                                                                    {
+                                                                        $errorMessage = ($errorLines -join "; ").Trim()
+                                                                        if ($errorMessage.Length -gt 200) { $errorMessage = $errorMessage.Substring(0, 200) + "..." }
+                                                                    } `
+                                                                else
+                                                                    {
+                                                                        $errorMessage = $("Deployment failed - check Azure portal for details")
+                                                                    }
+                                                            }
+                                                    }
+
+                                                $skuDeploymentResults.Add([PSCustomObject]@{
+                                                    NodeType        = $vmDetails.NodeType
+                                                    FriendlyName    = $vmDetails.FriendlyName
+                                                    SKUName         = $vmDetails.VMSku
+                                                    QuotaFamily     = $vmDetails.QuotaFamily
+                                                    vCPU            = $vmDetails.vCPU
+                                                    VMName          = $vmDetails.VMName
+                                                    DeploymentResult = $("Failed")
+                                                    FailureCategory = $failureCategory
+                                                    ErrorCode       = $errorCode
+                                                    ErrorMessage    = $errorMessage
+                                                })
+                                            }
+                                    }
+                            }
+
+                        # Add results for skipped entries (inherit result from the tested SKU)
+                        foreach ($skipped in $skippedEntries)
+                            {
+                                $testedResult = $skuDeploymentResults | Where-Object { $_.SKUName -eq $skipped.SKUName } | Select-Object -First 1
+                                if ($testedResult)
+                                    {
+                                        $skuDeploymentResults.Add([PSCustomObject]@{
+                                            NodeType        = $skipped.NodeType
+                                            FriendlyName    = $skipped.FriendlyName
+                                            SKUName         = $skipped.SKUName
+                                            QuotaFamily     = $skipped.QuotaFamily
+                                            vCPU            = $skipped.vCPU
+                                            VMName          = $("(shared: {0})" -f $skipped.TestedBy)
+                                            DeploymentResult = $testedResult.DeploymentResult
+                                            FailureCategory = $testedResult.FailureCategory
+                                            ErrorCode       = $testedResult.ErrorCode
+                                            ErrorMessage    = $testedResult.ErrorMessage
+                                        })
+                                    }
+                            }
+
+                        # Store results in report data
+                        $reportData.SKUFamilyTesting.DeploymentResults = @($skuDeploymentResults)
+
+                        Update-StagedProgress -SectionName 'VMDeployment' -SectionCurrentStep 3 -SectionTotalSteps 3 `
+                            -DetailMessage $("")
+
+                        # Timing
+                        $reportData.Metadata.EndTime    = Get-Date
+                        $reportData.Metadata.Duration   = (Get-Date) - $reportData.Metadata.StartTime
+
+                        # Render reports
+                        Write-SilkConsoleReport -ReportData $reportData
+
+                        if (-not $NoHTMLReport)
+                            {
+                                if (-not (Test-Path $ReportOutputPath))
+                                    {
+                                        try
+                                            {
+                                                New-Item -Path $ReportOutputPath -ItemType Directory -Force | Out-Null
+                                            } `
+                                        catch
+                                            {
+                                                Write-Warning -Message $("Failed to create report output directory '{0}': {1}. Using current directory." -f $ReportOutputPath, $_.Exception.Message)
+                                                $ReportOutputPath = (Get-Location).Path
+                                            }
+                                    }
+
+                                $ReportFullPath = Join-Path -Path $ReportOutputPath -ChildPath $("SilkDeploymentReport_{0}.html" -f $StartTime.ToString("yyyyMMdd_HHmmss"))
+                                Write-SilkHTMLReport -ReportData $reportData -OutputPath $ReportFullPath
+                            }
+
+                        # NOTE: Cleanup proceeds in the end block since $deploymentStarted = $true
                         return
                     }
 
@@ -5868,15 +6838,15 @@ function Test-SilkResourceDeployment
 
                 # Zone Alignment Reporting Information
                 # Capture zone alignment details for console and HTML reporting
-                $zoneAlignmentInfo = @{
-                    AlignmentPerformed = $false
-                    AlignmentDisabled = $DisableZoneAlignment
-                    AlignmentSubscription = $ZoneAlignmentSubscriptionId
-                    OriginalZone = ""
-                    FinalZone = $Zone
-                    ZoneMappings = @()
-                    AlignmentReason = "Not applicable"
-                }
+                $zoneAlignmentInfo =    @{
+                                            AlignmentPerformed      = $false
+                                            AlignmentDisabled       = $DisableZoneAlignment
+                                            AlignmentSubscription   = $ZoneAlignmentSubscriptionId
+                                            OriginalZone            = $("")
+                                            FinalZone               = $Zone
+                                            ZoneMappings            = @()
+                                            AlignmentReason         = $("Not applicable")
+                                        }
 
                 # Determine alignment status and populate reporting information
                 if ($ZoneAlignmentSubscriptionId -and $Zone -ne "Zoneless" -and $ZoneAlignmentSubscriptionId -ne $SubscriptionId)
@@ -5887,45 +6857,45 @@ function Test-SilkResourceDeployment
                             {
                                 $zoneAlignmentInfo.AlignmentPerformed = $true
                                 $zoneAlignmentInfo.OriginalZone = $originalZone
-                                $zoneAlignmentInfo.AlignmentReason = "Zone alignment applied"
+                                $zoneAlignmentInfo.AlignmentReason = $("Zone alignment applied")
                             } `
                         elseif ($DisableZoneAlignment -and $alignedZone)
                             {
-                                $zoneAlignmentInfo.AlignmentReason = "Zone alignment available but disabled by parameter"
+                                $zoneAlignmentInfo.AlignmentReason = $("Zone alignment available but disabled by parameter")
                                 $zoneAlignmentInfo.OriginalZone = $Zone
                             } `
                         elseif ($alignedZone -eq $Zone)
                             {
-                                $zoneAlignmentInfo.AlignmentReason = "Zone already aligned - no adjustment needed"
+                                $zoneAlignmentInfo.AlignmentReason = $("Zone already aligned - no adjustment needed")
                             } `
                         else
                             {
-                                $zoneAlignmentInfo.AlignmentReason = "Zone alignment data unavailable or inconclusive"
+                                $zoneAlignmentInfo.AlignmentReason = $("Zone alignment data unavailable or inconclusive")
                             }
-
-                        # Capture zone mappings for reporting if available
-                        if ($zoneAlignmentResponse -and $zoneAlignmentResponse.availabilityZonePeers)
-                            {
-                                foreach ($peer in $zoneAlignmentResponse.availabilityZonePeers)
-                                    {
-                                        $zoneAlignmentInfo.ZoneMappings += [PSCustomObject]@{
-                                            DeploymentZone = $peer.availabilityZone
-                                            AlignmentZone = $peer.peers.availabilityZone
-                                        }
-                                    }
-                            }
+                    } `
+                elseif ($Zone -ne "Zoneless" -and $zoneAlignmentResponse)
+                    {
+                        $zoneAlignmentInfo.AlignmentReason = $("Zone mapping retrieved (subscription self-reference)")
                     } `
                 elseif ($Zone -eq "Zoneless")
                     {
-                        $zoneAlignmentInfo.AlignmentReason = "Zoneless deployment - alignment not applicable"
-                    } `
-                elseif ($ZoneAlignmentSubscriptionId -eq $SubscriptionId)
-                    {
-                        $zoneAlignmentInfo.AlignmentReason = "Same subscription deployment - alignment not necessary"
+                        $zoneAlignmentInfo.AlignmentReason = $("Zoneless deployment - alignment not applicable")
                     } `
                 else
                     {
-                        $zoneAlignmentInfo.AlignmentReason = "No alignment subscription specified"
+                        $zoneAlignmentInfo.AlignmentReason = $("No alignment subscription specified")
+                    }
+
+                # Capture zone mappings for reporting if available
+                if ($zoneAlignmentResponse -and $zoneAlignmentResponse.availabilityZonePeers)
+                    {
+                        foreach ($peer in $zoneAlignmentResponse.availabilityZonePeers)
+                            {
+                                $zoneAlignmentInfo.ZoneMappings += [PSCustomObject]@{
+                                    DeploymentZone = $peer.availabilityZone
+                                    AlignmentZone = $peer.peers.availabilityZone
+                                }
+                            }
                     }
 
                 # SKU Support Analysis Data
@@ -6235,6 +7205,9 @@ function Test-SilkResourceDeployment
                 $reportData.EnvironmentValidation.ZoneAlignment.FinalZone           = $zoneAlignmentInfo.FinalZone
                 $reportData.EnvironmentValidation.ZoneAlignment.ZoneMappings        = $zoneAlignmentInfo.ZoneMappings
                 $reportData.EnvironmentValidation.ZoneAlignment.Reason              = $zoneAlignmentInfo.AlignmentReason
+
+                # SKU Family Testing results (always populated from begin block analysis)
+                $reportData.SKUFamilyTesting.Results = if ($skuFamilyResults) { @($skuFamilyResults) } else { @() }
 
                 # Timing
                 $reportData.Metadata.EndTime                    = Get-Date

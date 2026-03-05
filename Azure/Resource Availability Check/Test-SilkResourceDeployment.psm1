@@ -1605,6 +1605,10 @@ function Test-SilkResourceDeployment
                                 Write-Host $("`n=== VM Deployment Report ===") -ForegroundColor Cyan
                                 Write-Verbose -Message $("Report includes deployment status for {0} total VMs across CNode and DNode groups" -f $ReportData.Deployment.VMReport.Count)
 
+                                # Detect multi-zone deployment for conditional Zone column display
+                                $reportUniqueZones = @($ReportData.Deployment.VMReport | Select-Object -ExpandProperty Zone -Unique -ErrorAction SilentlyContinue)
+                                $isMultiZoneReport = $reportUniqueZones.Count -gt 1
+
                                 # CNode Report
                                 $cNodeReport = $ReportData.Deployment.VMReport | Where-Object { $_.ResourceType -eq $("CNode") }
 
@@ -1612,15 +1616,24 @@ function Test-SilkResourceDeployment
                                     {
                                         $cNodeExpectedSku = $cNodeReport[0].ExpectedSKU
                                         Write-Host $("`nCNode Deployment Status (Expected SKU: {0}):" -f $cNodeExpectedSku) -ForegroundColor Yellow
-                                        $cNodeReport | Format-Table -Property @(
-                                                                                    @{Label=$("Node"); Expression={$("CNode {0}" -f $_.NodeNumber)}; Width=12},
-                                                                                    @{Label=$("VM Name"); Expression={$_.VMName}; Width=25},
-                                                                                    @{Label=$("Deployed SKU"); Expression={$_.DeployedSKU}; Width=18},
-                                                                                    @{Label=$("VM Status"); Expression={$_.VMStatus}; Width=15},
-                                                                                    @{Label=$("Provisioned State"); Expression={$_.ProvisioningState}; Width=15},
-                                                                                    @{Label=$("NIC Status"); Expression={$_.NICStatus}; Width=12},
-                                                                                    @{Label=$("Availability Set"); Expression={$_.AvailabilitySet}; Width=18}
-                                                                                ) -AutoSize
+
+                                        $cNodeColumns = @(
+                                            @{Label=$("Node"); Expression={$("CNode {0}" -f $_.NodeNumber)}; Width=12}
+                                        )
+                                        if ($isMultiZoneReport)
+                                            {
+                                                $cNodeColumns += @{Label=$("Zone"); Expression={$_.Zone}; Width=6}
+                                            }
+                                        $cNodeColumns += @(
+                                            @{Label=$("VM Name"); Expression={$_.VMName}; Width=30},
+                                            @{Label=$("Deployed SKU"); Expression={$_.DeployedSKU}; Width=18},
+                                            @{Label=$("VM Status"); Expression={$_.VMStatus}; Width=15},
+                                            @{Label=$("Provisioned State"); Expression={$_.ProvisioningState}; Width=15},
+                                            @{Label=$("NIC Status"); Expression={$_.NICStatus}; Width=12},
+                                            @{Label=$("Availability Set"); Expression={$_.AvailabilitySet}; Width=18}
+                                        )
+
+                                        $cNodeReport | Format-Table -Property $cNodeColumns -AutoSize
                                     }
 
                                 # DNode Report by MNode Group
@@ -1630,15 +1643,24 @@ function Test-SilkResourceDeployment
                                     {
                                         $mNodeExpectedSku = $group.Group[0].ExpectedSKU
                                         Write-Host $("`n{0} DNode Deployment Status (Expected SKU: {1}):" -f $group.Name, $mNodeExpectedSku) -ForegroundColor Yellow
-                                        $group.Group | Format-Table -Property @(
-                                                                                    @{Label=$("Node"); Expression={$("DNode {0}" -f $_.NodeNumber)}; Width=12},
-                                                                                    @{Label=$("VM Name"); Expression={$_.VMName}; Width=25},
-                                                                                    @{Label=$("Deployed SKU"); Expression={$_.DeployedSKU}; Width=18},
-                                                                                    @{Label=$("VM Status"); Expression={$_.VMStatus}; Width=15},
-                                                                                    @{Label=$("Provisioned State"); Expression={$_.ProvisioningState}; Width=15},
-                                                                                    @{Label=$("NIC Status"); Expression={$_.NICStatus}; Width=12},
-                                                                                    @{Label=$("Availability Set"); Expression={$_.AvailabilitySet}; Width=18}
-                                                                                ) -AutoSize
+
+                                        $dNodeColumns = @(
+                                            @{Label=$("Node"); Expression={$("DNode {0}" -f $_.NodeNumber)}; Width=12}
+                                        )
+                                        if ($isMultiZoneReport)
+                                            {
+                                                $dNodeColumns += @{Label=$("Zone"); Expression={$_.Zone}; Width=6}
+                                            }
+                                        $dNodeColumns += @(
+                                            @{Label=$("VM Name"); Expression={$_.VMName}; Width=30},
+                                            @{Label=$("Deployed SKU"); Expression={$_.DeployedSKU}; Width=18},
+                                            @{Label=$("VM Status"); Expression={$_.VMStatus}; Width=15},
+                                            @{Label=$("Provisioned State"); Expression={$_.ProvisioningState}; Width=15},
+                                            @{Label=$("NIC Status"); Expression={$_.NICStatus}; Width=12},
+                                            @{Label=$("Availability Set"); Expression={$_.AvailabilitySet}; Width=18}
+                                        )
+
+                                        $group.Group | Format-Table -Property $dNodeColumns -AutoSize
                                     }
                             }
 
@@ -2156,6 +2178,12 @@ function Test-SilkResourceDeployment
                                 # Build CNode deployment table
                                 $cNodeTableHtml = $("")
                                 $cNodeReport = $ReportData.Deployment.VMReport | Where-Object { $_.ResourceType -eq $("CNode") }
+
+                                # Detect multi-zone deployment for conditional Zone column
+                                $htmlUniqueZones = @($ReportData.Deployment.VMReport | Select-Object -ExpandProperty Zone -Unique -ErrorAction SilentlyContinue)
+                                $htmlIsMultiZone = $htmlUniqueZones.Count -gt 1
+                                $zoneThHtml = if ($htmlIsMultiZone) { $("{0}                    <th>{1}</th>" -f $("`n"), $("Zone")) } else { $("") }
+
                                 if ($cNodeReport)
                                     {
                                         $cNodeTableHtml = @"
@@ -2164,7 +2192,7 @@ function Test-SilkResourceDeployment
         <table>
             <thead>
                 <tr>
-                    <th>$("Node")</th>
+                    <th>$("Node")</th>$zoneThHtml
                     <th>$("VM Name")</th>
                     <th>$("Deployed SKU")</th>
                     <th>$("VM Status")</th>
@@ -2180,10 +2208,11 @@ function Test-SilkResourceDeployment
                                                 $vmStatusClass = if ($cNode.VMStatus -like $("*Deployed*")) { $("checkmark") } else { $("error-mark") }
                                                 $nicStatusClass = if ($cNode.NICStatus -like $("*Created*")) { $("checkmark") } else { $("error-mark") }
                                                 $provisioningClass = if ($cNode.ProvisioningState -eq $("Succeeded")) { $("checkmark") } elseif ($cNode.ProvisioningState -eq $("Failed")) { $("error-mark") } else { $("warning") }
+                                                $zoneTdHtml = if ($htmlIsMultiZone) { $("{0}                    <td>{1}</td>" -f $("`n"), $cNode.Zone) } else { $("") }
 
                                                 $cNodeTableHtml += @"
                 <tr>
-                    <td>$("CNode {0}" -f $cNode.NodeNumber)</td>
+                    <td>$("CNode {0}" -f $cNode.NodeNumber)</td>$zoneTdHtml
                     <td>$($cNode.VMName)</td>
                     <td>$($cNode.DeployedSKU)</td>
                     <td><span class="$vmStatusClass">$($cNode.VMStatus)</span></td>
@@ -2215,7 +2244,7 @@ function Test-SilkResourceDeployment
         <table>
             <thead>
                 <tr>
-                    <th>$("Node")</th>
+                    <th>$("Node")</th>$zoneThHtml
                     <th>$("VM Name")</th>
                     <th>$("Deployed SKU")</th>
                     <th>$("VM Status")</th>
@@ -2231,10 +2260,11 @@ function Test-SilkResourceDeployment
                                                         $vmStatusClass = if ($dNode.VMStatus -like $("*Deployed*")) { $("checkmark") } else { $("error-mark") }
                                                         $nicStatusClass = if ($dNode.NICStatus -like $("*Created*")) { $("checkmark") } else { $("error-mark") }
                                                         $provisioningClass = if ($dNode.ProvisioningState -eq $("Succeeded")) { $("checkmark") } elseif ($dNode.ProvisioningState -eq $("Failed")) { $("error-mark") } else { $("warning") }
+                                                        $zoneTdHtml = if ($htmlIsMultiZone) { $("{0}                    <td>{1}</td>" -f $("`n"), $dNode.Zone) } else { $("") }
 
                                                         $mNodeTablesHtml += @"
                 <tr>
-                    <td>$("DNode {0}" -f $dNode.NodeNumber)</td>
+                    <td>$("DNode {0}" -f $dNode.NodeNumber)</td>$zoneTdHtml
                     <td>$($dNode.VMName)</td>
                     <td>$($dNode.DeployedSKU)</td>
                     <td><span class="$vmStatusClass">$($dNode.VMStatus)</span></td>
@@ -4702,10 +4732,11 @@ function Test-SilkResourceDeployment
                 # discovery and remaining begin block setup. The process block will populate
                 # $reportData, render reports, and return.
                 #
-                # TestAllZones alone is report-only (no deployment path).
-                # TestAllSKUFamilies WITHOUT GenerateReportOnly proceeds to deployment,
-                # so we let it continue through VM image discovery below.
-                if ($GenerateReportOnly -or ($TestAllZones -and (-not $TestAllSKUFamilies)))
+                # Report-only gate: only GenerateReportOnly triggers the early return.
+                # TestAllZones now proceeds to deployment when combined with deployment
+                # parameter sets (CNode, MNode, SKU Family Test) to enable per-zone
+                # allocation testing.
+                if ($GenerateReportOnly)
                     {
                         Write-Verbose -Message $("Report/analysis mode - environment validation and SKU/quota data collection complete. Skipping VM image discovery.")
                         return
@@ -4974,8 +5005,9 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 # Populates the centralized report data object with all available analysis
                 # data collected during the begin block, then renders reports and returns.
-                # TestAllSKUFamilies WITHOUT GenerateReportOnly falls through to deployment.
-                if ($GenerateReportOnly -or ($TestAllZones -and (-not $TestAllSKUFamilies)))
+                # Report-only gate: only GenerateReportOnly triggers report-only mode.
+                # TestAllZones with deployment parameters proceeds to deployment.
+                if ($GenerateReportOnly)
                     {
                         Write-Verbose -Message $("Report/analysis mode - generating report without deployment")
 
@@ -5490,6 +5522,7 @@ function Test-SilkResourceDeployment
                                     SKUName         = $skuName
                                     QuotaFamily     = $cNodeEntry.QuotaFamily
                                     vCPU            = $cNodeEntry.vCPU
+                                    Zone            = $Zone
                                     VMNumber        = $vmCounter
                                     VMName          = $("{0}-skutest-{1:D2}" -f $ResourceNamePrefix, $vmCounter)
                                     NICName         = $("{0}-skutest-nic-{1:D2}" -f $ResourceNamePrefix, $vmCounter)
@@ -5521,38 +5554,105 @@ function Test-SilkResourceDeployment
                                     SKUName         = $skuName
                                     QuotaFamily     = $mNodeEntry.QuotaFamily
                                     vCPU            = $mNodeEntry.vCPU
+                                    Zone            = $Zone
                                     VMNumber        = $vmCounter
                                     VMName          = $("{0}-skutest-{1:D2}" -f $ResourceNamePrefix, $vmCounter)
                                     NICName         = $("{0}-skutest-nic-{1:D2}" -f $ResourceNamePrefix, $vmCounter)
                                 }
                             }
 
-                        $totalTestVMs = $uniqueSKUDeploys.Count
                         $totalOriginalEntries = $cNodeSizeObject.Count + $mNodeSizeObject.Count
+                        $uniqueSKUCount = $uniqueSKUDeploys.Count
 
                         if ($skippedEntries.Count -gt 0)
                             {
-                                Write-Verbose -Message $("Deduplicated {0} configurations to {1} unique SKUs ({2} shared)" -f $totalOriginalEntries, $totalTestVMs, $skippedEntries.Count)
+                                Write-Verbose -Message $("Deduplicated {0} configurations to {1} unique SKUs ({2} shared)" -f $totalOriginalEntries, $uniqueSKUCount, $skippedEntries.Count)
                             }
 
+                        # ---------------------------------------------------------------
+                        # Multi-Zone Expansion: Deploy Each Unique SKU Per Supported Zone
+                        # ---------------------------------------------------------------
+                        # When TestAllZones is specified, expand the deploy list so each
+                        # unique SKU gets one VM per zone it supports. The zone support
+                        # is looked up from the region SKU data already collected.
+                        $isMultiZoneDeploy = $false
+                        $testedZones = @($Zone)
+
+                        if ($TestAllZones -and $zoneResults)
+                            {
+                                $isMultiZoneDeploy = $true
+                                $allRegionZones = $zoneResults.Zones
+                                $expandedDeploys = @()
+                                $perZoneCounter = @{}
+
+                                foreach ($skuDeploy in $uniqueSKUDeploys)
+                                    {
+                                        # Look up which zones this SKU supports
+                                        $supportedSKU = $locationSupportedSKU | Where-Object { $_.Name -eq $skuDeploy.SKUName -and $_.ResourceType -eq $("virtualMachines") }
+                                        $skuZones = if ($supportedSKU.LocationInfo.Zones) { @($supportedSKU.LocationInfo.Zones | Sort-Object) } else { @() }
+
+                                        if ($skuZones.Count -eq 0)
+                                            {
+                                                Write-Verbose -Message $("  SKU {0} has no zone data — deploying to target zone {1}" -f $skuDeploy.SKUName, $Zone)
+                                                $skuZones = @($Zone)
+                                            }
+
+                                        foreach ($testZone in $skuZones)
+                                            {
+                                                if (-not $perZoneCounter.ContainsKey($testZone)) { $perZoneCounter[$testZone] = 0 }
+                                                $perZoneCounter[$testZone]++
+                                                $zoneNN = $perZoneCounter[$testZone]
+
+                                                $expandedDeploys += [PSCustomObject]@{
+                                                    NodeType        = $skuDeploy.NodeType
+                                                    FriendlyName    = $skuDeploy.FriendlyName
+                                                    SKUName         = $skuDeploy.SKUName
+                                                    QuotaFamily     = $skuDeploy.QuotaFamily
+                                                    vCPU            = $skuDeploy.vCPU
+                                                    Zone            = $testZone
+                                                    VMNumber        = 0
+                                                    VMName          = $("{0}-skutest-z{1}-{2:D2}" -f $ResourceNamePrefix, $testZone, $zoneNN)
+                                                    NICName         = $("{0}-skutest-nic-z{1}-{2:D2}" -f $ResourceNamePrefix, $testZone, $zoneNN)
+                                                }
+                                            }
+                                    }
+
+                                # Assign global sequential VMNumber for progress tracking
+                                $globalCounter = 0
+                                foreach ($entry in $expandedDeploys)
+                                    {
+                                        $globalCounter++
+                                        $entry.VMNumber = $globalCounter
+                                    }
+
+                                $uniqueSKUDeploys = $expandedDeploys
+                                $testedZones = @($allRegionZones)
+
+                                Write-Verbose -Message $("Multi-zone expansion: {0} unique SKUs × {1} zones = {2} deployment entries" -f $uniqueSKUCount, $allRegionZones.Count, $expandedDeploys.Count)
+                            }
+
+                        $totalTestVMs = $uniqueSKUDeploys.Count
+
                         # Deploy using Write-Progress
+                        $deployStatusMsg = if ($isMultiZoneDeploy) { $("Deploying {0} test VMs ({1} SKUs × {2} zones)..." -f $totalTestVMs, $uniqueSKUCount, $testedZones.Count) } else { $("Deploying {0} unique SKU test VMs..." -f $totalTestVMs) }
                         Update-StagedProgress -SectionName 'VMDeployment' -SectionCurrentStep 0 -SectionTotalSteps 3 `
-                            -DetailMessage $("Deploying {0} unique SKU test VMs..." -f $totalTestVMs)
+                            -DetailMessage $deployStatusMsg
 
                         Write-Progress `
                             -Id 3 `
                             -ParentId 1 `
                             -Activity $("SKU Family Deployment Test") `
-                            -Status $("Deploying {0} unique SKU test VMs..." -f $totalTestVMs) `
+                            -Status $deployStatusMsg `
                             -PercentComplete 0
 
                         foreach ($skuFamily in $uniqueSKUDeploys)
                             {
+                                $progressStatus = if ($isMultiZoneDeploy) { $("Creating {0} {1}/{2} ({3} → zone {4})" -f $skuFamily.NodeType, $skuFamily.VMNumber, $totalTestVMs, $skuFamily.SKUName, $skuFamily.Zone) } else { $("Creating {0} {1}/{2} ({3})" -f $skuFamily.NodeType, $skuFamily.VMNumber, $totalTestVMs, $skuFamily.SKUName) }
                                 Write-Progress `
                                     -Id 4 `
                                     -ParentId 3 `
                                     -Activity $("SKU Test VM Creation") `
-                                    -Status $("Creating {0} {1}/{2} ({3})" -f $skuFamily.NodeType, $skuFamily.VMNumber, $totalTestVMs, $skuFamily.SKUName) `
+                                    -Status $progressStatus `
                                     -CurrentOperation $("{0} - vCPU: {1}" -f $skuFamily.FriendlyName, $skuFamily.vCPU) `
                                     -PercentComplete $(($skuFamily.VMNumber / $totalTestVMs) * 100)
 
@@ -5616,7 +5716,7 @@ function Test-SilkResourceDeployment
                                                         -ResourceGroupName $ResourceGroupName `
                                                         -Location $Region `
                                                         -VM $vmConfig `
-                                                        -Zone $Zone `
+                                                        -Zone $skuFamily.Zone `
                                                         -AsJob `
                                                         -WarningAction SilentlyContinue
 
@@ -5627,6 +5727,7 @@ function Test-SilkResourceDeployment
                                             FriendlyName    = $skuFamily.FriendlyName
                                             QuotaFamily     = $skuFamily.QuotaFamily
                                             vCPU            = $skuFamily.vCPU
+                                            Zone            = $skuFamily.Zone
                                         }
 
                                         Write-Verbose -Message $("  ✓ VM creation job submitted for '{0}'" -f $skuFamily.VMName)
@@ -5642,6 +5743,7 @@ function Test-SilkResourceDeployment
                                             SKUName         = $skuFamily.SKUName
                                             QuotaFamily     = $skuFamily.QuotaFamily
                                             vCPU            = $skuFamily.vCPU
+                                            Zone            = $skuFamily.Zone
                                             VMName          = $skuFamily.VMName
                                             DeploymentResult = $("Failed")
                                             FailureCategory = $("Pre-Deployment")
@@ -5889,6 +5991,65 @@ function Test-SilkResourceDeployment
                     }
 
                 $deploymentStarted = $true
+
+                # ===============================================================================
+                # Multi-Zone Deployment: Determine Target Zones
+                # ===============================================================================
+                # When TestAllZones is specified, find all zones where every requested SKU is
+                # supported and deploy the full configuration into each qualifying zone.
+                # Without TestAllZones, deploy only into the user-specified $Zone.
+                $isMultiZoneDeploy = $false
+                $zonesToDeploy = @($Zone)
+
+                if ($TestAllZones)
+                    {
+                        # Gather all unique SKUs requested in this deployment
+                        $allRequestedSkus = @()
+                        if ($cNodeObject)
+                            {
+                                $allRequestedSkus += $cNodeVMSku
+                            }
+                        foreach ($mn in $mNodeObject)
+                            {
+                                $mnSkuName = $("{0}{1}{2}" -f $mn.vmSkuPrefix, $mn.vCPU, $mn.vmSkuSuffix)
+                                $allRequestedSkus += $mnSkuName
+                            }
+                        $allRequestedSkus = @($allRequestedSkus | Select-Object -Unique)
+
+                        # Find zones where ALL requested SKUs are supported
+                        $regionSkuZones = @{}
+                        foreach ($sku in $allRequestedSkus)
+                            {
+                                $skuInfo = $locationSupportedSKU | Where-Object { $_.Name -eq $sku -and $_.ResourceType -eq $("virtualMachines") }
+                                $regionSkuZones[$sku] = if ($skuInfo.LocationInfo.Zones) { @($skuInfo.LocationInfo.Zones | Sort-Object) } else { @() }
+                            }
+
+                        # Intersect zones across all SKUs — only deploy to zones that support every SKU
+                        $commonZones = $null
+                        foreach ($sku in $allRequestedSkus)
+                            {
+                                if ($null -eq $commonZones)
+                                    {
+                                        $commonZones = @($regionSkuZones[$sku])
+                                    } `
+                                else
+                                    {
+                                        $commonZones = @($commonZones | Where-Object { $regionSkuZones[$sku] -contains $_ })
+                                    }
+                            }
+
+                        if ($commonZones -and $commonZones.Count -gt 0)
+                            {
+                                $isMultiZoneDeploy = $true
+                                $zonesToDeploy = @($commonZones | Sort-Object)
+                                Write-Verbose -Message $("Multi-zone deployment: {0} zones qualify ({1}) for {2} unique SKUs" -f $zonesToDeploy.Count, ($zonesToDeploy -join $(", ")), $allRequestedSkus.Count)
+                            } `
+                        else
+                            {
+                                Write-Warning $("No zones found where ALL requested SKUs are supported. Deploying to target zone {0} only." -f $Zone)
+                            }
+                    }
+
                 # ===============================================================================
                 # Virtual Network Infrastructure Creation
                 # ===============================================================================
@@ -6006,31 +6167,59 @@ function Test-SilkResourceDeployment
                         $totalDNodes = ($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum
                         if ($CNodeCount -gt 0)
                             {
-                                $totalVMs = $CNodeCount + $totalDNodes
+                                $totalVMsPerZone = $CNodeCount + $totalDNodes
                             } `
                         else
                             {
-                                $totalVMs = $totalDNodes
+                                $totalVMsPerZone = $totalDNodes
                             }
+                        $totalVMs = $totalVMsPerZone * $zonesToDeploy.Count
 
                         # Update staged progress: VM deployment starting
                         Update-StagedProgress -SectionName 'VMDeployment' -SectionCurrentStep 0 -SectionTotalSteps 3 `
                             -DetailMessage $("")
 
                         # Start main VM creation progress
+                        $deployProgressMsg = if ($isMultiZoneDeploy) { $("Preparing deployment for {0} VM(s) across {1} zones ({2} per zone)..." -f $totalVMs, $zonesToDeploy.Count, $totalVMsPerZone) } else { $("Preparing deployment for {0} VM(s) ({1} CNodes, {2} DNodes)..." -f $totalVMs, $adjustedCNodeCount, $totalDNodes) }
                         Write-Progress `
                             -Status $("Initializing VM Deployment") `
-                            -CurrentOperation $("Preparing deployment for {0} VM(s) ({1} CNodes, {2} DNodes)..." -f $totalVMs, $adjustedCNodeCount, $totalDNodes) `
+                            -CurrentOperation $deployProgressMsg `
                             -PercentComplete 0 `
                             -Activity $("VM Deployment") `
                             -ParentId 1 `
                             -Id 3
 
+                        # ---------------------------------------------------------------
+                        # Zone Deployment Loop
+                        # ---------------------------------------------------------------
+                        # Deploy the full configuration into each target zone.
+                        # For single-zone (no TestAllZones), this loops once with the user-specified zone.
+                        $zoneLoopIndex = 0
+                        foreach ($deployZone in $zonesToDeploy)
+                            {
+                                $zoneLoopIndex++
+                                $zonePrefix = if ($isMultiZoneDeploy) { $("-z{0}" -f $deployZone) } else { $("") }
+                                $zoneLabel = if ($isMultiZoneDeploy) { $(" [Zone {0} — {1}/{2}]" -f $deployZone, $zoneLoopIndex, $zonesToDeploy.Count) } else { $("") }
+
+                                if ($isMultiZoneDeploy)
+                                    {
+                                        Write-Progress `
+                                            -Status $("Deploying to Zone {0} ({1}/{2})" -f $deployZone, $zoneLoopIndex, $zonesToDeploy.Count) `
+                                            -CurrentOperation $("Creating infrastructure for zone {0}..." -f $deployZone) `
+                                            -PercentComplete ([Math]::Round((($zoneLoopIndex - 1) / $zonesToDeploy.Count) * 100)) `
+                                            -Activity $("VM Deployment") `
+                                            -ParentId 1 `
+                                            -Id 3
+                                    }
+
+                                # Reset per-zone DNode tracking
+                                $dNodeStartCount = 0
+
                         if($adjustedCNodeCount -gt 0)
                             {
                                 # Update progress for availability set creation
                                 Write-Progress `
-                                    -Status $("Creating CNode Infrastructure") `
+                                    -Status $("Creating CNode Infrastructure{0}" -f $zoneLabel) `
                                     -CurrentOperation $("Creating CNode availability set...") `
                                     -PercentComplete 2 `
                                     -Activity $("VM Deployment") `
@@ -6054,14 +6243,14 @@ function Test-SilkResourceDeployment
                                     {
                                         # Creating new infrastructure for deployment
                                         # create cnode proximity placement group including VM SKUs if Zoneless
-                                        if($Zone -ne "Zoneless")
+                                        if ($deployZone -ne $("Zoneless"))
                                             {
-                                                Write-Verbose -Message $("Creating CNode Proximity Placement Group in region '{0}' with zone '{1}' and VM SKU: {2}" -f $Region, $Zone, $cNodeVMSku)
+                                                Write-Verbose -Message $("Creating CNode Proximity Placement Group in region '{0}' with zone '{1}' and VM SKU: {2}" -f $Region, $deployZone, $cNodeVMSku)
                                                 $cNodeProximityPlacementGroup = New-AzProximityPlacementGroup `
                                                                             -ResourceGroupName $ResourceGroupName `
                                                                             -Location $Region `
-                                                                            -Zone $Zone `
-                                                                            -Name $("{0}-cnode-ppg" -f $ResourceNamePrefix) `
+                                                                            -Zone $deployZone `
+                                                                            -Name $("{0}{1}-cnode-ppg" -f $ResourceNamePrefix, $zonePrefix) `
                                                                             -ProximityPlacementGroupType "Standard" `
                                                                             -IntentVMSize $cNodeVMSku
                                             } `
@@ -6071,7 +6260,7 @@ function Test-SilkResourceDeployment
                                                 $cNodeProximityPlacementGroup = New-AzProximityPlacementGroup `
                                                                             -ResourceGroupName $ResourceGroupName `
                                                                             -Location $Region `
-                                                                            -Name $("{0}-cnode-ppg" -f $ResourceNamePrefix) `
+                                                                            -Name $("{0}{1}-cnode-ppg" -f $ResourceNamePrefix, $zonePrefix) `
                                                                             -ProximityPlacementGroupType "Standard"
                                             }
 
@@ -6080,7 +6269,7 @@ function Test-SilkResourceDeployment
                                         # create an availability set for the c-node group
                                         $cNodeAvailabilitySet = New-AzAvailabilitySet `
                                                             -ResourceGroupName $ResourceGroupName `
-                                                            -Name $("{0}-cnode-avset" -f $ResourceNamePrefix) `
+                                                            -Name $("{0}{1}-cnode-avset" -f $ResourceNamePrefix, $zonePrefix) `
                                                             -Location $Region `
                                                             -ProximityPlacementGroupId $cNodeProximityPlacementGroup.Id `
                                                             -Sku "Aligned" `
@@ -6117,7 +6306,7 @@ function Test-SilkResourceDeployment
                                         $cNodeMGMTNIC = New-AzNetworkInterface `
                                                             -ResourceGroupName $ResourceGroupName `
                                                             -Location $Region `
-                                                            -Name $("{0}-cnode-mgmt-nic-{1:D2}" -f $ResourceNamePrefix, $cNode) `
+                                                            -Name $("{0}{1}-cnode-mgmt-nic-{2:D2}" -f $ResourceNamePrefix, $zonePrefix, $cNode) `
                                                             -SubnetId $mGMTSubnetID
 
                                         Write-Verbose -Message $("✓ CNode {0} management NIC '{1}' successfully created with IP '{2}'" -f $cNode, $cNodeMGMTNIC.Name, $cNodeMGMTNIC.IpConfigurations[0].PrivateIpAddress)
@@ -6125,7 +6314,7 @@ function Test-SilkResourceDeployment
                                         # create the cnode vm configuration
                                         # Use availability sets
                                         $cNodeConfig = New-AzVMConfig `
-                                                        -VMName $("{0}-cnode-{1:D2}" -f $ResourceNamePrefix, $cNode) `
+                                                        -VMName $("{0}{1}-cnode-{2:D2}" -f $ResourceNamePrefix, $zonePrefix, $cNode) `
                                                         -VMSize $cNodeVMSku `
                                                         -AvailabilitySetId $cNodeAvailabilitySet.Id
 
@@ -6133,7 +6322,7 @@ function Test-SilkResourceDeployment
                                         $cNodeConfig = Set-AzVMOperatingSystem `
                                                         -VM $cNodeConfig `
                                                         -Linux `
-                                                        -ComputerName $("{0}-cnode-{1:D2}" -f $ResourceNamePrefix, $cNode) `
+                                                        -ComputerName $("{0}{1}-cnode-{2:D2}" -f $ResourceNamePrefix, $zonePrefix, $cNode) `
                                                         -Credential $VMInstanceCredential `
                                                         -DisablePasswordAuthentication:$false
 
@@ -6186,10 +6375,11 @@ function Test-SilkResourceDeployment
 
                                                 # Track job-to-VM mapping for meaningful error reporting
                                                 $vmJobMapping[$cNodeJob.Id] = @{
-                                                    VMName = $("{0}-cnode-{1:D2}" -f $ResourceNamePrefix, $cNode)
+                                                    VMName = $("{0}{1}-cnode-{2:D2}" -f $ResourceNamePrefix, $zonePrefix, $cNode)
                                                     VMSku = $cNodeVMSku
                                                     NodeType = "CNode"
                                                     NodeNumber = $cNode
+                                                    Zone = $deployZone
                                                 }
 
                                                 Write-Verbose -Message $("✓ CNode {0} VM creation job started successfully" -f $cNode)
@@ -6203,7 +6393,7 @@ function Test-SilkResourceDeployment
                                 if ($cNodeAvailabilitySet)
                                     {
                                         # get the cnode availability set to assess its state
-                                        $cNodeAvailabilitySetComplete = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -Name $("{0}-cNode-avset" -f $ResourceNamePrefix)
+                                        $cNodeAvailabilitySetComplete = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -Name $("{0}{1}-cnode-avset" -f $ResourceNamePrefix, $zonePrefix)
                                         Write-Verbose -Message $("✓ CNode availability set '{0}' created with {1} CNodes." -f $cNodeAvailabilitySetComplete.Name, $cNodeAvailabilitySetComplete)
                                         Write-Verbose -Message $("✓ CNode availability set '{0}' is assigned to proximity placement group '{1}'." -f $cNodeAvailabilitySetComplete.Name, $cNodeProximityPlacementGroup.Name)
                                     }
@@ -6238,14 +6428,14 @@ function Test-SilkResourceDeployment
                                             }
 
                                         # create mnode proximity placement group including VM SKUs if Zoneless
-                                        if($Zone -ne "Zoneless")
+                                        if ($deployZone -ne $("Zoneless"))
                                             {
-                                                Write-Verbose -Message $("Creating Proximity Placement Group in region '{0}' with zone '{1}' and VM SKUs: {2}" -f $Region, $Zone, $currentMNodeSku)
+                                                Write-Verbose -Message $("Creating Proximity Placement Group in region '{0}' with zone '{1}' and VM SKUs: {2}" -f $Region, $deployZone, $currentMNodeSku)
                                                 $mNodeProximityPlacementGroup = New-AzProximityPlacementGroup `
                                                                                 -ResourceGroupName $ResourceGroupName `
                                                                                 -Location $Region `
-                                                                                -Zone $Zone `
-                                                                                -Name $("{0}-mNode-{1}-ppg" -f $ResourceNamePrefix, $currentMNode) `
+                                                                                -Zone $deployZone `
+                                                                                -Name $("{0}{1}-mNode-{2}-ppg" -f $ResourceNamePrefix, $zonePrefix, $currentMNode) `
                                                                                 -ProximityPlacementGroupType "Standard" `
                                                                                 -IntentVMSize $currentMNodeSku
                                             } `
@@ -6255,7 +6445,7 @@ function Test-SilkResourceDeployment
                                                 $mNodeProximityPlacementGroup = New-AzProximityPlacementGroup `
                                                                                 -ResourceGroupName $ResourceGroupName `
                                                                                 -Location $Region `
-                                                                                -Name $("{0}-mNode-{1}-ppg" -f $ResourceNamePrefix, $currentMNode) `
+                                                                                -Name $("{0}{1}-mNode-{2}-ppg" -f $ResourceNamePrefix, $zonePrefix, $currentMNode) `
                                                                                 -ProximityPlacementGroupType "Standard"
                                             }
 
@@ -6265,7 +6455,7 @@ function Test-SilkResourceDeployment
                                         $mNodeAvailabilitySet = New-AzAvailabilitySet `
                                                                     -ResourceGroupName $ResourceGroupName `
                                                                     -Location $Region `
-                                                                    -Name $("{0}-mNode-{1}-avset" -f $ResourceNamePrefix, $currentMNode) `
+                                                                    -Name $("{0}{1}-mNode-{2}-avset" -f $ResourceNamePrefix, $zonePrefix, $currentMNode) `
                                                                     -ProximityPlacementGroupId $mNodeProximityPlacementGroup.Id `
                                                                     -Sku "Aligned" `
                                                                     -PlatformFaultDomainCount $maximumFaultDomains `
@@ -6305,14 +6495,14 @@ function Test-SilkResourceDeployment
                                                 $dNodeMGMTNIC = New-AzNetworkInterface `
                                                                     -ResourceGroupName $ResourceGroupName `
                                                                 -Location $Region `
-                                                                -Name $("{0}-dnode-{1:D2}-mgmt-nic" -f $ResourceNamePrefix, $dNodeNumber) `
+                                                                -Name $("{0}{1}-dnode-{2:D2}-mgmt-nic" -f $ResourceNamePrefix, $zonePrefix, $dNodeNumber) `
                                                                 -SubnetId $mGMTSubnetID
 
                                                 Write-Verbose -Message $("✓ DNode {0} management NIC '{1}' successfully created with IP '{2}'" -f $dNodeNumber, $dNodeMGMTNIC.Name, $dNodeMGMTNIC.IpConfigurations[0].PrivateIpAddress)
 
                                                 # create the dnode vm configuration
                                                 $dNodeConfig = New-AzVMConfig `
-                                                                -VMName $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNodeNumber) `
+                                                                -VMName $("{0}{1}-dnode-{2:D2}" -f $ResourceNamePrefix, $zonePrefix, $dNodeNumber) `
                                                                 -VMSize $("{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix) `
                                                                 -AvailabilitySetId $mNodeAvailabilitySet.Id
 
@@ -6320,7 +6510,7 @@ function Test-SilkResourceDeployment
                                                 $dNodeConfig = Set-AzVMOperatingSystem `
                                                                 -VM $dNodeConfig `
                                                                 -Linux `
-                                                                -ComputerName $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNodeNumber) `
+                                                                -ComputerName $("{0}{1}-dnode-{2:D2}" -f $ResourceNamePrefix, $zonePrefix, $dNodeNumber) `
                                                                 -Credential $VMInstanceCredential `
                                                                 -DisablePasswordAuthentication:$false
 
@@ -6382,12 +6572,13 @@ function Test-SilkResourceDeployment
 
                                                         # Track job-to-VM mapping for meaningful error reporting
                                                         $vmJobMapping[$dNodeJob.Id] =  @{
-                                                                                            VMName = $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNodeNumber)
+                                                                                            VMName = $("{0}{1}-dnode-{2:D2}" -f $ResourceNamePrefix, $zonePrefix, $dNodeNumber)
                                                                                             VMSku = $("{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix)
                                                                                             NodeType = "DNode"
                                                                                             NodeNumber = $dNodeNumber
                                                                                             MNodeGroup = $currentMNode
                                                                                             MNodePhysicalSize = $currentMNodePhysicalSize
+                                                                                            Zone = $deployZone
                                                                                         }
 
                                                         Write-Verbose -Message $("✓ DNode {0} VM creation job started successfully" -f $dNodeNumber)
@@ -6413,6 +6604,8 @@ function Test-SilkResourceDeployment
                                         Write-Progress -Activity $("MNode Group {0} DNode Creation" -f $currentMNode) -Id 5 -Completed
                                     }
                             }
+
+                            } # end foreach ($deployZone in $zonesToDeploy)
 
                         # ========================================================================================================
                         # begin vm creation job monitoring
@@ -6513,6 +6706,7 @@ function Test-SilkResourceDeployment
                                         $vmDetails = $vmJobMapping[$failedJob.Id]
                                         $vmName = if ($vmDetails) { $vmDetails.VMName } else { "Unknown VM" }
                                         $vmSku = if ($vmDetails) { $vmDetails.VMSku } else { "Unknown SKU" }
+                                        $jobZone = if ($vmDetails -and $vmDetails.Zone) { $vmDetails.Zone } else { $Zone }
 
                                         # Extract meaningful deployment validation information
                                         $errorCode = ""
@@ -6568,7 +6762,7 @@ function Test-SilkResourceDeployment
                                                                 $skuInfo = Get-AzComputeResourceSku | Where-Object { $_.Name -eq $vmSku -and $_.LocationInfo.Location -eq $Region }
                                                                 if ($skuInfo -and $skuInfo.LocationInfo.Zones -and $skuInfo.LocationInfo.Zones.Count -gt 0)
                                                                     {
-                                                                        $alternativeZones = $skuInfo.LocationInfo.Zones | Where-Object { $_ -ne $Zone }
+                                                                        $alternativeZones = $skuInfo.LocationInfo.Zones | Where-Object { $_ -ne $jobZone }
                                                                     }
                                                             }
                                                     } `
@@ -6612,7 +6806,7 @@ function Test-SilkResourceDeployment
                                             ErrorMessage = $errorMessage
                                             FailureCategory = $failureCategory
                                             AlternativeZones = $alternativeZones
-                                            TestedZone = $Zone
+                                            TestedZone = $jobZone
                                             TestedRegion = $Region
                                             Timestamp = $StartTime
                                         }
@@ -6675,11 +6869,17 @@ function Test-SilkResourceDeployment
                 # Create deployment report
                 $deploymentReport = @()
 
+                # Build deployment report — iterate per zone for multi-zone deployments
+                foreach ($reportZone in $zonesToDeploy)
+                    {
+                        $reportZonePrefix = if ($isMultiZoneDeploy) { $("-z{0}" -f $reportZone) } else { $("") }
+                        $reportZoneLabel = if ($isMultiZoneDeploy) { $(" (Zone {0})" -f $reportZone) } else { $("") }
+
                 # Build CNode deployment report
                 for ($cNode = 1; $cNode -le $adjustedCNodeCount; $cNode++)
                     {
-                        $expectedVMName = "$ResourceNamePrefix-cnode-{0:D2}" -f $cNode
-                        $expectedNICName = "$ResourceNamePrefix-cnode-mgmt-nic-{0:D2}" -f $cNode
+                        $expectedVMName = $("{0}{1}-cnode-{2:D2}" -f $ResourceNamePrefix, $reportZonePrefix, $cNode)
+                        $expectedNICName = $("{0}{1}-cnode-mgmt-nic-{2:D2}" -f $ResourceNamePrefix, $reportZonePrefix, $cNode)
 
                         $vm = $deployedVMs | Where-Object { $_.Name -eq $expectedVMName }
                         $nic = $deployedNICs | Where-Object { $_.Name -eq $expectedNICName }
@@ -6726,7 +6926,7 @@ function Test-SilkResourceDeployment
 
                         $deploymentReport +=  [PSCustomObject]@{
                                                                     ResourceType = "CNode"
-                                                                    GroupNumber = "CNode Group"
+                                                                    GroupNumber = $("CNode Group{0}" -f $reportZoneLabel)
                                                                     NodeNumber = $cNode
                                                                     VMName = $expectedVMName
                                                                     ExpectedSKU = $cNodeVMSku
@@ -6737,6 +6937,7 @@ function Test-SilkResourceDeployment
                                                                     AvailabilitySet = $avSetStatus
                                                                     ValidationFinding = if ($vmValidationFinding) { $vmValidationFinding.ErrorMessage } else { "" }
                                                                     FailureCategory = if ($vmValidationFinding) { $vmValidationFinding.FailureCategory } else { "" }
+                                                                    Zone = $reportZone
                                                                 }
                     }
 
@@ -6759,8 +6960,8 @@ function Test-SilkResourceDeployment
                         for ($dNode = 1; $dNode -le $reportDNodeCount; $dNode++)
                             {
                                 $dNodeNumber = $dNode + $dNodeStartCount
-                                $expectedVMName = "$ResourceNamePrefix-dnode-{0:D2}" -f $dNodeNumber
-                                $expectedNICName = "$ResourceNamePrefix-dnode-{0:D2}-mgmt-nic" -f $dNodeNumber
+                                $expectedVMName = $("{0}{1}-dnode-{2:D2}" -f $ResourceNamePrefix, $reportZonePrefix, $dNodeNumber)
+                                $expectedNICName = $("{0}{1}-dnode-{2:D2}-mgmt-nic" -f $ResourceNamePrefix, $reportZonePrefix, $dNodeNumber)
 
                                 $vm = $deployedVMs | Where-Object { $_.Name -eq $expectedVMName }
                                 $nic = $deployedNICs | Where-Object { $_.Name -eq $expectedNICName }
@@ -6807,7 +7008,7 @@ function Test-SilkResourceDeployment
 
                                 $deploymentReport +=   [PSCustomObject]@{
                                                                             ResourceType = "DNode"
-                                                                            GroupNumber = $("MNode {0} ({1} TiB)" -f $currentMNode, $currentMNodePhysicalSize)
+                                                                            GroupNumber = $("MNode {0} ({1} TiB){2}" -f $currentMNode, $currentMNodePhysicalSize, $reportZoneLabel)
                                                                             NodeNumber = $dNodeNumber
                                                                             VMName = $expectedVMName
                                                                             ExpectedSKU = $reportMNodeSku
@@ -6818,11 +7019,14 @@ function Test-SilkResourceDeployment
                                                                             AvailabilitySet = $avSetStatus
                                                                             ValidationFinding = if ($vmValidationFinding) { $vmValidationFinding.ErrorMessage } else { "" }
                                                                             FailureCategory = if ($vmValidationFinding) { $vmValidationFinding.FailureCategory } else { "" }
+                                                                            Zone = $reportZone
                                                                         }
                             }
 
                         $dNodeStartCount += $reportDNodeCount
                     }
+
+                    } # end foreach ($reportZone in $zonesToDeploy)
 
                 # ===============================================================================
                 # Report Data Processing and Analysis
@@ -6831,7 +7035,7 @@ function Test-SilkResourceDeployment
                 # This section calculates all report data once to ensure consistency
 
                 # Infrastructure Summary Data
-                $totalExpectedVMs = $CNodeCount + ($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum
+                $totalExpectedVMs = ($CNodeCount + ($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum) * $zonesToDeploy.Count
                 $successfulVMs = ($deploymentReport | Where-Object { $_.VMStatus -eq "✓ Deployed" }).Count
                 $failedVMs = ($deploymentReport | Where-Object { $_.VMStatus -like "*Failed*" }).Count
                 $nonSuccessfulVMs = $deploymentReport | Where-Object { $_.ProvisioningState -ne "Succeeded" -and $_.ProvisioningState -ne "Not Found" }
@@ -7077,7 +7281,7 @@ function Test-SilkResourceDeployment
                 # Infrastructure Resources Data
                 $deployedPPG = Get-AzProximityPlacementGroup -ResourceGroupName $ResourceGroupName -Name $("{0}*-ppg" -f $ResourceNamePrefix) -ErrorAction SilentlyContinue
                 $deployedAvailabilitySets = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $ResourceNamePrefix }
-                $totalResourcesCreated = $deployedVMs.Count + $deployedNICs.Count + $(if($deployedPPG){1}else{0}) + $deployedAvailabilitySets.Count + $(if($deployedVNet){1}else{0}) + $(if($deployedNSG){1}else{0})
+                $totalResourcesCreated = $deployedVMs.Count + $deployedNICs.Count + $(if($deployedPPG){@($deployedPPG).Count}else{0}) + $deployedAvailabilitySets.Count + $(if($deployedVNet){1}else{0}) + $(if($deployedNSG){1}else{0})
 
                 # Deployment Validation Findings Analysis
                 $validationFindings = @{
@@ -7106,12 +7310,13 @@ function Test-SilkResourceDeployment
 
                 if ($CNodeCount)
                     {
+                        $expectedCNodeTotal = $CNodeCount * $zonesToDeploy.Count
                         $silkSummary += [PSCustomObject]@{
                                             Component       = $("CNode")
                                             DeployedCount   = $successfulCNodes
-                                            ExpectedCount   = $CNodeCount
+                                            ExpectedCount   = $expectedCNodeTotal
                                             SKU             = $cNodeSummaryLabel
-                                            Status          = if ($successfulCNodes -eq $CNodeCount) { $("✓ Complete") } elseif ($successfulCNodes -eq 0) { $("✗ Failed") } else { $("⚠ Partial") }
+                                            Status          = if ($successfulCNodes -eq $expectedCNodeTotal) { $("✓ Complete") } elseif ($successfulCNodes -eq 0) { $("✗ Failed") } else { $("⚠ Partial") }
                                         }
                     }
 
@@ -7145,6 +7350,7 @@ function Test-SilkResourceDeployment
                 $reportData.Configuration.ResourceGroupName     = $ResourceGroupName
                 $reportData.Configuration.Region                = $Region
                 $reportData.Configuration.Zone                  = $Zone
+                $reportData.Metadata.ReportMode                 = if ($TestAllZones) { $("Deployment + Multi-Zone") } else { $("Deployment") }
                 $reportData.Configuration.CNodeSKU              = if ($cNodeObject) { $cNodeVMSku } else { $("") }
                 $reportData.Configuration.CNodeFriendlyName     = if ($cNodeObject) { $cNodeObject.cNodeFriendlyName } else { $("") }
                 $reportData.Configuration.CNodeCount            = $CNodeCount

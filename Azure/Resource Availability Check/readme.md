@@ -185,6 +185,12 @@ Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-12345678901
 ```
    >Tests all Silk-supported VM SKU families across all availability zones in the region. Deploys test VMs for each SKU in every zone and produces a multi-zone deployment results matrix.
 
+#### 10. Test Deployment Configuration Across All Zones
+```powershell
+Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -MnodeSizeLsv3 @("19.5","39.1") -TestAllZones
+```
+   >Tests a specific deployment configuration across all availability zones simultaneously. Deploys the full CNode and MNode configuration into every zone where all requested SKUs are supported, producing a multi-zone deployment comparison showing pass/fail per zone. The `-Zone` parameter is still used for zone alignment reporting.
+
 ---
 
 ### Additional Notes

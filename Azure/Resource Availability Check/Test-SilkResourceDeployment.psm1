@@ -428,9 +428,9 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
-                [Parameter(ParameterSetName = "Report Only",                    Mandatory = $false, HelpMessage = $("Resource Group name. Not required for report-only mode."))]
-                [Parameter(ParameterSetName = "Report Only ChecklistJSON",      Mandatory = $false, HelpMessage = $("Resource Group name. Not required for report-only mode."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $true,  HelpMessage = $("Resource Group for test resources."))]
+                [Parameter(ParameterSetName = "Report Only",                    Mandatory = $false, HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
+                [Parameter(ParameterSetName = "Report Only ChecklistJSON",      Mandatory = $false, HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [ValidatePattern('^[a-z][a-z0-9\-]{1,61}[a-z0-9]$')]
                 [ValidateNotNullOrEmpty()]
                 [string]
@@ -658,9 +658,9 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
-                [Parameter(ParameterSetName = "Report Only",                    Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment."))]
-                [Parameter(ParameterSetName = "Report Only ChecklistJSON",      Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment."))]
+                [Parameter(ParameterSetName = "Report Only",                    Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
+                [Parameter(ParameterSetName = "Report Only ChecklistJSON",      Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [ValidatePattern('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')]
                 [ValidateNotNullOrEmpty()]
                 [string]
@@ -686,7 +686,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Disable zone alignment check."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Switch]
                 $DisableZoneAlignment,
 
@@ -710,9 +710,9 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
-                [Parameter(ParameterSetName = "Report Only",                    Mandatory = $false, HelpMessage = $("Disable HTML report generation."))]
-                [Parameter(ParameterSetName = "Report Only ChecklistJSON",      Mandatory = $false, HelpMessage = $("Disable HTML report generation."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Disable HTML report generation."))]
+                [Parameter(ParameterSetName = "Report Only",                    Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
+                [Parameter(ParameterSetName = "Report Only ChecklistJSON",      Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Switch]
                 $NoHTMLReport,
 
@@ -736,9 +736,9 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
-                [Parameter(ParameterSetName = "Report Only",                    Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved."))]
-                [Parameter(ParameterSetName = "Report Only ChecklistJSON",      Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved."))]
+                [Parameter(ParameterSetName = "Report Only",                    Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
+                [Parameter(ParameterSetName = "Report Only ChecklistJSON",      Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [ValidateNotNullOrEmpty()]
                 [string]
                 $ReportOutputPath = (Get-Location).Path,
@@ -763,7 +763,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Switch]
                 $DisableCleanup,
 
@@ -795,7 +795,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
-                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Specify VNet CIDR range. Example: 10.0.0.0/24"))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [ValidatePattern('^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/(3[0-2]|[1-2][0-9]|[0-9]))$')]
                 [ValidateNotNullOrEmpty()]
                 [string]
@@ -822,7 +822,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Create resource group if it does not exist."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Switch]
                 $CreateResourceGroup,
 
@@ -846,7 +846,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
-                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Advanced use only."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [ValidateNotNullOrEmpty()]
                 [string]
                 $VMImageOffer = "0001-com-ubuntu-server-jammy",
@@ -871,7 +871,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
-                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Advanced use only."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [ValidateNotNullOrEmpty()]
                 [string]
                 $VMImagePublisher = "Canonical",
@@ -896,7 +896,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
-                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Advanced use only."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [string]
                 $VMImageSku,
 
@@ -920,7 +920,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
-                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [ValidateNotNullOrEmpty()]
                 [string]
                 $VMImageVersion = "latest",
@@ -1014,7 +1014,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Switch]
                 $Development,
 
@@ -1038,7 +1038,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Credential for VM local administrator."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [ValidateNotNullOrEmpty()]
                 [pscredential]
                 $VMInstanceCredential = (New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList "azureuser", (ConvertTo-SecureString 'sdpD3ploym3ntT3$t' -AsPlainText -Force))

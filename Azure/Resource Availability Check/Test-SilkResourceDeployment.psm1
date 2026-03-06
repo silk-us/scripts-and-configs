@@ -41,8 +41,8 @@ function Test-SilkResourceDeployment
                 - MNodes: Media nodes that coordinate data operations and storage management
                 - DNodes: Data nodes that store and serve data (deployed as part of MNode groups)
 
-                Function Version: 1.98.10-1.0.1
-                Supporting Silk SDP configurations from version 1.98.10
+                Function Version: 1.0.2
+                Supporting Silk SDP configurations from Flex: v2.10.86 VisionOS: v8.6.10
 
             .PARAMETER SubscriptionId
                 Azure Subscription ID where resources will be deployed.
@@ -113,11 +113,19 @@ function Test-SilkResourceDeployment
                 Example: "my-silk-cnode-avset"
 
             .PARAMETER MnodeSizeLsv3
-                Array of MNode storage capacities for Lsv3 series SKUs (older generation with proven stability).
+                Array of MNode storage capacities for Lsv3 series SKUs.
                 Valid values correspond to physical storage capacity in TiB:
                 - "19.5" TiB (Standard_L8s_v3)  - 8 vCPU, 64 GB RAM, local NVMe storage
                 - "39.1" TiB (Standard_L16s_v3) - 16 vCPU, 128 GB RAM, local NVMe storage
                 - "78.2" TiB (Standard_L32s_v3) - 32 vCPU, 256 GB RAM, local NVMe storage
+                Example: @("19.5", "39.1") for mixed capacity deployment
+
+            .PARAMETER MnodeSizeLasv3
+                Array of MNode storage capacities for Lsv3 series SKUs.
+                Valid values correspond to physical storage capacity in TiB:
+                - "19" TiB (Standard_L8as_v3)  - 8 vCPU, 64 GB RAM, local NVMe storage
+                - "39" TiB (Standard_L16as_v3) - 16 vCPU, 128 GB RAM, local NVMe storage
+                - "78" TiB (Standard_L32as_v3) - 32 vCPU, 256 GB RAM, local NVMe storage
                 Example: @("19.5", "39.1") for mixed capacity deployment
 
             .PARAMETER MnodeSizeLaosv4
@@ -469,9 +477,9 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Report Only",                    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 or Zoneless."))]
-                [Parameter(ParameterSetName = "Report Only ChecklistJSON",      Mandatory = $false, HelpMessage = $("Select an Availability Zone: 1, 2, 3 or Zoneless."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 or Zoneless."))]
+                [Parameter(ParameterSetName = "Report Only",                    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Report Only ChecklistJSON",      Mandatory = $false, HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [ValidateSet("1", "2", "3", "Zoneless")]
                 [ValidateNotNullOrEmpty()]
                 [string]
@@ -482,7 +490,7 @@ function Test-SilkResourceDeployment
                 # Enables simplified deployment management and repeatability
                 [Parameter(ParameterSetName = 'ChecklistJSON',              Mandatory = $true, HelpMessage = $("Enter the full path to a JSON configuration file containing deployment parameters. Example: C:\configs\silk-deployment.json"))]
                 [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON", Mandatory = $true, HelpMessage = $("Enter the full path to a JSON configuration file containing deployment parameters. Example: C:\configs\silk-deployment.json"))]
-                [Parameter(ParameterSetName = "Report Only ChecklistJSON",                    Mandatory = $true,  HelpMessage = $("Path to JSON configuration file."))]
+                [Parameter(ParameterSetName = "Report Only ChecklistJSON",  Mandatory = $true, HelpMessage = $("Enter the full path to a JSON configuration file containing deployment parameters. Example: C:\configs\silk-deployment.json"))]
                 [string]
                 $ChecklistJSON,
 
@@ -557,7 +565,7 @@ function Test-SilkResourceDeployment
                 [string]
                 $AvailabilitySetName,
 
-                # Array of MNode storage capacities for Lsv3 series SKUs (older generation, proven stability)
+                # Array of MNode storage capacities for Lsv3 series SKUs
                 # Valid values: "19.5" (L8s_v3), "39.1" (L16s_v3), "78.2" (L32s_v3) TiB capacity
                 # Example: @("19.5", "39.1") for mixed capacity deployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",  Mandatory = $true, HelpMessage = $("Specify Lsv3 MNodes sizes. Valid sizes are: 19.5, 39.1, 78.2 (comma-separated, up to 4 values). Each value represents an MNode in TiB of storage capacity."))]
@@ -567,6 +575,17 @@ function Test-SilkResourceDeployment
                 [ValidateCount(1, 4)]
                 [string[]]
                 $MnodeSizeLsv3,
+
+                # Array of MNode storage capacities for Lasv3 series SKUs
+                # Valid values: "19" (L8as_v3), "39" (L16as_v3), "78" (L32as_v3) TiB capacity
+                # Example: @("19", "39") for mixed capacity deployment
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",  Mandatory = $true, HelpMessage = $("Specify Lasv3 MNodes sizes. Valid sizes are: 19, 39, 78 (comma-separated, up to 4 values). Each value represents an MNode in TiB of storage capacity."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",    Mandatory = $true, HelpMessage = $("Specify Lasv3 MNodes sizes. Valid sizes are: 19, 39, 78 (comma-separated, up to 4 values). Each value represents an MNode in TiB of storage capacity."))]
+                [Parameter(ParameterSetName = "Mnode Lasv3",                 Mandatory = $true, HelpMessage = $("Specify Lasv3 MNodes sizes. Valid sizes are: 19, 39, 78 (comma-separated, up to 4 values). Each value represents an MNode in TiB of storage capacity."))]
+                [ValidateSet("19", "39", "78")]
+                [ValidateCount(1, 4)]
+                [string[]]
+                $MnodeSizeLasv3,
 
                 # Array of MNode storage capacities for Laosv4 series SKUs (newer generation, higher density)
                 # Valid values: "14.67" (L2aos_v4), "29.34" (L4aos_v4), "58.67" (L8aos_v4), "88.01" (L12aos_v4), "117.35" (L16aos_v4) TiB capacity
@@ -583,10 +602,10 @@ function Test-SilkResourceDeployment
                 # Lsv3 SKUs: Standard_L8s_v3, Standard_L16s_v3, Standard_L32s_v3
                 # Laosv4 SKUs: Standard_L2aos_v4, Standard_L4aos_v4, Standard_L8aos_v4, Standard_L12aos_v4, Standard_L16aos_v4
                 # Alternative to size-based selection for advanced scenarios requiring specific SKU control
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true, HelpMessage = $("Select MNode VM SKU. LSv3 options: Standard_L8s_v3 (19.5 TiB), Standard_L16s_v3 (39.1 TiB), Standard_L32s_v3 (78.2 TiB). Laosv4 options: Standard_L2aos_v4 (14.67 TiB) to Standard_L16aos_v4 (117.35 TiB)."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true, HelpMessage = $("Select MNode VM SKU. LSv3 options: Standard_L8s_v3 (19.5 TiB), Standard_L16s_v3 (39.1 TiB), Standard_L32s_v3 (78.2 TiB). Laosv4 options: Standard_L2aos_v4 (14.67 TiB) to Standard_L16aos_v4 (117.35 TiB)."))]
-                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true, HelpMessage = $("Select MNode VM SKU. LSv3 options: Standard_L8s_v3 (19.5 TiB), Standard_L16s_v3 (39.1 TiB), Standard_L32s_v3 (78.2 TiB). Laosv4 options: Standard_L2aos_v4 (14.67 TiB) to Standard_L16aos_v4 (117.35 TiB)."))]
-                [ValidateSet("Standard_L2aos_v4", "Standard_L4aos_v4", "Standard_L8aos_v4", "Standard_L12aos_v4", "Standard_L16aos_v4", "Standard_L8s_v3", "Standard_L16s_v3", "Standard_L32s_v3")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true, HelpMessage = $("Select MNode VM SKU. LSv3 options: Standard_L8s_v3 (19.5 TiB), Standard_L16s_v3 (39.1 TiB), Standard_L32s_v3 (78.2 TiB). Lasv3 options: Standard_L8as_v3 (19 TiB), Standard_L16as_v3 (39 TiB), Standard_L32as_v3 (78 TiB). Laosv4 options: Standard_L2aos_v4 (14.67 TiB) to Standard_L16aos_v4 (117.35 TiB)."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true, HelpMessage = $("Select MNode VM SKU. LSv3 options: Standard_L8s_v3 (19.5 TiB), Standard_L16s_v3 (39.1 TiB), Standard_L32s_v3 (78.2 TiB). Lasv3 options: Standard_L8as_v3 (19 TiB), Standard_L16as_v3 (39 TiB), Standard_L32as_v3 (78 TiB). Laosv4 options: Standard_L2aos_v4 (14.67 TiB) to Standard_L16aos_v4 (117.35 TiB)."))]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true, HelpMessage = $("Select MNode VM SKU. LSv3 options: Standard_L8s_v3 (19.5 TiB), Standard_L16s_v3 (39.1 TiB), Standard_L32s_v3 (78.2 TiB). Lasv3 options: Standard_L8as_v3 (19 TiB), Standard_L16as_v3 (39 TiB), Standard_L32as_v3 (78 TiB). Laosv4 options: Standard_L2aos_v4 (14.67 TiB) to Standard_L16aos_v4 (117.35 TiB)."))]
+                [ValidateSet("Standard_L2aos_v4", "Standard_L4aos_v4", "Standard_L8aos_v4", "Standard_L12aos_v4", "Standard_L16aos_v4", "Standard_L8as_v3", "Standard_L16as_v3", "Standard_L32as_v3", "Standard_L8s_v3", "Standard_L16s_v3", "Standard_L32s_v3")]
                 [string[]]
                 $MNodeSku,
 
@@ -1038,6 +1057,11 @@ function Test-SilkResourceDeployment
                 # - 39.1 TiB: Standard_L16s_v3 (16 vCPU, 128 GB RAM, local NVMe storage)
                 # - 78.2 TiB: Standard_L32s_v3 (32 vCPU, 256 GB RAM, local NVMe storage)
                 #
+                # Lsv3 Series (NVMe SSD storage - older generation, proven stability):
+                # - 19 TiB: Standard_L8as_v3  (8 vCPU, 64 GB RAM, local NVMe storage)
+                # - 39 TiB: Standard_L16as_v3 (16 vCPU, 128 GB RAM, local NVMe storage)
+                # - 78 TiB: Standard_L32as_v3 (32 vCPU, 256 GB RAM, local NVMe storage)
+                #
                 # Laosv4 Series (newer generation with higher density and efficiency):
                 # - 14.67 TiB: Standard_L2aos_v4  (2 vCPU, latest storage technology)
                 # - 29.34 TiB: Standard_L4aos_v4  (4 vCPU, latest storage technology)
@@ -1051,6 +1075,9 @@ function Test-SilkResourceDeployment
                                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "s_v3";   PhysicalSize = 19.5;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
                                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "s_v3";   PhysicalSize = 39.1;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
                                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 32;   vmSkuSuffix = "s_v3";   PhysicalSize = 78.2;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "as_v3";  PhysicalSize = 19;      QuotaFamily = "Standard Lasv3 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "as_v3";  PhysicalSize = 39;      QuotaFamily = "Standard Lasv3 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 32;   vmSkuSuffix = "as_v3";  PhysicalSize = 78;      QuotaFamily = "Standard Lasv3 Family vCPUs"};
                                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 2;    vmSkuSuffix = "aos_v4"; PhysicalSize = 14.67;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
                                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 4;    vmSkuSuffix = "aos_v4"; PhysicalSize = 29.34;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
                                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "aos_v4"; PhysicalSize = 58.67;   QuotaFamily = "Standard Laosv4 Family vCPUs"};

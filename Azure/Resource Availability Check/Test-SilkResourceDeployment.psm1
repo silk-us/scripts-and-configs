@@ -1155,11 +1155,22 @@ function Test-SilkResourceDeployment
                         Write-Verbose -Message $("Running in Development Mode, dynamically generating reduced MNode/DNode configuration for faster deployment.")
 
                         # Generate development configuration by transforming production configuration
-                        # Lsv3 series has minimum of 8 vCPU, Laosv4 can use 2 vCPU
+                        # Dynamically determines minimum vCPU per SKU family suffix from $mNodeSizeObject data
                         # Reduce dNodeCount from 16 to 1 for faster testing
+                        # Build a lookup of minimum vCPU per suffix from the production size objects
+                        # This ensures new SKU families automatically get correct dev mode sizing
+                        $minVcpuBySuffix = @{}
+                        $mNodeSizeObject | ForEach-Object  {
+                                                                if (-not $minVcpuBySuffix.ContainsKey($_.vmSkuSuffix) -or $_.vCPU -lt $minVcpuBySuffix[$_.vmSkuSuffix])
+                                                                    {
+                                                                        $minVcpuBySuffix[$_.vmSkuSuffix] = $_.vCPU
+                                                                    }
+                                                            }
+                        Write-Verbose -Message $("Development mode - minimum vCPU per family: {0}" -f (($minVcpuBySuffix.GetEnumerator() | ForEach-Object { $("{0}={1}" -f $_.Key, $_.Value) }) -join $(", ")))
+
                         $mNodeSizeObject = $mNodeSizeObject | ForEach-Object    {
-                                                                                    # Determine development vCPU based on SKU series minimum vcpu count requirements
-                                                                                    $devVcpu = if ($_.vmSkuSuffix -eq $('s_v3')) { 8 } else { 2 }
+                                                                                    # Determine development vCPU from dynamically computed per-suffix minimums
+                                                                                    $devVcpu = $minVcpuBySuffix[$_.vmSkuSuffix]
 
                                                                                     [pscustomobject]@{
                                                                                                         dNodeCount = 1
@@ -1588,13 +1599,13 @@ function Test-SilkResourceDeployment
                                                     {
                                                         Write-Host $("    vCPU Required: {0}" -f $requiredvCPU)
                                                         Write-Host $("    vCPU Available: {0}/{1}" -f $availableQuota, $quotaFamilyInfo.Limit)
-                                                        Write-Host $("    Status: ✓ Sufficient") -ForegroundColor Green
+                                                        Write-Host $("    Quota Status: ✓ Sufficient") -ForegroundColor Green
                                                     } `
                                                 else
                                                     {
                                                         Write-Host $("    vCPU Required: {0}" -f $requiredvCPU)
                                                         Write-Host $("    vCPU Available: {0}/{1}" -f $availableQuota, $quotaFamilyInfo.Limit)
-                                                        Write-Host $("    Status: ✗ Insufficient (Shortfall: {0} vCPU)" -f ($requiredvCPU - $availableQuota)) -ForegroundColor Red
+                                                        Write-Host $("    Quota Status: ✗ Insufficient Quota (Shortfall: {0} vCPU)" -f ($requiredvCPU - $availableQuota)) -ForegroundColor Red
                                                     }
                                             }
                                     }
@@ -1789,7 +1800,7 @@ function Test-SilkResourceDeployment
                                             @{Label=$("Availability Set"); Expression={$_.AvailabilitySet}; Width=18}
                                         )
 
-                                        $cNodeReport | Format-Table -Property $cNodeColumns -AutoSize
+                                        $cNodeReport | Format-Table -Property $cNodeColumns -AutoSize | Out-String | Write-Host -NoNewline
                                     }
 
                                 # DNode Report by MNode Group
@@ -1816,7 +1827,7 @@ function Test-SilkResourceDeployment
                                             @{Label=$("Availability Set"); Expression={$_.AvailabilitySet}; Width=18}
                                         )
 
-                                        $group.Group | Format-Table -Property $dNodeColumns -AutoSize
+                                        $group.Group | Format-Table -Property $dNodeColumns -AutoSize | Out-String | Write-Host -NoNewline
                                     }
                             }
 
@@ -1835,7 +1846,7 @@ function Test-SilkResourceDeployment
                                                                 @{Label=$("Expected"); Expression={$_.ExpectedCount}; Width=10},
                                                                 @{Label=$("VM SKU"); Expression={$_.SKU}; Width=20},
                                                                 @{Label=$("Status"); Expression={$_.Status}; Width=15}
-                                                            ) -AutoSize
+                                                            ) -AutoSize | Out-String | Write-Host -NoNewline
                             }
 
                         # ---------------------------------------------------------------
@@ -2185,6 +2196,7 @@ function Test-SilkResourceDeployment
                                         foreach ($skuGroup in $skuGroups)
                                             {
                                                 $skuEntry = $skuGroup.Group[0]
+                                                $skuMinDeploy = ($skuGroup.Group | Measure-Object -Property MinDeploymentVcpu -Minimum).Minimum
                                                 $allSKUStatuses += $skuEntry.ZoneSupportStatus
                                                 $statusIcon = switch ($skuEntry.ZoneSupportStatus)
                                                     {
@@ -2202,6 +2214,7 @@ function Test-SilkResourceDeployment
                                                 Write-Host $("    {0} " -f $statusIcon) -NoNewline -ForegroundColor $skuColor
                                                 Write-Host $("{0}" -f $skuGroup.Name) -ForegroundColor White -NoNewline
                                                 Write-Host $("  vCPU: {0}" -f $skuEntry.vCPU) -NoNewline
+                                                Write-Host $("  Min Deploy: {0} vCPU" -f $skuMinDeploy) -NoNewline
                                                 if ($skuEntry.AvailableZones.Count -gt 0)
                                                     {
                                                         Write-Host $("  Zones: {0}" -f ($skuEntry.AvailableZones -join $(", "))) -NoNewline
@@ -2567,13 +2580,13 @@ function Test-SilkResourceDeployment
                                                         $availableQuota = $quotaFamilyInfo.Limit - $quotaFamilyInfo.CurrentValue
                                                         if ($availableQuota -ge $requiredvCPU)
                                                             {
-                                                                $quotaStatus = $("✓ Sufficient")
+                                                                $quotaStatus = $("✓ Sufficient Quota")
                                                                 $quotaStatusClass = $("status-success")
                                                             } `
                                                         else
                                                             {
                                                                 $shortfall = $requiredvCPU - $availableQuota
-                                                                $quotaStatus = $("✗ Insufficient (Shortfall: {0} vCPU)" -f $shortfall)
+                                                                $quotaStatus = $("✗ Insufficient Quota (Shortfall: {0} vCPU)" -f $shortfall)
                                                                 $quotaStatusClass = $("status-error")
                                                             }
                                                     }
@@ -2585,7 +2598,7 @@ function Test-SilkResourceDeployment
                 <h4>$("🔧 {0}" -f $quotaFamily)</h4>
                 <strong>$("vCPU Required:")</strong> $($requiredvCPU)<br>
                 $availableHtml
-                <strong>$("Status:")</strong> <span class="$quotaStatusClass">$($quotaStatus)</span>$($quotaWarning)
+                <strong>$("Quota Status:")</strong> <span class="$quotaStatusClass">$($quotaStatus)</span>$($quotaWarning)
             </div>
 "@
                                             }
@@ -2929,6 +2942,7 @@ function Test-SilkResourceDeployment
                                                 foreach ($skuGroup in $skuGroups)
                                                     {
                                                         $skuEntry = $skuGroup.Group[0]
+                                                        $skuMinDeploy = ($skuGroup.Group | Measure-Object -Property MinDeploymentVcpu -Minimum).Minimum
                                                         $zoneClass = switch ($skuEntry.ZoneSupportStatus)
                                                             {
                                                                 "Success" { $("status-success") }
@@ -2961,6 +2975,7 @@ function Test-SilkResourceDeployment
                     <td rowspan="$familyRowSpan" style="vertical-align: middle; border-bottom: 2px solid var(--border);"><span class="$quotaClass">$($familyRepresentative.QuotaStatus)</span></td>
                     <td>$($skuGroup.Name)</td>
                     <td>$($skuEntry.vCPU)</td>
+                    <td>$($skuMinDeploy) vCPU</td>
                     <td><span class="$zoneClass">$($skuEntry.ZoneSupport)</span></td>
                     <td>$($zonesDisplay)</td>
                     <td>$($coversDisplay)</td>
@@ -2974,6 +2989,7 @@ function Test-SilkResourceDeployment
                 <tr>
                     <td>$($skuGroup.Name)</td>
                     <td>$($skuEntry.vCPU)</td>
+                    <td>$($skuMinDeploy) vCPU</td>
                     <td><span class="$zoneClass">$($skuEntry.ZoneSupport)</span></td>
                     <td>$($zonesDisplay)</td>
                     <td>$($coversDisplay)</td>
@@ -3003,6 +3019,7 @@ function Test-SilkResourceDeployment
                     <th>$("Quota Status")</th>
                     <th>$("VM SKU")</th>
                     <th>$("vCPU")</th>
+                    <th>$("Min Deploy")</th>
                     <th>$("Zone Support")</th>
                     <th>$("Available Zones")</th>
                     <th>$("Covers")</th>
@@ -4102,7 +4119,7 @@ function Test-SilkResourceDeployment
                         ##################### !
                         if(<# DELETE once PV2 Supported>>>#> $ConfigImport.sdp.m_node_type -and $ConfigImport.sdp.m_node_type -eq "PV2" <# !<<<< DELETE once PV2 Supported#> )
                             {
-                                Write-Error -Message $("PV2 MNode type is not currently supported. Please select Lsv3 or Laosv4 MNode types.")
+                                Write-Error -Message $("PV2 MNode type is not currently supported. Please select Lsv3, Lasv3, or Laosv4 MNode types.")
                             }
                         else
                             {
@@ -4114,6 +4131,10 @@ function Test-SilkResourceDeployment
                     {
                         $MNodeSize = $MnodeSizeLsv3
                     } `
+                elseif ($MnodeSizeLasv3)
+                    {
+                        $MNodeSize = $MnodeSizeLasv3
+                    } `
                 elseif ($MnodeSizeLaosv4)
                     {
                         $MNodeSize = $MnodeSizeLaosv4
@@ -4124,8 +4145,26 @@ function Test-SilkResourceDeployment
                         Write-Verbose -Message ("MNode size(s) identified: {0}" -f ($MNodeSize -join ", "))
                     }
 
+                # Dynamically determine if any MNode size/SKU parameter was provided
+                # This single boolean replaces repeated per-family checks throughout the validation logic
+                # When new MNode size parameters are added, only this line needs to be updated
+                $mNodeSizeParamProvided = [bool]($MnodeSizeLsv3 -or $MnodeSizeLasv3 -or $MnodeSizeLaosv4 -or $MNodeSku)
+
+                # Build dynamic MNode parameter name list from available size objects for use in error messages
+                # Derives family names from $mNodeSizeObject suffixes so new families are automatically included
+                $mNodeUniqueSuffixes = $mNodeSizeObject | ForEach-Object { $_.vmSkuSuffix } | Select-Object -Unique
+                $mNodeFamilyParamNames =    @(
+                                                $mNodeUniqueSuffixes | ForEach-Object   {
+                                                                                            $suffix = $_
+                                                                                            # Convert suffix (e.g., "s_v3", "as_v3", "aos_v4") to parameter-style names (e.g., "MnodeSizeLsv3", "MnodeSizeLasv3", "MnodeSizeLaosv4")
+                                                                                            $familyName = $suffix -replace $('_'), $('')
+                                                                                            $("MnodeSize{0}" -f $("L{0}" -f $familyName))
+                                                                                        }
+                                            )
+                $mNodeParamNameList = ($mNodeFamilyParamNames + @($("MNodeSku"))) -join $("/")
+
                 # Identify and validate CNode SKU configuration based on provided parameters
-                if (!$CNodeCount -and !$CNodeFriendlyName -and !$CNodeSku -and $MnodeSize)
+                if (!$CNodeCount -and !$CNodeFriendlyName -and !$CNodeSku -and $mNodeSizeParamProvided)
                     {
                         # MNode-only deployment scenario - no CNode configuration required
                         Write-Verbose -Message $("MNode-only deployment mode - CNode configuration skipped.")
@@ -4182,7 +4221,7 @@ function Test-SilkResourceDeployment
                             } `
                         else
                             {
-                                Write-Error $("Configuration is not valid. Please specify either CNode parameters (CNodeFriendlyName/CNodeSku with CNodeCount) or MNode parameters (MnodeSizeLsv3/MnodeSizeLaosv4/MNodeSku), or both.")
+                                Write-Error $("Configuration is not valid. Please specify either CNode parameters (CNodeFriendlyName/CNodeSku with CNodeCount) or MNode parameters ({0}), or both." -f $mNodeParamNameList)
                                 $validationError = $true
                                 return
                             }
@@ -4204,35 +4243,38 @@ function Test-SilkResourceDeployment
                     } `
                 elseif ($MNodeCount -and $MNodeSku)
                     {
-                        for ($node = 1; $node -le $MNodeCount; $node++)
+                        foreach ($sku in $MNodeSku)
                             {
-                                $mNodeObject.Add($($mNodeSizeObject | Where-Object { $("{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix) -eq $MNodeSku }))
+                                for ($node = 1; $node -le $MNodeCount; $node++)
+                                    {
+                                        $mNodeObject.Add($($mNodeSizeObject | Where-Object { $("{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix) -eq $sku } | Select-Object -First 1))
+                                    }
                             }
                     } `
-                elseif ($CNodeCount -and !$MnodeSizeLsv3 -and !$MnodeSizeLaosv4 -and !$MNodeSku)
+                elseif ($CNodeCount -and !$mNodeSizeParamProvided)
                     {
                         # CNode-only deployment scenario - no MNode configuration required
                         Write-Verbose -Message $("CNode-only deployment mode - no MNode resources will be created.")
                     } `
-                elseif ($GenerateReportOnly -and !$CNodeCount -and !$MnodeSizeLsv3 -and !$MnodeSizeLaosv4 -and !$MNodeSku)
+                elseif ($GenerateReportOnly -and !$CNodeCount -and !$mNodeSizeParamProvided)
                     {
                         # Report Only mode - no CNode/MNode configuration required
                         Write-Verbose -Message $("Report Only mode - no CNode/MNode configuration specified. SKU/Quota analysis will use raw region data only.")
                     } `
-                elseif ($TestAllSKUFamilies -and !$CNodeCount -and !$MnodeSizeLsv3 -and !$MnodeSizeLaosv4 -and !$MNodeSku)
+                elseif ($TestAllSKUFamilies -and !$CNodeCount -and !$mNodeSizeParamProvided)
                     {
                         # SKU Family Test mode - no specific MNode configuration required, all families tested from size objects
                         Write-Verbose -Message $("SKU Family Test mode - all MNode families will be tested from the full size object array.")
                     } `
-                elseif (!$CNodeCount -and !$MnodeSizeLsv3 -and !$MnodeSizeLaosv4 -and !$MNodeSku)
+                elseif (!$CNodeCount -and !$mNodeSizeParamProvided)
                     {
-                        Write-Error $("No valid configuration specified. Please specify either CNode parameters (CNodeFriendlyName/CNodeSku with CNodeCount) or MNode parameters (MnodeSizeLsv3/MnodeSizeLaosv4/MNodeSku), or both.")
+                        Write-Error $("No valid configuration specified. Please specify either CNode parameters (CNodeFriendlyName/CNodeSku with CNodeCount) or MNode parameters ({0}), or both." -f $mNodeParamNameList)
                         $validationError = $true
                         return
                     }
 
                 # Create unique MNode object list to avoid duplicates and detail MNode configurations
-                if ($MNodeSize)
+                if ($mNodeObject.Count -gt 0)
                     {
                         # Create unique MNode object list to avoid duplicates
                         $mNodeObjectUnique = New-Object System.Collections.Generic.List[PSCustomObject]
@@ -4404,7 +4446,7 @@ function Test-SilkResourceDeployment
                             }
                     }
 
-                if ($MNodeSize)
+                if ($mNodeObject.Count -gt 0)
                     {
                         foreach ($supportedMNodeSKU in $mNodeObjectUnique)
                             {
@@ -4510,12 +4552,16 @@ function Test-SilkResourceDeployment
                                 $totalvCPUCount += $cNodevCPUCount
                             }
 
+                        # Initialize quota adjustment tracking before MNode quota checks
+                        # Must be defined outside the if($MNodeSize) gate so downstream .ContainsKey()
+                        # calls work for both size-based and SKU-based MNode paths
+                        $mNodeQuotaAdjustments = @{}
+
                         # check for quota for mnodes
-                        if($MNodeSize)
+                        if($mNodeObject.Count -gt 0)
                             {
                                 $mNodeFamilyCount = $mNodeObject | Group-Object -Property QuotaFamily
-                                $mNodeInstanceCount = $MNodeSize | Group-Object | Select-Object Name, Count
-                                $mNodeQuotaAdjustments =   @{}
+                                $mNodeInstanceCount = $mNodeObject | Group-Object -Property PhysicalSize | Select-Object Name, Count
 
                                 foreach ($mNodeFamily in $mNodeFamilyCount)
                                     {
@@ -4802,6 +4848,7 @@ function Test-SilkResourceDeployment
                                     QuotaStatusLevel    = $quotaStatusLevel
                                     QuotaAvailable      = $quotaAvailable
                                     QuotaLimit          = $quotaLimit
+                                    MinDeploymentVcpu   = $(2 * $cNodeEntry.vCPU)
                                 })
 
                                 Write-Verbose -Message $("  CNode {0} ({1}): {2} | Quota: {3}" -f $cNodeEntry.cNodeFriendlyName, $skuName, $zoneSupport, $quotaStatus)
@@ -4878,12 +4925,46 @@ function Test-SilkResourceDeployment
                                     QuotaStatusLevel    = $quotaStatusLevel
                                     QuotaAvailable      = $quotaAvailable
                                     QuotaLimit          = $quotaLimit
+                                    MinDeploymentVcpu   = $($mNodeEntry.dNodeCount * $mNodeEntry.vCPU)
                                 })
 
                                 Write-Verbose -Message $("  MNode {0} TiB ({1}): {2} | Quota: {3}" -f $mNodeEntry.PhysicalSize, $skuName, $zoneSupport, $quotaStatus)
                             }
 
                         Write-Verbose -Message $("SKU support analysis complete - {0} total entries analyzed ({1} CNode, {2} MNode)" -f $skuFamilyResults.Count, ($skuFamilyResults | Where-Object { $_.ComponentType -eq $("CNode") }).Count, ($skuFamilyResults | Where-Object { $_.ComponentType -eq $("MNode") }).Count)
+
+                        # Post-process: Recalculate quota status using minimum deployment requirements
+                        # A family's quota is only truly "sufficient" if it can support the smallest
+                        # possible deployment of any component that uses that family
+                        # CNode minimum: 2 CNodes (production architecture requirement)
+                        # MNode minimum: 1 MNode worth of DNodes (dNodeCount x vCPU)
+                        foreach ($familyResultGroup in ($skuFamilyResults | Group-Object -Property QuotaFamily))
+                            {
+                                $minFamilyDeploy = ($familyResultGroup.Group | Measure-Object -Property MinDeploymentVcpu -Minimum).Minimum
+                                foreach ($entry in $familyResultGroup.Group)
+                                    {
+                                        $entry | Add-Member -NotePropertyName MinFamilyDeployVcpu -NotePropertyValue $minFamilyDeploy -Force
+                                        if ($null -ne $entry.QuotaAvailable)
+                                            {
+                                                if ($entry.QuotaAvailable -ge $minFamilyDeploy)
+                                                    {
+                                                        $entry.QuotaStatus = $("{0}/{1} available" -f $entry.QuotaAvailable, $entry.QuotaLimit)
+                                                        $entry.QuotaStatusLevel = $("Success")
+                                                    }
+                                                elseif ($entry.QuotaAvailable -gt 0)
+                                                    {
+                                                        $entry.QuotaStatus = $("{0}/{1} available (min deploy: {2} vCPU)" -f $entry.QuotaAvailable, $entry.QuotaLimit, $minFamilyDeploy)
+                                                        $entry.QuotaStatusLevel = $("Warning")
+                                                    }
+                                                else
+                                                    {
+                                                        $entry.QuotaStatus = $("0/{0} exhausted" -f $entry.QuotaLimit)
+                                                        $entry.QuotaStatusLevel = $("Error")
+                                                    }
+                                            }
+                                    }
+                                Write-Verbose -Message $("  Quota family '{0}': min deployment {1} vCPU, available {2} vCPU → {3}" -f $familyResultGroup.Name, $minFamilyDeploy, $(if ($familyResultGroup.Group[0].QuotaAvailable) { $familyResultGroup.Group[0].QuotaAvailable } else { "N/A" }), $familyResultGroup.Group[0].QuotaStatusLevel)
+                            }
 
                 # ===============================================================================
                 # Multi-Zone Analysis - Per-SKU Zone Support Matrix
@@ -5222,7 +5303,7 @@ function Test-SilkResourceDeployment
                     }
 
                 # identify total dnodes using adjusted counts
-                if($mNodeSize)
+                if($mNodeObject.Count -gt 0)
                     {
                         $totalDNodes = 0
                         foreach ($mNode in $mNodeObject)
@@ -7621,11 +7702,11 @@ function Test-SilkResourceDeployment
                                             if ($vmValidationFinding)
                                                 {
                                                     # Job was submitted but VM was never created — allocation failure, NOT "not found"
-                                                    "✗ Not Allocated ($($vmValidationFinding.FailureCategory))"
+                                                    "✗ Allocation Rejected ($($vmValidationFinding.FailureCategory))"
                                                 }
                                             else
                                                 {
-                                                    "✗ Not Found"
+                                                    "✗ Deployment Failed (No Error Captured)"
                                                 }
                                         } `
                                     elseif ($vm.ProvisioningState -eq "Succeeded")
@@ -7636,20 +7717,16 @@ function Test-SilkResourceDeployment
                                         {
                                             if ($vmValidationFinding)
                                                 {
-                                                    "✗ Failed ($($vmValidationFinding.FailureCategory))"
+                                                    "✗ Provisioning Failed ($($vmValidationFinding.FailureCategory))"
                                                 }
                                             else
                                                 {
-                                                    "✗ Failed"
+                                                    "✗ Provisioning Failed (No Error Captured)"
                                                 }
-                                        } `
-                                    elseif ($vm.ProvisioningState -eq "Creating" -or $vm.ProvisioningState -eq "Running")
-                                        {
-                                            "⚠ In Progress"
                                         } `
                                     else
                                         {
-                                            "⚠ $($vm.ProvisioningState)"
+                                            "⚠ Unexpected State: $($vm.ProvisioningState)"
                                         }
 
                         $deploymentReport +=  [PSCustomObject]@{
@@ -7704,7 +7781,7 @@ function Test-SilkResourceDeployment
                                                     if ($vmValidationFinding)
                                                         {
                                                             # Job was submitted but VM was never created — allocation failure, NOT "not found"
-                                                            "✗ Not Allocated ($($vmValidationFinding.FailureCategory))"
+                                                            "✗ Allocation Rejected ($($vmValidationFinding.FailureCategory))"
                                                         } `
                                                     else
                                                         {
@@ -7719,20 +7796,16 @@ function Test-SilkResourceDeployment
                                                 {
                                                     if ($vmValidationFinding)
                                                         {
-                                                            "✗ Failed ($($vmValidationFinding.FailureCategory))"
+                                                            "✗ Provisioning Failed ($($vmValidationFinding.FailureCategory))"
                                                         }
                                                     else
                                                         {
-                                                            "✗ Failed"
+                                                            "✗ Provisioning Failed (No Error Captured)"
                                                         }
-                                                } `
-                                            elseif ($vm.ProvisioningState -eq "Creating" -or $vm.ProvisioningState -eq "Running")
-                                                {
-                                                    "⚠ In Progress"
                                                 } `
                                             else
                                                 {
-                                                    "⚠ $($vm.ProvisioningState)"
+                                                    "⚠ Unexpected State: $($vm.ProvisioningState)"
                                                 }
 
                                 $deploymentReport +=   [PSCustomObject]@{
@@ -7766,7 +7839,7 @@ function Test-SilkResourceDeployment
                 # Infrastructure Summary Data
                 $totalExpectedVMs = ($CNodeCount + ($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum) * $zonesToDeploy.Count
                 $successfulVMs = ($deploymentReport | Where-Object { $_.VMStatus -eq "✓ Deployed" }).Count
-                $failedVMs = ($deploymentReport | Where-Object { $_.VMStatus -like "*Failed*" -or $_.VMStatus -like "*Not Allocated*" }).Count
+                $failedVMs = ($deploymentReport | Where-Object { $_.VMStatus -like "*Failed*" -or $_.VMStatus -like "*Not Allocated*" -or $_.VMStatus -like "*Allocation Rejected*" }).Count
                 $nonSuccessfulVMs = $deploymentReport | Where-Object { $_.ProvisioningState -ne "Succeeded" -and $_.ProvisioningState -ne "Not Found" -and $_.ProvisioningState -ne "Allocation Failed" }
 
                 # Zone Alignment Reporting Information
@@ -8083,15 +8156,15 @@ function Test-SilkResourceDeployment
                                         if ($matchingFinding -and $matchingFinding.FailureCategory -notin @("Unknown", "Other"))
                                             {
                                                 # Update the VMStatus display text — use "Not Allocated" when job ran but VM doesn't exist
-                                                if ($reportEntry.VMStatus -like "*Not Allocated*" -or $reportEntry.VMStatus -like "*Not Found*")
+                                                if ($reportEntry.VMStatus -like "*Not Allocated*" -or $reportEntry.VMStatus -like "*Deployment Failed*" -or $reportEntry.VMStatus -like "*Allocation Rejected*")
                                                     {
-                                                        $reportEntry.VMStatus = $("✗ Not Allocated ({0})" -f $matchingFinding.FailureCategory)
+                                                        $reportEntry.VMStatus = $("✗ Allocation Rejected ({0})" -f $matchingFinding.FailureCategory)
                                                         $reportEntry.DeployedSKU = "Not Allocated"
                                                         $reportEntry.ProvisioningState = "Allocation Failed"
                                                     } `
                                                 elseif ($reportEntry.VMStatus -like "*Failed*")
                                                     {
-                                                        $reportEntry.VMStatus = $("✗ Failed ({0})" -f $matchingFinding.FailureCategory)
+                                                        $reportEntry.VMStatus = $("✗ Provisioning Failed ({0})" -f $matchingFinding.FailureCategory)
                                                     }
                                                 $reportEntry.FailureCategory = $matchingFinding.FailureCategory
                                                 $reportEntry.ValidationFinding = $matchingFinding.ErrorMessage

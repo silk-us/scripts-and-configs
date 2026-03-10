@@ -54,7 +54,7 @@ Typically this would deploy the test resources into an existing resource group, 
     >```powershell
     >Test-SilkResourceDeployment -ChecklistJSON ".\silk-checklist.json"
     >```
-1. Review results in the console output and HTML report `.\Silk-DeploymentReport_[Date_TimeStamp].html` (defaults to working directory). Use `-ReportLabel` to customize the filename prefix.
+1. Review results in the console output and HTML report `.[ReportLabel]-[Region]-[Zone]-DeploymentReport_[Date_TimeStamp].html` (defaults to working directory). Use `-ReportLabel` to customize the filename prefix.
 
 ---
 
@@ -210,8 +210,8 @@ Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-12345678901
 | `-MNodeSku`                   | Array of explicit Azure VM SKUs for MNode/DNode VMs.<br><br>Lsv3 SKUs:<br> &nbsp;Standard_L8s_v3 (19.5 TiB)<br> &nbsp;Standard_L16s_v3 (39.1 TiB)<br> &nbsp;Standard_L32s_v3 (78.2 TiB)<br>Laosv4 SKUs:<br> &nbsp;Standard_L2aos_v4 (14.67 TiB)<br> &nbsp;Standard_L4aos_v4 (29.34 TiB)<br> &nbsp;Standard_L8aos_v4 (58.67 TiB)<br> &nbsp;Standard_L12aos_v4 (88.01 TiB)<br> &nbsp;Standard_L16aos_v4 (117.35 TiB)<br>Use for advanced scenarios requiring specific SKU control. | "Standard_L8s_v3"<br>"Standard_L16s_v3"<br>"Standard_L32s_v3"<br>"Standard_L2aos_v4"<br>"Standard_L4aos_v4"<br>"Standard_L8aos_v4"<br>"Standard_L12aos_v4"<br>"Standard_L16aos_v4" | @("Standard_L16s_v3", "Standard_L32s_v3") | ⬜️ |
 | `-MNodeCount`                 | Number of MNode instances to deploy when using explicit SKU selection. | Minimum of 1 -> Maximum of 4 | 2 | ⬜️ |
 | `-NoHTMLReport`               | Disable HTML report generation.<br><br>By default, a comprehensive HTML report is generated summarizing deployment status, quota usage, SKU support, and resource validation results. | Switch<br>(present or not) | `-NoHTMLReport` | ⬜️ |
-| `-ReportOutputPath`           | Directory path where the HTML report file is saved.<br><br>Default: Current working directory.<br>The filename is auto-generated as `[ReportLabel]-DeploymentReport_[timestamp].html`.<br>Cannot be used to specify a custom filename — use `-ReportLabel` to customize the filename prefix. | `"C:\\results\\output\\"` | `"C:\Reports"` | ⬜️ |
-| `-ReportLabel`                | Label prefix used as the first part of the HTML report filename, browser tab title, and report heading.<br><br>If not provided, automatically sourced from the `customer_name` field in the JSON configuration file.<br>If neither is specified, defaults to `"Silk"` → produces `Silk-DeploymentReport_[timestamp].html`.<br>Customize to brand reports for a specific customer or deployment environment.<br>Example: `-ReportLabel "Contoso"` produces:<br> &nbsp;Filename: `Contoso-DeploymentReport_20260310_143052.html`<br> &nbsp;Title: `Contoso Azure SKU Availability Report - 2026-03-10 14:30:52`<br> &nbsp;Heading: `🏗️ Contoso Azure SKU Availability Report` | Any string | `"Contoso"` | ⬜️ |
+| `-ReportOutputPath`           | Directory path where the HTML report file is saved.<br><br>Default: Current working directory.<br>The filename is auto-generated as `[ReportLabel]-[Region]-[Zone]-DeploymentReport_[timestamp].html`. Region and zone segments are omitted if not available.<br>Cannot be used to specify a custom filename — use `-ReportLabel` to customize the filename prefix. | `"C:\\results\\output\\"`  | `"C:\Reports"` | ⬜️ |
+| `-ReportLabel`                | Label prefix used as the first part of the HTML report filename, browser tab title, and report heading.<br><br>If not provided, automatically sourced from the `customer_name` field in the JSON configuration file.<br>If neither is specified, defaults to `"Silk"` → produces `Silk-[Region]-[Zone]-DeploymentReport_[timestamp].html`.<br>Region and zone are automatically appended after the label (both in filename and report title/heading), and are omitted gracefully when not available.<br>Customize to brand reports for a specific customer or deployment environment.<br>Example: `-ReportLabel "Contoso"` with `-Region "eastus"` `-Zone "1"` produces:<br> &nbsp;Filename: `Contoso-eastus-1-DeploymentReport_20260310_143052.html`<br> &nbsp;Title: `Contoso eastus 1 Azure SKU Availability Report - 2026-03-10 14:30:52`<br> &nbsp;Heading: `🏗️ Contoso eastus 1 Azure SKU Availability Report` | Any string | `"Contoso"` | ⬜️ |
 | `-DisableCleanup`             | Prevent automatic cleanup of test resources after validation.<br><br>When specified, test resources remain in Azure for manual inspection or extended testing. | Switch<br>(present or not) | `-DisableCleanup` | ⬜️ |
 | `-RunCleanupOnly`             | Only perform cleanup operations, removing all previously created test resources based on <br>`-ResourceNamePrefix`<br> naming.<br><br>Use to clean up resources from failed deployments or when cleanup was disabled. | Switch<br>(present or not) | `-RunCleanupOnly` | ⬜️ |
 | `-IPRangeCIDR`                | CIDR notation for VNet and subnet IP address range.<br><br>Default: "10.0.0.0/24" (provides 254 usable IP addresses) | <br>"10.0.0.0/24"<br>"192.168.1.0/24" | "10.0.0.0/24" | ☑️ |
@@ -287,18 +287,18 @@ Test-SilkResourceDeployment -ChecklistJSON "C:\configs\silk-deployment.json" -Su
 ```powershell
 Test-SilkResourceDeployment -ChecklistJSON "C:\configs\silk-deployment.json" -ReportLabel "Contoso" -ReportOutputPath "C:\Reports\Contoso"
 ```
-   >Runs the deployment check with an updated report name. Useful when running checks across multiple environments.
+   >Runs the deployment check with an updated report name. Report is saved as `C:\Reports\Contoso\Contoso-eastus-1-DeploymentReport_yyyyMMdd_HHmmss.html` (region and zone sourced from JSON). Useful when running checks across multiple environments.
 
-#### 5.2 Advanced: Custom Label with Deployment Identifier
+#### 5.2 Advanced: Custom Label as Identifier
 ```powershell
-Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -MnodeSizeLaosv4 @("14.67","29.34") -ReportLabel "Contoso-EastUS-Prod" -ReportOutputPath "C:\Reports"
+Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -MnodeSizeLaosv4 @("14.67","29.34") -ReportLabel "Contoso" -ReportOutputPath "C:\Reports"
 ```
-   >Combines a descriptive label with a specific deployment configuration. Report saved as `C:\Reports\Contoso-EastUS-Prod-DeploymentReport_yyyyMMdd_HHmmss.html`. Useful for distinguishing reports across multiple regions or deployment scenarios stored in the same output folder.
+   >Runs a deployment check with a customer label. Report saved as `C:\Reports\Contoso-eastus-1-DeploymentReport_yyyyMMdd_HHmmss.html`. Region and zone are automatically included in the filename, title, and heading. Useful for distinguishing reports across multiple regions or deployment scenarios stored in the same output folder.
 
 #### 5.3 Advanced: Report Label Auto-Sourced from JSON customer_name
 ```powershell
 Test-SilkResourceDeployment -ChecklistJSON "C:\configs\silk-deployment.json" -ReportOutputPath "C:\Reports"
 ```
-   >When `-ReportLabel` is not specified, the `customer_name` field from the JSON configuration is automatically used as the report label. If `silk-deployment.json` contains `"customer_name": "Contoso"`, the report is saved as `C:\Reports\Contoso-DeploymentReport_yyyyMMdd_HHmmss.html`. Falls back to `"Silk"` if no `customer_name` is present in the JSON.
+   >When `-ReportLabel` is not specified, the `customer_name` field from the JSON configuration is automatically used as the report label. If `silk-deployment.json` contains `"customer_name": "Contoso"` and region `"eastus"` with zone `"1"`, the report is saved as `C:\Reports\Contoso-eastus-1-DeploymentReport_yyyyMMdd_HHmmss.html`. Falls back to `"Silk"` if no `customer_name` is present in the JSON.
 
 ---

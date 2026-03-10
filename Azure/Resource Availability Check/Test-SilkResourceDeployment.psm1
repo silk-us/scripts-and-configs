@@ -162,7 +162,8 @@ function Test-SilkResourceDeployment
 
             .PARAMETER ReportLabel
                 Label prefix used as the first part of the HTML report filename, page title, and report heading.
-                Default: 'Silk' - produces filenames in the format 'Silk-DeploymentReport_[timestamp].html'
+                If not provided, the value is automatically sourced from the 'customer_name' field in the JSON configuration file (if used).
+                If neither is specified, defaults to 'Silk' - producing filenames in the format 'Silk-DeploymentReport_[timestamp].html'.
                 Customize this to brand reports for a specific customer or deployment environment.
                 The label is also embedded in the browser tab title and the main heading inside the report.
                 Example: -ReportLabel 'Contoso' produces:
@@ -794,9 +795,8 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Report Only",                    Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' produces 'Contoso-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Report Only ChecklistJSON",      Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' produces 'Contoso-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' produces 'Contoso-DeploymentReport_[timestamp].html'"))]
-                [ValidateNotNullOrEmpty()]
                 [string]
-                $ReportLabel = 'Silk',
+                $ReportLabel,
 
                 # Switch to disable automatic cleanup of test resources after deployment validation
                 # When specified, resources remain in Azure for manual inspection or extended testing
@@ -3554,7 +3554,6 @@ function Test-SilkResourceDeployment
                 $reportData = New-SilkReportData
                 $reportData.Metadata.StartTime = $StartTime
                 $reportData.Metadata.ParameterSetName = $PSCmdlet.ParameterSetName
-                $reportData.Metadata.ReportLabel = $ReportLabel
 
                 # ===============================================================================
                 # Azure Authentication and Module Validation
@@ -3836,7 +3835,21 @@ function Test-SilkResourceDeployment
 
                         # identify cnode count
                         $CNodeCount = $ConfigImport.sdp.c_node_count
+
+                        # Import customer name as report label if not explicitly provided
+                        if (!$ReportLabel -and $ConfigImport.customer_name)
+                            {
+                                $ReportLabel = $ConfigImport.customer_name
+                                Write-Verbose -Message $("Using customer name '{0}' from JSON configuration as report label." -f $ReportLabel)
+                            }
                     }
+
+                # Resolve ReportLabel: fall back to 'Silk' if not set by parameter or JSON
+                if (-not $ReportLabel)
+                    {
+                        $ReportLabel = 'Silk'
+                    }
+                $reportData.Metadata.ReportLabel = $ReportLabel
 
 
                 # ===============================================================================

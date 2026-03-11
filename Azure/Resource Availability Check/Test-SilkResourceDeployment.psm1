@@ -1412,6 +1412,9 @@ function Test-SilkResourceDeployment
                                                         SubscriptionValid       = $false
                                                         SubscriptionName        = $("")
                                                         RegionValid             = $false
+                                                        RegionDisplayName       = $("")
+                                                        RegionGeography         = $("")
+                                                        RegionPhysicalLocation  = $("")
                                                         ZoneValid               = $false
                                                         AvailableZones          = @()
                                                         ResourceGroupValid      = $false
@@ -2339,9 +2342,9 @@ function Test-SilkResourceDeployment
 
                                 # Build configuration card content
                                 $configCardContent = @"
-                <strong>$("Subscription ID:")</strong> $($ReportData.Configuration.SubscriptionId)<br>
+                <strong>$("Subscription:")</strong> $(if ($ReportData.EnvironmentValidation.SubscriptionName) { $("{0} ({1})" -f $ReportData.EnvironmentValidation.SubscriptionName, $ReportData.Configuration.SubscriptionId) } else { $ReportData.Configuration.SubscriptionId })<br>
                 <strong>$("Resource Group:")</strong> $($ReportData.Configuration.ResourceGroupName)<br>
-                <strong>$("Region:")</strong> $($ReportData.Configuration.Region)<br>
+                <strong>$("Region:")</strong> $(if ($ReportData.EnvironmentValidation.RegionDisplayName) { $("{0} ({1}){2}{3}" -f $ReportData.EnvironmentValidation.RegionDisplayName, $ReportData.Configuration.Region, $(if ($ReportData.EnvironmentValidation.RegionGeography) { " | {0}" -f $ReportData.EnvironmentValidation.RegionGeography } else { "" }), $(if ($ReportData.EnvironmentValidation.RegionPhysicalLocation) { " | {0}" -f $ReportData.EnvironmentValidation.RegionPhysicalLocation } else { "" })) } else { $ReportData.Configuration.Region })<br>
                 <strong>$("Availability Zone:")</strong> $($ReportData.Configuration.Zone)<br>
 "@
 
@@ -3868,6 +3871,8 @@ function Test-SilkResourceDeployment
                         # Check subscription ID
                         $subscriptionCheck = Get-AzSubscription -SubscriptionId $SubscriptionId -ErrorAction Stop
                         Write-Verbose -Message $("Subscription '{0}' was identified with the ID '{1}'." -f $subscriptionCheck.Name, $subscriptionCheck.Id)
+                        $reportData.EnvironmentValidation.SubscriptionValid = $true
+                        $reportData.EnvironmentValidation.SubscriptionName  = $subscriptionCheck.Name
 
                         Update-StagedProgress -SectionName 'EnvironmentValidation' -SectionCurrentStep 1 -SectionTotalSteps 4 `
                             -DetailMessage $("Validating resource group...")
@@ -3948,8 +3953,38 @@ function Test-SilkResourceDeployment
                                 return
                             }
 
+                        # Verify the subscription has access to the specified region before attempting any resource operations.
+                        # Get-AzLocation returns only locations accessible to the current subscription context.
+                        # An inaccessible or non-existent region is not returned, which would cause all subsequent
+                        # resource creation calls to fail with cryptic errors rather than a clear access message.
+                        $accessibleRegion = Get-AzLocation -ErrorAction Stop | Where-Object { $_.Location -eq $Region } | Select-Object -First 1
+
+                        if (-not $accessibleRegion)
+                            {
+                                Write-Error -Message $("Region '{0}' is not accessible to subscription '{1}' ({2}). The region name may be incorrect, or the subscription may not be registered for this region. Verify the region name at https://aka.ms/azureregions and ensure the subscription has been enabled for this region in the Azure portal under Subscription > Resource Providers or by contacting your Azure administrator." -f $Region, $subscriptionCheck.Name, $SubscriptionId)
+                                $validationError = $true
+                                return
+                            }
+
+                        # Region is accessible - populate metadata fields for reporting
+                        $reportData.EnvironmentValidation.RegionValid            = $true
+                        $reportData.EnvironmentValidation.RegionDisplayName      = $accessibleRegion.DisplayName
+                        $reportData.EnvironmentValidation.RegionGeography        = $accessibleRegion.GeographyGroup
+                        $reportData.EnvironmentValidation.RegionPhysicalLocation = if ($accessibleRegion.PhysicalLocation) { $accessibleRegion.PhysicalLocation } else { $("") }
+
+                        Write-Verbose -Message $("✓ Region '{0}' ({1}) is accessible to subscription '{2}'. Geography: {3}{4}." -f $Region, $accessibleRegion.DisplayName, $subscriptionCheck.Name, $accessibleRegion.GeographyGroup, $(if ($accessibleRegion.PhysicalLocation) { " | Physical location: {0}" -f $accessibleRegion.PhysicalLocation } else { $("") }))
+
                         # Check region and get supported SKUs
                         $locationSupportedSKU = Get-AzComputeResourceSku -Location $Region -ErrorAction Stop
+
+                        # Guard against an empty SKU response. This is a distinct failure from region access —
+                        # the region is registered but compute resources cannot be enumerated (e.g., permissions issue).
+                        if (-not $locationSupportedSKU -or $locationSupportedSKU.Count -eq 0)
+                            {
+                                Write-Error -Message $("Region '{0}' ({1}) is accessible but returned no compute SKU data. The subscription may lack permissions to enumerate compute resources in this region (requires Microsoft.Compute/skus/read), or the region may not support compute workloads." -f $Region, $accessibleRegion.DisplayName)
+                                $validationError = $true
+                                return
+                            }
 
                         # Check zone availability
                         if ($Zone -eq "Zoneless" -and $locationSupportedSKU.LocationInfo.Zones.Count -ne 0)
@@ -4115,9 +4150,9 @@ function Test-SilkResourceDeployment
 
                 Write-Verbose -Message $("{0}Querying Azure Resource SKU API to identify maximum availability set fault domains for region '{1}'." -f $messagePrefix, $Region)
 
-                # Query Azure Resource SKU API to determine maximum fault domains supported by the region
-                # Fault domains define the number of physical hardware failure boundaries within an availability set
-                # Most Azure regions support 3 fault domains, but some regions only support 2
+                # Query Azure Resource SKU API to determine maximum fault domains supported by the region.
+                # Fault domains define the number of physical hardware failure boundaries within an availability set.
+                # Most Azure regions support 3 fault domains, but some (e.g. uksouth) only support 2.
                 try
                     {
                         # Define Azure Resource SKU API version for querying compute SKU information
@@ -4128,24 +4163,28 @@ function Test-SilkResourceDeployment
                                                             Authorization = $("Bearer {0}" -f $(ConvertFrom-SecureString -SecureString $(Get-AzAccessToken -ResourceUrl $("https://management.azure.com/")).Token -AsPlainText))
                                                         }
 
-                        # Construct API URI to query compute SKUs for the target subscription
-                        $azureSKUApiUri = $("https://management.azure.com/subscriptions/{0}/providers/Microsoft.Compute/skus?api-version={1}" -f $SubscriptionId, $azureSKUApiVersion)
+                        # Construct API URI to query compute SKUs for the target subscription, filtered to the target region.
+                        $azureSKUApiUri = $("https://management.azure.com/subscriptions/{0}/providers/Microsoft.Compute/skus?api-version={1}&`$filter=location eq '{2}'" -f $SubscriptionId, $azureSKUApiVersion, $Region)
 
-                        # Execute REST API call to retrieve SKU information
+                        # Execute REST API call to retrieve SKU information for the target region.
                         $regionAvailabilitySetSKU = $(Invoke-RestMethod -Method Get -Uri $azureSKUApiUri -Headers $azureSKUApiRequestHeaders).value
 
-                        # Filter SKU response to extract maximum fault domains capability for availability sets in the target region
-                        $maximumFaultDomains = $regionAvailabilitySetSKU | Where-Object -FilterScript {$_.resourceType -eq $("availabilitySets") -and $_.locations -eq $Region} | Select-Object -First 1 | Select-Object -ExpandProperty capabilities | Select-Object -ExpandProperty value
+                        # Filter SKU response to extract maximum fault domains capability for availability sets in the target region.
+                        $maximumFaultDomains = [int]($regionAvailabilitySetSKU | Where-Object -FilterScript {$_.resourceType -eq $("availabilitySets") -and $_.locations -eq $Region} | Select-Object -First 1 | Select-Object -ExpandProperty capabilities | Where-Object {$_.name -eq $("MaximumPlatformFaultDomainCount")} | Select-Object -ExpandProperty value)
+
+                        # Validate that the query returned a usable value. A null/zero result means the API responded
+                        # but returned no availabilitySets entry for this region — treat this as a hard failure rather
+                        # than proceeding on an assumption that could produce an invalid AvSet configuration.
+                        if (-not $maximumFaultDomains -or $maximumFaultDomains -lt 1)
+                            {
+                                throw $("Azure Resource SKU API returned no availabilitySets fault domain data for region '{0}'. The region name may be invalid or the subscription may not have access to this region." -f $Region)
+                            }
 
                         Write-Verbose -Message $("{0}Successfully identified maximum fault domains for region '{1}': {2}" -f $messagePrefix, $Region, $maximumFaultDomains)
                     } `
                 catch
                     {
-                        # Default to 3 fault domains if API query fails
-                        # Conservative default as majority of Azure regions support 3 fault domains
-                        # Only a small subset of regions (e.g., some government or specialized regions) support only 2
-                        $maximumFaultDomains = 3
-                        Write-Warning -Message $("{0}Failed to query Azure Resource SKU API for fault domain information. Defaulting to {1} fault domains. Error: {2}" -f $messagePrefix, $maximumFaultDomains, $_.Exception.Message)
+                        throw $("{0}Unable to determine maximum fault domains for region '{1}'. Cannot safely create Availability Sets without this value. Error: {2}" -f $messagePrefix, $Region, $_.Exception.Message)
                     }
 
 

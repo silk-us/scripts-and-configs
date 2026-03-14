@@ -1460,6 +1460,7 @@ function Test-SilkResourceDeployment
                                                 TotalFailedVMs          = 0
                                                 VMReport                = @()
                                                 ValidationFindings      = @()
+                                                SkippedZones            = @()
                                                 FindingsAnalysis =     [PSCustomObject]@{
                                                                             NoCapacityIssues    = @()
                                                                             QuotaIssues         = @()
@@ -1997,6 +1998,21 @@ function Test-SilkResourceDeployment
                                     }
                             }
 
+                        # Skipped zones (zones excluded because one or more SKUs are not available there)
+                        if ($ReportData.Deployment.SkippedZones -and $ReportData.Deployment.SkippedZones.Count -gt 0)
+                            {
+                                Write-Host $("`n=== Skipped Zones — Invalid Configuration Zones ===") -ForegroundColor Yellow
+                                Write-Host $("  {0} zone(s) exist in the region but were not tested:" -f $ReportData.Deployment.SkippedZones.Count) -ForegroundColor DarkYellow
+                                foreach ($skipped in $ReportData.Deployment.SkippedZones)
+                                    {
+                                        Write-Host $("  Zone {0}: No deployment attempted" -f $skipped.Zone) -ForegroundColor DarkYellow
+                                        Write-Host $("    Unsupported SKU(s): {0}" -f ($skipped.UnsupportedSKUs -join ", ")) -ForegroundColor Gray
+                                        Write-Host $("    Reason: {0}" -f $skipped.Reason) -ForegroundColor Gray
+                                        Write-Host $("    → This zone cannot host the requested Silk configuration. Select a different SKU set or choose") -ForegroundColor DarkGray
+                                        Write-Host $("      a zone where all required SKUs are available.") -ForegroundColor DarkGray
+                                    }
+                            }
+
                         # Infrastructure resource status
                         $infra = $ReportData.Deployment.Infrastructure
 
@@ -2508,9 +2524,9 @@ function Test-SilkResourceDeployment
 "@
                                                 foreach ($dNode in $group.Group)
                                                     {
-                                                        $vmStatusClass = if ($dNode.VMStatus -like $("*Deployed*")) { $("checkmark") } else { $("error-mark") }
-                                                        $nicStatusClass = if ($dNode.NICStatus -like $("*Created*")) { $("checkmark") } else { $("error-mark") }
-                                                        $provisioningClass = if ($dNode.ProvisioningState -eq $("Succeeded")) { $("checkmark") } elseif ($dNode.ProvisioningState -eq $("Failed")) { $("error-mark") } else { $("warning") }
+                                                        $vmStatusClass = if ($dNode.VMStatus -like $("*✓ Deployed*")) { $("checkmark") } elseif ($dNode.VMStatus -like $("*⚠*")) { $("warning-mark") } else { $("error-mark") }
+                                                        $nicStatusClass = if ($dNode.NICStatus -like $("*Created*")) { $("checkmark") } elseif ($dNode.NICStatus -eq $("—")) { $("warning-mark") } else { $("error-mark") }
+                                                        $provisioningClass = if ($dNode.ProvisioningState -eq $("Succeeded")) { $("checkmark") } elseif ($dNode.ProvisioningState -eq $("Not Attempted")) { $("warning-mark") } elseif ($dNode.ProvisioningState -eq $("Failed")) { $("error-mark") } else { $("warning-mark") }
                                                         $zoneTdHtml = if ($htmlIsMultiZone) { $("{0}                    <td>{1}</td>" -f $("`n"), $dNode.Zone) } else { $("") }
 
                                                         $mNodeTablesHtml += @"
@@ -2960,6 +2976,30 @@ function Test-SilkResourceDeployment
 "@
                                     }
 
+                                # Build Skipped Zones card — zones that exist in the region but cannot host
+                                # this configuration because one or more required SKUs are unavailable there
+                                $skippedZonesHtml = $("")
+                                if ($ReportData.Deployment.SkippedZones -and $ReportData.Deployment.SkippedZones.Count -gt 0)
+                                    {
+                                        $skippedZonesHtml = @"
+            <div class="info-card">
+                <h4>$("⚠️ Skipped Zones — Invalid Configuration Zones")</h4>
+                <strong>$("Note:")</strong> $("The following zone(s) exist in this region but were not tested because one or more required SKUs are not available there. Deployment into these zones would not be possible with the current SKU selection regardless of capacity. To use these zones, select a different VM SKU that is supported across all desired zones.")<br><br>
+"@
+                                        foreach ($skipped in $ReportData.Deployment.SkippedZones)
+                                            {
+                                                $skippedSkuList = $skipped.UnsupportedSKUs -join ", "
+                                                $skippedZonesHtml += @"
+                <strong>$("Zone {0}:" -f $skipped.Zone)</strong> <span class="status-warning">$("⚠ No deployment attempted")</span><br>
+                <strong>$("Unsupported SKU(s):")</strong> $($skippedSkuList)<br>
+                <strong>$("Reason:")</strong> $($skipped.Reason)<br><br>
+"@
+                                            }
+                                        $skippedZonesHtml += @"
+            </div>
+"@
+                                    }
+
                                 # Build SKU Support & Quota Reference HTML (always present when results exist)
                                 # Uses rowspan on Quota Family and Quota Status columns to show shared
                                 # family quota once, spanning all SKU rows that belong to that family.
@@ -3335,6 +3375,7 @@ function Test-SilkResourceDeployment
                 <strong>$("Placement Resources:")</strong> $($networkPPGCount + $infra.AvSetsCreated.Count)
             </div>
             $validationFindingsHtml
+            $skippedZonesHtml
         </div>
 "@
                                     }
@@ -6560,58 +6601,95 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 # Multi-Zone Deployment: Determine Target Zones
                 # ===============================================================================
-                # When TestAllZones is specified, find all zones where every requested SKU is
-                # supported and deploy the full configuration into each qualifying zone.
+                # When TestAllZones is specified, find every zone in the region where ALL
+                # requested SKUs are simultaneously supported and deploy only into those zones.
+                # Zones excluded by the SKU intersection are captured as $skippedZoneEntries
+                # and surfaced in the deployment report so the user understands why each zone
+                # was not a valid deployment target for this configuration.
                 # Without TestAllZones, deploy only into the user-specified $Zone.
                 $isMultiZoneDeploy = $false
                 $zonesToDeploy = @($Zone)
+                $skippedZoneEntries = @()
 
                 if ($TestAllZones)
                     {
-                        # Gather all unique SKUs requested in this deployment
-                        $allRequestedSkus = @()
-                        if ($cNodeObject)
+                        # Determine all availability zones present in this region
+                        $allRegionZones = if ($zoneResults -and $zoneResults.Zones.Count -gt 0) `
                             {
-                                $allRequestedSkus += $cNodeVMSku
-                            }
-                        foreach ($mn in $mNodeObject)
-                            {
-                                $mnSkuName = $("{0}{1}{2}" -f $mn.vmSkuPrefix, $mn.vCPU, $mn.vmSkuSuffix)
-                                $allRequestedSkus += $mnSkuName
-                            }
-                        $allRequestedSkus = @($allRequestedSkus | Select-Object -Unique)
-
-                        # Find zones where ALL requested SKUs are supported
-                        $regionSkuZones = @{}
-                        foreach ($sku in $allRequestedSkus)
-                            {
-                                $skuInfo = $locationSupportedSKU | Where-Object { $_.Name -eq $sku -and $_.ResourceType -eq $("virtualMachines") }
-                                $regionSkuZones[$sku] = if ($skuInfo.LocationInfo.Zones) { @($skuInfo.LocationInfo.Zones | Sort-Object) } else { @() }
-                            }
-
-                        # Intersect zones across all SKUs — only deploy to zones that support every SKU
-                        $commonZones = $null
-                        foreach ($sku in $allRequestedSkus)
-                            {
-                                if ($null -eq $commonZones)
-                                    {
-                                        $commonZones = @($regionSkuZones[$sku])
-                                    } `
-                                else
-                                    {
-                                        $commonZones = @($commonZones | Where-Object { $regionSkuZones[$sku] -contains $_ })
-                                    }
-                            }
-
-                        if ($commonZones -and $commonZones.Count -gt 0)
-                            {
-                                $isMultiZoneDeploy = $true
-                                $zonesToDeploy = @($commonZones | Sort-Object)
-                                Write-Verbose -Message $("Multi-zone deployment: {0} zones qualify ({1}) for {2} unique SKUs" -f $zonesToDeploy.Count, ($zonesToDeploy -join $(", ")), $allRequestedSkus.Count)
+                                @($zoneResults.Zones)
                             } `
                         else
                             {
-                                Write-Warning $("No zones found where ALL requested SKUs are supported. Deploying to target zone {0} only." -f $Zone)
+                                @($locationSupportedSKU.LocationInfo.Zones | Sort-Object | Select-Object -Unique)
+                            }
+
+                        if ($allRegionZones.Count -gt 0)
+                            {
+                                # Gather all unique SKUs required by this deployment configuration
+                                $allRequestedSkus = @()
+                                if ($cNodeObject)
+                                    {
+                                        $allRequestedSkus += $cNodeVMSku
+                                    }
+                                foreach ($mn in $mNodeObject)
+                                    {
+                                        $allRequestedSkus += $("{0}{1}{2}" -f $mn.vmSkuPrefix, $mn.vCPU, $mn.vmSkuSuffix)
+                                    }
+                                $allRequestedSkus = @($allRequestedSkus | Select-Object -Unique)
+
+                                # Build per-SKU zone support map from region SKU data
+                                $regionSkuZones = @{}
+                                foreach ($sku in $allRequestedSkus)
+                                    {
+                                        $skuInfo = $locationSupportedSKU | Where-Object { $_.Name -eq $sku -and $_.ResourceType -eq $("virtualMachines") }
+                                        $regionSkuZones[$sku] = if ($skuInfo -and $skuInfo.LocationInfo.Zones) { @($skuInfo.LocationInfo.Zones | Sort-Object) } else { @() }
+                                    }
+
+                                # Intersect zones — only deploy where ALL requested SKUs are supported.
+                                # A zone where even one SKU is unsupported cannot host the full Silk configuration.
+                                $commonZones = $null
+                                foreach ($sku in $allRequestedSkus)
+                                    {
+                                        if ($null -eq $commonZones)
+                                            {
+                                                $commonZones = @($regionSkuZones[$sku])
+                                            } `
+                                        else
+                                            {
+                                                $commonZones = @($commonZones | Where-Object { $regionSkuZones[$sku] -contains $_ })
+                                            }
+                                    }
+                                $commonZones = @($commonZones | Sort-Object)
+
+                                # For every region zone excluded by the intersection, record which SKUs prevented deployment
+                                foreach ($z in $allRegionZones)
+                                    {
+                                        if ($commonZones -notcontains $z)
+                                            {
+                                                $unsupportedSkus = @($allRequestedSkus | Where-Object { $regionSkuZones[$_] -notcontains $z })
+                                                $skippedZoneEntries += [PSCustomObject]@{
+                                                    Zone            = $z
+                                                    UnsupportedSKUs = $unsupportedSkus
+                                                    Reason          = $("Not a valid configuration zone — {0} not available in Zone {1}" -f ($unsupportedSkus -join $(", ")), $z)
+                                                }
+                                                Write-Verbose -Message $("Zone {0} skipped: {1} SKU(s) not supported here ({2})" -f $z, $unsupportedSkus.Count, ($unsupportedSkus -join $(", ")))
+                                            }
+                                    }
+
+                                if ($commonZones.Count -gt 0)
+                                    {
+                                        $isMultiZoneDeploy = $true
+                                        $zonesToDeploy = @($commonZones)
+                                        Write-Verbose -Message $("Multi-zone deployment: {0}/{1} zones qualify ({2}) — {3} zone(s) skipped (invalid configuration for this SKU set)" -f $zonesToDeploy.Count, $allRegionZones.Count, ($zonesToDeploy -join $(", ")), $skippedZoneEntries.Count)
+                                    } `
+                                else
+                                    {
+                                        Write-Warning $("No zones found where ALL requested SKUs are supported. Deploying to target zone {0} only." -f $Zone)
+                                    }
+                            } `
+                        else
+                            {
+                                Write-Warning $("No availability zones detected in region '{0}'. Deploying to target zone {1} only." -f $Region, $Zone)
                             }
                     }
 
@@ -7950,6 +8028,82 @@ function Test-SilkResourceDeployment
                     } # end foreach ($reportZone in $zonesToDeploy)
 
                 # ===============================================================================
+                # Skipped Zone Phantom Report Entries
+                # ===============================================================================
+                # For each zone excluded by the SKU intersection, append informational VMReport
+                # objects so those zones surface as "Not Attempted" rows in the CNode/DNode tables
+                # rather than silently disappearing from the report.
+                if ($skippedZoneEntries.Count -gt 0)
+                    {
+                        foreach ($skippedEntry in $skippedZoneEntries)
+                            {
+                                $skippedZone        = $skippedEntry.Zone
+                                $skippedReason      = $skippedEntry.Reason
+                                $skippedSkuList     = if ($skippedEntry.UnsupportedSKUs) { $($skippedEntry.UnsupportedSKUs -join $(", ")) } else { $("Unknown") }
+                                $skippedZonePrefix  = $("-z{0}" -f $skippedZone)
+                                $notAttemptedStatus = $("⚠ Not Attempted — {0} not available in Zone {1}" -f $skippedSkuList, $skippedZone)
+
+                                # Phantom CNode rows
+                                if ($adjustedCNodeCount -gt 0 -and $cNodeVMSku)
+                                    {
+                                        for ($cNode = 1; $cNode -le $adjustedCNodeCount; $cNode++)
+                                            {
+                                                $deploymentReport += [PSCustomObject]@{
+                                                    ResourceType        = $("CNode")
+                                                    GroupNumber         = $("CNode Group (Zone {0})" -f $skippedZone)
+                                                    NodeNumber          = $cNode
+                                                    VMName              = $("{0}{1}-cnode-{2:D2}" -f $ResourceNamePrefix, $skippedZonePrefix, $cNode)
+                                                    ExpectedSKU         = $cNodeVMSku
+                                                    DeployedSKU         = $("—")
+                                                    VMStatus            = $notAttemptedStatus
+                                                    ProvisioningState   = $("Not Attempted")
+                                                    NICStatus           = $("—")
+                                                    AvailabilitySet     = $("—")
+                                                    ValidationFinding   = $skippedReason
+                                                    FailureCategory     = $("SKU Not In Zone")
+                                                    Zone                = $skippedZone
+                                                }
+                                            }
+                                    }
+
+                                # Phantom DNode rows — one group per MNode config per skipped zone
+                                $skippedDNodeStart  = 0
+                                $skippedMNodeIndex  = 0
+                                foreach ($mNode in $mNodeObject)
+                                    {
+                                        $skippedMNodeIndex++
+                                        $reportMNodeSku   = $("{0}{1}{2}" -f $mNode.vmSkuPrefix, $mNode.vCPU, $mNode.vmSkuSuffix)
+                                        $reportDNodeCount = $mNode.dNodeCount
+                                        if ($mNodeQuotaAdjustments.ContainsKey($mNode.PhysicalSize))
+                                            {
+                                                $reportDNodeCount = $mNodeQuotaAdjustments[$mNode.PhysicalSize].AdjustedCount
+                                            }
+
+                                        for ($dNode = 1; $dNode -le $reportDNodeCount; $dNode++)
+                                            {
+                                                $dNodeNumber = $dNode + $skippedDNodeStart
+                                                $deploymentReport += [PSCustomObject]@{
+                                                    ResourceType        = $("DNode")
+                                                    GroupNumber         = $("MNode {0} ({1} TiB) (Zone {2})" -f $skippedMNodeIndex, $mNode.PhysicalSize, $skippedZone)
+                                                    NodeNumber          = $dNodeNumber
+                                                    VMName              = $("{0}{1}-dnode-{2:D2}" -f $ResourceNamePrefix, $skippedZonePrefix, $dNodeNumber)
+                                                    ExpectedSKU         = $reportMNodeSku
+                                                    DeployedSKU         = $("—")
+                                                    VMStatus            = $notAttemptedStatus
+                                                    ProvisioningState   = $("Not Attempted")
+                                                    NICStatus           = $("—")
+                                                    AvailabilitySet     = $("—")
+                                                    ValidationFinding   = $skippedReason
+                                                    FailureCategory     = $("SKU Not In Zone")
+                                                    Zone                = $skippedZone
+                                                }
+                                            }
+                                        $skippedDNodeStart += $reportDNodeCount
+                                    }
+                            }
+                    }
+
+                # ===============================================================================
                 # Report Data Processing and Analysis
                 # ===============================================================================
                 # Centralized data processing for both console and HTML reports
@@ -8390,6 +8544,7 @@ function Test-SilkResourceDeployment
                 $reportData.Deployment.TotalDeployedVMs         = $successfulVMs
                 $reportData.Deployment.TotalFailedVMs           = $failedVMs
                 $reportData.Deployment.VMReport                 = $deploymentReport
+                $reportData.Deployment.SkippedZones             = if ($skippedZoneEntries) { $skippedZoneEntries } else { @() }
                 $reportData.Deployment.ValidationFindings       = if ($deploymentValidationResults) { $deploymentValidationResults } else { @() }
                 $reportData.Deployment.FindingsAnalysis         = [PSCustomObject]@{
                                                                         NoCapacityIssues    = $validationFindings.NoCapacityIssues

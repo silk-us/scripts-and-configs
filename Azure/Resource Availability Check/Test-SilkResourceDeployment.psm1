@@ -260,6 +260,8 @@ function Test-SilkResourceDeployment
                 When combined with -GenerateReportOnly, produces a multi-zone SKU support matrix.
                 The -Zone parameter is still used for zone alignment reporting purposes.
                 Results include a per-zone availability matrix in both console and HTML report output.
+                Not compatible with -ProximityPlacementGroupName or -AvailabilitySetName: existing infrastructure
+                is zone-locked to the PPG zone and multi-zone deployment against it is not a valid operation.
 
             .PARAMETER Development
                 Switch parameter to enable Development Mode with reduced VM sizes and instance counts.
@@ -1029,13 +1031,11 @@ function Test-SilkResourceDeployment
                 # Zone parameter is still used for zone alignment reporting purposes
                 [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]

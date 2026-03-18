@@ -7036,7 +7036,8 @@ function Test-SilkResourceDeployment
                                 if ($cNodeAvailabilitySet)
                                     {
                                         # get the cnode availability set to assess its state
-                                        $cNodeAvailabilitySetComplete = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -Name $("{0}{1}-cnode-avset" -f $ResourceNamePrefix, $zonePrefix)
+                                        # Use $cNodeAvailabilitySet.Name to support both newly created and existing infrastructure paths
+                                        $cNodeAvailabilitySetComplete = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -Name $cNodeAvailabilitySet.Name
                                         Write-Verbose -Message $("✓ CNode availability set '{0}' created with {1} CNodes." -f $cNodeAvailabilitySetComplete.Name, $cNodeAvailabilitySetComplete)
                                         Write-Verbose -Message $("✓ CNode availability set '{0}' is assigned to proximity placement group '{1}'." -f $cNodeAvailabilitySetComplete.Name, $cNodeProximityPlacementGroup.Name)
                                     }

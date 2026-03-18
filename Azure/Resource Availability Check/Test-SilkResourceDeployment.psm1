@@ -1475,6 +1475,8 @@ function Test-SilkResourceDeployment
                                                                             NSGName             = $("")
                                                                             PPGsCreated         = @()
                                                                             AvSetsCreated       = @()
+                                                                            PPGsReferenced      = @()
+                                                                            AvSetsReferenced    = @()
                                                                             NICsCreated         = 0
                                                                             TotalResources      = 0
                                                                         }
@@ -2041,6 +2043,10 @@ function Test-SilkResourceDeployment
                             {
                                 Write-Host $("✓ {0} groups ({1})" -f $infra.PPGsCreated.Count, ($infra.PPGsCreated.Name -join $(", "))) -ForegroundColor Green
                             } `
+                        elseif ($infra.PPGsReferenced.Count -gt 0)
+                            {
+                                Write-Host $("✓ {0} groups ({1}) [Existing Infrastructure]" -f $infra.PPGsReferenced.Count, ($infra.PPGsReferenced.Name -join $(", "))) -ForegroundColor Cyan
+                            } `
                         else
                             {
                                 Write-Host $("✗ Not Found") -ForegroundColor Red
@@ -2051,6 +2057,11 @@ function Test-SilkResourceDeployment
                             {
                                 $avSetNames = ($infra.AvSetsCreated.Name | Sort-Object) -join $(", ")
                                 Write-Host $("✓ {0} sets ({1})" -f $infra.AvSetsCreated.Count, $avSetNames) -ForegroundColor Green
+                            } `
+                        elseif ($infra.AvSetsReferenced.Count -gt 0)
+                            {
+                                $avSetRefNames = ($infra.AvSetsReferenced.Name | Sort-Object) -join $(", ")
+                                Write-Host $("✓ {0} sets ({1}) [Existing Infrastructure]" -f $infra.AvSetsReferenced.Count, $avSetRefNames) -ForegroundColor Cyan
                             } `
                         else
                             {
@@ -2737,6 +2748,15 @@ function Test-SilkResourceDeployment
                 <strong>$("Location:")</strong> $(($infra.PPGsCreated | Select-Object -ExpandProperty Location -Unique -ErrorAction SilentlyContinue) -join ', ')<br>
 "@
                                     } `
+                                elseif ($infra.PPGsReferenced.Count -gt 0)
+                                    {
+                                        @"
+                <strong>$("Proximity Placement Groups:")</strong> <span class="status-info">$("✓ {0} Existing" -f $infra.PPGsReferenced.Count)</span><br>
+                <strong>$("PPG Names:")</strong> $($infra.PPGsReferenced.Name -join ', ')<br>
+                <strong>$("PPG Type:")</strong> $("Standard")<br>
+                <strong>$("Location:")</strong> $(($infra.PPGsReferenced | Select-Object -ExpandProperty Location -Unique -ErrorAction SilentlyContinue) -join ', ')<br>
+"@
+                                    } `
                                 else
                                     {
                                         @"
@@ -2752,6 +2772,16 @@ function Test-SilkResourceDeployment
                 <strong>$("AvSet Names:")</strong> $($avSetNames)<br>
                 <strong>$("Fault Domains:")</strong> $($infra.AvSetsCreated[0].PlatformFaultDomainCount)<br>
                 <strong>$("Update Domains:")</strong> $($infra.AvSetsCreated[0].PlatformUpdateDomainCount)
+"@
+                                    } `
+                                elseif ($infra.AvSetsReferenced.Count -gt 0)
+                                    {
+                                        $avSetRefNames = ($infra.AvSetsReferenced.Name | Sort-Object) -join $(", ")
+                                        @"
+                <strong>$("Availability Sets:")</strong> <span class="status-info">$("✓ {0} Existing" -f $infra.AvSetsReferenced.Count)</span><br>
+                <strong>$("AvSet Names:")</strong> $($avSetRefNames)<br>
+                <strong>$("Fault Domains:")</strong> $($infra.AvSetsReferenced[0].PlatformFaultDomainCount)<br>
+                <strong>$("Update Domains:")</strong> $($infra.AvSetsReferenced[0].PlatformUpdateDomainCount)
 "@
                                     } `
                                 else
@@ -3407,8 +3437,8 @@ function Test-SilkResourceDeployment
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>$( if ($ReportData.Metadata.StartTime) { $("{0}{1} Azure SKU Availability Report - {2}" -f $ReportData.Metadata.ReportLabel, $titleLocationPart, $ReportData.Metadata.StartTime.ToString("yyyy-MM-dd HH:mm:ss")) } else { $("{0}{1} Azure SKU Availability Report - {2}" -f $ReportData.Metadata.ReportLabel, $titleLocationPart, $ReportData.Metadata.ReportMode) } )</title>
     <style>
-        :root { --bg-body: #0f1923; --bg-container: #1c2733; --bg-card: #232f3e; --bg-quota: #2d3748; --bg-row-even: #232f3e; --bg-row-hover: #2a3a4e; --bg-deploy-zone: #1a3a2a; --text-primary: #e2e8f0; --text-heading: #f7fafc; --text-muted: #a0aec0; --accent: #e91e78; --success: #48bb78; --warning: #ed8936; --error: #fc5c65; --border: #2d3748; --shadow: 0 2px 10px rgba(0,0,0,0.4); --toggle-bg: #2d3748; --toggle-knob: #e2e8f0; }
-        body.light-theme { --bg-body: #f5f5f5; --bg-container: #ffffff; --bg-card: #f8f9fa; --bg-quota: #f0f0f0; --bg-row-even: #f9f9f9; --bg-row-hover: #eef2f7; --bg-deploy-zone: #e8f5e9; --text-primary: #333333; --text-heading: #2d3748; --text-muted: #666666; --accent: #e91e78; --success: #28a745; --warning: #e67e00; --error: #dc3545; --border: #dee2e6; --shadow: 0 2px 10px rgba(0,0,0,0.1); --toggle-bg: #dee2e6; --toggle-knob: #ffffff; }
+        :root { --bg-body: #0f1923; --bg-container: #1c2733; --bg-card: #232f3e; --bg-quota: #2d3748; --bg-row-even: #232f3e; --bg-row-hover: #2a3a4e; --bg-deploy-zone: #1a3a2a; --text-primary: #e2e8f0; --text-heading: #f7fafc; --text-muted: #a0aec0; --accent: #e91e78; --success: #48bb78; --warning: #ed8936; --error: #fc5c65; --info: #63b3ed; --border: #2d3748; --shadow: 0 2px 10px rgba(0,0,0,0.4); --toggle-bg: #2d3748; --toggle-knob: #e2e8f0; }
+        body.light-theme { --bg-body: #f5f5f5; --bg-container: #ffffff; --bg-card: #f8f9fa; --bg-quota: #f0f0f0; --bg-row-even: #f9f9f9; --bg-row-hover: #eef2f7; --bg-deploy-zone: #e8f5e9; --text-primary: #333333; --text-heading: #2d3748; --text-muted: #666666; --accent: #e91e78; --success: #28a745; --warning: #e67e00; --error: #dc3545; --info: #0066cc; --border: #dee2e6; --shadow: 0 2px 10px rgba(0,0,0,0.1); --toggle-bg: #dee2e6; --toggle-knob: #ffffff; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 12pt; margin: 0; padding: 15px; background-color: var(--bg-body); color: var(--text-primary); line-height: 1.4; transition: background-color 0.3s, color 0.3s; }
         .container { max-width: 1600px; margin: 0 auto; background: var(--bg-container); padding: 20px; border-radius: 8px; box-shadow: var(--shadow); transition: background 0.3s, box-shadow 0.3s; }
         .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--accent); padding-bottom: 8px; margin-bottom: 15px; }
@@ -3419,6 +3449,7 @@ function Test-SilkResourceDeployment
         .status-success { color: var(--success); font-weight: bold; }
         .status-warning { color: var(--warning); font-weight: bold; }
         .status-error { color: var(--error); font-weight: bold; }
+        .status-info { color: var(--info); font-weight: bold; }
         table { width: 100%; border-collapse: collapse; margin: 10px 0; background: var(--bg-container); }
         th, td { padding: 8px 10px; text-align: left; border: 1px solid var(--border); color: var(--text-primary); transition: background-color 0.3s, color 0.3s, border-color 0.3s; }
         th { background-color: var(--accent); color: white; font-weight: 600; }
@@ -8563,6 +8594,8 @@ function Test-SilkResourceDeployment
                 $reportData.Deployment.Infrastructure.NSGName           = if ($deployedNSG) { $deployedNSG.Name } else { $("") }
                 $reportData.Deployment.Infrastructure.PPGsCreated       = if ($deployedPPG) { @($deployedPPG) } else { @() }
                 $reportData.Deployment.Infrastructure.AvSetsCreated     = if ($deployedAvailabilitySets) { @($deployedAvailabilitySets) } else { @() }
+                $reportData.Deployment.Infrastructure.PPGsReferenced    = if ($existingProximityPlacementGroup) { @($existingProximityPlacementGroup) } else { @() }
+                $reportData.Deployment.Infrastructure.AvSetsReferenced  = if ($existingAvailabilitySet) { @($existingAvailabilitySet) } else { @() }
                 $reportData.Deployment.Infrastructure.NICsCreated       = $deployedNICs.Count
                 $reportData.Deployment.Infrastructure.TotalResources    = $totalResourcesCreated
 

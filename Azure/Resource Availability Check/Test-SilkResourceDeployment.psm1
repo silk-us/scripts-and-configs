@@ -2087,6 +2087,13 @@ function Test-SilkResourceDeployment
 
                                 Write-Host $("Total Network Interfaces: {0}" -f $infra.NICsCreated)
                                 Write-Host $("Total Resources Created: {0}" -f $infra.TotalResources)
+                                $existingReferencedList = @($("Resource Group: {0}" -f $ReportData.Configuration.ResourceGroupName))
+                                if ($infra.PPGsReferenced.Count -gt 0)
+                                    { $infra.PPGsReferenced.Name | ForEach-Object { $existingReferencedList += $("Proximity Placement Group: {0}" -f $_) } }
+                                if ($infra.AvSetsReferenced.Count -gt 0)
+                                    { $infra.AvSetsReferenced.Name | ForEach-Object { $existingReferencedList += $("Availability Set: {0}" -f $_) } }
+                                Write-Host $("Existing Resources Referenced: {0}" -f $existingReferencedList.Count)
+                                $existingReferencedList | ForEach-Object { Write-Host $("  · {0}" -f $_) -ForegroundColor Cyan }
                             }
 
                         # ---------------------------------------------------------------
@@ -3378,6 +3385,14 @@ function Test-SilkResourceDeployment
 
                                         $networkPPGCount = if ($infra.PPGsCreated.Count -gt 0) { 1 } else { 0 }
 
+                                        $existingRefItemsHtml = @($("<li>Resource Group: {0}</li>" -f $ReportData.Configuration.ResourceGroupName))
+                                        if ($infra.PPGsReferenced.Count -gt 0)
+                                            { $infra.PPGsReferenced.Name | ForEach-Object { $existingRefItemsHtml += $("<li>Proximity Placement Group: {0}</li>" -f $_) } }
+                                        if ($infra.AvSetsReferenced.Count -gt 0)
+                                            { $infra.AvSetsReferenced.Name | ForEach-Object { $existingRefItemsHtml += $("<li>Availability Set: {0}</li>" -f $_) } }
+                                        $existingRefCount    = $existingRefItemsHtml.Count
+                                        $existingRefListHtml = $existingRefItemsHtml -join $("`n                ")
+
                                         $infrastructureHtml = @"
         <h2>$("🏗️ Infrastructure Resources")</h2>
         <div class="info-grid">
@@ -3402,7 +3417,11 @@ function Test-SilkResourceDeployment
                 <strong>$("Virtual Machines:")</strong> $($totalDeployed + $totalFailed)<br>
                 <strong>$("Network Interfaces:")</strong> $($infra.NICsCreated)<br>
                 <strong>$("Network Resources:")</strong> $($(if($infra.VNetCreated){1}else{0}) + $(if($infra.NSGCreated){1}else{0}))<br>
-                <strong>$("Placement Resources:")</strong> $($networkPPGCount + $infra.AvSetsCreated.Count)
+                <strong>$("Placement Resources:")</strong> $($networkPPGCount + $infra.AvSetsCreated.Count)<br>
+                <strong>$("Existing Resources Referenced:")</strong> $($existingRefCount)<br>
+                <ul style="margin: 3px 0 0 15px; padding: 0; font-size: 0.9em; color: var(--info);">
+                $($existingRefListHtml)
+                </ul>
             </div>
             $validationFindingsHtml
             $skippedZonesHtml

@@ -121,7 +121,10 @@ Install-Module -Name Az.Accounts,Az.Resources,Az.Compute,Az.Network -Repository 
 | `-CNodeCountAdditional` | Number of additional CNodes to test in existing infrastructure.<br><br>**Must be used with `-ProximityPlacementGroupName` and `-AvailabilitySetName`**<br>Validates deployment capacity for cluster expansion. | 1-6 CNodes | 2 | ⬜️ |
 | `-ProximityPlacementGroupName` | Name of existing Proximity Placement Group for existing infrastructure validation.<br><br>**Must be used with `-AvailabilitySetName` and `-CNodeCountAdditional`**<br>Tests additional CNode deployment capacity into established PPG/AvSet.<br>Only CNode-only deployments supported. | Existing PPG name | "my-silk-cnode-ppg" | ⬜️ |
 | `-AvailabilitySetName` | Name of existing Availability Set for existing infrastructure validation.<br><br>**Must be used with `-ProximityPlacementGroupName` and `-CNodeCountAdditional`**<br>Tests additional CNode deployment capacity into established PPG/AvSet.<br>Only CNode-only deployments supported. | Existing AvSet name | "my-silk-cnode-avset" | ⬜️ |
-| `-MnodeSizeLsv3`        | List of MNodes represented by storage capacity for Lsv3 SKUs | <br> "19.5" TiB (Standard_L8s_v3)<br> "39.1" TiB (Standard_L16s_v3)<br> "78.2" TiB (Standard_L32s_v3) | @("19.5", "39.1") | ⬜️ |
+| `-MnodeSizeLsv3`        | List of MNodes represented by storage capacity for Lsv3 SKUs (Intel) | <br> "19.5" TiB (Standard_L8s_v3)<br> "39.1" TiB (Standard_L16s_v3)<br> "78.2" TiB (Standard_L32s_v3) | @("19.5", "39.1") | ⬜️ |
+| `-MnodeSizeLsv4`        | List of MNodes represented by storage capacity for Lsv4 SKUs (Intel, latest gen) | <br> "19.5" TiB (Standard_L8s_v4)<br> "39.1" TiB (Standard_L16s_v4)<br> "78.2" TiB (Standard_L32s_v4) | @("19.5", "39.1") | ⬜️ |
+| `-MnodeSizeLasv3`       | List of MNodes represented by storage capacity for Lasv3 SKUs (AMD) | <br> "19.5" TiB (Standard_L8as_v3)<br> "39.1" TiB (Standard_L16as_v3)<br> "78.2" TiB (Standard_L32as_v3) | @("19.5", "39.1") | ⬜️ |
+| `-MnodeSizeLasv4`       | List of MNodes represented by storage capacity for Lasv4 SKUs (AMD, latest gen) | <br> "19.5" TiB (Standard_L8as_v4)<br> "39.1" TiB (Standard_L16as_v4)<br> "78.2" TiB (Standard_L32as_v4) | @("19.5", "39.1") | ⬜️ |
 | `-MnodeSizeLaosv4`      | List of MNodes represented by storage capacity for Laosv4 SKUs | <br> "14.67" TiB (Standard_L2aos_v4)<br> "29.34" TiB (Standard_L4aos_v4)<br> "58.67" TiB (Standard_L8aos_v4)<br> "88.01" TiB (Standard_L12aos_v4)<br> "117.35" TiB (Standard_L16aos_v4) | @("14.67", "29.34") | ⬜️ |
 | `-GenerateReportOnly`    | Generate an SKU availability and quota analysis report without deploying any resources.<br><br>Analyzes all Silk-supported VM families for zone support, quota availability, and region presence. Can be combined with `-TestAllZones` for multi-zone analysis. | Switch<br>(present or not) | `-GenerateReportOnly` | ⬜️ |
 | `-TestAllSKUFamilies`    | Test all Silk-supported VM SKU families by deploying a reduced-size test VM for each unique SKU.<br><br>Validates actual deployment capacity beyond quota and zone data. Automatically enables Development Mode. Can be combined with `-TestAllZones` to test across all zones. | Switch<br>(present or not) | `-TestAllSKUFamilies` | ⬜️ |
@@ -137,55 +140,67 @@ Test-SilkResourceDeployment -ChecklistJSON "C:\configs\silk-deployment.json"
 ```
    >Loads Subscription, Resource Group, Region and Zone parameters from the JSON file as well as CNode Type and Count, MNode Size and Count.
 
-#### 2. Test by Friendly Name CNode and Laosv4 MNode by Size Selections
+#### 2. Test by Friendly Name CNode and Lsv4 MNode by Size Selections
+```powershell
+Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -MnodeSizeLsv4 @("19.5","39.1")
+```
+   >Test deployment in given Subscription, Resource Group, Region and Zone with two CNodes providing Increased Logical Capacity capability and two Lsv4 MNodes one with 19.5 TiB and second with 39.1 TiB storage capacity.
+
+#### 3. Test MNode Only by Lasv4 MNode by Size Selection
+```powershell
+Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -MnodeSizeLasv4 @("39.1","78.2")
+```
+   >Test deployment in given Subscription, Resource Group, Region and Zone with two AMD Lasv4 MNodes one with 39.1 TiB and second with 78.2 TiB storage capacity.
+
+#### 4. Test by Friendly Name CNode and Laosv4 MNode by Size Selections
 ```powershell
 Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -MnodeSizeLaosv4 @("14.67","29.34")
 ```
    >Test deployment in given Subscription, Resource Group, Region and Zone with two CNodes providing Increased Logical Capacity capability and two Laosv4 MNodes one with 14.67 TiB and second with 29.34 TiB storage capacity.
 
-#### 3. Test MNode Only by Laosv4 MNode by Size Selection
+#### 5. Test MNode Only by Laosv4 MNode by Size Selection
 ```powershell
 Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -MnodeSizeLaosv4 @("58.67","117.35")
 ```
    >Test deployment in given Subscription, Resource Group, Region and Zone with two Laosv4 MNodes one with 58.67 TiB and second with 117.35 TiB storage capacity.
 
-#### 4. Test CNode Only Maximum Count by Friendly Name CNode Selection
+#### 6. Test CNode Only Maximum Count by Friendly Name CNode Selection
 ```powershell
 Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-prod-rg" -Region "centralus" -Zone "3" -CNodeFriendlyName "Read_Cache_Enabled" -CNodeCount 8
 ```
    >Test deployment in given Subscription, Resource Group, Region and Zone with maximum number of Standard_L64s_v3 Read Cache Enabled SKU CNodes.
 
-#### 5. Test with configuration from Silk Deployment Checklist JSON with an alternative test resource group and specific zone
+#### 7. Test with configuration from Silk Deployment Checklist JSON with an alternative test resource group and specific zone
 ```powershell
 Test-SilkResourceDeployment -ChecklistJSON "C:\configs\silk-deployment.json" -ResourceGroupName 'test-rg' -Zone 3
 ```
    >Loads Subscription and Region values from the JSON file as well as CNode Type and Count, MNode Size and Count. Overrides the Resource Group and Zone Values to test in 'test-rg' for zone 3.
 
-#### 6. Test additional CNode capacity in existing Silk cluster infrastructure
+#### 8. Test additional CNode capacity in existing Silk cluster infrastructure
 ```powershell
 Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-prod-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCountAdditional 1 -ProximityPlacementGroupName "my-silk-cnode-ppg" -AvailabilitySetName "my-silk-cnode-avset" -Verbose
 ```
    >Validates whether 1 additional CNodes can be deployed into existing Silk cluster infrastructure. Tests deployment capacity within the specified Proximity Placement Group and Availability Set. Useful for validating cluster expansion scenarios before actual production deployment. Only CNode-only deployments are supported when using existing infrastructure parameters.
 
-#### 7. Report Only - SKU Availability and Quota Analysis
+#### 9. Report Only - SKU Availability and Quota Analysis
 ```powershell
 Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -GenerateReportOnly
 ```
    >Generates a comprehensive SKU availability and quota analysis report without deploying any resources. Analyzes all Silk-supported VM families for zone support and quota availability. Produces console output and an HTML report.
 
-#### 8. Test All SKU Families
+#### 10. Test All SKU Families
 ```powershell
 Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -TestAllSKUFamilies
 ```
    >Tests all Silk-supported VM SKU families by deploying a reduced-size test VM for each unique SKU. Validates actual deployment capacity and produces a report with pass/fail status per SKU family.
 
-#### 9. Test All SKU Families Across All Zones
+#### 11. Test All SKU Families Across All Zones
 ```powershell
 Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -TestAllSKUFamilies -TestAllZones
 ```
    >Tests all Silk-supported VM SKU families across all availability zones in the region. Deploys test VMs for each SKU in every zone and produces a multi-zone deployment results matrix.
 
-#### 10. Test Deployment Configuration Across All Zones
+#### 12. Test Deployment Configuration Across All Zones
 ```powershell
 Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -MnodeSizeLsv3 @("19.5","39.1") -TestAllZones
 ```
@@ -207,7 +222,7 @@ Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-12345678901
 | Parameter                     | Description | Valid Input | Example | Overrides ChecklistJSON |
 |-------------------------------|-------------|-------------|---------|-------------------------|
 | `-CNodeSku`                   | Explicit CNode VM SKU selection for advanced control.<br><br>Valid options:<br> &nbsp;Increased_Logical_Capacity_AMD (Standard_E64as_v6)<br> &nbsp;Increased_Logical_Capacity (Standard_E64s_v5)<br> &nbsp;Read_Cache_Enabled (Standard_L64s_v3)<br> &nbsp;No_Increased_Logical_Capacity_AMD (Standard_D64as_v6)<br> &nbsp;No_Increased_Logical_Capacity (Standard_D64s_v5)<br> &nbsp;Entry_Level_SDP (Standard_E32as_v5)<br>Use for scenarios requiring specific SKU control. | <br>"Standard_E64as_v6"<br>"Standard_E64s_v5"<br>"Standard_L64s_v3"<br>"Standard_D64as_v6"<br>"Standard_D64s_v5"<br>"Standard_E32as_v5" | "Standard_E64s_v5" | ⬜️ |
-| `-MNodeSku`                   | Array of explicit Azure VM SKUs for MNode/DNode VMs.<br><br>Lsv3 SKUs:<br> &nbsp;Standard_L8s_v3 (19.5 TiB)<br> &nbsp;Standard_L16s_v3 (39.1 TiB)<br> &nbsp;Standard_L32s_v3 (78.2 TiB)<br>Laosv4 SKUs:<br> &nbsp;Standard_L2aos_v4 (14.67 TiB)<br> &nbsp;Standard_L4aos_v4 (29.34 TiB)<br> &nbsp;Standard_L8aos_v4 (58.67 TiB)<br> &nbsp;Standard_L12aos_v4 (88.01 TiB)<br> &nbsp;Standard_L16aos_v4 (117.35 TiB)<br>Use for advanced scenarios requiring specific SKU control. | "Standard_L8s_v3"<br>"Standard_L16s_v3"<br>"Standard_L32s_v3"<br>"Standard_L2aos_v4"<br>"Standard_L4aos_v4"<br>"Standard_L8aos_v4"<br>"Standard_L12aos_v4"<br>"Standard_L16aos_v4" | @("Standard_L16s_v3", "Standard_L32s_v3") | ⬜️ |
+| `-MNodeSku`                   | Array of explicit Azure VM SKUs for MNode/DNode VMs.<br><br>Lsv3 SKUs (Intel):<br> &nbsp;Standard_L8s_v3 (19.5 TiB)<br> &nbsp;Standard_L16s_v3 (39.1 TiB)<br> &nbsp;Standard_L32s_v3 (78.2 TiB)<br>Lsv4 SKUs (Intel, latest gen):<br> &nbsp;Standard_L8s_v4 (19.5 TiB)<br> &nbsp;Standard_L16s_v4 (39.1 TiB)<br> &nbsp;Standard_L32s_v4 (78.2 TiB)<br>Lasv3 SKUs (AMD):<br> &nbsp;Standard_L8as_v3 (19.5 TiB)<br> &nbsp;Standard_L16as_v3 (39.1 TiB)<br> &nbsp;Standard_L32as_v3 (78.2 TiB)<br>Lasv4 SKUs (AMD, latest gen):<br> &nbsp;Standard_L8as_v4 (19.5 TiB)<br> &nbsp;Standard_L16as_v4 (39.1 TiB)<br> &nbsp;Standard_L32as_v4 (78.2 TiB)<br>Laosv4 SKUs:<br> &nbsp;Standard_L2aos_v4 (14.67 TiB)<br> &nbsp;Standard_L4aos_v4 (29.34 TiB)<br> &nbsp;Standard_L8aos_v4 (58.67 TiB)<br> &nbsp;Standard_L12aos_v4 (88.01 TiB)<br> &nbsp;Standard_L16aos_v4 (117.35 TiB)<br>Use for advanced scenarios requiring specific SKU control. | "Standard_L8s_v4"<br>"Standard_L16s_v4"<br>"Standard_L8as_v4"<br>"Standard_L16as_v4"<br>"Standard_L8s_v3"<br>"Standard_L16s_v3"<br>"Standard_L32s_v3"<br>"Standard_L2aos_v4"<br>"Standard_L4aos_v4"<br>"Standard_L8aos_v4"<br>"Standard_L12aos_v4"<br>"Standard_L16aos_v4" | @("Standard_L16s_v4", "Standard_L32s_v4") | ⬜️ |
 | `-MNodeCount`                 | Number of MNode instances to deploy when using explicit SKU selection. | Minimum of 1 -> Maximum of 4 | 2 | ⬜️ |
 | `-NoHTMLReport`               | Disable HTML report generation.<br><br>By default, a comprehensive HTML report is generated summarizing deployment status, quota usage, SKU support, and resource validation results. | Switch<br>(present or not) | `-NoHTMLReport` | ⬜️ |
 | `-ReportOutputPath`           | Directory path where the HTML report file is saved.<br><br>Default: Current working directory.<br>The filename is auto-generated as `[ReportLabel]-[Region]-[Zone]-DeploymentReport_[timestamp].html`. Region and zone segments are omitted if not available.<br>Cannot be used to specify a custom filename — use `-ReportLabel` to customize the filename prefix. | `"C:\\results\\output\\"`  | `"C:\Reports"` | ⬜️ |

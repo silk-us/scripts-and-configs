@@ -120,12 +120,28 @@ function Test-SilkResourceDeployment
                 - "78.2" TiB (Standard_L32s_v3) - 32 vCPU, 256 GB RAM, local NVMe storage
                 Example: @("19.5", "39.1") for mixed capacity deployment
 
+            .PARAMETER MnodeSizeLsv4
+                Array of MNode storage capacities for Lsv4 series SKUs.
+                Valid values correspond to physical storage capacity in TiB:
+                - "19.5" TiB (Standard_L8s_v4)  - 8 vCPU, 64 GB RAM, local NVMe storage
+                - "39.1" TiB (Standard_L16s_v4) - 16 vCPU, 128 GB RAM, local NVMe storage
+                - "78.2" TiB (Standard_L32s_v4) - 32 vCPU, 256 GB RAM, local NVMe storage
+                Example: @("19.5", "39.1") for mixed capacity deployment
+
             .PARAMETER MnodeSizeLasv3
                 Array of MNode storage capacities for Lsv3 series SKUs.
                 Valid values correspond to physical storage capacity in TiB:
-                - "19" TiB (Standard_L8as_v3)  - 8 vCPU, 64 GB RAM, local NVMe storage
-                - "39" TiB (Standard_L16as_v3) - 16 vCPU, 128 GB RAM, local NVMe storage
-                - "78" TiB (Standard_L32as_v3) - 32 vCPU, 256 GB RAM, local NVMe storage
+                - "19.5" TiB (Standard_L8as_v3)  - 8 vCPU, 64 GB RAM, local NVMe storage
+                - "39.1" TiB (Standard_L16as_v3) - 16 vCPU, 128 GB RAM, local NVMe storage
+                - "78.2" TiB (Standard_L32as_v3) - 32 vCPU, 256 GB RAM, local NVMe storage
+                Example: @("19.5", "39.1") for mixed capacity deployment
+
+            .PARAMETER MnodeSizeLasv4
+                Array of MNode storage capacities for Lasv4 series SKUs.
+                Valid values correspond to physical storage capacity in TiB:
+                - "19.5" TiB (Standard_L8as_v4)  - 8 vCPU, 64 GB RAM, local NVMe storage
+                - "39.1" TiB (Standard_L16as_v4) - 16 vCPU, 128 GB RAM, local NVMe storage
+                - "78.2" TiB (Standard_L32as_v4) - 32 vCPU, 256 GB RAM, local NVMe storage
                 Example: @("19.5", "39.1") for mixed capacity deployment
 
             .PARAMETER MnodeSizeLaosv4
@@ -416,13 +432,17 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
@@ -446,13 +466,17 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
@@ -476,13 +500,17 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
@@ -507,13 +535,17 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
@@ -544,7 +576,9 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_Easv6 (Standard_E64as_v6), Increased_Logical_Capacity_Easv5 (Standard_E64as_v5), Increased_Logical_Capacity_Esv5 (Standard_E64s_v5), Read_Cache_Enabled_Lasv4 (Standard_L64as_v4), Read_Cache_Enabled_Lasv3 (Standard_L64as_v3), Read_Cache_Enabled_Lsv3 (Standard_L64s_v3), No_Increased_Logical_Capacity_Dasv6 (Standard_D64as_v6), No_Increased_Logical_Capacity_Dasv5 (Standard_D64as_v5), No_Increased_Logical_Capacity_Dsv5 (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_Easv6 (Standard_E64as_v6), Increased_Logical_Capacity_Easv5 (Standard_E64as_v5), Increased_Logical_Capacity_Esv5 (Standard_E64s_v5), Read_Cache_Enabled_Lasv4 (Standard_L64as_v4), Read_Cache_Enabled_Lasv3 (Standard_L64as_v3), Read_Cache_Enabled_Lsv3 (Standard_L64s_v3), No_Increased_Logical_Capacity_Dasv6 (Standard_D64as_v6), No_Increased_Logical_Capacity_Dasv5 (Standard_D64as_v5), No_Increased_Logical_Capacity_Dsv5 (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_Easv6 (Standard_E64as_v6), Increased_Logical_Capacity_Easv5 (Standard_E64as_v5), Increased_Logical_Capacity_Esv5 (Standard_E64s_v5), Read_Cache_Enabled_Lasv4 (Standard_L64as_v4), Read_Cache_Enabled_Lasv3 (Standard_L64as_v3), Read_Cache_Enabled_Lsv3 (Standard_L64s_v3), No_Increased_Logical_Capacity_Dasv6 (Standard_D64as_v6), No_Increased_Logical_Capacity_Dasv5 (Standard_D64as_v5), No_Increased_Logical_Capacity_Dsv5 (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_Easv6 (Standard_E64as_v6), Increased_Logical_Capacity_Easv5 (Standard_E64as_v5), Increased_Logical_Capacity_Esv5 (Standard_E64s_v5), Read_Cache_Enabled_Lasv4 (Standard_L64as_v4), Read_Cache_Enabled_Lasv3 (Standard_L64as_v3), Read_Cache_Enabled_Lsv3 (Standard_L64s_v3), No_Increased_Logical_Capacity_Dasv6 (Standard_D64as_v6), No_Increased_Logical_Capacity_Dasv5 (Standard_D64as_v5), No_Increased_Logical_Capacity_Dsv5 (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_Easv6 (Standard_E64as_v6), Increased_Logical_Capacity_Easv5 (Standard_E64as_v5), Increased_Logical_Capacity_Esv5 (Standard_E64s_v5), Read_Cache_Enabled_Lasv4 (Standard_L64as_v4), Read_Cache_Enabled_Lasv3 (Standard_L64as_v3), Read_Cache_Enabled_Lsv3 (Standard_L64s_v3), No_Increased_Logical_Capacity_Dasv6 (Standard_D64as_v6), No_Increased_Logical_Capacity_Dasv5 (Standard_D64as_v5), No_Increased_Logical_Capacity_Dsv5 (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_Easv6 (Standard_E64as_v6), Increased_Logical_Capacity_Easv5 (Standard_E64as_v5), Increased_Logical_Capacity_Esv5 (Standard_E64s_v5), Read_Cache_Enabled_Lasv4 (Standard_L64as_v4), Read_Cache_Enabled_Lasv3 (Standard_L64as_v3), Read_Cache_Enabled_Lsv3 (Standard_L64s_v3), No_Increased_Logical_Capacity_Dasv6 (Standard_D64as_v6), No_Increased_Logical_Capacity_Dasv5 (Standard_D64as_v5), No_Increased_Logical_Capacity_Dsv5 (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_Easv6 (Standard_E64as_v6), Increased_Logical_Capacity_Easv5 (Standard_E64as_v5), Increased_Logical_Capacity_Esv5 (Standard_E64s_v5), Read_Cache_Enabled_Lasv4 (Standard_L64as_v4), Read_Cache_Enabled_Lasv3 (Standard_L64as_v3), Read_Cache_Enabled_Lsv3 (Standard_L64s_v3), No_Increased_Logical_Capacity_Dasv6 (Standard_D64as_v6), No_Increased_Logical_Capacity_Dasv5 (Standard_D64as_v5), No_Increased_Logical_Capacity_Dsv5 (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_Easv6 (Standard_E64as_v6), Increased_Logical_Capacity_Easv5 (Standard_E64as_v5), Increased_Logical_Capacity_Esv5 (Standard_E64s_v5), Read_Cache_Enabled_Lasv4 (Standard_L64as_v4), Read_Cache_Enabled_Lasv3 (Standard_L64as_v3), Read_Cache_Enabled_Lsv3 (Standard_L64s_v3), No_Increased_Logical_Capacity_Dasv6 (Standard_D64as_v6), No_Increased_Logical_Capacity_Dasv5 (Standard_D64as_v5), No_Increased_Logical_Capacity_Dsv5 (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
                 [ValidateSet("Increased_Logical_Capacity_Eav6","Increased_Logical_Capacity_Easv5","Increased_Logical_Capacity_Esv5","Read_Cache_Enabled_Lasv4","Read_Cache_Enabled_Lasv3","Read_Cache_Enabled_Lsv3","No_Increased_Logical_Capacity_Dav6","No_Increased_Logical_Capacity_Dasv5","No_Increased_Logical_Capacity_Dsv5","Entry_Level_Easv3")]
@@ -557,7 +591,9 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6, Standard_E64as_v5 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64as_v4, Standard_L64as_v3 or Standard_L64s_v3 (supports read cache), Standard_D64as_v6, Standard_D64as_v5 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6, Standard_E64as_v5 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64as_v4, Standard_L64as_v3 or Standard_L64s_v3 (supports read cache), Standard_D64as_v6, Standard_D64as_v5 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6, Standard_E64as_v5 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64as_v4, Standard_L64as_v3 or Standard_L64s_v3 (supports read cache), Standard_D64as_v6, Standard_D64as_v5 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6, Standard_E64as_v5 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64as_v4, Standard_L64as_v3 or Standard_L64s_v3 (supports read cache), Standard_D64as_v6, Standard_D64as_v5 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6, Standard_E64as_v5 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64as_v4, Standard_L64as_v3 or Standard_L64s_v3 (supports read cache), Standard_D64as_v6, Standard_D64as_v5 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6, Standard_E64as_v5 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64as_v4, Standard_L64as_v3 or Standard_L64s_v3 (supports read cache), Standard_D64as_v6, Standard_D64as_v5 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6, Standard_E64as_v5 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64as_v4, Standard_L64as_v3 or Standard_L64s_v3 (supports read cache), Standard_D64as_v6, Standard_D64as_v5 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6, Standard_E64as_v5 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64as_v4, Standard_L64as_v3 or Standard_L64s_v3 (supports read cache), Standard_D64as_v6, Standard_D64as_v5 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
                 [ValidateSet("Standard_D64as_v6", "Standard_D64s_v5", "Standard_D64as_v5", "Standard_L64as_v4", "Standard_L64as_v3", "Standard_L64s_v3", "Standard_E64as_v6", "Standard_E64s_v5", "Standard_E64as_v5", "Standard_E32as_v5")]
@@ -568,12 +604,16 @@ function Test-SilkResourceDeployment
                 # Silk Infrastructure requires minimum 2 CNodes for pod resilience, supporting up to 8 for maximum performance
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true, HelpMessage = $("Enter number of CNode VMs to deploy (2-8). Minimum 2 required Maximum of 8. 3 CNodes required at deployment to enable up to 1 PB of logical capacity."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true, HelpMessage = $("Enter number of CNode VMs to deploy (2-8). Minimum 2 required Maximum of 8. 3 CNodes required at deployment to enable up to 1 PB of logical capacity."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $true, HelpMessage = $("Enter number of CNode VMs to deploy (2-8). Minimum 2 required Maximum of 8. 3 CNodes required at deployment to enable up to 1 PB of logical capacity."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $true, HelpMessage = $("Enter number of CNode VMs to deploy (2-8). Minimum 2 required Maximum of 8. 3 CNodes required at deployment to enable up to 1 PB of logical capacity."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $true, HelpMessage = $("Enter number of CNode VMs to deploy (2-8). Minimum 2 required Maximum of 8. 3 CNodes required at deployment to enable up to 1 PB of logical capacity."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true, HelpMessage = $("Enter number of CNode VMs to deploy (2-8). Minimum 2 required Maximum of 8. 3 CNodes required at deployment to enable up to 1 PB of logical capacity."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true, HelpMessage = $("Enter number of CNode VMs to deploy (2-8). Minimum 2 required Maximum of 8. 3 CNodes required at deployment to enable up to 1 PB of logical capacity."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true, HelpMessage = $("Enter number of CNode VMs to deploy (2-8). Minimum 2 required Maximum of 8. 3 CNodes required at deployment to enable up to 1 PB of logical capacity."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true, HelpMessage = $("Enter number of CNode VMs to deploy (2-8). Minimum 2 required Maximum of 8. 3 CNodes required at deployment to enable up to 1 PB of logical capacity."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $true, HelpMessage = $("Enter number of CNode VMs to deploy (2-8). Minimum 2 required Maximum of 8. 3 CNodes required at deployment to enable up to 1 PB of logical capacity."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $true, HelpMessage = $("Enter number of CNode VMs to deploy (2-8). Minimum 2 required Maximum of 8. 3 CNodes required at deployment to enable up to 1 PB of logical capacity."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $true, HelpMessage = $("Enter number of CNode VMs to deploy (2-8). Minimum 2 required Maximum of 8. 3 CNodes required at deployment to enable up to 1 PB of logical capacity."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $true, HelpMessage = $("Enter number of CNode VMs to deploy (2-8). Minimum 2 required Maximum of 8. 3 CNodes required at deployment to enable up to 1 PB of logical capacity."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true, HelpMessage = $("Enter number of CNode VMs to deploy (2-8). Minimum 2 required Maximum of 8. 3 CNodes required at deployment to enable up to 1 PB of logical capacity."))]
                 [ValidateRange(2, 8)]
@@ -623,16 +663,38 @@ function Test-SilkResourceDeployment
                 [string[]]
                 $MnodeSizeLsv3,
 
+                # Array of MNode storage capacities for Lsv4 series SKUs
+                # Valid values: "19.5" (L8s_v4), "39.1" (L16s_v4), "78.2" (L32s_v4) TiB capacity
+                # Example: @("19.5", "39.1") for mixed capacity deployment
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",  Mandatory = $true, HelpMessage = $("Specify Lsv4 MNodes sizes. Valid sizes are: 19.5, 39.1, 78.2 (comma-separated, up to 4 values). Each value represents an MNode in TiB of storage capacity."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",    Mandatory = $true, HelpMessage = $("Specify Lsv4 MNodes sizes. Valid sizes are: 19.5, 39.1, 78.2 (comma-separated, up to 4 values). Each value represents an MNode in TiB of storage capacity."))]
+                [Parameter(ParameterSetName = "Mnode Lsv4",                 Mandatory = $true, HelpMessage = $("Specify Lsv4 MNodes sizes. Valid sizes are: 19.5, 39.1, 78.2 (comma-separated, up to 4 values). Each value represents an MNode in TiB of storage capacity."))]
+                [ValidateSet("19.5", "39.1", "78.2")]
+                [ValidateCount(1, 4)]
+                [string[]]
+                $MnodeSizeLsv4,
+
                 # Array of MNode storage capacities for Lasv3 series SKUs
-                # Valid values: "19" (L8as_v3), "39" (L16as_v3), "78" (L32as_v3) TiB capacity
-                # Example: @("19", "39") for mixed capacity deployment
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",  Mandatory = $true, HelpMessage = $("Specify Lasv3 MNodes sizes. Valid sizes are: 19, 39, 78 (comma-separated, up to 4 values). Each value represents an MNode in TiB of storage capacity."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",    Mandatory = $true, HelpMessage = $("Specify Lasv3 MNodes sizes. Valid sizes are: 19, 39, 78 (comma-separated, up to 4 values). Each value represents an MNode in TiB of storage capacity."))]
-                [Parameter(ParameterSetName = "Mnode Lasv3",                 Mandatory = $true, HelpMessage = $("Specify Lasv3 MNodes sizes. Valid sizes are: 19, 39, 78 (comma-separated, up to 4 values). Each value represents an MNode in TiB of storage capacity."))]
-                [ValidateSet("19", "39", "78")]
+                # Valid values: "19.5" (L8as_v3), "39.1" (L16as_v3), "78.2" (L32as_v3) TiB capacity
+                # Example: @("19.5", "39.1") for mixed capacity deployment
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",  Mandatory = $true, HelpMessage = $("Specify Lasv3 MNodes sizes. Valid sizes are: 19.5, 39.1, 78.2 (comma-separated, up to 4 values). Each value represents an MNode in TiB of storage capacity."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",    Mandatory = $true, HelpMessage = $("Specify Lasv3 MNodes sizes. Valid sizes are: 19.5, 39.1, 78.2 (comma-separated, up to 4 values). Each value represents an MNode in TiB of storage capacity."))]
+                [Parameter(ParameterSetName = "Mnode Lasv3",                 Mandatory = $true, HelpMessage = $("Specify Lasv3 MNodes sizes. Valid sizes are: 19.5, 39.1, 78.2 (comma-separated, up to 4 values). Each value represents an MNode in TiB of storage capacity."))]
+                [ValidateSet("19.5", "39.1", "78.2")]
                 [ValidateCount(1, 4)]
                 [string[]]
                 $MnodeSizeLasv3,
+
+                # Array of MNode storage capacities for Lasv4 series SKUs
+                # Valid values: "19.5" (L8as_v4), "39.1" (L16as_v4), "78.2" (L32as_v4) TiB capacity
+                # Example: @("19.5", "39.1") for mixed capacity deployment
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",  Mandatory = $true, HelpMessage = $("Specify Lasv4 MNodes sizes. Valid sizes are: 19.5, 39.1, 78.2 (comma-separated, up to 4 values). Each value represents an MNode in TiB of storage capacity."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",    Mandatory = $true, HelpMessage = $("Specify Lasv4 MNodes sizes. Valid sizes are: 19.5, 39.1, 78.2 (comma-separated, up to 4 values). Each value represents an MNode in TiB of storage capacity."))]
+                [Parameter(ParameterSetName = "Mnode Lasv4",                 Mandatory = $true, HelpMessage = $("Specify Lasv4 MNodes sizes. Valid sizes are: 19.5, 39.1, 78.2 (comma-separated, up to 4 values). Each value represents an MNode in TiB of storage capacity."))]
+                [ValidateSet("19.5", "39.1", "78.2")]
+                [ValidateCount(1, 4)]
+                [string[]]
+                $MnodeSizeLasv4,
 
                 # Array of MNode storage capacities for Laosv4 series SKUs (newer generation, higher density)
                 # Valid values: "14.67" (L2aos_v4), "29.34" (L4aos_v4), "58.67" (L8aos_v4), "88.01" (L12aos_v4), "117.35" (L16aos_v4) TiB capacity
@@ -649,10 +711,10 @@ function Test-SilkResourceDeployment
                 # Lsv3 SKUs: Standard_L8s_v3, Standard_L16s_v3, Standard_L32s_v3
                 # Laosv4 SKUs: Standard_L2aos_v4, Standard_L4aos_v4, Standard_L8aos_v4, Standard_L12aos_v4, Standard_L16aos_v4
                 # Alternative to size-based selection for advanced scenarios requiring specific SKU control
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true, HelpMessage = $("Select MNode VM SKU. LSv3 options: Standard_L8s_v3 (19.5 TiB), Standard_L16s_v3 (39.1 TiB), Standard_L32s_v3 (78.2 TiB). Lasv3 options: Standard_L8as_v3 (19 TiB), Standard_L16as_v3 (39 TiB), Standard_L32as_v3 (78 TiB). Laosv4 options: Standard_L2aos_v4 (14.67 TiB) to Standard_L16aos_v4 (117.35 TiB)."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true, HelpMessage = $("Select MNode VM SKU. LSv3 options: Standard_L8s_v3 (19.5 TiB), Standard_L16s_v3 (39.1 TiB), Standard_L32s_v3 (78.2 TiB). Lasv3 options: Standard_L8as_v3 (19 TiB), Standard_L16as_v3 (39 TiB), Standard_L32as_v3 (78 TiB). Laosv4 options: Standard_L2aos_v4 (14.67 TiB) to Standard_L16aos_v4 (117.35 TiB)."))]
-                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true, HelpMessage = $("Select MNode VM SKU. LSv3 options: Standard_L8s_v3 (19.5 TiB), Standard_L16s_v3 (39.1 TiB), Standard_L32s_v3 (78.2 TiB). Lasv3 options: Standard_L8as_v3 (19 TiB), Standard_L16as_v3 (39 TiB), Standard_L32as_v3 (78 TiB). Laosv4 options: Standard_L2aos_v4 (14.67 TiB) to Standard_L16aos_v4 (117.35 TiB)."))]
-                [ValidateSet("Standard_L2aos_v4", "Standard_L4aos_v4", "Standard_L8aos_v4", "Standard_L12aos_v4", "Standard_L16aos_v4", "Standard_L8as_v3", "Standard_L16as_v3", "Standard_L32as_v3", "Standard_L8s_v3", "Standard_L16s_v3", "Standard_L32s_v3")]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true, HelpMessage = $("Select MNode VM SKU. LSv3 options: Standard_L8s_v3 (19.5 TiB), Standard_L16s_v3 (39.1 TiB), Standard_L32s_v3 (78.2 TiB). Lasv3 options: Standard_L8as_v3 (19.5 TiB), Standard_L16as_v3 (39.1 TiB), Standard_L32as_v3 (78.2 TiB). LSv4 options: Standard_L8s_v4 (19.5 TiB), Standard_L16s_v4 (39.1 TiB), Standard_L32s_v4 (78.2 TiB). Lasv4 options: Standard_L8as_v4 (19.5 TiB), Standard_L16as_v4 (39.1 TiB), Standard_L32as_v4 (78.2 TiB). Laosv4 options: Standard_L2aos_v4 (14.67 TiB) to Standard_L16aos_v4 (117.35 TiB)."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true, HelpMessage = $("Select MNode VM SKU. LSv3 options: Standard_L8s_v3 (19.5 TiB), Standard_L16s_v3 (39.1 TiB), Standard_L32s_v3 (78.2 TiB). Lasv3 options: Standard_L8as_v3 (19.5 TiB), Standard_L16as_v3 (39.1 TiB), Standard_L32as_v3 (78.2 TiB). LSv4 options: Standard_L8s_v4 (19.5 TiB), Standard_L16s_v4 (39.1 TiB), Standard_L32s_v4 (78.2 TiB). Lasv4 options: Standard_L8as_v4 (19.5 TiB), Standard_L16as_v4 (39.1 TiB), Standard_L32as_v4 (78.2 TiB). Laosv4 options: Standard_L2aos_v4 (14.67 TiB) to Standard_L16aos_v4 (117.35 TiB)."))]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true, HelpMessage = $("Select MNode VM SKU. LSv3 options: Standard_L8s_v3 (19.5 TiB), Standard_L16s_v3 (39.1 TiB), Standard_L32s_v3 (78.2 TiB). Lasv3 options: Standard_L8as_v3 (19.5 TiB), Standard_L16as_v3 (39.1 TiB), Standard_L32as_v3 (78.2 TiB). LSv4 options: Standard_L8s_v4 (19.5 TiB), Standard_L16s_v4 (39.1 TiB), Standard_L32s_v4 (78.2 TiB). Lasv4 options: Standard_L8as_v4 (19.5 TiB), Standard_L16as_v4 (39.1 TiB), Standard_L32as_v4 (78.2 TiB). Laosv4 options: Standard_L2aos_v4 (14.67 TiB) to Standard_L16aos_v4 (117.35 TiB)."))]
+                [ValidateSet("Standard_L2aos_v4", "Standard_L4aos_v4", "Standard_L8aos_v4", "Standard_L12aos_v4", "Standard_L16aos_v4", "Standard_L8as_v3", "Standard_L16as_v3", "Standard_L32as_v3", "Standard_L8as_v4", "Standard_L16as_v4", "Standard_L32as_v4", "Standard_L8s_v3", "Standard_L16s_v3", "Standard_L32s_v3", "Standard_L8s_v4", "Standard_L16s_v4", "Standard_L32s_v4")]
                 [string[]]
                 $MNodeSku,
 
@@ -676,13 +738,17 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
@@ -704,13 +770,17 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
@@ -728,13 +798,17 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
@@ -754,13 +828,17 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
@@ -782,13 +860,17 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
@@ -808,13 +890,17 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
@@ -840,13 +926,17 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
@@ -867,13 +957,17 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
@@ -891,13 +985,17 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
@@ -916,13 +1014,17 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
@@ -941,13 +1043,17 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
@@ -965,13 +1071,17 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
@@ -1000,13 +1110,17 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
@@ -1032,12 +1146,16 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Test all availability zones in the specified region."))]
@@ -1057,13 +1175,17 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
@@ -1081,13 +1203,17 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
@@ -1192,9 +1318,15 @@ function Test-SilkResourceDeployment
                                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "s_v3";   PhysicalSize = 19.5;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
                                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "s_v3";   PhysicalSize = 39.1;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
                                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 32;   vmSkuSuffix = "s_v3";   PhysicalSize = 78.2;    QuotaFamily = "Standard Lsv3 Family vCPUs"};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "as_v3";  PhysicalSize = 19;      QuotaFamily = "Standard Lasv3 Family vCPUs"};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "as_v3";  PhysicalSize = 39;      QuotaFamily = "Standard Lasv3 Family vCPUs"};
-                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 32;   vmSkuSuffix = "as_v3";  PhysicalSize = 78;      QuotaFamily = "Standard Lasv3 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "s_v4";   PhysicalSize = 19.5;    QuotaFamily = "Standard Lsv 4 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "s_v4";   PhysicalSize = 39.1;    QuotaFamily = "Standard Lsv 4 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 32;   vmSkuSuffix = "s_v4";   PhysicalSize = 78.2;    QuotaFamily = "Standard Lsv 4 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "as_v3";  PhysicalSize = 19.5;    QuotaFamily = "Standard Lasv3 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "as_v3";  PhysicalSize = 39.1;    QuotaFamily = "Standard Lasv3 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 32;   vmSkuSuffix = "as_v3";  PhysicalSize = 78.2;    QuotaFamily = "Standard Lasv3 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "as_v4";  PhysicalSize = 19.5;    QuotaFamily = "Standard Lasv 4 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 16;   vmSkuSuffix = "as_v4";  PhysicalSize = 39.1;    QuotaFamily = "Standard Lasv 4 Family vCPUs"};
+                                        [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 32;   vmSkuSuffix = "as_v4";  PhysicalSize = 78.2;    QuotaFamily = "Standard Lasv 4 Family vCPUs"};
                                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 2;    vmSkuSuffix = "aos_v4"; PhysicalSize = 14.67;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
                                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 4;    vmSkuSuffix = "aos_v4"; PhysicalSize = 29.34;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
                                         [pscustomobject]@{dNodeCount = 16; vmSkuPrefix = "Standard_L"; vCPU = 8;    vmSkuSuffix = "aos_v4"; PhysicalSize = 58.67;   QuotaFamily = "Standard Laosv4 Family vCPUs"};
@@ -4335,9 +4467,17 @@ function Test-SilkResourceDeployment
                     {
                         $MNodeSize = $MnodeSizeLsv3
                     } `
+                elseif ($MnodeSizeLsv4)
+                    {
+                        $MNodeSize = $MnodeSizeLsv4
+                    } `
                 elseif ($MnodeSizeLasv3)
                     {
                         $MNodeSize = $MnodeSizeLasv3
+                    } `
+                elseif ($MnodeSizeLasv4)
+                    {
+                        $MNodeSize = $MnodeSizeLasv4
                     } `
                 elseif ($MnodeSizeLaosv4)
                     {
@@ -4352,7 +4492,7 @@ function Test-SilkResourceDeployment
                 # Dynamically determine if any MNode size/SKU parameter was provided
                 # This single boolean replaces repeated per-family checks throughout the validation logic
                 # When new MNode size parameters are added, only this line needs to be updated
-                $mNodeSizeParamProvided = [bool]($MnodeSizeLsv3 -or $MnodeSizeLasv3 -or $MnodeSizeLaosv4 -or $MNodeSku)
+                $mNodeSizeParamProvided = [bool]($MnodeSizeLsv3 -or $MnodeSizeLsv4 -or $MnodeSizeLasv3 -or $MnodeSizeLasv4 -or $MnodeSizeLaosv4 -or $MNodeSku)
 
                 # Build dynamic MNode parameter name list from available size objects for use in error messages
                 # Derives family names from $mNodeSizeObject suffixes so new families are automatically included
@@ -4360,7 +4500,7 @@ function Test-SilkResourceDeployment
                 $mNodeFamilyParamNames =    @(
                                                 $mNodeUniqueSuffixes | ForEach-Object   {
                                                                                             $suffix = $_
-                                                                                            # Convert suffix (e.g., "s_v3", "as_v3", "aos_v4") to parameter-style names (e.g., "MnodeSizeLsv3", "MnodeSizeLasv3", "MnodeSizeLaosv4")
+                                                                                            # Convert suffix (e.g., "s_v3", "s_v4", "as_v3", "as_v4", "aos_v4") to parameter-style names (e.g., "MnodeSizeLsv3", "MnodeSizeLsv4", "MnodeSizeLasv3", "MnodeSizeLasv4", "MnodeSizeLaosv4")
                                                                                             $familyName = $suffix -replace $('_'), $('')
                                                                                             $("MnodeSize{0}" -f $("L{0}" -f $familyName))
                                                                                         }

@@ -3667,10 +3667,12 @@ function Test-SilkResourceDeployment
 <body>
     <div class="container">
         <div class="report-header">
-            <a href="https://github.com/silk-us/scripts-and-configs/tree/main/Azure/Resource%20Availability%20Check" target="_blank" rel="noopener">
-                <img src="data:image/png;base64,$silkLogoBase64" style="height:42px; border-radius:6px;" alt="Silk" />
-            </a>
-            <h1>$("{0}{1} Azure SKU Availability Report" -f $ReportData.Metadata.ReportLabel, $titleLocationPart)</h1>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <a href="https://github.com/silk-us/scripts-and-configs/tree/main/Azure/Resource%20Availability%20Check" target="_blank" rel="noopener">
+                    <img src="data:image/png;base64,$silkLogoBase64" style="height:42px; border-radius:6px;" alt="Silk" />
+                </a>
+                <h1>$("{0}{1} Azure SKU Availability Report" -f $ReportData.Metadata.ReportLabel, $titleLocationPart)</h1>
+            </div>
             <div class="theme-switch">
                 <span>$("☀️")</span>
                 <label><input type="checkbox" id="themeToggle" checked><span class="slider"></span></label>

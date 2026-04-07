@@ -137,7 +137,7 @@ function Test-SilkResourceDeployment
                 Example: @("19.5", "39.1") for mixed capacity deployment
 
             .PARAMETER MnodeSizeLasv4
-                Array of MNode storage capacities for Lsv4 series SKUs.
+                Array of MNode storage capacities for Lasv4 series SKUs.
                 Valid values correspond to physical storage capacity in TiB:
                 - "19.5" TiB (Standard_L8as_v4)  - 8 vCPU, 64 GB RAM, local NVMe storage
                 - "39.1" TiB (Standard_L16as_v4) - 16 vCPU, 128 GB RAM, local NVMe storage
@@ -683,7 +683,7 @@ function Test-SilkResourceDeployment
                 $MnodeSizeLsv4,
 
                 # Array of MNode storage capacities for Lasv3 series SKUs
-                # Valid values: "19.5" (L8as_v3), "39.1" (L16as_v3), "78" (L32as_v3) TiB capacity
+                # Valid values: "19.5" (L8as_v3), "39.1" (L16as_v3), "78.2" (L32as_v3) TiB capacity
                 # Example: @("19.5", "39.1") for mixed capacity deployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",  Mandatory = $true, HelpMessage = $("Specify Lasv3 MNodes sizes. Valid sizes are: 19.5, 39.1, 78.2 (comma-separated, up to 4 values). Each value represents an MNode in TiB of storage capacity."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",    Mandatory = $true, HelpMessage = $("Specify Lasv3 MNodes sizes. Valid sizes are: 19.5, 39.1, 78.2 (comma-separated, up to 4 values). Each value represents an MNode in TiB of storage capacity."))]
@@ -694,7 +694,7 @@ function Test-SilkResourceDeployment
                 $MnodeSizeLasv3,
 
                 # Array of MNode storage capacities for Lasv4 series SKUs
-                # Valid values: "19.5" (L8as_v4), "39.1" (L16as_v4), "78" (L32as_v4) TiB capacity
+                # Valid values: "19.5" (L8as_v4), "39.1" (L16as_v4), "78.2" (L32as_v4) TiB capacity
                 # Example: @("19.5", "39.1") for mixed capacity deployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",  Mandatory = $true, HelpMessage = $("Specify Lasv4 MNodes sizes. Valid sizes are: 19.5, 39.1, 78.2 (comma-separated, up to 4 values). Each value represents an MNode in TiB of storage capacity."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",    Mandatory = $true, HelpMessage = $("Specify Lasv4 MNodes sizes. Valid sizes are: 19.5, 39.1, 78.2 (comma-separated, up to 4 values). Each value represents an MNode in TiB of storage capacity."))]

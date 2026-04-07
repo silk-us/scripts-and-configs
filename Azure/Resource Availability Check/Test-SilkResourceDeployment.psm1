@@ -4506,22 +4506,27 @@ function Test-SilkResourceDeployment
                 elseif ($MnodeSizeLsv3)
                     {
                         $MNodeSize = $MnodeSizeLsv3
+                        $selectedMNodeSuffix = "s_v3"
                     } `
                 elseif ($MnodeSizeLsv4)
                     {
                         $MNodeSize = $MnodeSizeLsv4
+                        $selectedMNodeSuffix = "s_v4"
                     } `
                 elseif ($MnodeSizeLasv3)
                     {
                         $MNodeSize = $MnodeSizeLasv3
+                        $selectedMNodeSuffix = "as_v3"
                     } `
                 elseif ($MnodeSizeLasv4)
                     {
                         $MNodeSize = $MnodeSizeLasv4
+                        $selectedMNodeSuffix = "as_v4"
                     } `
                 elseif ($MnodeSizeLaosv4)
                     {
                         $MNodeSize = $MnodeSizeLaosv4
+                        $selectedMNodeSuffix = "aos_v4"
                     }
 
                 if ($MNodeSize)
@@ -4623,7 +4628,7 @@ function Test-SilkResourceDeployment
                 # Identify MNode SKU details based on configuration
                 if ($MNodeSize)
                     {
-                        $MNodeSize | ForEach-Object { $nodeSize = $_; $mNodeObject.Add($($mNodeSizeObject | Where-Object { $_.PhysicalSize -eq $nodeSize })) }
+                        $MNodeSize | ForEach-Object { $nodeSize = $_; $mNodeObject.Add($($mNodeSizeObject | Where-Object { $_.PhysicalSize -eq $nodeSize -and (!$selectedMNodeSuffix -or $_.vmSkuSuffix -eq $selectedMNodeSuffix) } | Select-Object -First 1)) }
                     } `
                 elseif ($MNodeCount -and $MNodeSku)
                     {

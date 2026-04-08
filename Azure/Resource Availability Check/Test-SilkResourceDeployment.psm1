@@ -5130,6 +5130,19 @@ function Test-SilkResourceDeployment
                                     }
                             }
 
+                        # MNode-only runs with sufficient quota never enter $mNodeQuotaAdjustments
+                        # (that hashtable is only populated on quota shortfalls), so set
+                        # $anyDeploymentPossible here when MNodes exist and none were fully blocked
+                        if (-not $anyDeploymentPossible -and $mNodeObject.Count -gt 0)
+                            {
+                                $allMNodesBlocked = $mNodeQuotaAdjustments.Count -gt 0 -and
+                                                    ($mNodeQuotaAdjustments.Values | Where-Object { $_.AdjustedCount -gt 0 }).Count -eq 0
+                                if (-not $allMNodesBlocked)
+                                    {
+                                        $anyDeploymentPossible = $true
+                                    }
+                            }
+
                         # Display quota adjustment summary if any constraints were detected
                         if($quotaAdjustmentMessages.Count -gt 0)
                             {

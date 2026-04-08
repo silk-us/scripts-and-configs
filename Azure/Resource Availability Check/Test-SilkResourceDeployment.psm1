@@ -1,4 +1,4 @@
-
+﻿
 
 function Test-SilkResourceDeployment
     {
@@ -589,7 +589,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_Easv6 (Standard_E64as_v6), Increased_Logical_Capacity_Easv5 (Standard_E64as_v5), Increased_Logical_Capacity_Esv5 (Standard_E64s_v5), Read_Cache_Enabled_Lasv4 (Standard_L64as_v4), Read_Cache_Enabled_Lasv3 (Standard_L64as_v3), Read_Cache_Enabled_Lsv3 (Standard_L64s_v3), No_Increased_Logical_Capacity_Dasv6 (Standard_D64as_v6), No_Increased_Logical_Capacity_Dasv5 (Standard_D64as_v5), No_Increased_Logical_Capacity_Dsv5 (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_Easv6 (Standard_E64as_v6), Increased_Logical_Capacity_Easv5 (Standard_E64as_v5), Increased_Logical_Capacity_Esv5 (Standard_E64s_v5), Read_Cache_Enabled_Lasv4 (Standard_L64as_v4), Read_Cache_Enabled_Lasv3 (Standard_L64as_v3), Read_Cache_Enabled_Lsv3 (Standard_L64s_v3), No_Increased_Logical_Capacity_Dasv6 (Standard_D64as_v6), No_Increased_Logical_Capacity_Dasv5 (Standard_D64as_v5), No_Increased_Logical_Capacity_Dsv5 (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_Easv6 (Standard_E64as_v6), Increased_Logical_Capacity_Easv5 (Standard_E64as_v5), Increased_Logical_Capacity_Esv5 (Standard_E64s_v5), Read_Cache_Enabled_Lasv4 (Standard_L64as_v4), Read_Cache_Enabled_Lasv3 (Standard_L64as_v3), Read_Cache_Enabled_Lsv3 (Standard_L64s_v3), No_Increased_Logical_Capacity_Dasv6 (Standard_D64as_v6), No_Increased_Logical_Capacity_Dasv5 (Standard_D64as_v5), No_Increased_Logical_Capacity_Dsv5 (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
-                [ValidateSet("Increased_Logical_Capacity_Eav6","Increased_Logical_Capacity_Easv5","Increased_Logical_Capacity_Esv5","Read_Cache_Enabled_Lasv4","Read_Cache_Enabled_Lasv3","Read_Cache_Enabled_Lsv3","No_Increased_Logical_Capacity_Dav6","No_Increased_Logical_Capacity_Dasv5","No_Increased_Logical_Capacity_Dsv5","Entry_Level_Easv3")]
+                [ValidateSet("Increased_Logical_Capacity_Eav6","Increased_Logical_Capacity_Easv5","Increased_Logical_Capacity_Esv5","Read_Cache_Enabled_Lasv4","Read_Cache_Enabled_Lasv3","Read_Cache_Enabled_Lsv3","No_Increased_Logical_Capacity_Dav6","No_Increased_Logical_Capacity_Dasv5","No_Increased_Logical_Capacity_Dsv5","Entry_Level_Easv5")]
                 [string]
                 $CNodeFriendlyName,
 
@@ -2662,7 +2662,7 @@ function Test-SilkResourceDeployment
 "@
                                         foreach ($cNode in $cNodeReport)
                                             {
-                                                $vmStatusClass = if ($cNode.VMStatus -like $("*Deployed*")) { $("checkmark") } else { $("error-mark") }
+                                                $vmStatusClass = if ($cNode.VMStatus -like $("*✓ Deployed*")) { $("checkmark") } elseif ($cNode.VMStatus -like $("*⚠*")) { $("warning-mark") } else { $("error-mark") }
                                                 $nicStatusClass = if ($cNode.NICStatus -like $("*Created*")) { $("checkmark") } else { $("error-mark") }
                                                 $provisioningClass = if ($cNode.ProvisioningState -eq $("Succeeded")) { $("checkmark") } elseif ($cNode.ProvisioningState -eq $("Failed")) { $("error-mark") } else { $("warning") }
                                                 $zoneTdHtml = if ($htmlIsMultiZone) { $("{0}                    <td>{1}</td>" -f $("`n"), $cNode.Zone) } else { $("") }
@@ -3185,27 +3185,49 @@ function Test-SilkResourceDeployment
 "@
                                     }
 
-                                # Build Skipped Zones card — zones that exist in the region but cannot host
-                                # this configuration because one or more required SKUs are unavailable there
+                                # Build Skipped Zones section — full-width, below infrastructure grid
                                 $skippedZonesHtml = $("")
                                 if ($ReportData.Deployment.SkippedZones -and $ReportData.Deployment.SkippedZones.Count -gt 0)
                                     {
                                         $skippedZonesHtml = @"
-            <div class="info-card">
-                <h4>$("⚠️ Skipped Zones — Invalid Configuration Zones")</h4>
-                <strong>$("Note:")</strong> $("The following zone(s) exist in this region but were not tested because one or more required SKUs are not available there. Deployment into these zones would not be possible with the current SKU selection regardless of capacity. To use these zones, select a different VM SKU that is supported across all desired zones.")<br><br>
+        <h2>$("⚠️ Skipped Zones")</h2>
+        <div style="background: var(--bg-card); padding: 16px; border-radius: 6px; border-left: 4px solid var(--accent);">
 "@
                                         foreach ($skipped in $ReportData.Deployment.SkippedZones)
                                             {
-                                                $skippedSkuList = $skipped.UnsupportedSKUs -join ", "
+                                                $isQuotaGatedEntry  = ($skipped.UnsupportedSKUs.Count -eq 0)
+                                                $skippedSkuList     = if ($isQuotaGatedEntry) { $("") } else { $skipped.UnsupportedSKUs -join ", " }
+                                                $entryReason        = if ($isQuotaGatedEntry) {
+                                                                          $("Insufficient quota for simultaneous multi-zone testing — run this zone individually to test it.")
+                                                                      } `
+                                                                      else {
+                                                                          $("One or more required SKUs are not available in this zone. Deployment would not be possible regardless of quota. To use this zone, select a SKU that is supported across all desired zones.")
+                                                                      }
                                                 $skippedZonesHtml += @"
-                <strong>$("Zone {0}:" -f $skipped.Zone)</strong> <span class="status-warning">$("⚠ No deployment attempted")</span><br>
-                <strong>$("Unsupported SKU(s):")</strong> $($skippedSkuList)<br>
-                <strong>$("Reason:")</strong> $($skipped.Reason)<br><br>
+            <div style="margin-bottom: 18px;">
+                <strong style="font-size: 1.05em;">$("Zone {0}" -f $skipped.Zone)</strong>
+                <span class="status-warning" style="margin-left: 10px;">$("⚠ No deployment attempted")</span><br>
+                <span style="color: var(--text-muted); font-size: 0.92em;">$($entryReason)</span>
+"@
+                                                if (-not $isQuotaGatedEntry -and $skippedSkuList)
+                                                    {
+                                                        $skippedZonesHtml += @"
+                <br><strong>$("Unsupported SKU(s):")</strong> $($skippedSkuList)
+"@
+                                                    }
+                                                if ($isQuotaGatedEntry -and $skipped.Command)
+                                                    {
+                                                        $skippedZonesHtml += @"
+                <br><strong style="display: block; margin-top: 8px;">$("Run individually:")</strong>
+                <code style="display: block; margin-top: 4px; padding: 8px 12px; background: var(--bg-body); border-radius: 4px; font-family: 'Cascadia Code', 'Consolas', 'Courier New', monospace; font-size: 0.9em; font-weight: bold; color: var(--accent); word-break: break-all; white-space: pre-wrap;">$($skipped.Command)</code>
+"@
+                                                    }
+                                                $skippedZonesHtml += @"
+            </div>
 "@
                                             }
                                         $skippedZonesHtml += @"
-            </div>
+        </div>
 "@
                                     }
 
@@ -3596,8 +3618,8 @@ function Test-SilkResourceDeployment
                 </ul>
             </div>
             $validationFindingsHtml
-            $skippedZonesHtml
         </div>
+        $skippedZonesHtml
 "@
                                     }
 
@@ -3617,7 +3639,7 @@ function Test-SilkResourceDeployment
                                 $failedVMsHtml = if ($isSKUTestMode) { if ($skuUniqueFailedCount -gt 0) { $("<strong>$("Failed:")</strong> <span class='status-error'>{0}</span><br>" -f $skuUniqueFailedCount) } else { $("") } } elseif ($totalFailed -gt 0) { $("<strong>$("Failed Deployments:")</strong> <span class='status-error'>{0}</span><br>" -f $totalFailed) } else { $("") }
 
                                 # Build the location segment used in title, heading, and filename
-                                $titleLocationPart = $($(if ($ReportData.Configuration.Region) { $(" {0}" -f $ReportData.Configuration.Region) } else { $("") }) + $(if ($ReportData.Configuration.Zone) { $(" {0}" -f $ReportData.Configuration.Zone) } else { $("") }))
+                                $titleLocationPart = $($(if ($ReportData.Configuration.Region) { $(" {0}" -f $ReportData.Configuration.Region) } else { $("") }) + $(if ($ReportData.Configuration.Zone) { $(" zone {0}" -f $ReportData.Configuration.Zone) } else { $("") }))
 
                                 # Assemble the full HTML document
                                 $htmlContent = @"
@@ -4587,7 +4609,7 @@ function Test-SilkResourceDeployment
 
                         if (-not $cNodeObject)
                             {
-                                $availableSkus = ($cNodeSizeObject | ForEach-Object { "{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix } | Sort-Object) -join ", "
+                                $availableSkus = ($cNodeSizeObject | ForEach-Object { $("{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix) } | Sort-Object) -join ", "
                                 Write-Error $("Invalid CNode SKU '{0}'. Available options: {1}" -f $CNodeSku, $availableSkus)
                                 $validationError = $true
                                 return
@@ -4671,10 +4693,10 @@ function Test-SilkResourceDeployment
                     }
 
                 # Create unique MNode object list to avoid duplicates and detail MNode configurations
+                $mNodeObjectUnique = New-Object System.Collections.Generic.List[PSCustomObject]
                 if ($mNodeObject.Count -gt 0)
                     {
                         # Create unique MNode object list to avoid duplicates
-                        $mNodeObjectUnique = New-Object System.Collections.Generic.List[PSCustomObject]
                         $mNodeObject | ForEach-Object { if(-not $mNodeObjectUnique.Contains($_)) { $mNodeObjectUnique.Add($_) } }
 
                         foreach ($mNodeDetail in $mNodeObject)
@@ -5033,7 +5055,7 @@ function Test-SilkResourceDeployment
                                             } `
                                         else
                                             {
-                                                Write-Verbose -Message $("Sufficient vCPU quota available for MNode SKU {0} of Family: {1}. Required: {2} -> Limit: {3}, Consumed: {4}, Available: {5}" -f $(($mNodeFamily.group | ForEach-Object { "{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix }) -join ', '), $mNodeFamily.Name, $mNodeFamilyvCPUCount, $mNodeSKUFamilyQuota.Limit, $mNodeSKUFamilyQuota.CurrentValue, $availableMNodeVCPUs)
+                                                Write-Verbose -Message $("Sufficient vCPU quota available for MNode SKU {0} of Family: {1}. Required: {2} -> Limit: {3}, Consumed: {4}, Available: {5}" -f $(($mNodeFamily.group | ForEach-Object { $("{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix) }) -join ', '), $mNodeFamily.Name, $mNodeFamilyvCPUCount, $mNodeSKUFamilyQuota.Limit, $mNodeSKUFamilyQuota.CurrentValue, $availableMNodeVCPUs)
 
                                                 # Add full counts
                                                 foreach ($mNodeType in $mNodeFamily.Group)
@@ -5127,6 +5149,19 @@ function Test-SilkResourceDeployment
                                             {
                                                 $quotaAdjustmentMessages += $("  → MNode ({0}): Cannot deploy any DNodes due to insufficient quota" -f $physicalSize)
                                             }
+                                    }
+                            }
+
+                        # MNode-only runs with sufficient quota never enter $mNodeQuotaAdjustments
+                        # (that hashtable is only populated on quota shortfalls), so set
+                        # $anyDeploymentPossible here when MNodes exist and none were fully blocked
+                        if (-not $anyDeploymentPossible -and $mNodeObject.Count -gt 0)
+                            {
+                                $allMNodesBlocked = $mNodeQuotaAdjustments.Count -gt 0 -and
+                                                    ($mNodeQuotaAdjustments.Values | Where-Object { $_.AdjustedCount -gt 0 }).Count -eq 0
+                                if (-not $allMNodesBlocked)
+                                    {
+                                        $anyDeploymentPossible = $true
                                     }
                             }
 
@@ -5691,12 +5726,22 @@ function Test-SilkResourceDeployment
                         Write-Verbose -Message $("MNode Configuration: {0} TiB" -f $mNodeSizeDisplay)
 
                         # Show quota adjustments for MNode groups
-                        foreach ($physicalSize in $mNodeQuotaAdjustments.Keys)
+                        if ($mNodeQuotaAdjustments.Count -gt 0)
                             {
-                                $adjustment = $mNodeQuotaAdjustments[$physicalSize]
-                                if ($adjustment.AdjustedCount -lt $adjustment.OriginalCount)
+                                foreach ($physicalSize in $mNodeQuotaAdjustments.Keys)
                                     {
-                                        Write-Verbose -Message $("  → {0} TiB: {1} DNodes (adjusted to {2} due to quota constraints)" -f $physicalSize, $adjustment.OriginalCount, $adjustment.AdjustedCount)
+                                        $adjustment = $mNodeQuotaAdjustments[$physicalSize]
+                                        if ($adjustment.AdjustedCount -lt $adjustment.OriginalCount)
+                                            {
+                                                Write-Verbose -Message $("  → {0} TiB: {1} DNodes (adjusted to {2} due to quota constraints)" -f $physicalSize, $adjustment.OriginalCount, $adjustment.AdjustedCount)
+                                            }
+                                    }
+                            } `
+                        else
+                            {
+                                foreach ($mNode in $mNodeObject)
+                                    {
+                                        Write-Verbose -Message $("MNode ({0} TiB): All {1} requested DNodes can be deployed" -f $mNode.PhysicalSize, $mNode.dNodeCount)
                                     }
                             }
                     }
@@ -6914,6 +6959,7 @@ function Test-SilkResourceDeployment
                                                     Zone            = $z
                                                     UnsupportedSKUs = $unsupportedSkus
                                                     Reason          = $("Not a valid configuration zone — {0} not available in Zone {1}" -f ($unsupportedSkus -join $(", ")), $z)
+                                                    Command         = $("")
                                                 }
                                                 Write-Verbose -Message $("Zone {0} skipped: {1} SKU(s) not supported here ({2})" -f $z, $unsupportedSkus.Count, ($unsupportedSkus -join $(", ")))
                                             }
@@ -6933,6 +6979,284 @@ function Test-SilkResourceDeployment
                         else
                             {
                                 Write-Warning $("No availability zones detected in region '{0}'. Deploying to target zone {1} only." -f $Region, $Zone)
+                            }
+                    }
+
+                # ===============================================================================
+                # Pre-Flight Quota Gate
+                # ===============================================================================
+                # Now that $zonesToDeploy is finalized, we know the actual test multiplier (N zones).
+                # A single Silk SDP deployment requires $totalVMCount VMs / $totalvCPUCount vCPUs.
+                # When TestAllZones deploys N zones simultaneously those are N× the region quota.
+                # This block:
+                #   1. Displays a pre-flight table showing 1× (SDP) vs N× (test) vs available
+                #   2. Identifies the binding constraint and max simultaneously-testable zones
+                #   3. Prompts the user to choose which zones to test if quota is insufficient
+                #   4. Trims $zonesToDeploy accordingly and records skipped zones with reason
+                # -------------------------------------------------------------------------------
+                $zoneCount = $zonesToDeploy.Count
+
+                if ($zoneCount -gt 0 -and $anyDeploymentPossible -and -not $TestAllSKUFamilies)
+                    {
+                        # -----------------------------------------------------------------------
+                        # Build per-resource-type constraint table
+                        # -----------------------------------------------------------------------
+                        $preFlightRows = @()
+
+                        # CNode SKU family vCPUs
+                        if ($cNodeObject)
+                            {
+                                $cNodeFamily    = $cNodeObject.QuotaFamily
+                                $cNodeFamilyQ   = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $cNodeFamily }
+                                $cNode1x        = $cNodeObject.vCPU * $adjustedCNodeCount
+                                $cNodeNx        = $cNode1x * $zoneCount
+                                $cNodeAvail     = if ($cNodeFamilyQ) { $cNodeFamilyQ.Limit - $cNodeFamilyQ.CurrentValue } else { $null }
+                                $cNodeLimit     = if ($cNodeFamilyQ) { $cNodeFamilyQ.Limit } else { $null }
+                                $cNodeMaxZones  = if ($cNodeAvail -and $cNode1x -gt 0) { [Math]::Floor($cNodeAvail / $cNode1x) } else { $zoneCount }
+                                $preFlightRows += [PSCustomObject]@{
+                                    Label       = $("CNode SKU Family ({0})" -f $cNodeVMSku)
+                                    Single      = $cNode1x
+                                    Total       = $cNodeNx
+                                    Available   = $cNodeAvail
+                                    Limit       = $cNodeLimit
+                                    MaxZones    = $cNodeMaxZones
+                                    Unknown     = (-not $cNodeFamilyQ)
+                                }
+                            }
+
+                        # MNode SKU families (one row per unique quota family)
+                        if ($mNodeObject.Count -gt 0)
+                            {
+                                $mNodeFamilies = $mNodeObject | Group-Object -Property QuotaFamily
+                                foreach ($mFam in $mNodeFamilies)
+                                    {
+                                        $mFamQ      = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $mFam.Name }
+                                        $mFam1x     = ($mFam.Group | ForEach-Object { $_.vCPU * $_.dNodeCount } | Measure-Object -Sum).Sum
+                                        $mFamNx     = $mFam1x * $zoneCount
+                                        $mFamAvail  = if ($mFamQ) { $mFamQ.Limit - $mFamQ.CurrentValue } else { $null }
+                                        $mFamLimit  = if ($mFamQ) { $mFamQ.Limit } else { $null }
+                                        $mFamMax    = if ($mFamAvail -and $mFam1x -gt 0) { [Math]::Floor($mFamAvail / $mFam1x) } else { $zoneCount }
+                                        $skuNames   = ($mFam.Group | ForEach-Object { $("{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix) } | Select-Object -Unique) -join ", "
+                                        $preFlightRows += [PSCustomObject]@{
+                                            Label       = $("MNode SKU Family ({0})" -f $skuNames)
+                                            Single      = $mFam1x
+                                            Total       = $mFamNx
+                                            Available   = $mFamAvail
+                                            Limit       = $mFamLimit
+                                            MaxZones    = $mFamMax
+                                            Unknown     = (-not $mFamQ)
+                                        }
+                                    }
+                            }
+
+                        # Total Regional vCPUs
+                        $regionalVCPUQ  = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Total Regional vCPUs" }
+                        $regional1x     = $totalvCPUCount
+                        $regionalNx     = $regional1x * $zoneCount
+                        $regionalAvail  = if ($regionalVCPUQ) { $regionalVCPUQ.Limit - $regionalVCPUQ.CurrentValue } else { $null }
+                        $regionalLimit  = if ($regionalVCPUQ) { $regionalVCPUQ.Limit } else { $null }
+                        $regionalMax    = if ($regionalAvail -and $regional1x -gt 0) { [Math]::Floor($regionalAvail / $regional1x) } else { $zoneCount }
+                        $preFlightRows += [PSCustomObject]@{
+                            Label       = "Total Regional vCPUs"
+                            Single      = $regional1x
+                            Total       = $regionalNx
+                            Available   = $regionalAvail
+                            Limit       = $regionalLimit
+                            MaxZones    = $regionalMax
+                            Unknown     = (-not $regionalVCPUQ)
+                        }
+
+                        # Virtual Machine count
+                        $vmCountQ       = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Virtual Machines" }
+                        $vm1x           = $totalVMCount
+                        $vmNx           = $vm1x * $zoneCount
+                        $vmAvail        = if ($vmCountQ) { $vmCountQ.Limit - $vmCountQ.CurrentValue } else { $null }
+                        $vmLimit        = if ($vmCountQ) { $vmCountQ.Limit } else { $null }
+                        $vmMax          = if ($vmAvail -and $vm1x -gt 0) { [Math]::Floor($vmAvail / $vm1x) } else { $zoneCount }
+                        $preFlightRows += [PSCustomObject]@{
+                            Label       = "Virtual Machines"
+                            Single      = $vm1x
+                            Total       = $vmNx
+                            Available   = $vmAvail
+                            Limit       = $vmLimit
+                            MaxZones    = $vmMax
+                            Unknown     = (-not $vmCountQ)
+                        }
+
+                        # Availability Sets
+                        $avsetQ         = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Availability Sets" }
+                        $avset1x        = $(if ($cNodeObject) { 1 } else { 0 }) + $mNodeObjectUnique.Count
+                        $avsetNx        = $avset1x * $zoneCount
+                        $avsetAvail     = if ($avsetQ) { $avsetQ.Limit - $avsetQ.CurrentValue } else { $null }
+                        $avsetLimit     = if ($avsetQ) { $avsetQ.Limit } else { $null }
+                        $avsetMax       = if ($avsetAvail -and $avset1x -gt 0) { [Math]::Floor($avsetAvail / $avset1x) } else { $zoneCount }
+                        $preFlightRows += [PSCustomObject]@{
+                            Label       = "Availability Sets"
+                            Single      = $avset1x
+                            Total       = $avsetNx
+                            Available   = $avsetAvail
+                            Limit       = $avsetLimit
+                            MaxZones    = $avsetMax
+                            Unknown     = (-not $avsetQ)
+                        }
+
+                        # -----------------------------------------------------------------------
+                        # Determine binding constraint and max supportable zones
+                        # -----------------------------------------------------------------------
+                        $knownRows          = $preFlightRows | Where-Object { -not $_.Unknown }
+                        $maxSupportedZones  = if ($knownRows) { ($knownRows | Measure-Object -Property MaxZones -Minimum).Minimum } else { $zoneCount }
+                        $maxSupportedZones  = [Math]::Min([Math]::Max([int]$maxSupportedZones, 0), $zoneCount)
+                        $bindingRow = if ($knownRows -and $maxSupportedZones -lt $zoneCount) {
+                                          $knownRows | Where-Object { $_.MaxZones -eq $maxSupportedZones } | Select-Object -First 1
+                                      } else { $null }
+
+                        # -----------------------------------------------------------------------
+                        # Display pre-flight table
+                        # -----------------------------------------------------------------------
+                        # Clear active progress bars so they don't overlap the table and prompt
+                        Write-Progress -Id 2 -Completed
+                        Write-Progress -Id 1 -Completed
+
+                        $sepLine    = $("+-{0}-+" -f ("-" * 84))
+                        $preFlightTestHeader = $("{0}x Test" -f $zoneCount)
+                        Write-Host $("") -ForegroundColor White
+                        Write-Host $sepLine -ForegroundColor Cyan
+                        Write-Host $("| PRE-FLIGHT QUOTA CHECK  {0,-61}|" -f ("{0} Zone(s) Requested" -f $zoneCount)) -ForegroundColor Cyan
+                        Write-Host $sepLine -ForegroundColor Cyan
+                        Write-Host $("| {0,-38}  {1,6}  {2,7}  {3,9}  {4,-5} |" -f "Resource", "1x SDP", $preFlightTestHeader, "Available", "OK?") -ForegroundColor Cyan
+                        Write-Host $sepLine -ForegroundColor Cyan
+
+                        foreach ($row in $preFlightRows)
+                            {
+                                if ($row.Unknown)
+                                    {
+                                        $status     = "?"
+                                        $color      = "Yellow"
+                                        $availStr   = "N/A"
+                                    }
+                                elseif ($row.Available -ge $row.Total)
+                                    {
+                                        $status     = "OK"
+                                        $color      = "Green"
+                                        $availStr   = $("{0}/{1}" -f $row.Available, $row.Limit)
+                                    }
+                                elseif ($row.Available -ge $row.Single)
+                                    {
+                                        $status     = "WARN"
+                                        $color      = "Yellow"
+                                        $availStr   = $("{0}/{1}" -f $row.Available, $row.Limit)
+                                    }
+                                else
+                                    {
+                                        $status     = "FAIL"
+                                        $color      = "Red"
+                                        $availStr   = $("{0}/{1}" -f $row.Available, $row.Limit)
+                                    }
+
+                                Write-Host $("| {0,-38}  {1,6}  {2,7}  {3,9}  {4,-4} |" -f $row.Label, $row.Single, $row.Total, $availStr, $status) -ForegroundColor $color
+                            }
+
+                        Write-Host $sepLine -ForegroundColor Cyan
+                        Write-Host $("") -ForegroundColor White
+
+                        # -----------------------------------------------------------------------
+
+                        # Prompt and gate if quota is insufficient for all zones
+                        # -----------------------------------------------------------------------
+                        if ($maxSupportedZones -lt $zoneCount -and $isMultiZoneDeploy)
+                            {
+                                $bindingLabel = if ($bindingRow) { $bindingRow.Label } else { "one or more quota limits" }
+
+                                if ($maxSupportedZones -eq 0)
+                                    {
+                                        Write-Host $("[X]  Insufficient quota to test any zone simultaneously. {0} is the binding constraint." -f $bindingLabel) -ForegroundColor Red
+                                        Write-Host $("    Consider running individual zone tests after existing resources are released.") -ForegroundColor Yellow
+                                        Write-Host $("")
+
+                                        # Generate per-zone commands
+                                        foreach ($z in $zonesToDeploy)
+                                            {
+                                                $zoneCmd = $("Test-SilkResourceDeployment -SubscriptionId '{0}' -ResourceGroupName '{1}' -Region '{2}' -Zone {3}" -f $SubscriptionId, $ResourceGroupName, $Region, $z)
+                                                if ($cNodeObject -and $CNodeFriendlyName) { $zoneCmd += $(" -CNodeFriendlyName '{0}' -CNodeCount {1}" -f $CNodeFriendlyName, $CNodeCount) }
+                                                elseif ($cNodeObject -and $CNodeSku)     { $zoneCmd += $(" -CNodeSku '{0}' -CNodeCount {1}" -f $CNodeSku, $CNodeCount) }
+                                                if ($MnodeSizeLsv3)  { $zoneCmd += $(" -MnodeSizeLsv3 @({0})"  -f (($MnodeSizeLsv3  | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                if ($MnodeSizeLsv4)  { $zoneCmd += $(" -MnodeSizeLsv4 @({0})"  -f (($MnodeSizeLsv4  | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                if ($MnodeSizeLasv3) { $zoneCmd += $(" -MnodeSizeLasv3 @({0})" -f (($MnodeSizeLasv3 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                if ($MnodeSizeLasv4) { $zoneCmd += $(" -MnodeSizeLasv4 @({0})" -f (($MnodeSizeLasv4 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                if ($MnodeSizeLaosv4){ $zoneCmd += $(" -MnodeSizeLaosv4 @({0})" -f (($MnodeSizeLaosv4 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                Write-Host $("  Zone {0}: {1}" -f $z, $zoneCmd) -ForegroundColor Cyan
+                                            }
+
+                                        Write-Host $("")
+                                        $anyDeploymentPossible  = $false
+                                        $zonesToDeploy          = @()
+                                        $adjustedCNodeCount     = 0
+                                    }
+                                else
+                                    {
+                                        Write-Host $("⚠  Quota supports {0} of {1} requested zones simultaneously. Binding constraint: {2}." -f $maxSupportedZones, $zoneCount, $bindingLabel) -ForegroundColor Yellow
+                                        Write-Host $("")
+
+                                        # Offer zone selection prompt
+                                        $availableZoneChoices = @($zonesToDeploy)
+                                        Write-Host $("  Available zones for this configuration: {0}" -f ($availableZoneChoices -join ", ")) -ForegroundColor White
+                                        Write-Host $("  Quota allows simultaneous testing in {0} zone(s)." -f $maxSupportedZones) -ForegroundColor White
+                                        Write-Host $("")
+
+                                        if ($maxSupportedZones -eq 1)
+                                            {
+                                                Write-Host $("  Which zone would you like to test? [{0}]" -f ($availableZoneChoices -join "/")) -ForegroundColor Yellow -NoNewline
+                                                Write-Host $("  (press Enter to use Zone {0}): " -f $availableZoneChoices[0]) -NoNewline -ForegroundColor DarkGray
+                                                $userZoneInput = [Console]::ReadLine().Trim()
+                                                $chosenZone = if ($userZoneInput -and $availableZoneChoices -contains $userZoneInput) { $userZoneInput } else { $availableZoneChoices[0] }
+                                                $zonesToDeploy = @($chosenZone)
+                                            }
+                                        else
+                                            {
+                                                Write-Host $("  Enter up to {0} zones to test (comma-separated from: {1})." -f $maxSupportedZones, ($availableZoneChoices -join ", ")) -ForegroundColor Yellow
+                                                Write-Host $("  Press Enter to use the first {0} qualifying zones ({1}): " -f $maxSupportedZones, (($availableZoneChoices | Select-Object -First $maxSupportedZones) -join ", ")) -NoNewline -ForegroundColor DarkGray
+                                                $userZoneInput  = [Console]::ReadLine().Trim()
+                                                $parsedZones    = $userZoneInput -split '\s*,\s*' | Where-Object { $_ -and $availableZoneChoices -contains $_ } | Select-Object -Unique -First $maxSupportedZones
+                                                $zonesToDeploy  = if ($parsedZones.Count -gt 0) { @($parsedZones) } else { @($availableZoneChoices | Select-Object -First $maxSupportedZones) }
+                                            }
+
+                                        Write-Host $("")
+
+                                        # Record quota-gated zones as skipped with reason and CLI commands
+                                        $gatedZones = $availableZoneChoices | Where-Object { $zonesToDeploy -notcontains $_ }
+                                        foreach ($gz in $gatedZones)
+                                            {
+                                                $gatedCmd = $("Test-SilkResourceDeployment -SubscriptionId '{0}' -ResourceGroupName '{1}' -Region '{2}' -Zone {3}" -f $SubscriptionId, $ResourceGroupName, $Region, $gz)
+                                                if ($cNodeObject -and $CNodeFriendlyName) { $gatedCmd += $(" -CNodeFriendlyName '{0}' -CNodeCount {1}" -f $CNodeFriendlyName, $CNodeCount) }
+                                                elseif ($cNodeObject -and $CNodeSku)     { $gatedCmd += $(" -CNodeSku '{0}' -CNodeCount {1}" -f $CNodeSku, $CNodeCount) }
+                                                if ($MnodeSizeLsv3)  { $gatedCmd += $(" -MnodeSizeLsv3 @({0})"  -f (($MnodeSizeLsv3  | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                if ($MnodeSizeLsv4)  { $gatedCmd += $(" -MnodeSizeLsv4 @({0})"  -f (($MnodeSizeLsv4  | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                if ($MnodeSizeLasv3) { $gatedCmd += $(" -MnodeSizeLasv3 @({0})" -f (($MnodeSizeLasv3 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                if ($MnodeSizeLasv4) { $gatedCmd += $(" -MnodeSizeLasv4 @({0})" -f (($MnodeSizeLasv4 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                if ($MnodeSizeLaosv4){ $gatedCmd += $(" -MnodeSizeLaosv4 @({0})" -f (($MnodeSizeLaosv4 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+
+                                                $skippedZoneEntries += [PSCustomObject]@{
+                                                    Zone            = $gz
+                                                    UnsupportedSKUs = @()
+                                                    Reason          = $("Quota-gated: {0} supports only {1} simultaneous zone test(s). Run individually: {2}" -f $bindingLabel, $maxSupportedZones, $gatedCmd)
+                                                    Command         = $gatedCmd
+                                                }
+                                                Write-Host $("  Zone {0} deferred — run individually:" -f $gz) -ForegroundColor DarkGray
+                                                Write-Host $("    {0}" -f $gatedCmd) -ForegroundColor Cyan
+                                            }
+
+                                        Write-Host $("")
+                                        Write-Host $("  Proceeding with zone(s): {0}" -f ($zonesToDeploy -join ", ")) -ForegroundColor Green
+                                        Write-Host $("")
+
+                                        # Recalculate isMultiZoneDeploy in case we trimmed to 1
+                                        $isMultiZoneDeploy = $zonesToDeploy.Count -gt 1
+                                    }
+                            }
+                        elseif ($isMultiZoneDeploy)
+                            {
+                                Write-Host $("✓  Quota sufficient for all {0} zone(s). Proceeding with multi-zone deployment." -f $zoneCount) -ForegroundColor Green
+                                Write-Host $("")
                             }
                     }
 
@@ -8281,11 +8605,17 @@ function Test-SilkResourceDeployment
                     {
                         foreach ($skippedEntry in $skippedZoneEntries)
                             {
-                                $skippedZone        = $skippedEntry.Zone
-                                $skippedReason      = $skippedEntry.Reason
-                                $skippedSkuList     = if ($skippedEntry.UnsupportedSKUs) { $($skippedEntry.UnsupportedSKUs -join $(", ")) } else { $("Unknown") }
-                                $skippedZonePrefix  = $("-z{0}" -f $skippedZone)
-                                $notAttemptedStatus = $("⚠ Not Attempted — {0} not available in Zone {1}" -f $skippedSkuList, $skippedZone)
+                                $skippedZone            = $skippedEntry.Zone
+                                $skippedReason          = $skippedEntry.Reason
+                                $skippedZonePrefix      = $("-z{0}" -f $skippedZone)
+                                $isQuotaGated           = ($skippedEntry.UnsupportedSKUs.Count -eq 0)
+                                $notAttemptedStatus     = if ($isQuotaGated) {
+                                                              $("⚠ Not Attempted — Zone deferred: insufficient quota for simultaneous multi-zone testing")
+                                                          } `
+                                                          else {
+                                                              $("⚠ Not Attempted — {0} not available in Zone {1}" -f ($skippedEntry.UnsupportedSKUs -join $(", ")), $skippedZone)
+                                                          }
+                                $skippedFailureCategory = if ($isQuotaGated) { $("Quota Gated") } else { $("SKU Not In Zone") }
 
                                 # Phantom CNode rows
                                 if ($adjustedCNodeCount -gt 0 -and $cNodeVMSku)
@@ -8304,7 +8634,7 @@ function Test-SilkResourceDeployment
                                                     NICStatus           = $("—")
                                                     AvailabilitySet     = $("—")
                                                     ValidationFinding   = $skippedReason
-                                                    FailureCategory     = $("SKU Not In Zone")
+                                                    FailureCategory     = $skippedFailureCategory
                                                     Zone                = $skippedZone
                                                 }
                                             }
@@ -8338,7 +8668,7 @@ function Test-SilkResourceDeployment
                                                     NICStatus           = $("—")
                                                     AvailabilitySet     = $("—")
                                                     ValidationFinding   = $skippedReason
-                                                    FailureCategory     = $("SKU Not In Zone")
+                                                    FailureCategory     = $skippedFailureCategory
                                                     Zone                = $skippedZone
                                                 }
                                             }
@@ -8560,8 +8890,14 @@ function Test-SilkResourceDeployment
                 if ($totalVCPUQuota)
                     {
                         $totalvCPUCount = 0
-                        if ($cNodeObject) { $totalvCPUCount += $cNodeObject.vCPU * $CNodeCount }
-                        if ($mNodeObject) { $totalvCPUCount += ($mNodeObject | ForEach-Object { $_.vCPU * $_.dNodeCount } | Measure-Object -Sum).Sum }
+                        if ($cNodeObject) { $totalvCPUCount += $cNodeObject.vCPU * $adjustedCNodeCount }
+                        if ($mNodeObject)
+                            {
+                                $totalvCPUCount += ($mNodeObject | ForEach-Object {
+                                    $adjDNodes = if ($mNodeQuotaAdjustments.ContainsKey($_.PhysicalSize)) { $mNodeQuotaAdjustments[$_.PhysicalSize].AdjustedCount } else { $_.dNodeCount }
+                                    $_.vCPU * $adjDNodes
+                                } | Measure-Object -Sum).Sum
+                            }
                         $availableVCPUQuota = $totalVCPUQuota.Limit - $totalVCPUQuota.CurrentValue
                         $vcpuQuotaStatus = if ($availableVCPUQuota -ge $totalvCPUCount) { "✓ Sufficient" } else { "✗ Insufficient" }
                         $vcpuQuotaStatusLevel = if ($availableVCPUQuota -ge $totalvCPUCount) { "Success" } else { "Error" }
@@ -8731,17 +9067,23 @@ function Test-SilkResourceDeployment
                     {
                         foreach ($group in $mNodeGroups)
                             {
-                                $groupSuccessful = ($group.Group | Where-Object { $_.VMStatus -eq $("✓ Deployed") }).Count
-                                $groupExpected = $group.Group.Count
-                                $groupSku = $group.Group[0].ExpectedSKU
-                                $groupName = $group.Name.Replace($("MNode "), $("M")).Replace($(" TiB)"), $("TB)"))
+                                $groupSuccessful    = ($group.Group | Where-Object { $_.VMStatus -eq $("✓ Deployed") }).Count
+                                $groupExpected      = $group.Group.Count
+                                $groupSku           = $group.Group[0].ExpectedSKU
+                                $groupName          = $group.Name.Replace($("MNode "), $("M")).Replace($(" TiB)"), $("TB)"))
+                                $allNotAttempted    = ($group.Group | Where-Object { $_.ProvisioningState -ne $("Not Attempted") }).Count -eq 0
+                                $isQuotaGatedGroup  = $allNotAttempted -and (($group.Group | Where-Object { $_.FailureCategory -eq $("Quota Gated") }).Count -gt 0)
 
                                 $silkSummary += [PSCustomObject]@{
                                                     Component       = $groupName
                                                     DeployedCount   = $groupSuccessful
                                                     ExpectedCount   = $groupExpected
                                                     SKU             = $groupSku
-                                                    Status          = if ($groupSuccessful -eq $groupExpected) { $("✓ Complete") } elseif ($groupSuccessful -eq 0) { $("✗ Failed") } else { $("⚠ Partial") }
+                                                    Status          = if ($groupSuccessful -eq $groupExpected) { $("✓ Complete") } `
+                                                                      elseif ($isQuotaGatedGroup) { $("⚠ Deferred") } `
+                                                                      elseif ($allNotAttempted) { $("— Not Attempted") } `
+                                                                      elseif ($groupSuccessful -eq 0) { $("✗ Failed") } `
+                                                                      else { $("⚠ Partial") }
                                                 }
                             }
                     }

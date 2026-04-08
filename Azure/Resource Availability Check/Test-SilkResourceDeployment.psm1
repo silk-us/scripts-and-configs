@@ -4587,7 +4587,7 @@ function Test-SilkResourceDeployment
 
                         if (-not $cNodeObject)
                             {
-                                $availableSkus = ($cNodeSizeObject | ForEach-Object { "{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix } | Sort-Object) -join ", "
+                                $availableSkus = ($cNodeSizeObject | ForEach-Object { $("{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix) } | Sort-Object) -join ", "
                                 Write-Error $("Invalid CNode SKU '{0}'. Available options: {1}" -f $CNodeSku, $availableSkus)
                                 $validationError = $true
                                 return
@@ -5033,7 +5033,7 @@ function Test-SilkResourceDeployment
                                             } `
                                         else
                                             {
-                                                Write-Verbose -Message $("Sufficient vCPU quota available for MNode SKU {0} of Family: {1}. Required: {2} -> Limit: {3}, Consumed: {4}, Available: {5}" -f $(($mNodeFamily.group | ForEach-Object { "{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix }) -join ', '), $mNodeFamily.Name, $mNodeFamilyvCPUCount, $mNodeSKUFamilyQuota.Limit, $mNodeSKUFamilyQuota.CurrentValue, $availableMNodeVCPUs)
+                                                Write-Verbose -Message $("Sufficient vCPU quota available for MNode SKU {0} of Family: {1}. Required: {2} -> Limit: {3}, Consumed: {4}, Available: {5}" -f $(($mNodeFamily.group | ForEach-Object { $("{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix) }) -join ', '), $mNodeFamily.Name, $mNodeFamilyvCPUCount, $mNodeSKUFamilyQuota.Limit, $mNodeSKUFamilyQuota.CurrentValue, $availableMNodeVCPUs)
 
                                                 # Add full counts
                                                 foreach ($mNodeType in $mNodeFamily.Group)
@@ -6968,7 +6968,7 @@ function Test-SilkResourceDeployment
                                 $cNodeLimit     = if ($cNodeFamilyQ) { $cNodeFamilyQ.Limit } else { $null }
                                 $cNodeMaxZones  = if ($cNodeAvail -and $cNode1x -gt 0) { [Math]::Floor($cNodeAvail / $cNode1x) } else { $zoneCount }
                                 $preFlightRows += [PSCustomObject]@{
-                                    Label       = "CNode SKU Family ({0})" -f $cNodeVMSku
+                                    Label       = $("CNode SKU Family ({0})" -f $cNodeVMSku)
                                     Single      = $cNode1x
                                     Total       = $cNodeNx
                                     Available   = $cNodeAvail
@@ -6990,9 +6990,9 @@ function Test-SilkResourceDeployment
                                         $mFamAvail  = if ($mFamQ) { $mFamQ.Limit - $mFamQ.CurrentValue } else { $null }
                                         $mFamLimit  = if ($mFamQ) { $mFamQ.Limit } else { $null }
                                         $mFamMax    = if ($mFamAvail -and $mFam1x -gt 0) { [Math]::Floor($mFamAvail / $mFam1x) } else { $zoneCount }
-                                        $skuNames   = ($mFam.Group | ForEach-Object { "{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix } | Select-Object -Unique) -join ", "
+                                        $skuNames   = ($mFam.Group | ForEach-Object { $("{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix) } | Select-Object -Unique) -join ", "
                                         $preFlightRows += [PSCustomObject]@{
-                                            Label       = "MNode SKU Family ({0})" -f $skuNames
+                                            Label       = $("MNode SKU Family ({0})" -f $skuNames)
                                             Single      = $mFam1x
                                             Total       = $mFamNx
                                             Available   = $mFamAvail
@@ -7060,9 +7060,9 @@ function Test-SilkResourceDeployment
                         $knownRows          = $preFlightRows | Where-Object { -not $_.Unknown }
                         $maxSupportedZones  = if ($knownRows) { ($knownRows | Measure-Object -Property MaxZones -Minimum).Minimum } else { $zoneCount }
                         $maxSupportedZones  = [Math]::Min([Math]::Max([int]$maxSupportedZones, 0), $zoneCount)
-                        $bindingRow         = if ($knownRows -and $maxSupportedZones -lt $zoneCount) {
-                                                $knownRows | Where-Object { $_.MaxZones -eq $maxSupportedZones } | Select-Object -First 1
-                                             } else { $null }
+                        $bindingRow = if ($knownRows -and $maxSupportedZones -lt $zoneCount) {
+                                          $knownRows | Where-Object { $_.MaxZones -eq $maxSupportedZones } | Select-Object -First 1
+                                      } else { $null }
 
                         # -----------------------------------------------------------------------
                         # Display pre-flight table
@@ -7110,7 +7110,7 @@ function Test-SilkResourceDeployment
                         Write-Host $("") -ForegroundColor White
 
                         # -----------------------------------------------------------------------
-                        # Prompt and gate
+
                         # Prompt and gate if quota is insufficient for all zones
                         # -----------------------------------------------------------------------
                         if ($maxSupportedZones -lt $zoneCount -and $isMultiZoneDeploy)

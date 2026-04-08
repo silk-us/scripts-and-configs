@@ -6934,6 +6934,10 @@ function Test-SilkResourceDeployment
                 $isMultiZoneDeploy       = $false
                 $zonesToDeploy           = @($Zone)
                 $skippedZoneEntries      = @()
+                if ($TestZonesSequentially -and -not $TestAllZones)
+                    {
+                        Write-Warning -Message $("-TestZonesSequentially requires -TestAllZones to function. Sequential zone testing deploys each zone in series — without -TestAllZones there is only one zone to deploy and no sequential behavior occurs. Add -TestAllZones to your command to enable sequential multi-zone testing.")
+                    }
                 $sequentialZoneRun       = $TestZonesSequentially -and $TestAllZones
                 $allDeployedVMs          = [System.Collections.Generic.List[PSCustomObject]]::new()
                 $allDeployedNICs         = [System.Collections.Generic.List[PSCustomObject]]::new()

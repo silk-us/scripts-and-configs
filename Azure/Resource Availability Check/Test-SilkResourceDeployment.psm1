@@ -1,4 +1,4 @@
-
+﻿
 
 function Test-SilkResourceDeployment
     {
@@ -6933,6 +6933,278 @@ function Test-SilkResourceDeployment
                         else
                             {
                                 Write-Warning $("No availability zones detected in region '{0}'. Deploying to target zone {1} only." -f $Region, $Zone)
+                            }
+                    }
+
+                # ===============================================================================
+                # Pre-Flight Quota Gate
+                # ===============================================================================
+                # Now that $zonesToDeploy is finalized, we know the actual test multiplier (N zones).
+                # A single Silk SDP deployment requires $totalVMCount VMs / $totalvCPUCount vCPUs.
+                # When TestAllZones deploys N zones simultaneously those are N× the region quota.
+                # This block:
+                #   1. Displays a pre-flight table showing 1× (SDP) vs N× (test) vs available
+                #   2. Identifies the binding constraint and max simultaneously-testable zones
+                #   3. Prompts the user to choose which zones to test if quota is insufficient
+                #   4. Trims $zonesToDeploy accordingly and records skipped zones with reason
+                # -------------------------------------------------------------------------------
+                $zoneCount = $zonesToDeploy.Count
+
+                if ($zoneCount -gt 0 -and $anyDeploymentPossible -and -not $TestAllSKUFamilies)
+                    {
+                        # -----------------------------------------------------------------------
+                        # Build per-resource-type constraint table
+                        # -----------------------------------------------------------------------
+                        $preFlightRows = @()
+
+                        # CNode SKU family vCPUs
+                        if ($cNodeObject)
+                            {
+                                $cNodeFamily    = $cNodeObject.QuotaFamily
+                                $cNodeFamilyQ   = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $cNodeFamily }
+                                $cNode1x        = $cNodeObject.vCPU * $adjustedCNodeCount
+                                $cNodeNx        = $cNode1x * $zoneCount
+                                $cNodeAvail     = if ($cNodeFamilyQ) { $cNodeFamilyQ.Limit - $cNodeFamilyQ.CurrentValue } else { $null }
+                                $cNodeLimit     = if ($cNodeFamilyQ) { $cNodeFamilyQ.Limit } else { $null }
+                                $cNodeMaxZones  = if ($cNodeAvail -and $cNode1x -gt 0) { [Math]::Floor($cNodeAvail / $cNode1x) } else { $zoneCount }
+                                $preFlightRows += [PSCustomObject]@{
+                                    Label       = "CNode SKU Family ({0})" -f $cNodeVMSku
+                                    Single      = $cNode1x
+                                    Total       = $cNodeNx
+                                    Available   = $cNodeAvail
+                                    Limit       = $cNodeLimit
+                                    MaxZones    = $cNodeMaxZones
+                                    Unknown     = (-not $cNodeFamilyQ)
+                                }
+                            }
+
+                        # MNode SKU families (one row per unique quota family)
+                        if ($mNodeObject.Count -gt 0)
+                            {
+                                $mNodeFamilies = $mNodeObject | Group-Object -Property QuotaFamily
+                                foreach ($mFam in $mNodeFamilies)
+                                    {
+                                        $mFamQ      = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $mFam.Name }
+                                        $mFam1x     = ($mFam.Group | ForEach-Object { $_.vCPU * $_.dNodeCount } | Measure-Object -Sum).Sum
+                                        $mFamNx     = $mFam1x * $zoneCount
+                                        $mFamAvail  = if ($mFamQ) { $mFamQ.Limit - $mFamQ.CurrentValue } else { $null }
+                                        $mFamLimit  = if ($mFamQ) { $mFamQ.Limit } else { $null }
+                                        $mFamMax    = if ($mFamAvail -and $mFam1x -gt 0) { [Math]::Floor($mFamAvail / $mFam1x) } else { $zoneCount }
+                                        $skuNames   = ($mFam.Group | ForEach-Object { "{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix } | Select-Object -Unique) -join ", "
+                                        $preFlightRows += [PSCustomObject]@{
+                                            Label       = "MNode SKU Family ({0})" -f $skuNames
+                                            Single      = $mFam1x
+                                            Total       = $mFamNx
+                                            Available   = $mFamAvail
+                                            Limit       = $mFamLimit
+                                            MaxZones    = $mFamMax
+                                            Unknown     = (-not $mFamQ)
+                                        }
+                                    }
+                            }
+
+                        # Total Regional vCPUs
+                        $regionalVCPUQ  = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Total Regional vCPUs" }
+                        $regional1x     = $totalvCPUCount
+                        $regionalNx     = $regional1x * $zoneCount
+                        $regionalAvail  = if ($regionalVCPUQ) { $regionalVCPUQ.Limit - $regionalVCPUQ.CurrentValue } else { $null }
+                        $regionalLimit  = if ($regionalVCPUQ) { $regionalVCPUQ.Limit } else { $null }
+                        $regionalMax    = if ($regionalAvail -and $regional1x -gt 0) { [Math]::Floor($regionalAvail / $regional1x) } else { $zoneCount }
+                        $preFlightRows += [PSCustomObject]@{
+                            Label       = "Total Regional vCPUs"
+                            Single      = $regional1x
+                            Total       = $regionalNx
+                            Available   = $regionalAvail
+                            Limit       = $regionalLimit
+                            MaxZones    = $regionalMax
+                            Unknown     = (-not $regionalVCPUQ)
+                        }
+
+                        # Virtual Machine count
+                        $vmCountQ       = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Virtual Machines" }
+                        $vm1x           = $totalVMCount
+                        $vmNx           = $vm1x * $zoneCount
+                        $vmAvail        = if ($vmCountQ) { $vmCountQ.Limit - $vmCountQ.CurrentValue } else { $null }
+                        $vmLimit        = if ($vmCountQ) { $vmCountQ.Limit } else { $null }
+                        $vmMax          = if ($vmAvail -and $vm1x -gt 0) { [Math]::Floor($vmAvail / $vm1x) } else { $zoneCount }
+                        $preFlightRows += [PSCustomObject]@{
+                            Label       = "Virtual Machines"
+                            Single      = $vm1x
+                            Total       = $vmNx
+                            Available   = $vmAvail
+                            Limit       = $vmLimit
+                            MaxZones    = $vmMax
+                            Unknown     = (-not $vmCountQ)
+                        }
+
+                        # Availability Sets
+                        $avsetQ         = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq "Availability Sets" }
+                        $avset1x        = $(if ($cNodeObject) { 1 } else { 0 }) + $mNodeObjectUnique.Count
+                        $avsetNx        = $avset1x * $zoneCount
+                        $avsetAvail     = if ($avsetQ) { $avsetQ.Limit - $avsetQ.CurrentValue } else { $null }
+                        $avsetLimit     = if ($avsetQ) { $avsetQ.Limit } else { $null }
+                        $avsetMax       = if ($avsetAvail -and $avset1x -gt 0) { [Math]::Floor($avsetAvail / $avset1x) } else { $zoneCount }
+                        $preFlightRows += [PSCustomObject]@{
+                            Label       = "Availability Sets"
+                            Single      = $avset1x
+                            Total       = $avsetNx
+                            Available   = $avsetAvail
+                            Limit       = $avsetLimit
+                            MaxZones    = $avsetMax
+                            Unknown     = (-not $avsetQ)
+                        }
+
+                        # -----------------------------------------------------------------------
+                        # Determine binding constraint and max supportable zones
+                        # -----------------------------------------------------------------------
+                        $knownRows          = $preFlightRows | Where-Object { -not $_.Unknown }
+                        $maxSupportedZones  = if ($knownRows) { ($knownRows | Measure-Object -Property MaxZones -Minimum).Minimum } else { $zoneCount }
+                        $maxSupportedZones  = [Math]::Min([Math]::Max([int]$maxSupportedZones, 0), $zoneCount)
+                        $bindingRow         = if ($knownRows -and $maxSupportedZones -lt $zoneCount) {
+                                                $knownRows | Where-Object { $_.MaxZones -eq $maxSupportedZones } | Select-Object -First 1
+                                             } else { $null }
+
+                        # -----------------------------------------------------------------------
+                        # Display pre-flight table
+                        # -----------------------------------------------------------------------
+                        $sepLine    = $("+-{0}-+" -f ("-" * 84))
+                        $preFlightTestHeader = $("{0}x Test" -f $zoneCount)
+                        Write-Host $("") -ForegroundColor White
+                        Write-Host $sepLine -ForegroundColor Cyan
+                        Write-Host $("| PRE-FLIGHT QUOTA CHECK  {0,-61}|" -f ("{0} Zone(s) Requested" -f $zoneCount)) -ForegroundColor Cyan
+                        Write-Host $sepLine -ForegroundColor Cyan
+                        Write-Host $("| {0,-38}  {1,6}  {2,7}  {3,9}  {4,-5} |" -f "Resource", "1x SDP", $preFlightTestHeader, "Available", "OK?") -ForegroundColor Cyan
+                        Write-Host $sepLine -ForegroundColor Cyan
+
+                        foreach ($row in $preFlightRows)
+                            {
+                                if ($row.Unknown)
+                                    {
+                                        $status     = "?"
+                                        $color      = "Yellow"
+                                        $availStr   = "N/A"
+                                    }
+                                elseif ($row.Available -ge $row.Total)
+                                    {
+                                        $status     = "OK"
+                                        $color      = "Green"
+                                        $availStr   = $("{0}/{1}" -f $row.Available, $row.Limit)
+                                    }
+                                elseif ($row.Available -ge $row.Single)
+                                    {
+                                        $status     = "WARN"
+                                        $color      = "Yellow"
+                                        $availStr   = $("{0}/{1}" -f $row.Available, $row.Limit)
+                                    }
+                                else
+                                    {
+                                        $status     = "FAIL"
+                                        $color      = "Red"
+                                        $availStr   = $("{0}/{1}" -f $row.Available, $row.Limit)
+                                    }
+
+                                Write-Host $("| {0,-38}  {1,6}  {2,7}  {3,9}  {4,-4} |" -f $row.Label, $row.Single, $row.Total, $availStr, $status) -ForegroundColor $color
+                            }
+
+                        Write-Host $sepLine -ForegroundColor Cyan
+                        Write-Host $("") -ForegroundColor White
+
+                        # -----------------------------------------------------------------------
+                        # Prompt and gate
+                        # Prompt and gate if quota is insufficient for all zones
+                        # -----------------------------------------------------------------------
+                        if ($maxSupportedZones -lt $zoneCount -and $isMultiZoneDeploy)
+                            {
+                                $bindingLabel = if ($bindingRow) { $bindingRow.Label } else { "one or more quota limits" }
+
+                                if ($maxSupportedZones -eq 0)
+                                    {
+                                        Write-Host $("[X]  Insufficient quota to test any zone simultaneously. {0} is the binding constraint." -f $bindingLabel) -ForegroundColor Red
+                                        Write-Host $("    Consider running individual zone tests after existing resources are released.") -ForegroundColor Yellow
+                                        Write-Host $("")
+
+                                        # Generate per-zone commands
+                                        foreach ($z in $zonesToDeploy)
+                                            {
+                                                $zoneCmd = $("Test-SilkResourceDeployment -SubscriptionId '{0}' -ResourceGroupName '{1}' -Region '{2}' -Zone {3}" -f $SubscriptionId, $ResourceGroupName, $Region, $z)
+                                                if ($cNodeObject -and $CNodeFriendlyName) { $zoneCmd += $(" -CNodeFriendlyName '{0}' -CNodeCount {1}" -f $CNodeFriendlyName, $CNodeCount) }
+                                                elseif ($cNodeObject -and $CNodeSku)     { $zoneCmd += $(" -CNodeSku '{0}' -CNodeCount {1}" -f $CNodeSku, $CNodeCount) }
+                                                if ($MnodeSizeLsv3)  { $zoneCmd += $(" -MnodeSizeLsv3 @({0})"  -f (($MnodeSizeLsv3  | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                if ($MnodeSizeLsv4)  { $zoneCmd += $(" -MnodeSizeLsv4 @({0})"  -f (($MnodeSizeLsv4  | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                if ($MnodeSizeLasv3) { $zoneCmd += $(" -MnodeSizeLasv3 @({0})" -f (($MnodeSizeLasv3 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                if ($MnodeSizeLasv4) { $zoneCmd += $(" -MnodeSizeLasv4 @({0})" -f (($MnodeSizeLasv4 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                if ($MnodeSizeLaosv4){ $zoneCmd += $(" -MnodeSizeLaosv4 @({0})" -f (($MnodeSizeLaosv4 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                Write-Host $("  Zone {0}: {1}" -f $z, $zoneCmd) -ForegroundColor Cyan
+                                            }
+
+                                        Write-Host $("")
+                                        $anyDeploymentPossible  = $false
+                                        $zonesToDeploy          = @()
+                                    }
+                                else
+                                    {
+                                        Write-Host $("⚠  Quota supports {0} of {1} requested zones simultaneously. Binding constraint: {2}." -f $maxSupportedZones, $zoneCount, $bindingLabel) -ForegroundColor Yellow
+                                        Write-Host $("")
+
+                                        # Offer zone selection prompt
+                                        $availableZoneChoices = @($zonesToDeploy)
+                                        Write-Host $("  Available zones for this configuration: {0}" -f ($availableZoneChoices -join ", ")) -ForegroundColor White
+                                        Write-Host $("  Quota allows simultaneous testing in {0} zone(s)." -f $maxSupportedZones) -ForegroundColor White
+                                        Write-Host $("")
+
+                                        if ($maxSupportedZones -eq 1)
+                                            {
+                                                Write-Host $("  Which zone would you like to test? [{0}]" -f ($availableZoneChoices -join "/")) -ForegroundColor Yellow -NoNewline
+                                                Write-Host $("  (press Enter to use Zone {0}): " -f $availableZoneChoices[0]) -NoNewline -ForegroundColor DarkGray
+                                                $userZoneInput = [Console]::ReadLine().Trim()
+                                                $chosenZone = if ($userZoneInput -and $availableZoneChoices -contains $userZoneInput) { $userZoneInput } else { $availableZoneChoices[0] }
+                                                $zonesToDeploy = @($chosenZone)
+                                            }
+                                        else
+                                            {
+                                                Write-Host $("  Enter up to {0} zones to test (comma-separated from: {1})." -f $maxSupportedZones, ($availableZoneChoices -join ", ")) -ForegroundColor Yellow
+                                                Write-Host $("  Press Enter to use the first {0} qualifying zones ({1}): " -f $maxSupportedZones, (($availableZoneChoices | Select-Object -First $maxSupportedZones) -join ", ")) -NoNewline -ForegroundColor DarkGray
+                                                $userZoneInput  = [Console]::ReadLine().Trim()
+                                                $parsedZones    = $userZoneInput -split '\s*,\s*' | Where-Object { $_ -and $availableZoneChoices -contains $_ } | Select-Object -Unique -First $maxSupportedZones
+                                                $zonesToDeploy  = if ($parsedZones.Count -gt 0) { @($parsedZones) } else { @($availableZoneChoices | Select-Object -First $maxSupportedZones) }
+                                            }
+
+                                        Write-Host $("")
+
+                                        # Record quota-gated zones as skipped with reason and CLI commands
+                                        $gatedZones = $availableZoneChoices | Where-Object { $zonesToDeploy -notcontains $_ }
+                                        foreach ($gz in $gatedZones)
+                                            {
+                                                $gatedCmd = $("Test-SilkResourceDeployment -SubscriptionId '{0}' -ResourceGroupName '{1}' -Region '{2}' -Zone {3}" -f $SubscriptionId, $ResourceGroupName, $Region, $gz)
+                                                if ($cNodeObject -and $CNodeFriendlyName) { $gatedCmd += $(" -CNodeFriendlyName '{0}' -CNodeCount {1}" -f $CNodeFriendlyName, $CNodeCount) }
+                                                elseif ($cNodeObject -and $CNodeSku)     { $gatedCmd += $(" -CNodeSku '{0}' -CNodeCount {1}" -f $CNodeSku, $CNodeCount) }
+                                                if ($MnodeSizeLsv3)  { $gatedCmd += $(" -MnodeSizeLsv3 @({0})"  -f (($MnodeSizeLsv3  | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                if ($MnodeSizeLsv4)  { $gatedCmd += $(" -MnodeSizeLsv4 @({0})"  -f (($MnodeSizeLsv4  | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                if ($MnodeSizeLasv3) { $gatedCmd += $(" -MnodeSizeLasv3 @({0})" -f (($MnodeSizeLasv3 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                if ($MnodeSizeLasv4) { $gatedCmd += $(" -MnodeSizeLasv4 @({0})" -f (($MnodeSizeLasv4 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                if ($MnodeSizeLaosv4){ $gatedCmd += $(" -MnodeSizeLaosv4 @({0})" -f (($MnodeSizeLaosv4 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+
+                                                $skippedZoneEntries += [PSCustomObject]@{
+                                                    Zone            = $gz
+                                                    UnsupportedSKUs = @()
+                                                    Reason          = $("Quota-gated: {0} supports only {1} simultaneous zone test(s). Run individually: {2}" -f $bindingLabel, $maxSupportedZones, $gatedCmd)
+                                                }
+                                                Write-Host $("  Zone {0} deferred — run individually:" -f $gz) -ForegroundColor DarkGray
+                                                Write-Host $("    {0}" -f $gatedCmd) -ForegroundColor Cyan
+                                            }
+
+                                        Write-Host $("")
+                                        Write-Host $("  Proceeding with zone(s): {0}" -f ($zonesToDeploy -join ", ")) -ForegroundColor Green
+                                        Write-Host $("")
+
+                                        # Recalculate isMultiZoneDeploy in case we trimmed to 1
+                                        $isMultiZoneDeploy = $zonesToDeploy.Count -gt 1
+                                    }
+                            }
+                        elseif ($isMultiZoneDeploy)
+                            {
+                                Write-Host $("✓  Quota sufficient for all {0} zone(s). Proceeding with multi-zone deployment." -f $zoneCount) -ForegroundColor Green
+                                Write-Host $("")
                             }
                     }
 

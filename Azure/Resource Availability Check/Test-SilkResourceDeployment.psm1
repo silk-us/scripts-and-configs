@@ -6612,7 +6612,7 @@ function Test-SilkResourceDeployment
                             -Id 3 `
                             -ParentId 1 `
                             -Activity $("SKU Family Deployment Test") `
-                            -Status $("Monitoring {0} VM creation jobs..." -f $vmJobMapping.Count) `
+                            -Status $("VM Jobs: 0/{0} complete" -f $vmJobMapping.Count) `
                             -PercentComplete 50
 
                         $allVMJobs = Get-Job
@@ -6627,8 +6627,8 @@ function Test-SilkResourceDeployment
                                     -Id 3 `
                                     -ParentId 1 `
                                     -Activity $("SKU Family Deployment Test") `
-                                    -Status $("Monitoring VM creation jobs") `
-                                    -CurrentOperation $("{0} completed, {1} remaining" -f $completedJobs.Count, $runningJobs.Count) `
+                                    -Status $("VM Jobs: {0}/{1} complete ({2} running)" -f $completedJobs.Count, $allVMJobs.Count, $runningJobs.Count) `
+                                    -CurrentOperation $("Waiting for VM creation jobs to finish...") `
                                     -PercentComplete $(if ($allVMJobs.Count -gt 0) { [Math]::Round(($completedJobs.Count / $allVMJobs.Count) * 100) } else { 100 })
 
                                 do
@@ -6644,8 +6644,8 @@ function Test-SilkResourceDeployment
                                             -Id 3 `
                                             -ParentId 1 `
                                             -Activity $("SKU Family Deployment Test") `
-                                            -Status $("Monitoring VM creation jobs") `
-                                            -CurrentOperation $("{0} completed, {1} remaining (running: {2})" -f $completedJobs.Count, $remainingJobs, $runningJobs.Count) `
+                                            -Status $("VM Jobs: {0}/{1} complete ({2} running, {3} remaining)" -f $completedJobs.Count, $allVMJobs.Count, $runningJobs.Count, $remainingJobs) `
+                                            -CurrentOperation $("Waiting for VM creation jobs to finish...") `
                                             -PercentComplete $completionPercent
                                     } `
                                 while ($runningJobs.Count -gt 0)
@@ -8075,8 +8075,8 @@ function Test-SilkResourceDeployment
                                 $zoneInitialRemaining = [Math]::Max($zoneVMJobs.Count - $zoneCompletedJobs.Count, 0)
 
                                 Write-Progress `
-                                    -Status $("Zone {0}/{1} — Monitoring VM creation jobs" -f $zoneLoopIndex, $zonesToDeploy.Count) `
-                                    -CurrentOperation $("{0} completed, {1} remaining (running: {2})" -f $zoneCompletedJobs.Count, $zoneInitialRemaining, $zoneRunningJobs.Count) `
+                                    -Status $("Zone {0}/{1} — VM Jobs: {2}/{3} complete ({4} running)" -f $zoneLoopIndex, $zonesToDeploy.Count, $zoneCompletedJobs.Count, $zoneVMJobs.Count, $zoneRunningJobs.Count) `
+                                    -CurrentOperation $("Waiting for zone {0} VM creation jobs to finish..." -f $deployZone) `
                                     -PercentComplete $zoneInitialPercent `
                                     -Activity $("VM Deployment") `
                                     -ParentId 1 `
@@ -8092,8 +8092,8 @@ function Test-SilkResourceDeployment
                                         $zoneRemaining     = [Math]::Max($zoneVMJobs.Count - $zoneCompletedJobs.Count, 0)
 
                                         Write-Progress `
-                                            -Status $("Zone {0}/{1} — Monitoring VM creation jobs" -f $zoneLoopIndex, $zonesToDeploy.Count) `
-                                            -CurrentOperation $("{0} completed, {1} remaining (running: {2})" -f $zoneCompletedJobs.Count, $zoneRemaining, $zoneRunningJobs.Count) `
+                                            -Status $("Zone {0}/{1} — VM Jobs: {2}/{3} complete ({4} running, {5} remaining)" -f $zoneLoopIndex, $zonesToDeploy.Count, $zoneCompletedJobs.Count, $zoneVMJobs.Count, $zoneRunningJobs.Count, $zoneRemaining) `
+                                            -CurrentOperation $("Waiting for zone {0} VM creation jobs to finish..." -f $deployZone) `
                                             -PercentComplete $zoneJobPercent `
                                             -Activity $("VM Deployment") `
                                             -ParentId 1 `
@@ -8214,14 +8214,6 @@ function Test-SilkResourceDeployment
                                 Update-StagedProgress -SectionName 'VMDeployment' -SectionCurrentStep 2 -SectionTotalSteps 3 `
                                     -DetailMessage $("")
 
-                                Write-Progress `
-                                    -Status $("Monitoring VM Creation Jobs") `
-                                    -CurrentOperation $("Waiting for all VMs to be deployed...") `
-                                    -PercentComplete 95 `
-                                    -Activity $("VM Deployment") `
-                                    -ParentId 1 `
-                                    -Id 3
-
                                 $currentVMJobs        = Get-Job
                                 $completedJobs        = $currentVMJobs | Where-Object { $_.State -in @('Completed', 'Failed', 'Stopped') }
                                 $runningJobs          = $currentVMJobs | Where-Object { $_.State -in @('Running', 'NotStarted') }
@@ -8229,8 +8221,8 @@ function Test-SilkResourceDeployment
                                 $initialRemainingJobs = [Math]::Max($allVMJobs.Count - $completedJobs.Count, 0)
 
                                 Write-Progress `
-                                    -Status $("Monitoring VM creation jobs") `
-                                    -CurrentOperation $("{0} completed, {1} remaining (running: {2})" -f $completedJobs.Count, $initialRemainingJobs, $runningJobs.Count) `
+                                    -Status $("VM Jobs: {0}/{1} complete ({2} running, {3} remaining)" -f $completedJobs.Count, $allVMJobs.Count, $runningJobs.Count, $initialRemainingJobs) `
+                                    -CurrentOperation $("Waiting for all VM creation jobs to finish...") `
                                     -PercentComplete $initialCompletionPercent `
                                     -Activity $("VM Deployment") `
                                     -ParentId 1 `
@@ -8246,8 +8238,8 @@ function Test-SilkResourceDeployment
                                         $remainingJobs = [Math]::Max($allVMJobs.Count - $completedJobs.Count, 0)
 
                                         Write-Progress `
-                                            -Status $("Monitoring VM creation jobs") `
-                                            -CurrentOperation $("{0} completed, {1} remaining (running: {2})" -f $completedJobs.Count, $remainingJobs, $runningJobs.Count) `
+                                            -Status $("VM Jobs: {0}/{1} complete ({2} running, {3} remaining)" -f $completedJobs.Count, $allVMJobs.Count, $runningJobs.Count, $remainingJobs) `
+                                            -CurrentOperation $("Waiting for all VM creation jobs to finish...") `
                                             -PercentComplete $completionPercent `
                                             -Activity $("VM Deployment") `
                                             -ParentId 1 `

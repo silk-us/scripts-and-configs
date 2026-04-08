@@ -1237,6 +1237,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lasv4",                    Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
                 [Switch]
                 $TestZonesSequentially,
 

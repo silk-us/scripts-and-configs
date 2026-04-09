@@ -82,7 +82,12 @@ if (-not $subscription) {
 
 Start-Sleep -Seconds 5
 
-Write-Host "Using subscription: $($azContext.Subscription.Name)" -ForegroundColor Green
+if (!$($azContext.Subscription.Name)) {
+    Write-Host "No valid Azure subscription context found. This can happen in cloud shell, please attempt to re-run the provided command." -ForegroundColor Red
+    throw "No valid Azure subscription context found."
+} else {
+    Write-Host "Azure subscription context validated: $($azContext.Subscription.Name)" -ForegroundColor Green
+}
 
 # Build Project Object
 

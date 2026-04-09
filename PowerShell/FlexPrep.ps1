@@ -77,9 +77,10 @@ if (-not $subscription) {
     $subs = Get-AzSubscription
     $subscription = Build-MenuFromArray -array $subs -property 'Name' -message 'Select Subscription'
     Set-AzContext -Subscription $subscription -ErrorAction Stop | Out-Null
-    Start-Sleep -Seconds 5
     $azContext = Get-AzContext
 }
+
+Start-Sleep -Seconds 5
 
 Write-Host "Using subscription: $($azContext.Subscription.Name)" -ForegroundColor Green
 

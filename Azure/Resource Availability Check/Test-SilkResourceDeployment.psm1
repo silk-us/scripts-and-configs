@@ -2487,10 +2487,10 @@ function Test-SilkResourceDeployment
                         # ---------------------------------------------------------------
                         # SKU Support & Quota Reference (All Silk-Supported Families)
                         # ---------------------------------------------------------------
-                        # Always rendered at the bottom of every report as a reference
-                        # section grouped by quota family. Quota is per-family; zone
-                        # support is per-individual-SKU within a family.
-                        if ($ReportData.SKUFamilyTesting.Results.Count -gt 0)
+                        # Suppressed for -TestAllSKUFamilies runs — the Multi-Zone SKU Support
+                        # Matrix already covers this information at the top of those reports.
+                        $isSKUFamilyDeployTestConsole = $ReportData.Metadata.ReportMode -like "SKU Family Deployment Test*"
+                        if ($ReportData.SKUFamilyTesting.Results.Count -gt 0 -and -not $isSKUFamilyDeployTestConsole)
                             {
                                 Write-Host $("`n=== SKU Support & Quota Reference ===") -ForegroundColor Cyan
                                 Write-Verbose -Message $("Rendering SKU support reference for {0} entries" -f $ReportData.SKUFamilyTesting.Results.Count)
@@ -3293,11 +3293,12 @@ function Test-SilkResourceDeployment
 "@
                                     }
 
-                                # Build SKU Support & Quota Reference HTML (always present when results exist)
-                                # Uses rowspan on Quota Family and Quota Status columns to show shared
-                                # family quota once, spanning all SKU rows that belong to that family.
+                                # Build SKU Support & Quota Reference HTML
+                                # Suppressed for -TestAllSKUFamilies runs — the Multi-Zone SKU Support
+                                # Matrix at the top of those reports already covers this information.
                                 $skuFamilyTestingHtml = $("")
-                                if ($ReportData.SKUFamilyTesting.Results.Count -gt 0)
+                                $isSKUFamilyDeployTest = $ReportData.Metadata.ReportMode -like "SKU Family Deployment Test*"
+                                if ($ReportData.SKUFamilyTesting.Results.Count -gt 0 -and -not $isSKUFamilyDeployTest)
                                     {
                                         # Group by quota family, then by unique SKU within each family
                                         $familyGroups = $ReportData.SKUFamilyTesting.Results | Group-Object -Property QuotaFamily
@@ -3540,12 +3541,21 @@ function Test-SilkResourceDeployment
                                 if ($ReportData.SKUFamilyTesting.DeploymentResults -and $ReportData.SKUFamilyTesting.DeploymentResults.Count -gt 0)
                                     {
                                         $deployResults = $ReportData.SKUFamilyTesting.DeploymentResults
-                                        $deploySuccessCount = ($deployResults | Where-Object { $_.DeploymentResult -eq $("Success") }).Count
-                                        $deployFailedCount = ($deployResults | Where-Object { $_.DeploymentResult -eq $("Failed") }).Count
+
+                                        # Determine if this was a multi-zone deployment
+                                        $htmlTestedZones = @($deployResults | Where-Object { $_.Zone } | Select-Object -ExpandProperty Zone -Unique | Sort-Object)
+                                        $htmlIsMultiZone = $htmlTestedZones.Count -gt 1
+                                        $htmlZoneDisplay = if ($htmlTestedZones.Count -gt 0) { $htmlTestedZones -join ", " } else { $ReportData.Configuration.Zone }
+
+                                        # Count actual deployment attempts (exclude shared/inherited entries)
+                                        $htmlActualEntries   = $deployResults | Where-Object { $_.VMName -notmatch '^\(shared:' }
+                                        $htmlTotalAttempts   = $htmlActualEntries.Count
+                                        $htmlTotalSucceeded  = ($htmlActualEntries | Where-Object { $_.DeploymentResult -eq $("Success") }).Count
+                                        $htmlTotalFailed     = $htmlTotalAttempts - $htmlTotalSucceeded
+                                        $htmlUniqueSKUCount  = ($deployResults | Select-Object -ExpandProperty SKUName -Unique).Count
 
                                         # Group deployment results by Quota Family, then unique SKU within each
                                         $deployFamilyGroups = $deployResults | Group-Object -Property QuotaFamily
-                                        $uniqueSKUNames = $deployResults | Select-Object -ExpandProperty SKUName -Unique
                                         $skuDeployRows = $("")
                                         foreach ($deployFamilyGroup in $deployFamilyGroups)
                                             {
@@ -3555,12 +3565,50 @@ function Test-SilkResourceDeployment
 
                                                 foreach ($deploySkuGroup in $deploySkuGroups)
                                                     {
-                                                        $skuEntries = $deploySkuGroup.Group
-                                                        $firstEntry = $skuEntries | Select-Object -First 1
-                                                        $statusClass = if ($firstEntry.DeploymentResult -eq $("Success")) { $("status-success") } else { $("status-error") }
-                                                        $statusText = if ($firstEntry.DeploymentResult -eq $("Success")) { $("✓ Deployed") } else { $("✗ {0}" -f $firstEntry.FailureCategory) }
-                                                        $errorDetail = if ($firstEntry.DeploymentResult -eq $("Failed") -and $firstEntry.ErrorMessage) { $firstEntry.ErrorMessage } else { $("-") }
+                                                        $skuEntries     = $deploySkuGroup.Group
+                                                        $actualEntries  = $skuEntries | Where-Object { $_.VMName -notmatch '^\(shared:' }
+                                                        $allSucceeded   = ($actualEntries | Where-Object { $_.DeploymentResult -eq $("Success") }).Count -eq $actualEntries.Count -and $actualEntries.Count -gt 0
+                                                        $anyFailed      = ($actualEntries | Where-Object { $_.DeploymentResult -ne $("Success") }).Count -gt 0
+                                                        $isPartial      = $allSucceeded -eq $false -and $anyFailed -and ($actualEntries | Where-Object { $_.DeploymentResult -eq $("Success") }).Count -gt 0
+
+                                                        if ($allSucceeded)
+                                                            {
+                                                                $statusClass = $("status-success")
+                                                                $statusText  = $("✓ Deployed")
+                                                            }
+                                                        elseif ($isPartial)
+                                                            {
+                                                                $statusClass = $("status-warning")
+                                                                $statusText  = $("~ Partial")
+                                                            }
+                                                        else
+                                                            {
+                                                                $statusClass = $("status-error")
+                                                                $failedEntry = $actualEntries | Where-Object { $_.DeploymentResult -ne $("Success") } | Select-Object -First 1
+                                                                $statusText  = $("✗ {0}" -f $failedEntry.FailureCategory)
+                                                            }
+
+                                                        $errorDetail = if ($anyFailed)
+                                                            {
+                                                                $failMsg = ($actualEntries | Where-Object { $_.DeploymentResult -ne $("Success") } | Select-Object -First 1).ErrorMessage
+                                                                if ($failMsg) { $failMsg } else { $("-") }
+                                                            }
+                                                            else { $("-") }
+
+                                                        # Per-zone breakdown cell (only for multi-zone)
+                                                        $zoneBreakdown = $("")
+                                                        if ($htmlIsMultiZone -and $actualEntries.Count -gt 0)
+                                                            {
+                                                                $zoneBreakdown = ($actualEntries | Sort-Object Zone | ForEach-Object {
+                                                                    $zIcon = if ($_.DeploymentResult -eq $("Success")) { "✓" } else { "✗" }
+                                                                    $zStyle = if ($_.DeploymentResult -eq $("Success")) { "color:var(--success)" } else { "color:var(--error)" }
+                                                                    $("<span style='{0}'>Zone {1}: {2}</span>" -f $zStyle, $_.Zone, $zIcon)
+                                                                }) -join $("<br>")
+                                                                $statusText = $("{0}<br><small>{1}</small>" -f $statusText, $zoneBreakdown)
+                                                            }
+
                                                         $coversList = ($skuEntries | ForEach-Object { $("{0}: {1}" -f $_.NodeType, $_.FriendlyName) } | Select-Object -Unique) -join $("<br>")
+                                                        $firstEntry = $skuEntries | Select-Object -First 1
 
                                                         if ($isFirstDeployInFamily)
                                                             {
@@ -3591,20 +3639,17 @@ function Test-SilkResourceDeployment
                                                     }
                                             }
 
-                                        $htmlUniqueSKUCount = $uniqueSKUNames.Count
-                                        $htmlUniqueSuccessCount = ($uniqueSKUNames | Where-Object { $sku = $_; ($deployResults | Where-Object { $_.SKUName -eq $sku } | Select-Object -First 1).DeploymentResult -eq $("Success") }).Count
-                                        $htmlUniqueFailedCount = $htmlUniqueSKUCount - $htmlUniqueSuccessCount
-
                                         $skuDeploymentTestHtml = @"
         <h2>$("🚀 SKU Family Deployment Test Results")</h2>
         <div class="info-grid">
             <div class="info-card">
                 <h4>$("📋 Deployment Test Summary")</h4>
                 <strong>$("Region:")</strong> $($ReportData.Configuration.Region)<br>
-                <strong>$("Zone:")</strong> $($ReportData.Configuration.Zone)<br>
+                <strong>$("Zones Tested:")</strong> $htmlZoneDisplay<br>
                 <strong>$("Unique SKUs Tested:")</strong> $($htmlUniqueSKUCount)<br>
-                <strong>$("Succeeded:")</strong> <span class="status-success">$htmlUniqueSuccessCount</span><br>
-                <strong>$("Failed:")</strong> $(if ($htmlUniqueFailedCount -gt 0) { $("<span class='status-error'>{0}</span>" -f $htmlUniqueFailedCount) } else { $("<span class='status-success'>0</span>") })
+                <strong>$("Total Deployments:")</strong> $htmlTotalAttempts<br>
+                <strong>$("Succeeded:")</strong> <span class="status-success">$htmlTotalSucceeded</span><br>
+                <strong>$("Failed:")</strong> $(if ($htmlTotalFailed -gt 0) { $("<span class='status-error'>{0}</span>" -f $htmlTotalFailed) } else { $("<span class='status-success'>0</span>") })
             </div>
         </div>
 

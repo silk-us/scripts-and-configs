@@ -7447,7 +7447,14 @@ function Test-SilkResourceDeployment
                 $analyzeFailedVMJobs =
                     {
                         $finalVMJobs  = Get-Job
-                        $failedJobs   = $finalVMJobs | Where-Object { $_.State -eq 'Failed' }
+                        # Include Completed jobs where the VM was never actually provisioned —
+                        # New-AzVM -AsJob can finish with State=Completed even on allocation failure
+                        $failedJobs   = $finalVMJobs | Where-Object {
+                                            $_.State -eq 'Failed' -or
+                                            ($_.State -eq 'Completed' -and
+                                             $vmJobMapping.ContainsKey($_.Id) -and
+                                             -not ($deployedVMs | Where-Object { $_.Name -eq $vmJobMapping[$_.Id].VMName }))
+                                        }
 
                         if ($failedJobs.Count -gt 0)
                             {

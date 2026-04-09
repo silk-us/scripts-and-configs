@@ -283,10 +283,11 @@ function Test-SilkResourceDeployment
                 Switch parameter to run zone tests one at a time in series, reusing shared infrastructure
                 (VNet, NSG, subnet) between zones while cleaning up VMs, NICs, AvSets, and PPGs between
                 each zone iteration. All results are consolidated into a single report.
-                Requires -TestAllZones. Use when regional quota is insufficient to deploy all zones
-                simultaneously, or to reduce peak quota consumption at the cost of longer total runtime.
-                When the pre-flight quota gate detects insufficient quota for parallel testing, pressing
-                Enter at the zone selection prompt will default to this sequential mode automatically.
+                Requires -TestAllZones. Not available with -TestAllSKUFamilies. Use when regional quota is
+                insufficient to deploy all zones simultaneously, or to reduce peak quota consumption at the
+                cost of longer total runtime.  When the pre-flight quota gate detects insufficient quota
+                for parallel testing, pressing  Enter at the zone selection prompt will default to this
+                sequential mode automatically.
 
             .PARAMETER Development
                 Switch parameter to enable Development Mode with reduced VM sizes and instance counts.
@@ -1237,7 +1238,6 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Mnode Lasv4",                    Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
                 [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
                 [Switch]
                 $TestZonesSequentially,
 
@@ -6913,14 +6913,6 @@ function Test-SilkResourceDeployment
                             }
                     }
 
-                if ($totalDeployableVMs -eq 0)
-                    {
-                        Write-Warning $("⚠ Zero VM deployment scenario detected - Skipping infrastructure creation")
-                        Write-Warning $("   No VMs can be deployed due to insufficient quota for all requested node types")
-                        Write-Warning $("   Function will complete with quota analysis report only")
-                        return
-                    }
-
                 $deploymentStarted = $true
 
                 # ===============================================================================
@@ -7157,166 +7149,117 @@ function Test-SilkResourceDeployment
                                       } else { $null }
 
                         # -----------------------------------------------------------------------
-                        # Display pre-flight table
+                        # Display pre-flight table and gate
+                        # Only for parallel multi-zone runs with insufficient quota.
+                        # Sequential and single-zone never block here.
                         # -----------------------------------------------------------------------
-                        # Clear active progress bars so they don't overlap the table and prompt
-                        Write-Progress -Id 2 -Completed
-                        Write-Progress -Id 1 -Completed
-
-                        $sepLine    = $("+-{0}-+" -f ("-" * 84))
-                        $preFlightTestHeader = $("{0}x Test" -f $zoneCount)
-                        Write-Host $("") -ForegroundColor White
-                        Write-Host $sepLine -ForegroundColor Cyan
-                        Write-Host $("| PRE-FLIGHT QUOTA CHECK  {0,-61}|" -f ("{0} Zone(s) Requested" -f $zoneCount)) -ForegroundColor Cyan
-                        Write-Host $sepLine -ForegroundColor Cyan
-                        Write-Host $("| {0,-38}  {1,6}  {2,7}  {3,9}  {4,-5} |" -f "Resource", "1x SDP", $preFlightTestHeader, "Available", "OK?") -ForegroundColor Cyan
-                        Write-Host $sepLine -ForegroundColor Cyan
-
-                        foreach ($row in $preFlightRows)
+                        if ($isMultiZoneDeploy -and -not $sequentialZoneRun -and $maxSupportedZones -lt $zoneCount)
                             {
-                                if ($row.Unknown)
-                                    {
-                                        $status     = "?"
-                                        $color      = "Yellow"
-                                        $availStr   = "N/A"
-                                    }
-                                elseif ($row.Available -ge $row.Total)
-                                    {
-                                        $status     = "OK"
-                                        $color      = "Green"
-                                        $availStr   = $("{0}/{1}" -f $row.Available, $row.Limit)
-                                    }
-                                elseif ($row.Available -ge $row.Single)
-                                    {
-                                        $status     = "WARN"
-                                        $color      = "Yellow"
-                                        $availStr   = $("{0}/{1}" -f $row.Available, $row.Limit)
-                                    }
-                                else
-                                    {
-                                        $status     = "FAIL"
-                                        $color      = "Red"
-                                        $availStr   = $("{0}/{1}" -f $row.Available, $row.Limit)
-                                    }
+                                # Clear active progress bars so they don't overlap the table and prompt
+                                Write-Progress -Id 2 -Completed
+                                Write-Progress -Id 1 -Completed
 
-                                Write-Host $("| {0,-38}  {1,6}  {2,7}  {3,9}  {4,-4} |" -f $row.Label, $row.Single, $row.Total, $availStr, $status) -ForegroundColor $color
-                            }
+                                $sepLine             = $("+-{0}-+" -f ("-" * 84))
+                                $preFlightTestHeader = $("{0}x Test" -f $zoneCount)
+                                Write-Host $("") -ForegroundColor White
+                                Write-Host $sepLine -ForegroundColor Cyan
+                                Write-Host $("| PRE-FLIGHT QUOTA CHECK  {0,-61}|" -f ("{0} Zone(s) Requested" -f $zoneCount)) -ForegroundColor Cyan
+                                Write-Host $sepLine -ForegroundColor Cyan
+                                Write-Host $("| {0,-38}  {1,6}  {2,7}  {3,9}  {4,-5} |" -f "Resource", "1x SDP", $preFlightTestHeader, "Available", "OK?") -ForegroundColor Cyan
+                                Write-Host $sepLine -ForegroundColor Cyan
 
-                        Write-Host $sepLine -ForegroundColor Cyan
-                        Write-Host $("") -ForegroundColor White
-
-                        # -----------------------------------------------------------------------
-
-                        # Prompt and gate if quota is insufficient for all zones
-                        # -----------------------------------------------------------------------
-                        if ($maxSupportedZones -lt $zoneCount -and $isMultiZoneDeploy)
-                            {
-                                $bindingLabel = if ($bindingRow) { $bindingRow.Label } else { "one or more quota limits" }
-
-                                if ($sequentialZoneRun)
+                                foreach ($row in $preFlightRows)
                                     {
-                                        # -TestZonesSequentially explicitly requested — no prompt needed.
-                                        # Quota table already displayed above for informational purposes.
-                                        Write-Host $("i  Sequential zone mode active. Quota supports {0} of {1} zones simultaneously; all {1} zones will run in series." -f $maxSupportedZones, $zoneCount) -ForegroundColor Cyan
-                                        Write-Host $("   VMs, NICs, AvSets, and PPGs will be cleaned up between each zone. VNet and NSG are reused throughout.") -ForegroundColor DarkGray
-                                        Write-Host $("")
-                                        Write-Verbose -Message $("Sequential zone run: quota gate bypassed — {0} zones will execute in series, reusing shared network infrastructure." -f $zoneCount)
-                                    }
-                                elseif ($maxSupportedZones -eq 0)
-                                    {
-                                        Write-Host $("[X]  Insufficient quota to test any zone simultaneously. {0} is the binding constraint." -f $bindingLabel) -ForegroundColor Red
-                                        Write-Host $("    Consider running with -TestAllZones -TestZonesSequentially to test all zones in series using only 1x quota at a time.") -ForegroundColor Yellow
-                                        Write-Host $("")
-
-                                        # Generate per-zone commands
-                                        foreach ($z in $zonesToDeploy)
+                                        if ($row.Unknown)
                                             {
-                                                $zoneCmd = $("Test-SilkResourceDeployment -SubscriptionId '{0}' -ResourceGroupName '{1}' -Region '{2}' -Zone {3}" -f $SubscriptionId, $ResourceGroupName, $Region, $z)
-                                                if ($cNodeObject -and $CNodeFriendlyName) { $zoneCmd += $(" -CNodeFriendlyName '{0}' -CNodeCount {1}" -f $CNodeFriendlyName, $CNodeCount) }
-                                                elseif ($cNodeObject -and $CNodeSku)     { $zoneCmd += $(" -CNodeSku '{0}' -CNodeCount {1}" -f $CNodeSku, $CNodeCount) }
-                                                if ($MnodeSizeLsv3)  { $zoneCmd += $(" -MnodeSizeLsv3 @({0})"  -f (($MnodeSizeLsv3  | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
-                                                if ($MnodeSizeLsv4)  { $zoneCmd += $(" -MnodeSizeLsv4 @({0})"  -f (($MnodeSizeLsv4  | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
-                                                if ($MnodeSizeLasv3) { $zoneCmd += $(" -MnodeSizeLasv3 @({0})" -f (($MnodeSizeLasv3 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
-                                                if ($MnodeSizeLasv4) { $zoneCmd += $(" -MnodeSizeLasv4 @({0})" -f (($MnodeSizeLasv4 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
-                                                if ($MnodeSizeLaosv4){ $zoneCmd += $(" -MnodeSizeLaosv4 @({0})" -f (($MnodeSizeLaosv4 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
-                                                Write-Host $("  Zone {0}: {1}" -f $z, $zoneCmd) -ForegroundColor Cyan
+                                                $status     = "?"
+                                                $color      = "Yellow"
+                                                $availStr   = "N/A"
                                             }
-
-                                        Write-Host $("")
-                                        $anyDeploymentPossible  = $false
-                                        $zonesToDeploy          = @()
-                                        $adjustedCNodeCount     = 0
-                                    }
-                                else
-                                    {
-                                        # Partial quota — offer sequential as the default (Enter), zone subset as alternative
-                                        Write-Host $("!  Quota supports {0} of {1} requested zones simultaneously. Binding constraint: {2}." -f $maxSupportedZones, $zoneCount, $bindingLabel) -ForegroundColor Yellow
-                                        Write-Host $("")
-
-                                        $availableZoneChoices = @($zonesToDeploy)
-                                        Write-Host $("  Available zones for this configuration: {0}" -f ($availableZoneChoices -join ", ")) -ForegroundColor White
-                                        Write-Host $("  Quota supports {0} zone(s) simultaneously." -f $maxSupportedZones) -ForegroundColor White
-                                        Write-Host $("")
-                                        Write-Host $("  [Enter]  Run all {0} zones sequentially (one at a time — takes longer, uses only 1x quota)" -f $zoneCount) -ForegroundColor Green
-                                        Write-Host $("  [zones]  Specify up to {0} zone(s) for a simultaneous run, e.g. {1}: " -f $maxSupportedZones, (($availableZoneChoices | Select-Object -First $maxSupportedZones) -join ",")) -NoNewline -ForegroundColor DarkGray
-                                        $userZoneInput = [Console]::ReadLine().Trim()
-
-                                        if ([string]::IsNullOrEmpty($userZoneInput))
+                                        elseif ($row.Available -ge $row.Total)
                                             {
-                                                # Default: sequential mode — all qualifying zones in series
-                                                $sequentialZoneRun = $true
-                                                Write-Verbose -Message $("Sequential mode selected by default — {0} zones will run in series." -f $zoneCount)
+                                                $status     = "OK"
+                                                $color      = "Green"
+                                                $availStr   = $("{0}/{1}" -f $row.Available, $row.Limit)
+                                            }
+                                        elseif ($row.Available -ge $row.Single)
+                                            {
+                                                $status     = "WARN"
+                                                $color      = "Yellow"
+                                                $availStr   = $("{0}/{1}" -f $row.Available, $row.Limit)
                                             }
                                         else
                                             {
-                                                # User specified zones — simultaneous run with chosen subset
-                                                $parsedZones   = $userZoneInput -split '\s*,\s*' | Where-Object { $_ -and $availableZoneChoices -contains $_ } | Select-Object -Unique -First $maxSupportedZones
-                                                $zonesToDeploy = if ($parsedZones.Count -gt 0) { @($parsedZones) } else { @($availableZoneChoices | Select-Object -First $maxSupportedZones) }
-
-                                                # Record quota-gated zones with per-zone CLI commands
-                                                $gatedZones = $availableZoneChoices | Where-Object { $zonesToDeploy -notcontains $_ }
-                                                foreach ($gz in $gatedZones)
-                                                    {
-                                                        $gatedCmd = $("Test-SilkResourceDeployment -SubscriptionId '{0}' -ResourceGroupName '{1}' -Region '{2}' -Zone {3}" -f $SubscriptionId, $ResourceGroupName, $Region, $gz)
-                                                        if ($cNodeObject -and $CNodeFriendlyName) { $gatedCmd += $(" -CNodeFriendlyName '{0}' -CNodeCount {1}" -f $CNodeFriendlyName, $CNodeCount) }
-                                                        elseif ($cNodeObject -and $CNodeSku)     { $gatedCmd += $(" -CNodeSku '{0}' -CNodeCount {1}" -f $CNodeSku, $CNodeCount) }
-                                                        if ($MnodeSizeLsv3)  { $gatedCmd += $(" -MnodeSizeLsv3 @({0})"  -f (($MnodeSizeLsv3  | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
-                                                        if ($MnodeSizeLsv4)  { $gatedCmd += $(" -MnodeSizeLsv4 @({0})"  -f (($MnodeSizeLsv4  | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
-                                                        if ($MnodeSizeLasv3) { $gatedCmd += $(" -MnodeSizeLasv3 @({0})" -f (($MnodeSizeLasv3 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
-                                                        if ($MnodeSizeLasv4) { $gatedCmd += $(" -MnodeSizeLasv4 @({0})" -f (($MnodeSizeLasv4 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
-                                                        if ($MnodeSizeLaosv4){ $gatedCmd += $(" -MnodeSizeLaosv4 @({0})" -f (($MnodeSizeLaosv4 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
-
-                                                        $skippedZoneEntries += [PSCustomObject]@{
-                                                            Zone            = $gz
-                                                            UnsupportedSKUs = @()
-                                                            Reason          = $("Quota-gated: {0} supports only {1} simultaneous zone test(s). Run individually: {2}" -f $bindingLabel, $maxSupportedZones, $gatedCmd)
-                                                            Command         = $gatedCmd
-                                                        }
-                                                        Write-Verbose -Message $("Zone {0} deferred (quota-gated simultaneous run). CLI: {1}" -f $gz, $gatedCmd)
-                                                    }
-
-                                                Write-Verbose -Message $("Simultaneous zone run: proceeding with zone(s) {0}." -f ($zonesToDeploy -join ", "))
-
-                                                # Recalculate isMultiZoneDeploy after possible trim
-                                                $isMultiZoneDeploy = $zonesToDeploy.Count -gt 1
+                                                $status     = "FAIL"
+                                                $color      = "Red"
+                                                $availStr   = $("{0}/{1}" -f $row.Available, $row.Limit)
                                             }
 
-                                        Write-Host $("")
+                                        Write-Host $("| {0,-38}  {1,6}  {2,7}  {3,9}  {4,-4} |" -f $row.Label, $row.Single, $row.Total, $availStr, $status) -ForegroundColor $color
                                     }
+
+                                Write-Host $sepLine -ForegroundColor Cyan
+                                Write-Host $("") -ForegroundColor White
                             }
-                        elseif ($isMultiZoneDeploy)
+
+                        if ($maxSupportedZones -gt 0 -and $maxSupportedZones -lt $zoneCount -and $isMultiZoneDeploy -and -not $sequentialZoneRun)
                             {
-                                if ($sequentialZoneRun)
+                                # Partial quota: can deploy some zones simultaneously but not all.
+                                # Prompt the user to choose — sequential (Enter) covers all zones over
+                                # time, or they can specify a subset for a simultaneous run.
+                                $bindingLabel = if ($bindingRow) { $bindingRow.Label } else { "one or more quota limits" }
+                                Write-Host $("!  Quota supports {0} of {1} requested zones simultaneously. Binding constraint: {2}." -f $maxSupportedZones, $zoneCount, $bindingLabel) -ForegroundColor Yellow
+                                Write-Host $("")
+
+                                $availableZoneChoices = @($zonesToDeploy)
+                                Write-Host $("  Available zones for this configuration: {0}" -f ($availableZoneChoices -join ", ")) -ForegroundColor White
+                                Write-Host $("  Quota supports {0} zone(s) simultaneously." -f $maxSupportedZones) -ForegroundColor White
+                                Write-Host $("")
+                                Write-Host $("  [Enter]  Run all {0} zones sequentially (one at a time — takes longer, uses only 1x quota)" -f $zoneCount) -ForegroundColor Green
+                                Write-Host $("  [zones]  Specify up to {0} zone(s) for a simultaneous run, e.g. {1}: " -f $maxSupportedZones, (($availableZoneChoices | Select-Object -First $maxSupportedZones) -join ",")) -NoNewline -ForegroundColor DarkGray
+                                $userZoneInput = [Console]::ReadLine().Trim()
+
+                                if ([string]::IsNullOrEmpty($userZoneInput))
                                     {
-                                        Write-Host $("i  Sequential zone mode active (-TestZonesSequentially). Quota is sufficient for parallel testing but zones will run in series as requested.") -ForegroundColor Cyan
-                                        Write-Host $("")
-                                        Write-Verbose -Message $("Sequential zone run: quota sufficient for all {0} zones in parallel, but -TestZonesSequentially was specified." -f $zoneCount)
+                                        # Default: sequential mode — all qualifying zones in series
+                                        $sequentialZoneRun = $true
+                                        Write-Verbose -Message $("Sequential mode selected by default — {0} zones will run in series." -f $zoneCount)
                                     }
                                 else
                                     {
-                                        Write-Host $("OK  Quota sufficient for all {0} zone(s). Proceeding with multi-zone deployment." -f $zoneCount) -ForegroundColor Green
-                                        Write-Host $("")
+                                        # User specified zones — simultaneous run with chosen subset
+                                        $parsedZones   = $userZoneInput -split '\s*,\s*' | Where-Object { $_ -and $availableZoneChoices -contains $_ } | Select-Object -Unique -First $maxSupportedZones
+                                        $zonesToDeploy = if ($parsedZones.Count -gt 0) { @($parsedZones) } else { @($availableZoneChoices | Select-Object -First $maxSupportedZones) }
+
+                                        # Record quota-gated zones with per-zone CLI commands
+                                        $gatedZones = $availableZoneChoices | Where-Object { $zonesToDeploy -notcontains $_ }
+                                        foreach ($gz in $gatedZones)
+                                            {
+                                                $gatedCmd = $("Test-SilkResourceDeployment -SubscriptionId '{0}' -ResourceGroupName '{1}' -Region '{2}' -Zone {3}" -f $SubscriptionId, $ResourceGroupName, $Region, $gz)
+                                                if ($cNodeObject -and $CNodeFriendlyName) { $gatedCmd += $(" -CNodeFriendlyName '{0}' -CNodeCount {1}" -f $CNodeFriendlyName, $CNodeCount) }
+                                                elseif ($cNodeObject -and $CNodeSku)     { $gatedCmd += $(" -CNodeSku '{0}' -CNodeCount {1}" -f $CNodeSku, $CNodeCount) }
+                                                if ($MnodeSizeLsv3)  { $gatedCmd += $(" -MnodeSizeLsv3 @({0})"  -f (($MnodeSizeLsv3  | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                if ($MnodeSizeLsv4)  { $gatedCmd += $(" -MnodeSizeLsv4 @({0})"  -f (($MnodeSizeLsv4  | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                if ($MnodeSizeLasv3) { $gatedCmd += $(" -MnodeSizeLasv3 @({0})" -f (($MnodeSizeLasv3 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                if ($MnodeSizeLasv4) { $gatedCmd += $(" -MnodeSizeLasv4 @({0})" -f (($MnodeSizeLasv4 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+                                                if ($MnodeSizeLaosv4){ $gatedCmd += $(" -MnodeSizeLaosv4 @({0})" -f (($MnodeSizeLaosv4 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
+
+                                                $skippedZoneEntries += [PSCustomObject]@{
+                                                    Zone            = $gz
+                                                    UnsupportedSKUs = @()
+                                                    Reason          = $("Quota-gated: {0} supports only {1} simultaneous zone test(s). Run individually: {2}" -f $bindingLabel, $maxSupportedZones, $gatedCmd)
+                                                    Command         = $gatedCmd
+                                                }
+                                                Write-Verbose -Message $("Zone {0} deferred (quota-gated simultaneous run). CLI: {1}" -f $gz, $gatedCmd)
+                                            }
+
+                                        Write-Verbose -Message $("Simultaneous zone run: proceeding with zone(s) {0}." -f ($zonesToDeploy -join ", "))
+
+                                        # Recalculate isMultiZoneDeploy after possible trim
+                                        $isMultiZoneDeploy = $zonesToDeploy.Count -gt 1
                                     }
+
+                                Write-Host $("")
                             }
                     }
 
@@ -7736,7 +7679,7 @@ function Test-SilkResourceDeployment
 
                                 # CNode creation phase with updated progress
                                 Write-Progress `
-                                    -Status $("Creating CNodes") `
+                                    -Status $("Creating CNodes{0}" -f $zoneLabel) `
                                     -CurrentOperation $("Preparing to create {0} CNode VM(s) in availability set..." -f $adjustedCNodeCount) `
                                     -PercentComplete 5 `
                                     -Activity $("VM Deployment") `
@@ -7926,7 +7869,7 @@ function Test-SilkResourceDeployment
                                         $mainPercentComplete = [Math]::Min([Math]::Round(($totalProcessed / $totalVMs) * 100), 90)
 
                                         Write-Progress `
-                                            -Status $("Processing MNode Group {0} of {1} - {2} TiB ({3})" -f $currentMNode, $mNodeObject.Count, $currentMNodePhysicalSize, $currentMNodeSku) `
+                                            -Status $("Processing MNode Group {0} of {1} - {2} TiB ({3}){4}" -f $currentMNode, $mNodeObject.Count, $currentMNodePhysicalSize, $currentMNodeSku, $zoneLabel) `
                                             -CurrentOperation $("Creating {0} DNode VM(s) for {1} TiB MNode..." -f $currentDNodeCount, $currentMNodePhysicalSize) `
                                             -PercentComplete $mainPercentComplete `
                                             -Activity $("VM Deployment") `

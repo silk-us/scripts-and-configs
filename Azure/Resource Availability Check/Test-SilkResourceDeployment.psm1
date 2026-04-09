@@ -1985,21 +1985,60 @@ function Test-SilkResourceDeployment
                                 $deployResults = $ReportData.SKUFamilyTesting.DeploymentResults
                                 $uniqueSKUs = $deployResults | Select-Object -ExpandProperty SKUName -Unique
                                 $uniqueSKUCount = $uniqueSKUs.Count
-                                $uniqueSuccessCount = ($uniqueSKUs | Where-Object { $sku = $_; ($deployResults | Where-Object { $_.SKUName -eq $sku } | Select-Object -First 1).DeploymentResult -eq $("Success") }).Count
-                                $uniqueFailedCount = $uniqueSKUCount - $uniqueSuccessCount
+                                $testedZoneList = ($deployResults | Where-Object { $_.Zone } | Select-Object -ExpandProperty Zone -Unique | Sort-Object) -join ", "
+                                $zoneDisplay = if ($testedZoneList) { $testedZoneList } else { $ReportData.Configuration.Zone }
+                                $totalDeployAttempts = ($deployResults | Where-Object { $_.VMName -notmatch '^\(shared:' }).Count
+                                $totalSucceeded = ($deployResults | Where-Object { $_.DeploymentResult -eq $("Success") -and $_.VMName -notmatch '^\(shared:' }).Count
+                                $totalFailed = $totalDeployAttempts - $totalSucceeded
 
                                 Write-Host $("{0}=== SKU Family Deployment Test Results ===" -f "`n") -ForegroundColor Cyan
-                                Write-Host $("Region: {0} | Zone: {1} | Unique SKUs: {2} | Succeeded: {3} | Failed: {4}" -f $ReportData.Configuration.Region, $ReportData.Configuration.Zone, $uniqueSKUCount, $uniqueSuccessCount, $uniqueFailedCount) -ForegroundColor Yellow
+                                Write-Host $("Region: {0} | Zones: {1} | Unique SKUs: {2} | Deployments: {3} | Succeeded: {4} | Failed: {5}" -f $ReportData.Configuration.Region, $zoneDisplay, $uniqueSKUCount, $totalDeployAttempts, $totalSucceeded, $totalFailed) -ForegroundColor Yellow
 
-                                # Group results by unique SKU — show what each SKU covers
+                                # Determine if this was a multi-zone deployment
+                                $isMultiZoneSKUTest = ($deployResults | Where-Object { $_.Zone } | Select-Object -ExpandProperty Zone -Unique).Count -gt 1
+
+                                # Group results by unique SKU — show what each SKU covers, with per-zone breakdown if multi-zone
                                 foreach ($skuName in $uniqueSKUs)
                                     {
-                                        $skuEntries = $deployResults | Where-Object { $_.SKUName -eq $skuName }
-                                        $skuResult = ($skuEntries | Select-Object -First 1).DeploymentResult
-                                        $quotaFamily = ($skuEntries | Select-Object -First 1).QuotaFamily
-                                        $vCPU = ($skuEntries | Select-Object -First 1).vCPU
+                                        $skuEntries       = $deployResults | Where-Object { $_.SKUName -eq $skuName }
+                                        $quotaFamily      = ($skuEntries | Select-Object -First 1).QuotaFamily
+                                        $vCPU             = ($skuEntries | Select-Object -First 1).vCPU
+                                        $actualEntries    = $skuEntries | Where-Object { $_.VMName -notmatch '^\(shared:' }
+                                        $allSucceeded     = ($actualEntries | Where-Object { $_.DeploymentResult -eq $("Success") }).Count -eq $actualEntries.Count -and $actualEntries.Count -gt 0
+                                        $anyFailed        = ($actualEntries | Where-Object { $_.DeploymentResult -ne $("Success") }).Count -gt 0
 
-                                        # Build covers list
+                                        if ($allSucceeded)
+                                            {
+                                                Write-Host $("  ✓ {0,-28} vCPU: {1,-4} {2}" -f $skuName, $vCPU, $quotaFamily) -ForegroundColor Green
+                                            } `
+                                        elseif ($anyFailed -and -not $allSucceeded -and ($actualEntries | Where-Object { $_.DeploymentResult -eq $("Success") }).Count -gt 0)
+                                            {
+                                                # Partial — some zones succeeded, some failed
+                                                Write-Host $("  ~ {0,-28} vCPU: {1,-4} {2} — Partial" -f $skuName, $vCPU, $quotaFamily) -ForegroundColor Yellow
+                                            } `
+                                        else
+                                            {
+                                                $failureCategory = ($actualEntries | Where-Object { $_.DeploymentResult -ne $("Success") } | Select-Object -First 1).FailureCategory
+                                                Write-Host $("  ✗ {0,-28} vCPU: {1,-4} {2} — {3}" -f $skuName, $vCPU, $quotaFamily, $failureCategory) -ForegroundColor Red
+                                                $errorMessage = ($actualEntries | Where-Object { $_.DeploymentResult -ne $("Success") } | Select-Object -First 1).ErrorMessage
+                                                if ($errorMessage)
+                                                    {
+                                                        Write-Host $("    Error: {0}" -f $errorMessage) -ForegroundColor DarkRed
+                                                    }
+                                            }
+
+                                        # Per-zone breakdown (only when multi-zone)
+                                        if ($isMultiZoneSKUTest)
+                                            {
+                                                foreach ($zoneEntry in ($actualEntries | Sort-Object Zone))
+                                                    {
+                                                        $zoneIcon = if ($zoneEntry.DeploymentResult -eq $("Success")) { "✓" } else { "✗" }
+                                                        $zoneColor = if ($zoneEntry.DeploymentResult -eq $("Success")) { "DarkGreen" } else { "DarkRed" }
+                                                        Write-Host $("      Zone {0}: {1}" -f $zoneEntry.Zone, $zoneIcon) -ForegroundColor $zoneColor
+                                                    }
+                                            }
+
+                                        # Build and show covers list
                                         $coversList = @()
                                         $cNodeCovers = $skuEntries | Where-Object { $_.NodeType -eq $("CNode") }
                                         $mNodeCovers = $skuEntries | Where-Object { $_.NodeType -eq $("MNode") }
@@ -2011,23 +2050,6 @@ function Test-SilkResourceDeployment
                                             {
                                                 $coversList += $mNodeCovers | ForEach-Object { $("MNode: {0}" -f $_.FriendlyName) } | Select-Object -Unique
                                             }
-
-                                        if ($skuResult -eq $("Success"))
-                                            {
-                                                Write-Host $("  ✓ {0,-28} vCPU: {1,-4} {2}" -f $skuName, $vCPU, $quotaFamily) -ForegroundColor Green
-                                            } `
-                                        else
-                                            {
-                                                $failureCategory = ($skuEntries | Select-Object -First 1).FailureCategory
-                                                Write-Host $("  ✗ {0,-28} vCPU: {1,-4} {2} — {3}" -f $skuName, $vCPU, $quotaFamily, $failureCategory) -ForegroundColor Red
-                                                $errorMessage = ($skuEntries | Select-Object -First 1).ErrorMessage
-                                                if ($errorMessage)
-                                                    {
-                                                        Write-Host $("    Error: {0}" -f $errorMessage) -ForegroundColor DarkRed
-                                                    }
-                                            }
-
-                                        # Show covers indented
                                         foreach ($cover in $coversList)
                                             {
                                                 Write-Host $("      └─ {0}" -f $cover) -ForegroundColor DarkGray
@@ -2388,23 +2410,26 @@ function Test-SilkResourceDeployment
                                 $deployResults = $ReportData.SKUFamilyTesting.DeploymentResults
                                 $uniqueSKUs = $deployResults | Select-Object -ExpandProperty SKUName -Unique
                                 $uniqueSKUCount = $uniqueSKUs.Count
-                                $uniqueSuccessCount = ($uniqueSKUs | Where-Object { $sku = $_; ($deployResults | Where-Object { $_.SKUName -eq $sku } | Select-Object -First 1).DeploymentResult -eq $("Success") }).Count
-                                $uniqueFailedCount = $uniqueSKUCount - $uniqueSuccessCount
+                                $summaryZoneList = ($deployResults | Where-Object { $_.Zone } | Select-Object -ExpandProperty Zone -Unique | Sort-Object) -join ", "
+                                $summaryZoneDisplay = if ($summaryZoneList) { $summaryZoneList } else { $ReportData.Configuration.Zone }
+                                $summaryActual = $deployResults | Where-Object { $_.VMName -notmatch '^\(shared:' }
+                                $summarySucceeded = ($summaryActual | Where-Object { $_.DeploymentResult -eq $("Success") }).Count
+                                $summaryFailed = ($summaryActual | Where-Object { $_.DeploymentResult -ne $("Success") }).Count
 
                                 Write-Host $("`n=== SKU Family Deployment Test Summary ===") -ForegroundColor Cyan
-                                if ($uniqueFailedCount -eq 0)
+                                if ($summaryFailed -eq 0)
                                     {
-                                        Write-Host $("✓ ALL {0} UNIQUE SKUs DEPLOYED SUCCESSFULLY in region: {1} zone: {2}" -f $uniqueSKUCount, $ReportData.Configuration.Region, $ReportData.Configuration.Zone) -ForegroundColor Green
+                                        Write-Host $("✓ ALL {0} deployments succeeded across zones {1} in region: {2}" -f $summarySucceeded, $summaryZoneDisplay, $ReportData.Configuration.Region) -ForegroundColor Green
                                         Write-Host $("📊 No allocation or capacity constraints detected") -ForegroundColor Green
                                     } `
-                                elseif ($uniqueSuccessCount -gt 0)
+                                elseif ($summarySucceeded -gt 0)
                                     {
-                                        Write-Host $("⚠ {0}/{1} unique SKUs deployed, {2} failed in region: {3} zone: {4}" -f $uniqueSuccessCount, $uniqueSKUCount, $uniqueFailedCount, $ReportData.Configuration.Region, $ReportData.Configuration.Zone) -ForegroundColor Yellow
+                                        Write-Host $("⚠ {0} succeeded, {1} failed across zones {2} in region: {3}" -f $summarySucceeded, $summaryFailed, $summaryZoneDisplay, $ReportData.Configuration.Region) -ForegroundColor Yellow
                                         Write-Host $("📊 Review failed SKUs above for allocation or capacity constraints") -ForegroundColor Yellow
                                     } `
                                 else
                                     {
-                                        Write-Host $("✗ ALL {0} UNIQUE SKUs FAILED in region: {1} zone: {2}" -f $uniqueSKUCount, $ReportData.Configuration.Region, $ReportData.Configuration.Zone) -ForegroundColor Red
+                                        Write-Host $("✗ ALL {0} deployments failed across zones {1} in region: {2}" -f $summaryFailed, $summaryZoneDisplay, $ReportData.Configuration.Region) -ForegroundColor Red
                                         Write-Host $("📊 No SKU families could be allocated - check capacity and quota") -ForegroundColor Red
                                     }
                             } `
@@ -6677,6 +6702,7 @@ function Test-SilkResourceDeployment
                                                     SKUName         = $vmDetails.VMSku
                                                     QuotaFamily     = $vmDetails.QuotaFamily
                                                     vCPU            = $vmDetails.vCPU
+                                                    Zone            = $vmDetails.Zone
                                                     VMName          = $vmDetails.VMName
                                                     DeploymentResult = $("Success")
                                                     FailureCategory = $("")
@@ -6830,6 +6856,7 @@ function Test-SilkResourceDeployment
                                                     SKUName         = $vmDetails.VMSku
                                                     QuotaFamily     = $vmDetails.QuotaFamily
                                                     vCPU            = $vmDetails.vCPU
+                                                    Zone            = $vmDetails.Zone
                                                     VMName          = $vmDetails.VMName
                                                     DeploymentResult = $("Failed")
                                                     FailureCategory = $failureCategory
@@ -6852,6 +6879,7 @@ function Test-SilkResourceDeployment
                                             SKUName         = $skipped.SKUName
                                             QuotaFamily     = $skipped.QuotaFamily
                                             vCPU            = $skipped.vCPU
+                                            Zone            = $testedResult.Zone
                                             VMName          = $("(shared: {0})" -f $skipped.TestedBy)
                                             DeploymentResult = $testedResult.DeploymentResult
                                             FailureCategory = $testedResult.FailureCategory

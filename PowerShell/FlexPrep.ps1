@@ -66,11 +66,12 @@ $azContext = Get-AzContext
 
 if ($azContext.Subscription.Name -ne $subscription) {
     try {
-        $azContext = Set-AzContext -Subscription $subscription -ErrorAction Stop | Out-Null
+        Set-AzContext -Subscription $subscription -ErrorAction Stop | Out-Null
     } catch {
         Write-Host "The provided subscription ID is not valid in the current Azure context." -ForegroundColor Red
         $subscription = $null
     }
+    $azContext = Get-AzContext
 }
 
 if (-not $subscription) {

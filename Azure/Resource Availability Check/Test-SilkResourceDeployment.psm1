@@ -279,6 +279,16 @@ function Test-SilkResourceDeployment
                 Not compatible with -ProximityPlacementGroupName or -AvailabilitySetName: existing infrastructure
                 is zone-locked to the PPG zone and multi-zone deployment against it is not a valid operation.
 
+            .PARAMETER TestZonesSequentially
+                Switch parameter to run zone tests one at a time in series, reusing shared infrastructure
+                (VNet, NSG, subnet) between zones while cleaning up VMs, NICs, AvSets, and PPGs between
+                each zone iteration. All results are consolidated into a single report.
+                Requires -TestAllZones. Not available with -TestAllSKUFamilies. Use when regional quota is
+                insufficient to deploy all zones simultaneously, or to reduce peak quota consumption at the
+                cost of longer total runtime.  When the pre-flight quota gate detects insufficient quota
+                for parallel testing, pressing  Enter at the zone selection prompt will default to this
+                sequential mode automatically.
+
             .PARAMETER Development
                 Switch parameter to enable Development Mode with reduced VM sizes and instance counts.
                 When enabled, CNode VMs use 2 vCPU SKUs instead of production 64 vCPU, and MNode groups
@@ -1204,6 +1214,33 @@ function Test-SilkResourceDeployment
                 [Switch]
                 $TestAllZones,
 
+                # Switch to run zone tests sequentially (one zone at a time), reusing shared infrastructure between zones.
+                # Only valid when -TestAllZones is also specified. Reduces peak quota consumption at the cost of longer runtime.
+                # If omitted and the pre-flight quota gate detects insufficient quota, sequential mode is offered as the default.
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "Mnode Lsv4",                     Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "Mnode Lasv4",                    Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Run zone tests sequentially, reusing shared infrastructure between zones. Requires -TestAllZones."))]
+                [Switch]
+                $TestZonesSequentially,
+
                 # Switch to enable Development Mode with reduced VM sizes and instance counts
                 # When enabled: Uses 2 vCPU SKUs instead of production 64 vCPU, 1 DNode per MNode instead of 16
                 # Significantly reduces deployment time and costs for faster testing iterations
@@ -1948,21 +1985,60 @@ function Test-SilkResourceDeployment
                                 $deployResults = $ReportData.SKUFamilyTesting.DeploymentResults
                                 $uniqueSKUs = $deployResults | Select-Object -ExpandProperty SKUName -Unique
                                 $uniqueSKUCount = $uniqueSKUs.Count
-                                $uniqueSuccessCount = ($uniqueSKUs | Where-Object { $sku = $_; ($deployResults | Where-Object { $_.SKUName -eq $sku } | Select-Object -First 1).DeploymentResult -eq $("Success") }).Count
-                                $uniqueFailedCount = $uniqueSKUCount - $uniqueSuccessCount
+                                $testedZoneList = ($deployResults | Where-Object { $_.Zone } | Select-Object -ExpandProperty Zone -Unique | Sort-Object) -join ", "
+                                $zoneDisplay = if ($testedZoneList) { $testedZoneList } else { $ReportData.Configuration.Zone }
+                                $totalDeployAttempts = ($deployResults | Where-Object { $_.VMName -notmatch '^\(shared:' }).Count
+                                $totalSucceeded = ($deployResults | Where-Object { $_.DeploymentResult -eq $("Success") -and $_.VMName -notmatch '^\(shared:' }).Count
+                                $totalFailed = $totalDeployAttempts - $totalSucceeded
 
                                 Write-Host $("{0}=== SKU Family Deployment Test Results ===" -f "`n") -ForegroundColor Cyan
-                                Write-Host $("Region: {0} | Zone: {1} | Unique SKUs: {2} | Succeeded: {3} | Failed: {4}" -f $ReportData.Configuration.Region, $ReportData.Configuration.Zone, $uniqueSKUCount, $uniqueSuccessCount, $uniqueFailedCount) -ForegroundColor Yellow
+                                Write-Host $("Region: {0} | Zones: {1} | Unique SKUs: {2} | Deployments: {3} | Succeeded: {4} | Failed: {5}" -f $ReportData.Configuration.Region, $zoneDisplay, $uniqueSKUCount, $totalDeployAttempts, $totalSucceeded, $totalFailed) -ForegroundColor Yellow
 
-                                # Group results by unique SKU — show what each SKU covers
+                                # Determine if this was a multi-zone deployment
+                                $isMultiZoneSKUTest = ($deployResults | Where-Object { $_.Zone } | Select-Object -ExpandProperty Zone -Unique).Count -gt 1
+
+                                # Group results by unique SKU — show what each SKU covers, with per-zone breakdown if multi-zone
                                 foreach ($skuName in $uniqueSKUs)
                                     {
-                                        $skuEntries = $deployResults | Where-Object { $_.SKUName -eq $skuName }
-                                        $skuResult = ($skuEntries | Select-Object -First 1).DeploymentResult
-                                        $quotaFamily = ($skuEntries | Select-Object -First 1).QuotaFamily
-                                        $vCPU = ($skuEntries | Select-Object -First 1).vCPU
+                                        $skuEntries       = $deployResults | Where-Object { $_.SKUName -eq $skuName }
+                                        $quotaFamily      = ($skuEntries | Select-Object -First 1).QuotaFamily
+                                        $vCPU             = ($skuEntries | Select-Object -First 1).vCPU
+                                        $actualEntries    = $skuEntries | Where-Object { $_.VMName -notmatch '^\(shared:' }
+                                        $allSucceeded     = ($actualEntries | Where-Object { $_.DeploymentResult -eq $("Success") }).Count -eq $actualEntries.Count -and $actualEntries.Count -gt 0
+                                        $anyFailed        = ($actualEntries | Where-Object { $_.DeploymentResult -ne $("Success") }).Count -gt 0
 
-                                        # Build covers list
+                                        if ($allSucceeded)
+                                            {
+                                                Write-Host $("  ✓ {0,-28} vCPU: {1,-4} {2}" -f $skuName, $vCPU, $quotaFamily) -ForegroundColor Green
+                                            } `
+                                        elseif ($anyFailed -and -not $allSucceeded -and ($actualEntries | Where-Object { $_.DeploymentResult -eq $("Success") }).Count -gt 0)
+                                            {
+                                                # Partial — some zones succeeded, some failed
+                                                Write-Host $("  ~ {0,-28} vCPU: {1,-4} {2} — Partial" -f $skuName, $vCPU, $quotaFamily) -ForegroundColor Yellow
+                                            } `
+                                        else
+                                            {
+                                                $failureCategory = ($actualEntries | Where-Object { $_.DeploymentResult -ne $("Success") } | Select-Object -First 1).FailureCategory
+                                                Write-Host $("  ✗ {0,-28} vCPU: {1,-4} {2} — {3}" -f $skuName, $vCPU, $quotaFamily, $failureCategory) -ForegroundColor Red
+                                                $errorMessage = ($actualEntries | Where-Object { $_.DeploymentResult -ne $("Success") } | Select-Object -First 1).ErrorMessage
+                                                if ($errorMessage)
+                                                    {
+                                                        Write-Host $("    Error: {0}" -f $errorMessage) -ForegroundColor DarkRed
+                                                    }
+                                            }
+
+                                        # Per-zone breakdown (only when multi-zone)
+                                        if ($isMultiZoneSKUTest)
+                                            {
+                                                foreach ($zoneEntry in ($actualEntries | Sort-Object Zone))
+                                                    {
+                                                        $zoneIcon = if ($zoneEntry.DeploymentResult -eq $("Success")) { "✓" } else { "✗" }
+                                                        $zoneColor = if ($zoneEntry.DeploymentResult -eq $("Success")) { "DarkGreen" } else { "DarkRed" }
+                                                        Write-Host $("      Zone {0}: {1}" -f $zoneEntry.Zone, $zoneIcon) -ForegroundColor $zoneColor
+                                                    }
+                                            }
+
+                                        # Build and show covers list
                                         $coversList = @()
                                         $cNodeCovers = $skuEntries | Where-Object { $_.NodeType -eq $("CNode") }
                                         $mNodeCovers = $skuEntries | Where-Object { $_.NodeType -eq $("MNode") }
@@ -1974,23 +2050,6 @@ function Test-SilkResourceDeployment
                                             {
                                                 $coversList += $mNodeCovers | ForEach-Object { $("MNode: {0}" -f $_.FriendlyName) } | Select-Object -Unique
                                             }
-
-                                        if ($skuResult -eq $("Success"))
-                                            {
-                                                Write-Host $("  ✓ {0,-28} vCPU: {1,-4} {2}" -f $skuName, $vCPU, $quotaFamily) -ForegroundColor Green
-                                            } `
-                                        else
-                                            {
-                                                $failureCategory = ($skuEntries | Select-Object -First 1).FailureCategory
-                                                Write-Host $("  ✗ {0,-28} vCPU: {1,-4} {2} — {3}" -f $skuName, $vCPU, $quotaFamily, $failureCategory) -ForegroundColor Red
-                                                $errorMessage = ($skuEntries | Select-Object -First 1).ErrorMessage
-                                                if ($errorMessage)
-                                                    {
-                                                        Write-Host $("    Error: {0}" -f $errorMessage) -ForegroundColor DarkRed
-                                                    }
-                                            }
-
-                                        # Show covers indented
                                         foreach ($cover in $coversList)
                                             {
                                                 Write-Host $("      └─ {0}" -f $cover) -ForegroundColor DarkGray
@@ -2351,23 +2410,26 @@ function Test-SilkResourceDeployment
                                 $deployResults = $ReportData.SKUFamilyTesting.DeploymentResults
                                 $uniqueSKUs = $deployResults | Select-Object -ExpandProperty SKUName -Unique
                                 $uniqueSKUCount = $uniqueSKUs.Count
-                                $uniqueSuccessCount = ($uniqueSKUs | Where-Object { $sku = $_; ($deployResults | Where-Object { $_.SKUName -eq $sku } | Select-Object -First 1).DeploymentResult -eq $("Success") }).Count
-                                $uniqueFailedCount = $uniqueSKUCount - $uniqueSuccessCount
+                                $summaryZoneList = ($deployResults | Where-Object { $_.Zone } | Select-Object -ExpandProperty Zone -Unique | Sort-Object) -join ", "
+                                $summaryZoneDisplay = if ($summaryZoneList) { $summaryZoneList } else { $ReportData.Configuration.Zone }
+                                $summaryActual = $deployResults | Where-Object { $_.VMName -notmatch '^\(shared:' }
+                                $summarySucceeded = ($summaryActual | Where-Object { $_.DeploymentResult -eq $("Success") }).Count
+                                $summaryFailed = ($summaryActual | Where-Object { $_.DeploymentResult -ne $("Success") }).Count
 
                                 Write-Host $("`n=== SKU Family Deployment Test Summary ===") -ForegroundColor Cyan
-                                if ($uniqueFailedCount -eq 0)
+                                if ($summaryFailed -eq 0)
                                     {
-                                        Write-Host $("✓ ALL {0} UNIQUE SKUs DEPLOYED SUCCESSFULLY in region: {1} zone: {2}" -f $uniqueSKUCount, $ReportData.Configuration.Region, $ReportData.Configuration.Zone) -ForegroundColor Green
+                                        Write-Host $("✓ ALL {0} deployments succeeded across zones {1} in region: {2}" -f $summarySucceeded, $summaryZoneDisplay, $ReportData.Configuration.Region) -ForegroundColor Green
                                         Write-Host $("📊 No allocation or capacity constraints detected") -ForegroundColor Green
                                     } `
-                                elseif ($uniqueSuccessCount -gt 0)
+                                elseif ($summarySucceeded -gt 0)
                                     {
-                                        Write-Host $("⚠ {0}/{1} unique SKUs deployed, {2} failed in region: {3} zone: {4}" -f $uniqueSuccessCount, $uniqueSKUCount, $uniqueFailedCount, $ReportData.Configuration.Region, $ReportData.Configuration.Zone) -ForegroundColor Yellow
+                                        Write-Host $("⚠ {0} succeeded, {1} failed across zones {2} in region: {3}" -f $summarySucceeded, $summaryFailed, $summaryZoneDisplay, $ReportData.Configuration.Region) -ForegroundColor Yellow
                                         Write-Host $("📊 Review failed SKUs above for allocation or capacity constraints") -ForegroundColor Yellow
                                     } `
                                 else
                                     {
-                                        Write-Host $("✗ ALL {0} UNIQUE SKUs FAILED in region: {1} zone: {2}" -f $uniqueSKUCount, $ReportData.Configuration.Region, $ReportData.Configuration.Zone) -ForegroundColor Red
+                                        Write-Host $("✗ ALL {0} deployments failed across zones {1} in region: {2}" -f $summaryFailed, $summaryZoneDisplay, $ReportData.Configuration.Region) -ForegroundColor Red
                                         Write-Host $("📊 No SKU families could be allocated - check capacity and quota") -ForegroundColor Red
                                     }
                             } `
@@ -2425,10 +2487,10 @@ function Test-SilkResourceDeployment
                         # ---------------------------------------------------------------
                         # SKU Support & Quota Reference (All Silk-Supported Families)
                         # ---------------------------------------------------------------
-                        # Always rendered at the bottom of every report as a reference
-                        # section grouped by quota family. Quota is per-family; zone
-                        # support is per-individual-SKU within a family.
-                        if ($ReportData.SKUFamilyTesting.Results.Count -gt 0)
+                        # Suppressed for -TestAllSKUFamilies runs — the Multi-Zone SKU Support
+                        # Matrix already covers this information at the top of those reports.
+                        $isSKUFamilyDeployTestConsole = $ReportData.Metadata.ReportMode -like "SKU Family Deployment Test*"
+                        if ($ReportData.SKUFamilyTesting.Results.Count -gt 0 -and -not $isSKUFamilyDeployTestConsole)
                             {
                                 Write-Host $("`n=== SKU Support & Quota Reference ===") -ForegroundColor Cyan
                                 Write-Verbose -Message $("Rendering SKU support reference for {0} entries" -f $ReportData.SKUFamilyTesting.Results.Count)
@@ -3231,11 +3293,12 @@ function Test-SilkResourceDeployment
 "@
                                     }
 
-                                # Build SKU Support & Quota Reference HTML (always present when results exist)
-                                # Uses rowspan on Quota Family and Quota Status columns to show shared
-                                # family quota once, spanning all SKU rows that belong to that family.
+                                # Build SKU Support & Quota Reference HTML
+                                # Suppressed for -TestAllSKUFamilies runs — the Multi-Zone SKU Support
+                                # Matrix at the top of those reports already covers this information.
                                 $skuFamilyTestingHtml = $("")
-                                if ($ReportData.SKUFamilyTesting.Results.Count -gt 0)
+                                $isSKUFamilyDeployTest = $ReportData.Metadata.ReportMode -like "SKU Family Deployment Test*"
+                                if ($ReportData.SKUFamilyTesting.Results.Count -gt 0 -and -not $isSKUFamilyDeployTest)
                                     {
                                         # Group by quota family, then by unique SKU within each family
                                         $familyGroups = $ReportData.SKUFamilyTesting.Results | Group-Object -Property QuotaFamily
@@ -3478,12 +3541,30 @@ function Test-SilkResourceDeployment
                                 if ($ReportData.SKUFamilyTesting.DeploymentResults -and $ReportData.SKUFamilyTesting.DeploymentResults.Count -gt 0)
                                     {
                                         $deployResults = $ReportData.SKUFamilyTesting.DeploymentResults
-                                        $deploySuccessCount = ($deployResults | Where-Object { $_.DeploymentResult -eq $("Success") }).Count
-                                        $deployFailedCount = ($deployResults | Where-Object { $_.DeploymentResult -eq $("Failed") }).Count
+
+                                        # Determine if this was a multi-zone deployment
+                                        $htmlTestedZones = @($deployResults | Where-Object { $_.Zone } | Select-Object -ExpandProperty Zone -Unique | Sort-Object)
+                                        $htmlIsMultiZone = $htmlTestedZones.Count -gt 1
+                                        $htmlZoneDisplay = if ($htmlTestedZones.Count -gt 0) { $htmlTestedZones -join ", " } else { $ReportData.Configuration.Zone }
+
+                                        # Count actual deployment attempts (exclude shared/inherited entries)
+                                        $htmlActualEntries   = $deployResults | Where-Object { $_.VMName -notmatch '^\(shared:' }
+                                        $htmlTotalAttempts   = $htmlActualEntries.Count
+                                        $htmlTotalSucceeded  = ($htmlActualEntries | Where-Object { $_.DeploymentResult -eq $("Success") }).Count
+                                        $htmlTotalFailed     = $htmlTotalAttempts - $htmlTotalSucceeded
+                                        $htmlUniqueSKUCount  = ($deployResults | Select-Object -ExpandProperty SKUName -Unique).Count
+
+                                        # Build dynamic zone column headers (matches zone support matrix pattern)
+                                        $deployZoneHeaderCells  = $("")
+                                        $deployDetailHeaderCells = $("")
+                                        foreach ($z in $htmlTestedZones)
+                                            {
+                                                $deployZoneHeaderCells   += $("<th>Zone {0}</th>" -f $z)
+                                                $deployDetailHeaderCells += $("<th>Zone {0} Details</th>" -f $z)
+                                            }
 
                                         # Group deployment results by Quota Family, then unique SKU within each
                                         $deployFamilyGroups = $deployResults | Group-Object -Property QuotaFamily
-                                        $uniqueSKUNames = $deployResults | Select-Object -ExpandProperty SKUName -Unique
                                         $skuDeployRows = $("")
                                         foreach ($deployFamilyGroup in $deployFamilyGroups)
                                             {
@@ -3493,12 +3574,54 @@ function Test-SilkResourceDeployment
 
                                                 foreach ($deploySkuGroup in $deploySkuGroups)
                                                     {
-                                                        $skuEntries = $deploySkuGroup.Group
-                                                        $firstEntry = $skuEntries | Select-Object -First 1
-                                                        $statusClass = if ($firstEntry.DeploymentResult -eq $("Success")) { $("status-success") } else { $("status-error") }
-                                                        $statusText = if ($firstEntry.DeploymentResult -eq $("Success")) { $("✓ Deployed") } else { $("✗ {0}" -f $firstEntry.FailureCategory) }
-                                                        $errorDetail = if ($firstEntry.DeploymentResult -eq $("Failed") -and $firstEntry.ErrorMessage) { $firstEntry.ErrorMessage } else { $("-") }
+                                                        $skuEntries    = $deploySkuGroup.Group
+                                                        $actualEntries = $skuEntries | Where-Object { $_.VMName -notmatch '^\(shared:' }
+                                                        $anyFailed     = ($actualEntries | Where-Object { $_.DeploymentResult -ne $("Success") }).Count -gt 0
+
+                                                        # Per-zone result cells and per-zone detail cells
+                                                        $zoneCells  = $("")
+                                                        $detailCells = $("")
+                                                        if ($htmlIsMultiZone)
+                                                            {
+                                                                foreach ($z in $htmlTestedZones)
+                                                                    {
+                                                                        $zEntry = $actualEntries | Where-Object { $_.Zone -eq $z } | Select-Object -First 1
+                                                                        if (-not $zEntry)
+                                                                            {
+                                                                                $zoneCells   += $("<td><span class='status-warning'>-</span></td>")
+                                                                                $detailCells += $("<td>-</td>")
+                                                                            }
+                                                                        elseif ($zEntry.DeploymentResult -eq $("Success"))
+                                                                            {
+                                                                                $zoneCells   += $("<td><span class='status-success'>✓</span></td>")
+                                                                                $detailCells += $("<td>-</td>")
+                                                                            }
+                                                                        else
+                                                                            {
+                                                                                $zoneCells   += $("<td><span class='status-error'>✗</span></td>")
+                                                                                $zMsg = if ($zEntry.ErrorMessage) { $zEntry.ErrorMessage } else { $zEntry.FailureCategory }
+                                                                                $detailCells += $("<td><span class='status-error'>{0}</span></td>" -f $zMsg)
+                                                                            }
+                                                                    }
+                                                            }
+                                                        else
+                                                            {
+                                                                $singleEntry = $actualEntries | Select-Object -First 1
+                                                                if ($singleEntry -and $singleEntry.DeploymentResult -eq $("Success"))
+                                                                    {
+                                                                        $zoneCells   += $("<td><span class='status-success'>✓</span></td>")
+                                                                        $detailCells += $("<td>-</td>")
+                                                                    }
+                                                                else
+                                                                    {
+                                                                        $zoneCells   += $("<td><span class='status-error'>✗</span></td>")
+                                                                        $zMsg = if ($singleEntry -and $singleEntry.ErrorMessage) { $singleEntry.ErrorMessage } elseif ($singleEntry) { $singleEntry.FailureCategory } else { $("-") }
+                                                                        $detailCells += $("<td><span class='status-error'>{0}</span></td>" -f $zMsg)
+                                                                    }
+                                                            }
+
                                                         $coversList = ($skuEntries | ForEach-Object { $("{0}: {1}" -f $_.NodeType, $_.FriendlyName) } | Select-Object -Unique) -join $("<br>")
+                                                        $firstEntry = $skuEntries | Select-Object -First 1
 
                                                         if ($isFirstDeployInFamily)
                                                             {
@@ -3507,9 +3630,9 @@ function Test-SilkResourceDeployment
                     <td rowspan="$deployFamilyRowSpan" style="vertical-align: middle; border-bottom: 2px solid var(--border);">$($deployFamilyGroup.Name)</td>
                     <td>$($deploySkuGroup.Name)</td>
                     <td>$($firstEntry.vCPU)</td>
-                    <td><span class="$statusClass">$statusText</span></td>
+                    $zoneCells
                     <td>$coversList</td>
-                    <td>$errorDetail</td>
+                    $detailCells
                 </tr>
 "@
                                                                 $isFirstDeployInFamily = $false
@@ -3520,18 +3643,14 @@ function Test-SilkResourceDeployment
                 <tr>
                     <td>$($deploySkuGroup.Name)</td>
                     <td>$($firstEntry.vCPU)</td>
-                    <td><span class="$statusClass">$statusText</span></td>
+                    $zoneCells
                     <td>$coversList</td>
-                    <td>$errorDetail</td>
+                    $detailCells
                 </tr>
 "@
                                                             }
                                                     }
                                             }
-
-                                        $htmlUniqueSKUCount = $uniqueSKUNames.Count
-                                        $htmlUniqueSuccessCount = ($uniqueSKUNames | Where-Object { $sku = $_; ($deployResults | Where-Object { $_.SKUName -eq $sku } | Select-Object -First 1).DeploymentResult -eq $("Success") }).Count
-                                        $htmlUniqueFailedCount = $htmlUniqueSKUCount - $htmlUniqueSuccessCount
 
                                         $skuDeploymentTestHtml = @"
         <h2>$("🚀 SKU Family Deployment Test Results")</h2>
@@ -3539,10 +3658,11 @@ function Test-SilkResourceDeployment
             <div class="info-card">
                 <h4>$("📋 Deployment Test Summary")</h4>
                 <strong>$("Region:")</strong> $($ReportData.Configuration.Region)<br>
-                <strong>$("Zone:")</strong> $($ReportData.Configuration.Zone)<br>
+                <strong>$("Zones Tested:")</strong> $htmlZoneDisplay<br>
                 <strong>$("Unique SKUs Tested:")</strong> $($htmlUniqueSKUCount)<br>
-                <strong>$("Succeeded:")</strong> <span class="status-success">$htmlUniqueSuccessCount</span><br>
-                <strong>$("Failed:")</strong> $(if ($htmlUniqueFailedCount -gt 0) { $("<span class='status-error'>{0}</span>" -f $htmlUniqueFailedCount) } else { $("<span class='status-success'>0</span>") })
+                <strong>$("Total Deployments:")</strong> $htmlTotalAttempts<br>
+                <strong>$("Succeeded:")</strong> <span class="status-success">$htmlTotalSucceeded</span><br>
+                <strong>$("Failed:")</strong> $(if ($htmlTotalFailed -gt 0) { $("<span class='status-error'>{0}</span>" -f $htmlTotalFailed) } else { $("<span class='status-success'>0</span>") })
             </div>
         </div>
 
@@ -3552,9 +3672,9 @@ function Test-SilkResourceDeployment
                     <th>$("Quota Family")</th>
                     <th>$("VM SKU")</th>
                     <th>$("vCPU")</th>
-                    <th>$("Deployment Result")</th>
+                    $deployZoneHeaderCells
                     <th>$("Covers")</th>
-                    <th>$("Details")</th>
+                    $deployDetailHeaderCells
                 </tr>
             </thead>
             <tbody>
@@ -6575,7 +6695,7 @@ function Test-SilkResourceDeployment
                             -Id 3 `
                             -ParentId 1 `
                             -Activity $("SKU Family Deployment Test") `
-                            -Status $("Monitoring {0} VM creation jobs..." -f $vmJobMapping.Count) `
+                            -Status $("VM Jobs: 0/{0} complete" -f $vmJobMapping.Count) `
                             -PercentComplete 50
 
                         $allVMJobs = Get-Job
@@ -6590,8 +6710,8 @@ function Test-SilkResourceDeployment
                                     -Id 3 `
                                     -ParentId 1 `
                                     -Activity $("SKU Family Deployment Test") `
-                                    -Status $("Monitoring VM creation jobs") `
-                                    -CurrentOperation $("{0} completed, {1} remaining" -f $completedJobs.Count, $runningJobs.Count) `
+                                    -Status $("VM Jobs: {0}/{1} complete ({2} running)" -f $completedJobs.Count, $allVMJobs.Count, $runningJobs.Count) `
+                                    -CurrentOperation $("Waiting for VM creation jobs to finish...") `
                                     -PercentComplete $(if ($allVMJobs.Count -gt 0) { [Math]::Round(($completedJobs.Count / $allVMJobs.Count) * 100) } else { 100 })
 
                                 do
@@ -6607,8 +6727,8 @@ function Test-SilkResourceDeployment
                                             -Id 3 `
                                             -ParentId 1 `
                                             -Activity $("SKU Family Deployment Test") `
-                                            -Status $("Monitoring VM creation jobs") `
-                                            -CurrentOperation $("{0} completed, {1} remaining (running: {2})" -f $completedJobs.Count, $remainingJobs, $runningJobs.Count) `
+                                            -Status $("VM Jobs: {0}/{1} complete ({2} running, {3} remaining)" -f $completedJobs.Count, $allVMJobs.Count, $runningJobs.Count, $remainingJobs) `
+                                            -CurrentOperation $("Waiting for VM creation jobs to finish...") `
                                             -PercentComplete $completionPercent
                                     } `
                                 while ($runningJobs.Count -gt 0)
@@ -6640,6 +6760,7 @@ function Test-SilkResourceDeployment
                                                     SKUName         = $vmDetails.VMSku
                                                     QuotaFamily     = $vmDetails.QuotaFamily
                                                     vCPU            = $vmDetails.vCPU
+                                                    Zone            = $vmDetails.Zone
                                                     VMName          = $vmDetails.VMName
                                                     DeploymentResult = $("Success")
                                                     FailureCategory = $("")
@@ -6793,6 +6914,7 @@ function Test-SilkResourceDeployment
                                                     SKUName         = $vmDetails.VMSku
                                                     QuotaFamily     = $vmDetails.QuotaFamily
                                                     vCPU            = $vmDetails.vCPU
+                                                    Zone            = $vmDetails.Zone
                                                     VMName          = $vmDetails.VMName
                                                     DeploymentResult = $("Failed")
                                                     FailureCategory = $failureCategory
@@ -6815,6 +6937,7 @@ function Test-SilkResourceDeployment
                                             SKUName         = $skipped.SKUName
                                             QuotaFamily     = $skipped.QuotaFamily
                                             vCPU            = $skipped.vCPU
+                                            Zone            = $testedResult.Zone
                                             VMName          = $("(shared: {0})" -f $skipped.TestedBy)
                                             DeploymentResult = $testedResult.DeploymentResult
                                             FailureCategory = $testedResult.FailureCategory
@@ -6876,14 +6999,6 @@ function Test-SilkResourceDeployment
                             }
                     }
 
-                if ($totalDeployableVMs -eq 0)
-                    {
-                        Write-Warning $("⚠ Zero VM deployment scenario detected - Skipping infrastructure creation")
-                        Write-Warning $("   No VMs can be deployed due to insufficient quota for all requested node types")
-                        Write-Warning $("   Function will complete with quota analysis report only")
-                        return
-                    }
-
                 $deploymentStarted = $true
 
                 # ===============================================================================
@@ -6895,9 +7010,18 @@ function Test-SilkResourceDeployment
                 # and surfaced in the deployment report so the user understands why each zone
                 # was not a valid deployment target for this configuration.
                 # Without TestAllZones, deploy only into the user-specified $Zone.
-                $isMultiZoneDeploy = $false
-                $zonesToDeploy = @($Zone)
-                $skippedZoneEntries = @()
+                $isMultiZoneDeploy       = $false
+                $zonesToDeploy           = @($Zone)
+                $skippedZoneEntries      = @()
+                if ($TestZonesSequentially -and -not $TestAllZones)
+                    {
+                        Write-Warning -Message $("-TestZonesSequentially requires -TestAllZones to function. Sequential zone testing deploys each zone in series — without -TestAllZones there is only one zone to deploy and no sequential behavior occurs. Add -TestAllZones to your command to enable sequential multi-zone testing.")
+                    }
+                $sequentialZoneRun       = $TestZonesSequentially -and $TestAllZones
+                $allDeployedVMs          = [System.Collections.Generic.List[PSCustomObject]]::new()
+                $allDeployedNICs         = [System.Collections.Generic.List[PSCustomObject]]::new()
+                $seqPPGCount             = 0
+                $seqAvSetCount           = 0
 
                 if ($TestAllZones)
                     {
@@ -7111,118 +7235,89 @@ function Test-SilkResourceDeployment
                                       } else { $null }
 
                         # -----------------------------------------------------------------------
-                        # Display pre-flight table
+                        # Display pre-flight table and gate
+                        # Only for parallel multi-zone runs with insufficient quota.
+                        # Sequential and single-zone never block here.
                         # -----------------------------------------------------------------------
-                        # Clear active progress bars so they don't overlap the table and prompt
-                        Write-Progress -Id 2 -Completed
-                        Write-Progress -Id 1 -Completed
-
-                        $sepLine    = $("+-{0}-+" -f ("-" * 84))
-                        $preFlightTestHeader = $("{0}x Test" -f $zoneCount)
-                        Write-Host $("") -ForegroundColor White
-                        Write-Host $sepLine -ForegroundColor Cyan
-                        Write-Host $("| PRE-FLIGHT QUOTA CHECK  {0,-61}|" -f ("{0} Zone(s) Requested" -f $zoneCount)) -ForegroundColor Cyan
-                        Write-Host $sepLine -ForegroundColor Cyan
-                        Write-Host $("| {0,-38}  {1,6}  {2,7}  {3,9}  {4,-5} |" -f "Resource", "1x SDP", $preFlightTestHeader, "Available", "OK?") -ForegroundColor Cyan
-                        Write-Host $sepLine -ForegroundColor Cyan
-
-                        foreach ($row in $preFlightRows)
+                        if ($isMultiZoneDeploy -and -not $sequentialZoneRun -and $maxSupportedZones -lt $zoneCount)
                             {
-                                if ($row.Unknown)
+                                # Clear active progress bars so they don't overlap the table and prompt
+                                Write-Progress -Id 2 -Completed
+                                Write-Progress -Id 1 -Completed
+
+                                $sepLine             = $("+-{0}-+" -f ("-" * 84))
+                                $preFlightTestHeader = $("{0}x Test" -f $zoneCount)
+                                Write-Host $("") -ForegroundColor White
+                                Write-Host $sepLine -ForegroundColor Cyan
+                                Write-Host $("| PRE-FLIGHT QUOTA CHECK  {0,-61}|" -f ("{0} Zone(s) Requested" -f $zoneCount)) -ForegroundColor Cyan
+                                Write-Host $sepLine -ForegroundColor Cyan
+                                Write-Host $("| {0,-38}  {1,6}  {2,7}  {3,9}  {4,-5} |" -f "Resource", "1x SDP", $preFlightTestHeader, "Available", "OK?") -ForegroundColor Cyan
+                                Write-Host $sepLine -ForegroundColor Cyan
+
+                                foreach ($row in $preFlightRows)
                                     {
-                                        $status     = "?"
-                                        $color      = "Yellow"
-                                        $availStr   = "N/A"
-                                    }
-                                elseif ($row.Available -ge $row.Total)
-                                    {
-                                        $status     = "OK"
-                                        $color      = "Green"
-                                        $availStr   = $("{0}/{1}" -f $row.Available, $row.Limit)
-                                    }
-                                elseif ($row.Available -ge $row.Single)
-                                    {
-                                        $status     = "WARN"
-                                        $color      = "Yellow"
-                                        $availStr   = $("{0}/{1}" -f $row.Available, $row.Limit)
-                                    }
-                                else
-                                    {
-                                        $status     = "FAIL"
-                                        $color      = "Red"
-                                        $availStr   = $("{0}/{1}" -f $row.Available, $row.Limit)
-                                    }
-
-                                Write-Host $("| {0,-38}  {1,6}  {2,7}  {3,9}  {4,-4} |" -f $row.Label, $row.Single, $row.Total, $availStr, $status) -ForegroundColor $color
-                            }
-
-                        Write-Host $sepLine -ForegroundColor Cyan
-                        Write-Host $("") -ForegroundColor White
-
-                        # -----------------------------------------------------------------------
-
-                        # Prompt and gate if quota is insufficient for all zones
-                        # -----------------------------------------------------------------------
-                        if ($maxSupportedZones -lt $zoneCount -and $isMultiZoneDeploy)
-                            {
-                                $bindingLabel = if ($bindingRow) { $bindingRow.Label } else { "one or more quota limits" }
-
-                                if ($maxSupportedZones -eq 0)
-                                    {
-                                        Write-Host $("[X]  Insufficient quota to test any zone simultaneously. {0} is the binding constraint." -f $bindingLabel) -ForegroundColor Red
-                                        Write-Host $("    Consider running individual zone tests after existing resources are released.") -ForegroundColor Yellow
-                                        Write-Host $("")
-
-                                        # Generate per-zone commands
-                                        foreach ($z in $zonesToDeploy)
+                                        if ($row.Unknown)
                                             {
-                                                $zoneCmd = $("Test-SilkResourceDeployment -SubscriptionId '{0}' -ResourceGroupName '{1}' -Region '{2}' -Zone {3}" -f $SubscriptionId, $ResourceGroupName, $Region, $z)
-                                                if ($cNodeObject -and $CNodeFriendlyName) { $zoneCmd += $(" -CNodeFriendlyName '{0}' -CNodeCount {1}" -f $CNodeFriendlyName, $CNodeCount) }
-                                                elseif ($cNodeObject -and $CNodeSku)     { $zoneCmd += $(" -CNodeSku '{0}' -CNodeCount {1}" -f $CNodeSku, $CNodeCount) }
-                                                if ($MnodeSizeLsv3)  { $zoneCmd += $(" -MnodeSizeLsv3 @({0})"  -f (($MnodeSizeLsv3  | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
-                                                if ($MnodeSizeLsv4)  { $zoneCmd += $(" -MnodeSizeLsv4 @({0})"  -f (($MnodeSizeLsv4  | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
-                                                if ($MnodeSizeLasv3) { $zoneCmd += $(" -MnodeSizeLasv3 @({0})" -f (($MnodeSizeLasv3 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
-                                                if ($MnodeSizeLasv4) { $zoneCmd += $(" -MnodeSizeLasv4 @({0})" -f (($MnodeSizeLasv4 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
-                                                if ($MnodeSizeLaosv4){ $zoneCmd += $(" -MnodeSizeLaosv4 @({0})" -f (($MnodeSizeLaosv4 | ForEach-Object { "'{0}'" -f $_ }) -join ", ")) }
-                                                Write-Host $("  Zone {0}: {1}" -f $z, $zoneCmd) -ForegroundColor Cyan
+                                                $status     = "?"
+                                                $color      = "Yellow"
+                                                $availStr   = "N/A"
                                             }
-
-                                        Write-Host $("")
-                                        $anyDeploymentPossible  = $false
-                                        $zonesToDeploy          = @()
-                                        $adjustedCNodeCount     = 0
-                                    }
-                                else
-                                    {
-                                        Write-Host $("⚠  Quota supports {0} of {1} requested zones simultaneously. Binding constraint: {2}." -f $maxSupportedZones, $zoneCount, $bindingLabel) -ForegroundColor Yellow
-                                        Write-Host $("")
-
-                                        # Offer zone selection prompt
-                                        $availableZoneChoices = @($zonesToDeploy)
-                                        Write-Host $("  Available zones for this configuration: {0}" -f ($availableZoneChoices -join ", ")) -ForegroundColor White
-                                        Write-Host $("  Quota allows simultaneous testing in {0} zone(s)." -f $maxSupportedZones) -ForegroundColor White
-                                        Write-Host $("")
-
-                                        if ($maxSupportedZones -eq 1)
+                                        elseif ($row.Available -ge $row.Total)
                                             {
-                                                Write-Host $("  Which zone would you like to test? [{0}]" -f ($availableZoneChoices -join "/")) -ForegroundColor Yellow -NoNewline
-                                                Write-Host $("  (press Enter to use Zone {0}): " -f $availableZoneChoices[0]) -NoNewline -ForegroundColor DarkGray
-                                                $userZoneInput = [Console]::ReadLine().Trim()
-                                                $chosenZone = if ($userZoneInput -and $availableZoneChoices -contains $userZoneInput) { $userZoneInput } else { $availableZoneChoices[0] }
-                                                $zonesToDeploy = @($chosenZone)
+                                                $status     = "OK"
+                                                $color      = "Green"
+                                                $availStr   = $("{0}/{1}" -f $row.Available, $row.Limit)
+                                            }
+                                        elseif ($row.Available -ge $row.Single)
+                                            {
+                                                $status     = "WARN"
+                                                $color      = "Yellow"
+                                                $availStr   = $("{0}/{1}" -f $row.Available, $row.Limit)
                                             }
                                         else
                                             {
-                                                Write-Host $("  Enter up to {0} zones to test (comma-separated from: {1})." -f $maxSupportedZones, ($availableZoneChoices -join ", ")) -ForegroundColor Yellow
-                                                Write-Host $("  Press Enter to use the first {0} qualifying zones ({1}): " -f $maxSupportedZones, (($availableZoneChoices | Select-Object -First $maxSupportedZones) -join ", ")) -NoNewline -ForegroundColor DarkGray
-                                                $userZoneInput  = [Console]::ReadLine().Trim()
-                                                $parsedZones    = $userZoneInput -split '\s*,\s*' | Where-Object { $_ -and $availableZoneChoices -contains $_ } | Select-Object -Unique -First $maxSupportedZones
-                                                $zonesToDeploy  = if ($parsedZones.Count -gt 0) { @($parsedZones) } else { @($availableZoneChoices | Select-Object -First $maxSupportedZones) }
+                                                $status     = "FAIL"
+                                                $color      = "Red"
+                                                $availStr   = $("{0}/{1}" -f $row.Available, $row.Limit)
                                             }
 
-                                        Write-Host $("")
+                                        Write-Host $("| {0,-38}  {1,6}  {2,7}  {3,9}  {4,-4} |" -f $row.Label, $row.Single, $row.Total, $availStr, $status) -ForegroundColor $color
+                                    }
 
-                                        # Record quota-gated zones as skipped with reason and CLI commands
+                                Write-Host $sepLine -ForegroundColor Cyan
+                                Write-Host $("") -ForegroundColor White
+                            }
+
+                        if ($maxSupportedZones -gt 0 -and $maxSupportedZones -lt $zoneCount -and $isMultiZoneDeploy -and -not $sequentialZoneRun)
+                            {
+                                # Partial quota: can deploy some zones simultaneously but not all.
+                                # Prompt the user to choose — sequential (Enter) covers all zones over
+                                # time, or they can specify a subset for a simultaneous run.
+                                $bindingLabel = if ($bindingRow) { $bindingRow.Label } else { "one or more quota limits" }
+                                Write-Host $("!  Quota supports {0} of {1} requested zones simultaneously. Binding constraint: {2}." -f $maxSupportedZones, $zoneCount, $bindingLabel) -ForegroundColor Yellow
+                                Write-Host $("")
+
+                                $availableZoneChoices = @($zonesToDeploy)
+                                Write-Host $("  Available zones for this configuration: {0}" -f ($availableZoneChoices -join ", ")) -ForegroundColor White
+                                Write-Host $("  Quota supports {0} zone(s) simultaneously." -f $maxSupportedZones) -ForegroundColor White
+                                Write-Host $("")
+                                Write-Host $("  [Enter]  Run all {0} zones sequentially (one at a time — takes longer, uses only 1x quota)" -f $zoneCount) -ForegroundColor Green
+                                Write-Host $("  [zones]  Specify up to {0} zone(s) for a simultaneous run, e.g. {1}: " -f $maxSupportedZones, (($availableZoneChoices | Select-Object -First $maxSupportedZones) -join ",")) -NoNewline -ForegroundColor DarkGray
+                                $userZoneInput = [Console]::ReadLine().Trim()
+
+                                if ([string]::IsNullOrEmpty($userZoneInput))
+                                    {
+                                        # Default: sequential mode — all qualifying zones in series
+                                        $sequentialZoneRun = $true
+                                        Write-Verbose -Message $("Sequential mode selected by default — {0} zones will run in series." -f $zoneCount)
+                                    }
+                                else
+                                    {
+                                        # User specified zones — simultaneous run with chosen subset
+                                        $parsedZones   = $userZoneInput -split '\s*,\s*' | Where-Object { $_ -and $availableZoneChoices -contains $_ } | Select-Object -Unique -First $maxSupportedZones
+                                        $zonesToDeploy = if ($parsedZones.Count -gt 0) { @($parsedZones) } else { @($availableZoneChoices | Select-Object -First $maxSupportedZones) }
+
+                                        # Record quota-gated zones with per-zone CLI commands
                                         $gatedZones = $availableZoneChoices | Where-Object { $zonesToDeploy -notcontains $_ }
                                         foreach ($gz in $gatedZones)
                                             {
@@ -7241,21 +7336,15 @@ function Test-SilkResourceDeployment
                                                     Reason          = $("Quota-gated: {0} supports only {1} simultaneous zone test(s). Run individually: {2}" -f $bindingLabel, $maxSupportedZones, $gatedCmd)
                                                     Command         = $gatedCmd
                                                 }
-                                                Write-Host $("  Zone {0} deferred — run individually:" -f $gz) -ForegroundColor DarkGray
-                                                Write-Host $("    {0}" -f $gatedCmd) -ForegroundColor Cyan
+                                                Write-Verbose -Message $("Zone {0} deferred (quota-gated simultaneous run). CLI: {1}" -f $gz, $gatedCmd)
                                             }
 
-                                        Write-Host $("")
-                                        Write-Host $("  Proceeding with zone(s): {0}" -f ($zonesToDeploy -join ", ")) -ForegroundColor Green
-                                        Write-Host $("")
+                                        Write-Verbose -Message $("Simultaneous zone run: proceeding with zone(s) {0}." -f ($zonesToDeploy -join ", "))
 
-                                        # Recalculate isMultiZoneDeploy in case we trimmed to 1
+                                        # Recalculate isMultiZoneDeploy after possible trim
                                         $isMultiZoneDeploy = $zonesToDeploy.Count -gt 1
                                     }
-                            }
-                        elseif ($isMultiZoneDeploy)
-                            {
-                                Write-Host $("✓  Quota sufficient for all {0} zone(s). Proceeding with multi-zone deployment." -f $zoneCount) -ForegroundColor Green
+
                                 Write-Host $("")
                             }
                     }
@@ -7360,6 +7449,198 @@ function Test-SilkResourceDeployment
                     {
                         Write-Error $("An error occurred while creating shared resource group infrastructure: {0}" -f $_)
                         return
+                    }
+
+                # ===============================================================================
+                # Shared: failed VM job analysis scriptblock
+                # ===============================================================================
+                # Dot-source this block ( . $analyzeFailedVMJobs ) from both the sequential
+                # per-zone path and the outer non-sequential path. Reads $vmJobMapping from
+                # scope; appends findings to $deploymentValidationResults in scope.
+                $analyzeFailedVMJobs =
+                    {
+                        $finalVMJobs  = Get-Job
+                        # Include Completed jobs where the VM was never actually provisioned —
+                        # New-AzVM -AsJob can finish with State=Completed even on allocation failure
+                        $failedJobs   = $finalVMJobs | Where-Object {
+                                            $_.State -eq 'Failed' -or
+                                            ($_.State -eq 'Completed' -and
+                                             $vmJobMapping.ContainsKey($_.Id) -and
+                                             -not ($deployedVMs | Where-Object { $_.Name -eq $vmJobMapping[$_.Id].VMName }))
+                                        }
+
+                        if ($failedJobs.Count -gt 0)
+                            {
+                                foreach ($failedJob in $failedJobs)
+                                    {
+                                        $errorSources = @()
+
+                                        if ($failedJob.ChildJobs -and $failedJob.ChildJobs.Count -gt 0)
+                                            {
+                                                foreach ($childJob in $failedJob.ChildJobs)
+                                                    {
+                                                        if ($childJob.Error -and $childJob.Error.Count -gt 0)
+                                                            {
+                                                                $errorSources += ($childJob.Error | Out-String)
+                                                            }
+                                                        if ($childJob.Output -and $childJob.Output.Count -gt 0)
+                                                            {
+                                                                $outputString = $childJob.Output | Out-String
+                                                                if ($outputString -match 'error|fail|exception|allocat|capacity|quota|constrained')
+                                                                    {
+                                                                        $errorSources += $outputString
+                                                                    }
+                                                            }
+                                                        if ($childJob.Warning -and $childJob.Warning.Count -gt 0)
+                                                            {
+                                                                $warningString = $childJob.Warning | Out-String
+                                                                if ($warningString.Trim().Length -gt 0)
+                                                                    {
+                                                                        $errorSources += $warningString
+                                                                    }
+                                                            }
+                                                        if ($childJob.Information -and $childJob.Information.Count -gt 0)
+                                                            {
+                                                                $infoString = $childJob.Information | Out-String
+                                                                if ($infoString -match 'error|fail|exception|allocat|capacity|quota|constrained')
+                                                                    {
+                                                                        $errorSources += $infoString
+                                                                    }
+                                                            }
+                                                        if ($childJob.JobStateInfo.Reason)
+                                                            {
+                                                                $errorSources += $childJob.JobStateInfo.Reason.ToString()
+                                                                $innerEx = $childJob.JobStateInfo.Reason.InnerException
+                                                                while ($innerEx)
+                                                                    {
+                                                                        $errorSources += $innerEx.Message
+                                                                        $innerEx = $innerEx.InnerException
+                                                                    }
+                                                            }
+                                                    }
+                                            }
+
+                                        # Source 2: Receive-Job (may consume streams — used last)
+                                        try
+                                            {
+                                                $jobOutput = Receive-Job -Job $failedJob -ErrorAction SilentlyContinue 2>&1
+                                                if ($jobOutput)
+                                                    {
+                                                        $jobOutputString = $jobOutput | Out-String
+                                                        if ($jobOutputString -match 'error|fail|exception|allocat|capacity|quota|constrained')
+                                                            {
+                                                                $errorSources += $jobOutputString
+                                                            }
+                                                    }
+                                            }
+                                        catch { }
+
+                                        $jobErrorString     = ($errorSources | Where-Object { $_ }) -join "`n"
+                                        $jobMapping         = if ($vmJobMapping.ContainsKey($failedJob.Id)) { $vmJobMapping[$failedJob.Id] } else { $null }
+                                        $vmName             = if ($jobMapping) { $jobMapping.VMName }    else { $failedJob.Name }
+                                        $vmSku              = if ($jobMapping) { $jobMapping.VMSku }     else { "Unknown" }
+                                        $jobZone            = if ($jobMapping) { $jobMapping.Zone }      else { $Zone }
+                                        $errorCode          = ""
+                                        $errorMessage       = ""
+                                        $failureCategory    = "Unknown"
+                                        $alternativeZones   = @()
+
+                                        if ($jobErrorString)
+                                            {
+                                                $codeMatch   = [regex]::Match($jobErrorString, '"code"\s*:\s*"([^"]+)"')
+                                                $reasonMatch = [regex]::Match($jobErrorString, '"message"\s*:\s*"([^"]+)"')
+                                                if (-not $reasonMatch.Success) { $reasonMatch = [regex]::Match($jobErrorString, 'StatusMessage\s*:\s*(.+)') }
+                                                if (-not $reasonMatch.Success) { $reasonMatch = [regex]::Match($jobErrorString, 'Message\s*:\s*(.+)') }
+
+                                                $errorCode    = if ($codeMatch.Success)   { $codeMatch.Groups[1].Value.Trim() }   else { "" }
+                                                $errorMessage = if ($reasonMatch.Success) { $reasonMatch.Groups[1].Value.Trim() } else { "" }
+
+                                                if ($errorCode -match "OverconstrainedAllocationRequest|AllocationFailed|ZonalAllocationFailed" -or
+                                                    $errorMessage -match "allocation|capacity|overconstrained|overprovisioned")
+                                                    {
+                                                        $failureCategory = "No SKU Capacity Available"
+                                                    }
+                                                elseif ($errorCode -match "QuotaExceeded|OperationNotAllowed" -or $errorMessage -match "quota|core|limit")
+                                                    {
+                                                        $failureCategory = "Quota Exceeded"
+                                                    }
+                                                elseif ($errorCode -match "SKU|sku" -or $errorMessage -match "sku|size")
+                                                    {
+                                                        $failureCategory = "SKU Support"
+                                                        if ($vmSku)
+                                                            {
+                                                                $skuInfo = Get-AzComputeResourceSku | Where-Object { $_.Name -eq $vmSku -and $_.LocationInfo.Location -eq $Region }
+                                                                if ($skuInfo -and $skuInfo.LocationInfo.Zones -and $skuInfo.LocationInfo.Zones.Count -gt 0)
+                                                                    {
+                                                                        $alternativeZones = $skuInfo.LocationInfo.Zones | Where-Object { $_ -ne $jobZone }
+                                                                    }
+                                                            }
+                                                    }
+                                                else
+                                                    {
+                                                        $failureCategory = "Other"
+                                                    }
+
+                                                if ([string]::IsNullOrWhiteSpace($errorMessage))
+                                                    {
+                                                        $errorLines = $jobErrorString -split "`n" | Where-Object { $_ -match "error|failed|exception|capacity|allocation|quota|constrained" -and $_ -notmatch "^VERBOSE:|^DEBUG:" } | Select-Object -First 3
+                                                        if ($errorLines)
+                                                            {
+                                                                $errorMessage = ($errorLines -join "; ").Trim()
+                                                                if ($errorMessage.Length -gt 300) { $errorMessage = $errorMessage.Substring(0, 300) + "..." }
+                                                            }
+                                                        else
+                                                            {
+                                                                $firstLine = ($jobErrorString -split "`n" | Where-Object { $_.Trim().Length -gt 0 } | Select-Object -First 1)
+                                                                if ($firstLine)
+                                                                    {
+                                                                        $errorMessage = $firstLine.Trim()
+                                                                        if ($errorMessage.Length -gt 300) { $errorMessage = $errorMessage.Substring(0, 300) + "..." }
+                                                                    }
+                                                                else
+                                                                    {
+                                                                        $errorMessage = "Deployment failed — no classifiable error returned by Azure"
+                                                                    }
+                                                            }
+                                                    }
+                                            }
+                                        else
+                                            {
+                                                $errorMessage    = "Deployment failed — no error details captured from job"
+                                                $failureCategory = "Unknown"
+                                            }
+
+                                        $deploymentValidationResults += [PSCustomObject]@{
+                                            VMName           = $vmName
+                                            VMSku            = $vmSku
+                                            JobName          = $failedJob.Name
+                                            ErrorCode        = $errorCode
+                                            ErrorMessage     = $errorMessage
+                                            FailureCategory  = $failureCategory
+                                            AlternativeZones = $alternativeZones
+                                            TestedZone       = $jobZone
+                                            TestedRegion     = $Region
+                                            Timestamp        = $StartTime
+                                        }
+
+                                        if ($failureCategory -eq "No SKU Capacity Available")
+                                            {
+                                                Write-Verbose -Message $("No SKU Capacity available for VM {0} ({1}): {2}" -f $vmName, $vmSku, $errorMessage)
+                                            }
+                                        elseif ($failureCategory -eq "Quota Exceeded")
+                                            {
+                                                Write-Warning -Message $("Quota limitation detected for VM {0} ({1}): {2}" -f $vmName, $vmSku, $errorMessage)
+                                            }
+                                        elseif ($failureCategory -eq "SKU Support")
+                                            {
+                                                Write-Warning -Message $("SKU support issue detected for VM {0} ({1}): {2}" -f $vmName, $vmSku, $errorMessage)
+                                            }
+                                        else
+                                            {
+                                                Write-Warning -Message $("Deployment validation finding for VM {0} ({1}): {2}" -f $vmName, $vmSku, $errorMessage)
+                                            }
+                                    }
+                            }
                     }
 
                 # create vm instances
@@ -7491,7 +7772,7 @@ function Test-SilkResourceDeployment
 
                                 # CNode creation phase with updated progress
                                 Write-Progress `
-                                    -Status $("Creating CNodes") `
+                                    -Status $("Creating CNodes{0}" -f $zoneLabel) `
                                     -CurrentOperation $("Preparing to create {0} CNode VM(s) in availability set..." -f $adjustedCNodeCount) `
                                     -PercentComplete 5 `
                                     -Activity $("VM Deployment") `
@@ -7681,7 +7962,7 @@ function Test-SilkResourceDeployment
                                         $mainPercentComplete = [Math]::Min([Math]::Round(($totalProcessed / $totalVMs) * 100), 90)
 
                                         Write-Progress `
-                                            -Status $("Processing MNode Group {0} of {1} - {2} TiB ({3})" -f $currentMNode, $mNodeObject.Count, $currentMNodePhysicalSize, $currentMNodeSku) `
+                                            -Status $("Processing MNode Group {0} of {1} - {2} TiB ({3}){4}" -f $currentMNode, $mNodeObject.Count, $currentMNodePhysicalSize, $currentMNodeSku, $zoneLabel) `
                                             -CurrentOperation $("Creating {0} DNode VM(s) for {1} TiB MNode..." -f $currentDNodeCount, $currentMNodePhysicalSize) `
                                             -PercentComplete $mainPercentComplete `
                                             -Activity $("VM Deployment") `
@@ -7816,101 +8097,222 @@ function Test-SilkResourceDeployment
                                     }
                             }
 
-                            } # end foreach ($deployZone in $zonesToDeploy)
-
-                        # ========================================================================================================
-                        # begin vm creation job monitoring
-                        # ========================================================================================================
-                        # Initialize deployment validation tracking for reporting
-                        $deploymentValidationResults = @()
-
-                        # Validate all network interfaces were created successfully
-                        Write-Verbose -Message $("✓ All network interfaces created successfully: {0} total NICs" -f (Get-AzNetworkInterface -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }).Count)
-
-                        # Wait for all VMs to be created - Final phase of VM deployment
-                        $allVMJobs = Get-Job
-
-                        # Update staged progress: monitoring VM creation
-                        Update-StagedProgress -SectionName 'VMDeployment' -SectionCurrentStep 2 -SectionTotalSteps 3 `
-                            -DetailMessage $("")
-
-                        # Update main progress to show completion phase and immediately show monitoring sub-progress
-                        Write-Progress `
-                            -Status $("Monitoring VM Creation Jobs") `
-                            -CurrentOperation $("Waiting for all VMs to be deployed...") `
-                            -PercentComplete 95 `
-                            -Activity $("VM Deployment") `
-                            -ParentId 1 `
-                            -Id 3
-
-                        # Initial status check to show immediate progress
-                        $currentVMJobs = Get-Job
-                        $completedJobs = $currentVMJobs | Where-Object { $_.State -in @('Completed', 'Failed', 'Stopped') }
-                        $runningJobs = $currentVMJobs | Where-Object { $_.State -in @('Running', 'NotStarted') }
-                        $initialCompletionPercent = if ($allVMJobs.Count -gt 0) { [Math]::Round(($completedJobs.Count / $allVMJobs.Count) * 100) } else { 100 }
-                        $initialRemainingJobs = [Math]::Max($allVMJobs.Count - $completedJobs.Count, 0)
-
-                        # Update VM deployment progress immediately with current status
-                        Write-Progress `
-                            -Status $("Monitoring VM creation jobs") `
-                            -CurrentOperation $("{0} completed, {1} remaining (running: {2})" -f $completedJobs.Count, $initialRemainingJobs, $runningJobs.Count) `
-                            -PercentComplete $initialCompletionPercent `
-                            -Activity $("VM Deployment") `
-                            -ParentId 1 `
-                            -Id 3
-
-                        do
+                        # ---------------------------------------------------------------
+                        # Sequential Zone: per-zone wait, analysis, snapshot, and cleanup
+                        # ---------------------------------------------------------------
+                        if ($sequentialZoneRun)
                             {
-                                # Regular monitoring interval
-                                Start-Sleep -Seconds 3
-                                $currentVMJobs = Get-Job
-                                $completedJobs = $currentVMJobs | Where-Object { $_.State -in @('Completed', 'Failed', 'Stopped') }
-                                $runningJobs = $currentVMJobs | Where-Object { $_.State -in @('Running', 'NotStarted') }
-                                $completionPercent = if ($allVMJobs.Count -gt 0) { [Math]::Round(($completedJobs.Count / $allVMJobs.Count) * 100) } else { 100 }
-                                $remainingJobs = [Math]::Max($allVMJobs.Count - $completedJobs.Count, 0)
+                                # Wait for this zone's VM creation jobs
+                                $zoneVMJobs           = Get-Job
+                                $zoneCurrentJobs      = $zoneVMJobs
+                                $zoneCompletedJobs    = $zoneCurrentJobs | Where-Object { $_.State -in @('Completed', 'Failed', 'Stopped') }
+                                $zoneRunningJobs      = $zoneCurrentJobs | Where-Object { $_.State -in @('Running', 'NotStarted') }
+                                $zoneInitialPercent   = if ($zoneVMJobs.Count -gt 0) { [Math]::Round(($zoneCompletedJobs.Count / $zoneVMJobs.Count) * 100) } else { 100 }
+                                $zoneInitialRemaining = [Math]::Max($zoneVMJobs.Count - $zoneCompletedJobs.Count, 0)
 
-                                # Update VM deployment progress
                                 Write-Progress `
-                                    -Status $("Monitoring VM creation jobs") `
-                                    -CurrentOperation $("{0} completed, {1} remaining (running: {2})" -f $completedJobs.Count, $remainingJobs, $runningJobs.Count) `
-                                    -PercentComplete $completionPercent `
+                                    -Status $("Zone {0}/{1} — VM Jobs: {2}/{3} complete ({4} running)" -f $zoneLoopIndex, $zonesToDeploy.Count, $zoneCompletedJobs.Count, $zoneVMJobs.Count, $zoneRunningJobs.Count) `
+                                    -CurrentOperation $("Waiting for zone {0} VM creation jobs to finish..." -f $deployZone) `
+                                    -PercentComplete $zoneInitialPercent `
                                     -Activity $("VM Deployment") `
                                     -ParentId 1 `
                                     -Id 3
-                            } `
-                        while
-                            (
-                                $runningJobs.Count -gt 0
-                            )
 
-                        # Final progress updates
-                        Write-Progress `
-                            -Status $("VM Deployment Complete") `
-                            -CurrentOperation $("All VMs have been successfully deployed") `
-                            -PercentComplete 100 `
-                            -Activity $("VM Deployment") `
-                            -ParentId 1 `
-                            -Id 3
-
-                        Start-Sleep -Seconds 2
-
-                        # Complete all progress bars
-                        Write-Progress -Activity $("VM Deployment") -Id 3 -Completed
-
-                        # Update staged progress: VM deployment complete
-                        Update-StagedProgress -SectionName 'VMDeployment' -SectionCurrentStep 3 -SectionTotalSteps 3 `
-                            -DetailMessage $("")
-
-                        # Analyze failed jobs AFTER monitoring is complete
-                        $finalVMJobs = Get-Job
-                        $failedJobs = $finalVMJobs | Where-Object { $_.State -eq 'Failed' }
-
-                        if ($failedJobs.Count -gt 0)
-                            {
-                                foreach ($failedJob in $failedJobs)
+                                do
                                     {
-                                        # Get the job error details from multiple sources for robust error extraction
-                                        # IMPORTANT: Check child job streams BEFORE Receive-Job, which can consume them
+                                        Start-Sleep -Seconds 3
+                                        $zoneCurrentJobs   = Get-Job
+                                        $zoneCompletedJobs = $zoneCurrentJobs | Where-Object { $_.State -in @('Completed', 'Failed', 'Stopped') }
+                                        $zoneRunningJobs   = $zoneCurrentJobs | Where-Object { $_.State -in @('Running', 'NotStarted') }
+                                        $zoneJobPercent    = if ($zoneVMJobs.Count -gt 0) { [Math]::Round(($zoneCompletedJobs.Count / $zoneVMJobs.Count) * 100) } else { 100 }
+                                        $zoneRemaining     = [Math]::Max($zoneVMJobs.Count - $zoneCompletedJobs.Count, 0)
+
+                                        Write-Progress `
+                                            -Status $("Zone {0}/{1} — VM Jobs: {2}/{3} complete ({4} running, {5} remaining)" -f $zoneLoopIndex, $zonesToDeploy.Count, $zoneCompletedJobs.Count, $zoneVMJobs.Count, $zoneRunningJobs.Count, $zoneRemaining) `
+                                            -CurrentOperation $("Waiting for zone {0} VM creation jobs to finish..." -f $deployZone) `
+                                            -PercentComplete $zoneJobPercent `
+                                            -Activity $("VM Deployment") `
+                                            -ParentId 1 `
+                                            -Id 3
+                                    } `
+                                while ($zoneRunningJobs.Count -gt 0)
+
+                                Write-Progress `
+                                    -Status $("Zone {0}/{1} — VM Deployment Complete" -f $zoneLoopIndex, $zonesToDeploy.Count) `
+                                    -CurrentOperation $("All zone {0} VMs deployed" -f $deployZone) `
+                                    -PercentComplete 100 `
+                                    -Activity $("VM Deployment") `
+                                    -ParentId 1 `
+                                    -Id 3
+
+                                Start-Sleep -Seconds 2
+
+                                # Analyze failed jobs for this zone (dot-source to share scope with outer block)
+                                . $analyzeFailedVMJobs
+
+                                # Snapshot VMs and NICs for this zone before cleanup
+                                $zoneVMs  = Get-AzVM -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
+                                $zoneNICs = Get-AzNetworkInterface -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
+                                foreach ($v in $zoneVMs)  { $allDeployedVMs.Add($v) }
+                                foreach ($n in $zoneNICs) { $allDeployedNICs.Add($n) }
+                                $seqPPGCount   += (Get-AzProximityPlacementGroup -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $ResourceNamePrefix } | Measure-Object).Count
+                                $seqAvSetCount += (Get-AzAvailabilitySet          -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue | Where-Object { $_.Name -match $ResourceNamePrefix } | Measure-Object).Count
+                                Write-Verbose -Message $("Zone {0} snapshot: {1} VM(s), {2} NIC(s), {3} AvSet(s), {4} PPG(s) recorded for reporting." -f $deployZone, $zoneVMs.Count, $zoneNICs.Count, $seqAvSetCount, $seqPPGCount)
+
+                                # Clear completed jobs before cleanup
+                                Get-Job | Remove-Job -Force -ErrorAction SilentlyContinue | Out-Null
+
+                                # Partial cleanup between zones — skip on the last zone (end block handles full cleanup)
+                                if ($zoneLoopIndex -lt $zonesToDeploy.Count)
+                                    {
+                                        $nextZone = $zonesToDeploy[$zoneLoopIndex]
+                                        Write-Verbose -Message $("Inter-zone cleanup: removing zone {0} resources before deploying zone {1}..." -f $deployZone, $nextZone)
+
+                                        # Remove VMs
+                                        Write-Progress `
+                                            -Status $("Inter-Zone Cleanup ({0}/{1}): Removing VMs..." -f $zoneLoopIndex, $zonesToDeploy.Count) `
+                                            -CurrentOperation $("Freeing zone {0} VM quota for zone {1}..." -f $deployZone, $nextZone) `
+                                            -PercentComplete 10 `
+                                            -Activity $("Sequential Zone Cleanup") `
+                                            -Id 8
+
+                                        $zoneVMsToRemove = Get-AzVM -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
+                                        if ($zoneVMsToRemove)
+                                            {
+                                                $zoneVMsToRemove | ForEach-Object { Remove-AzVM -ResourceGroupName $ResourceGroupName -Name $_.Name -Force:$true -AsJob | Out-Null }
+                                                Get-Job | Wait-Job | Out-Null
+                                                Get-Job | Remove-Job -Force | Out-Null
+                                                Write-Verbose -Message $("Zone {0}: {1} VM(s) removed." -f $deployZone, $zoneVMsToRemove.Count)
+                                            }
+
+                                        # Remove NICs
+                                        Write-Progress `
+                                            -Status $("Inter-Zone Cleanup ({0}/{1}): Removing NICs..." -f $zoneLoopIndex, $zonesToDeploy.Count) `
+                                            -CurrentOperation $("Removing zone {0} network interfaces..." -f $deployZone) `
+                                            -PercentComplete 40 `
+                                            -Activity $("Sequential Zone Cleanup") `
+                                            -Id 8
+
+                                        $zoneNICsToRemove = Get-AzNetworkInterface -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
+                                        if ($zoneNICsToRemove)
+                                            {
+                                                $zoneNICsToRemove | ForEach-Object { Remove-AzNetworkInterface -ResourceGroupName $ResourceGroupName -Name $_.Name -Force:$true -AsJob | Out-Null }
+                                                Get-Job | Wait-Job | Out-Null
+                                                Get-Job | Remove-Job -Force | Out-Null
+                                                Write-Verbose -Message $("Zone {0}: {1} NIC(s) removed." -f $deployZone, $zoneNICsToRemove.Count)
+                                            }
+
+                                        # Remove AvSets and PPGs (synchronous — VMs must be gone first)
+                                        Write-Progress `
+                                            -Status $("Inter-Zone Cleanup ({0}/{1}): Removing AvSets and PPGs..." -f $zoneLoopIndex, $zonesToDeploy.Count) `
+                                            -CurrentOperation $("Removing zone {0} availability sets and proximity placement groups..." -f $deployZone) `
+                                            -PercentComplete 70 `
+                                            -Activity $("Sequential Zone Cleanup") `
+                                            -Id 8
+
+                                        Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue |
+                                            Where-Object { $_.Name -match $ResourceNamePrefix } |
+                                            ForEach-Object { $_ | Remove-AzAvailabilitySet -Force:$true | Out-Null }
+                                        Write-Verbose -Message $("Zone {0}: availability sets removed." -f $deployZone)
+
+                                        Get-AzProximityPlacementGroup -ResourceGroupName $ResourceGroupName -ErrorAction SilentlyContinue |
+                                            Where-Object { $_.Name -match $ResourceNamePrefix } |
+                                            ForEach-Object { $_ | Remove-AzProximityPlacementGroup -Force:$true | Out-Null }
+                                        Write-Verbose -Message $("Zone {0}: proximity placement groups removed." -f $deployZone)
+
+                                        Write-Progress -Activity $("Sequential Zone Cleanup") -Id 8 -Completed
+                                        Write-Verbose -Message $("Inter-zone cleanup complete. Proceeding to zone {0}." -f $nextZone)
+                                    }
+                                else
+                                    {
+                                        Write-Verbose -Message $("All {0} sequential zones deployed. Zone {1} resources will be cleaned up by the end block." -f $zonesToDeploy.Count, $deployZone)
+                                    }
+
+                                Write-Progress -Activity $("VM Deployment") -Id 3 -Completed
+                            }
+
+                            } # end foreach ($deployZone in $zonesToDeploy)
+
+                        # ========================================================================================================
+                        # VM creation job monitoring (parallel / non-sequential path)
+                        # ========================================================================================================
+                        # $deploymentValidationResults is initialized here for both paths.
+                        # Sequential path populates it per zone via . $analyzeFailedVMJobs inside the loop above.
+                        # Non-sequential path runs the full monitoring loop and analysis below.
+                        $deploymentValidationResults = @()
+
+                        if (-not $sequentialZoneRun)
+                            {
+                                Write-Verbose -Message $("All NICs created: {0} total" -f (Get-AzNetworkInterface -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }).Count)
+
+                                $allVMJobs = Get-Job
+
+                                Update-StagedProgress -SectionName 'VMDeployment' -SectionCurrentStep 2 -SectionTotalSteps 3 `
+                                    -DetailMessage $("")
+
+                                $currentVMJobs        = Get-Job
+                                $completedJobs        = $currentVMJobs | Where-Object { $_.State -in @('Completed', 'Failed', 'Stopped') }
+                                $runningJobs          = $currentVMJobs | Where-Object { $_.State -in @('Running', 'NotStarted') }
+                                $initialCompletionPercent = if ($allVMJobs.Count -gt 0) { [Math]::Round(($completedJobs.Count / $allVMJobs.Count) * 100) } else { 100 }
+                                $initialRemainingJobs = [Math]::Max($allVMJobs.Count - $completedJobs.Count, 0)
+
+                                Write-Progress `
+                                    -Status $("VM Jobs: {0}/{1} complete ({2} running, {3} remaining)" -f $completedJobs.Count, $allVMJobs.Count, $runningJobs.Count, $initialRemainingJobs) `
+                                    -CurrentOperation $("Waiting for all VM creation jobs to finish...") `
+                                    -PercentComplete $initialCompletionPercent `
+                                    -Activity $("VM Deployment") `
+                                    -ParentId 1 `
+                                    -Id 3
+
+                                do
+                                    {
+                                        Start-Sleep -Seconds 3
+                                        $currentVMJobs = Get-Job
+                                        $completedJobs = $currentVMJobs | Where-Object { $_.State -in @('Completed', 'Failed', 'Stopped') }
+                                        $runningJobs   = $currentVMJobs | Where-Object { $_.State -in @('Running', 'NotStarted') }
+                                        $completionPercent = if ($allVMJobs.Count -gt 0) { [Math]::Round(($completedJobs.Count / $allVMJobs.Count) * 100) } else { 100 }
+                                        $remainingJobs = [Math]::Max($allVMJobs.Count - $completedJobs.Count, 0)
+
+                                        Write-Progress `
+                                            -Status $("VM Jobs: {0}/{1} complete ({2} running, {3} remaining)" -f $completedJobs.Count, $allVMJobs.Count, $runningJobs.Count, $remainingJobs) `
+                                            -CurrentOperation $("Waiting for all VM creation jobs to finish...") `
+                                            -PercentComplete $completionPercent `
+                                            -Activity $("VM Deployment") `
+                                            -ParentId 1 `
+                                            -Id 3
+                                    } `
+                                while ($runningJobs.Count -gt 0)
+
+                                Write-Progress `
+                                    -Status $("VM Deployment Complete") `
+                                    -CurrentOperation $("All VMs have been successfully deployed") `
+                                    -PercentComplete 100 `
+                                    -Activity $("VM Deployment") `
+                                    -ParentId 1 `
+                                    -Id 3
+
+                                Start-Sleep -Seconds 2
+                                Write-Progress -Activity $("VM Deployment") -Id 3 -Completed
+
+                                Update-StagedProgress -SectionName 'VMDeployment' -SectionCurrentStep 3 -SectionTotalSteps 3 `
+                                    -DetailMessage $("")
+
+                                # Analyze failed jobs (dot-source into current scope to populate $deploymentValidationResults)
+                                . $analyzeFailedVMJobs
+                            }
+                        else
+                            {
+                                # Sequential path: per-zone monitoring and analysis ran inside the zone loop above.
+                                # Mark VMDeployment staged progress complete now that all zones have finished.
+                                Update-StagedProgress -SectionName 'VMDeployment' -SectionCurrentStep 3 -SectionTotalSteps 3 `
+                                    -DetailMessage $("")
+                            }
+
+                        # (old duplicate analysis block removed — analysis now handled via . $analyzeFailedVMJobs)
+                        if ($false)
+                            {
+                                foreach ($failedJob in @())
+                                    {
                                         $errorSources = @()
 
                                         # Source 1: Child job streams (check BEFORE Receive-Job to avoid data consumption)
@@ -8197,9 +8599,11 @@ function Test-SilkResourceDeployment
                 Write-Host $("`n=== Post-Deployment Validation ===") -ForegroundColor Cyan
                 Write-Verbose -Message $("Querying Azure Resource Manager for deployed resources in resource group '{0}'" -f $ResourceGroupName)
 
-                # Get all deployed resources for validation
-                $deployedVMs = Get-AzVM -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
-                $deployedNICs = Get-AzNetworkInterface -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
+                # Get all deployed resources for validation.
+                # Sequential mode: VMs and NICs were snapshotted per-zone before cleanup; use the accumulated lists.
+                # Parallel mode: all VMs and NICs are still live — query Azure directly.
+                $deployedVMs  = if ($sequentialZoneRun) { @($allDeployedVMs)  } else { Get-AzVM -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix } }
+                $deployedNICs = if ($sequentialZoneRun) { @($allDeployedNICs) } else { Get-AzNetworkInterface -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix } }
                 $deployedVNet = Get-AzVirtualNetwork -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
 
                 # ---------------------------------------------------------------

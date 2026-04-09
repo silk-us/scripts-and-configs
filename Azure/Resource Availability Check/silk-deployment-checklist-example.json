@@ -1,4 +1,5 @@
 {
+    "customer_name": "silk",
     "azure_environment": {
         "subscription_id": "12345678-1234-1234-1234-123456789012",
         "resource_group_name": "empty-resource-group",
@@ -11,6 +12,7 @@
     "sdp": {
         "increased_logical_capacity": true,
         "read_cache_enabled": false,
+        "c_node_sku_variant": "_AMD",
         "c_node_count": "2",
         "m_node_type": "Laosv4",
         "m_node_sizes": [

@@ -3555,10 +3555,12 @@ function Test-SilkResourceDeployment
                                         $htmlUniqueSKUCount  = ($deployResults | Select-Object -ExpandProperty SKUName -Unique).Count
 
                                         # Build dynamic zone column headers (matches zone support matrix pattern)
-                                        $deployZoneHeaderCells = $("")
+                                        $deployZoneHeaderCells  = $("")
+                                        $deployDetailHeaderCells = $("")
                                         foreach ($z in $htmlTestedZones)
                                             {
-                                                $deployZoneHeaderCells += $("<th>Zone {0}</th>" -f $z)
+                                                $deployZoneHeaderCells   += $("<th>Zone {0}</th>" -f $z)
+                                                $deployDetailHeaderCells += $("<th>Zone {0} Details</th>" -f $z)
                                             }
 
                                         # Group deployment results by Quota Family, then unique SKU within each
@@ -3576,8 +3578,9 @@ function Test-SilkResourceDeployment
                                                         $actualEntries = $skuEntries | Where-Object { $_.VMName -notmatch '^\(shared:' }
                                                         $anyFailed     = ($actualEntries | Where-Object { $_.DeploymentResult -ne $("Success") }).Count -gt 0
 
-                                                        # Per-zone result cells
-                                                        $zoneCells = $("")
+                                                        # Per-zone result cells and per-zone detail cells
+                                                        $zoneCells  = $("")
+                                                        $detailCells = $("")
                                                         if ($htmlIsMultiZone)
                                                             {
                                                                 foreach ($z in $htmlTestedZones)
@@ -3585,38 +3588,37 @@ function Test-SilkResourceDeployment
                                                                         $zEntry = $actualEntries | Where-Object { $_.Zone -eq $z } | Select-Object -First 1
                                                                         if (-not $zEntry)
                                                                             {
-                                                                                $zoneCells += $("<td><span class='status-warning'>-</span></td>")
+                                                                                $zoneCells   += $("<td><span class='status-warning'>-</span></td>")
+                                                                                $detailCells += $("<td>-</td>")
                                                                             }
                                                                         elseif ($zEntry.DeploymentResult -eq $("Success"))
                                                                             {
-                                                                                $zoneCells += $("<td><span class='status-success'>✓</span></td>")
+                                                                                $zoneCells   += $("<td><span class='status-success'>✓</span></td>")
+                                                                                $detailCells += $("<td>-</td>")
                                                                             }
                                                                         else
                                                                             {
-                                                                                $zoneCells += $("<td><span class='status-error'>✗</span></td>")
+                                                                                $zoneCells   += $("<td><span class='status-error'>✗</span></td>")
+                                                                                $zMsg = if ($zEntry.ErrorMessage) { $zEntry.ErrorMessage } else { $zEntry.FailureCategory }
+                                                                                $detailCells += $("<td><span class='status-error'>{0}</span></td>" -f $zMsg)
                                                                             }
                                                                     }
                                                             }
                                                         else
                                                             {
-                                                                # Single zone — one result cell
                                                                 $singleEntry = $actualEntries | Select-Object -First 1
                                                                 if ($singleEntry -and $singleEntry.DeploymentResult -eq $("Success"))
                                                                     {
-                                                                        $zoneCells += $("<td><span class='status-success'>✓</span></td>")
+                                                                        $zoneCells   += $("<td><span class='status-success'>✓</span></td>")
+                                                                        $detailCells += $("<td>-</td>")
                                                                     }
                                                                 else
                                                                     {
-                                                                        $zoneCells += $("<td><span class='status-error'>✗</span></td>")
+                                                                        $zoneCells   += $("<td><span class='status-error'>✗</span></td>")
+                                                                        $zMsg = if ($singleEntry -and $singleEntry.ErrorMessage) { $singleEntry.ErrorMessage } elseif ($singleEntry) { $singleEntry.FailureCategory } else { $("-") }
+                                                                        $detailCells += $("<td><span class='status-error'>{0}</span></td>" -f $zMsg)
                                                                     }
                                                             }
-
-                                                        $errorDetail = if ($anyFailed)
-                                                            {
-                                                                $failMsg = ($actualEntries | Where-Object { $_.DeploymentResult -ne $("Success") } | Select-Object -First 1).ErrorMessage
-                                                                if ($failMsg) { $failMsg } else { $("-") }
-                                                            }
-                                                            else { $("-") }
 
                                                         $coversList = ($skuEntries | ForEach-Object { $("{0}: {1}" -f $_.NodeType, $_.FriendlyName) } | Select-Object -Unique) -join $("<br>")
                                                         $firstEntry = $skuEntries | Select-Object -First 1
@@ -3630,7 +3632,7 @@ function Test-SilkResourceDeployment
                     <td>$($firstEntry.vCPU)</td>
                     $zoneCells
                     <td>$coversList</td>
-                    <td>$errorDetail</td>
+                    $detailCells
                 </tr>
 "@
                                                                 $isFirstDeployInFamily = $false
@@ -3643,7 +3645,7 @@ function Test-SilkResourceDeployment
                     <td>$($firstEntry.vCPU)</td>
                     $zoneCells
                     <td>$coversList</td>
-                    <td>$errorDetail</td>
+                    $detailCells
                 </tr>
 "@
                                                             }
@@ -3672,7 +3674,7 @@ function Test-SilkResourceDeployment
                     <th>$("vCPU")</th>
                     $deployZoneHeaderCells
                     <th>$("Covers")</th>
-                    <th>$("Details")</th>
+                    $deployDetailHeaderCells
                 </tr>
             </thead>
             <tbody>

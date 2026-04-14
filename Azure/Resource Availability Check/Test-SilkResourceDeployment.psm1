@@ -7459,6 +7459,13 @@ function Test-SilkResourceDeployment
                 # scope; appends findings to $deploymentValidationResults in scope.
                 $analyzeFailedVMJobs =
                     {
+                        # Query current live VMs before evaluating job outcomes.
+                        # This must be done here rather than relying on the outer $deployedVMs variable,
+                        # which is only assigned after all analysis is complete (line ~8605).
+                        # In sequential mode this runs before per-zone cleanup so VMs are still present;
+                        # in parallel mode VMs are still live at this point as well.
+                        $deployedVMs  = Get-AzVM -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
+
                         $finalVMJobs  = Get-Job
                         # Include Completed jobs where the VM was never actually provisioned —
                         # New-AzVM -AsJob can finish with State=Completed even on allocation failure

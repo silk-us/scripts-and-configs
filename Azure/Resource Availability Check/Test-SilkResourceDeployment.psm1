@@ -41,7 +41,7 @@ function Test-SilkResourceDeployment
                 - MNodes: Media nodes that coordinate data operations and storage management
                 - DNodes: Data nodes that store and serve data (deployed as part of MNode groups)
 
-                Function Version: 1.0.3
+                Function Version: 1.0.4
                 Supporting Silk SDP configurations from Flex: v2.10.86 VisionOS: v8.6.10
 
             .PARAMETER SubscriptionId
@@ -1305,7 +1305,10 @@ function Test-SilkResourceDeployment
 
         begin
             {
-                $StartTime = Get-Date
+                $StartTime     = Get-Date
+                $scriptVersion = '1.0.4'
+
+                Write-Host $("Test-SilkResourceDeployment v{0} — {1}" -f $scriptVersion, $StartTime.ToString("yyyy-MM-dd HH:mm:ss")) -ForegroundColor Cyan
                 Write-Verbose -Message $("=== Starting Silk Resource Deployment Test Script ===")
                 Write-Verbose -Message $("Script started at: {0}" -f $StartTime.ToString("yyyy-MM-dd HH:mm:ss"))
 
@@ -7093,7 +7096,8 @@ function Test-SilkResourceDeployment
                                     {
                                         $isMultiZoneDeploy = $true
                                         $zonesToDeploy = @($commonZones)
-                                        Write-Verbose -Message $("Multi-zone deployment: {0}/{1} zones qualify ({2}) — {3} zone(s) skipped (invalid configuration for this SKU set)" -f $zonesToDeploy.Count, $allRegionZones.Count, ($zonesToDeploy -join $(", ")), $skippedZoneEntries.Count)
+                                        $skippedMsg = if ($skippedZoneEntries.Count -gt 0) { $(" — {0} zone(s) skipped (SKU not supported)" -f $skippedZoneEntries.Count) } else { $("") }
+                                        Write-Verbose -Message $("Multi-zone deployment: deploying to zones {0}{1}" -f ($zonesToDeploy -join ", "), $skippedMsg)
                                     } `
                                 else
                                     {
@@ -7459,6 +7463,8 @@ function Test-SilkResourceDeployment
                 # scope; appends findings to $deploymentValidationResults in scope.
                 $analyzeFailedVMJobs =
                     {
+                        $deployedVMs  = Get-AzVM -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
+
                         $finalVMJobs  = Get-Job
                         # Include Completed jobs where the VM was never actually provisioned —
                         # New-AzVM -AsJob can finish with State=Completed even on allocation failure
@@ -7685,12 +7691,15 @@ function Test-SilkResourceDeployment
                         # ---------------------------------------------------------------
                         # Deploy the full configuration into each target zone.
                         # For single-zone (no TestAllZones), this loops once with the user-specified zone.
+                        $deploymentValidationResults = @()
                         $zoneLoopIndex = 0
                         foreach ($deployZone in $zonesToDeploy)
                             {
                                 $zoneLoopIndex++
                                 $zonePrefix = if ($isMultiZoneDeploy) { $("-z{0}" -f $deployZone) } else { $("") }
                                 $zoneLabel = if ($isMultiZoneDeploy) { $(" [Zone {0} — {1}/{2}]" -f $deployZone, $zoneLoopIndex, $zonesToDeploy.Count) } else { $("") }
+
+                                Write-Verbose -Message $("=== Zone {0} deployment starting ({1}/{2}) ===" -f $deployZone, $zoneLoopIndex, $zonesToDeploy.Count)
 
                                 if ($isMultiZoneDeploy)
                                     {
@@ -7873,7 +7882,7 @@ function Test-SilkResourceDeployment
                                                     Zone = $deployZone
                                                 }
 
-                                                Write-Verbose -Message $("✓ CNode {0} VM creation job started successfully" -f $cNode)
+                                                Write-Verbose -Message $("✓ CNode {0} VM creation job {1} started: VM '{2}', SKU '{3}', Zone {4}" -f $cNode, $cNodeJob.Id, $("{0}{1}-cnode-{2:D2}" -f $ResourceNamePrefix, $zonePrefix, $cNode), $cNodeVMSku, $deployZone)
                                             } `
                                         catch
                                             {
@@ -7886,8 +7895,7 @@ function Test-SilkResourceDeployment
                                         # get the cnode availability set to assess its state
                                         # Use $cNodeAvailabilitySet.Name to support both newly created and existing infrastructure paths
                                         $cNodeAvailabilitySetComplete = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -Name $cNodeAvailabilitySet.Name
-                                        Write-Verbose -Message $("✓ CNode availability set '{0}' created with {1} CNodes." -f $cNodeAvailabilitySetComplete.Name, $cNodeAvailabilitySetComplete)
-                                        Write-Verbose -Message $("✓ CNode availability set '{0}' is assigned to proximity placement group '{1}'." -f $cNodeAvailabilitySetComplete.Name, $cNodeProximityPlacementGroup.Name)
+                                        Write-Verbose -Message $("✓ CNode availability set '{0}' has {1} VM slot(s) registered, assigned to PPG '{2}'" -f $cNodeAvailabilitySetComplete.Name, $cNodeAvailabilitySetComplete.VirtualMachines.Count, $cNodeProximityPlacementGroup.Name)
                                     }
 
                                 # Clean up CNode creation sub-progress bar as this phase is complete
@@ -8073,7 +8081,7 @@ function Test-SilkResourceDeployment
                                                                                             Zone = $deployZone
                                                                                         }
 
-                                                        Write-Verbose -Message $("✓ DNode {0} VM creation job started successfully" -f $dNodeNumber)
+                                                        Write-Verbose -Message $("✓ DNode {0} VM creation job {1} started: VM '{2}', SKU '{3}', Zone {4}, MNode group {5}" -f $dNodeNumber, $dNodeJob.Id, $("{0}{1}-dnode-{2:D2}" -f $ResourceNamePrefix, $zonePrefix, $dNodeNumber), $currentMNodeSku, $deployZone, $currentMNode)
                                                     } `
                                                 catch
                                                     {
@@ -8085,8 +8093,7 @@ function Test-SilkResourceDeployment
                                             {
                                                 # get the mnode availability set to assess its state
                                                 $mNodeAvailabilitySetComplete = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -Name $mNodeAvailabilitySet.Name
-                                                Write-Verbose -Message $("✓ MNode availability set '{0}' created with {1} MNodes." -f $mNodeAvailabilitySetComplete.Name, $mNodeAvailabilitySetComplete)
-                                                Write-Verbose -Message $("✓ MNode availability set '{0}' is assigned to proximity placement group '{1}'." -f $mNodeAvailabilitySetComplete.Name, $mNodeProximityPlacementGroup.Name)
+                                                Write-Verbose -Message $("✓ MNode group {0} availability set '{1}' has {2} VM slot(s) registered, assigned to PPG '{3}'" -f $currentMNode, $mNodeAvailabilitySetComplete.Name, $mNodeAvailabilitySetComplete.VirtualMachines.Count, $mNodeProximityPlacementGroup.Name)
                                             }
 
                                         $mNodeProximityPlacementGroup = $null
@@ -8146,6 +8153,11 @@ function Test-SilkResourceDeployment
                                     -Id 3
 
                                 Start-Sleep -Seconds 2
+
+                                $zoneAllJobs      = Get-Job
+                                $zoneFinalFailed  = $zoneAllJobs | Where-Object { $_.State -eq 'Failed' }
+                                $zoneFinalDone    = $zoneAllJobs | Where-Object { $_.State -eq 'Completed' }
+                                Write-Verbose -Message $("Zone {0} jobs complete: {1} succeeded, {2} failed, {3} total" -f $deployZone, $zoneFinalDone.Count, $zoneFinalFailed.Count, $zoneAllJobs.Count)
 
                                 # Analyze failed jobs for this zone (dot-source to share scope with outer block)
                                 . $analyzeFailedVMJobs
@@ -8236,11 +8248,6 @@ function Test-SilkResourceDeployment
                         # ========================================================================================================
                         # VM creation job monitoring (parallel / non-sequential path)
                         # ========================================================================================================
-                        # $deploymentValidationResults is initialized here for both paths.
-                        # Sequential path populates it per zone via . $analyzeFailedVMJobs inside the loop above.
-                        # Non-sequential path runs the full monitoring loop and analysis below.
-                        $deploymentValidationResults = @()
-
                         if (-not $sequentialZoneRun)
                             {
                                 Write-Verbose -Message $("All NICs created: {0} total" -f (Get-AzNetworkInterface -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }).Count)

@@ -7492,12 +7492,15 @@ function Test-SilkResourceDeployment
 
                         $finalVMJobs  = Get-Job
                         # Include Completed jobs where the VM was never actually provisioned —
-                        # New-AzVM -AsJob can finish with State=Completed even on allocation failure
+                        # New-AzVM -AsJob can finish with State=Completed even on allocation failure.
+                        # IMPORTANT: capture $_ as $job before the inner pipeline — inside a nested
+                        # Where-Object, $_ refers to the inner pipeline element (the VM), not the job.
                         $failedJobs   = $finalVMJobs | Where-Object {
-                                            $_.State -eq 'Failed' -or
-                                            ($_.State -eq 'Completed' -and
-                                             $vmJobMapping.ContainsKey($_.Id) -and
-                                             -not ($deployedVMs | Where-Object { $_.Name -eq $vmJobMapping[$_.Id].VMName }))
+                                            $job = $_
+                                            $job.State -eq 'Failed' -or
+                                            ($job.State -eq 'Completed' -and
+                                             $vmJobMapping.ContainsKey($job.Id) -and
+                                             -not ($deployedVMs | Where-Object { $_.Name -eq $vmJobMapping[$job.Id].VMName }))
                                         }
 
                         if ($failedJobs.Count -gt 0)
@@ -8184,11 +8187,6 @@ function Test-SilkResourceDeployment
                                 $zoneFinalDone    = $zoneAllJobs | Where-Object { $_.State -eq 'Completed' }
                                 Write-Verbose -Message $("Zone {0} jobs complete: {1} succeeded, {2} failed, {3} total" -f $deployZone, $zoneFinalDone.Count, $zoneFinalFailed.Count, $zoneAllJobs.Count)
 
-                                # Populate $deployedVMs with live VMs for this zone before analysis —
-                                # $analyzeFailedVMJobs checks completed jobs against this list to detect
-                                # allocation failures (State=Completed but VM never provisioned).
-                                $deployedVMs = Get-AzVM -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
-
                                 # Analyze failed jobs for this zone (dot-source to share scope with outer block)
                                 . $analyzeFailedVMJobs
 
@@ -8333,11 +8331,6 @@ function Test-SilkResourceDeployment
 
                                 Update-StagedProgress -SectionName 'VMDeployment' -SectionCurrentStep 3 -SectionTotalSteps 3 `
                                     -DetailMessage $("")
-
-                                # Populate $deployedVMs with live VMs before analysis —
-                                # $analyzeFailedVMJobs checks completed jobs against this list to detect
-                                # allocation failures (State=Completed but VM never provisioned).
-                                $deployedVMs = Get-AzVM -ResourceGroupName $ResourceGroupName | Where-Object { $_.Name -match $ResourceNamePrefix }
 
                                 # Analyze failed jobs (dot-source into current scope to populate $deploymentValidationResults)
                                 . $analyzeFailedVMJobs

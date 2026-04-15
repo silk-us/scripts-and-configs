@@ -440,7 +440,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON",     Mandatory = $false, HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",    Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
@@ -448,7 +448,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $true,  HelpMessage = $("Enter your Azure Subscription ID (GUID format). Example: 12345678-1234-1234-1234-123456789012"))]
@@ -476,7 +476,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON",     Mandatory = $false, HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
@@ -484,7 +484,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $true,  HelpMessage = $("Enter the name of an existing Azure Resource Group where test resources will be deployed. Example: my-test-rg"))]
@@ -512,7 +512,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON",     Mandatory = $false, HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $false, HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
@@ -520,7 +520,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $true,  HelpMessage = $("Choose an Azure region for deployment. Popular options: eastus, westus2, centralus, northeurope, eastasia"))]
@@ -549,7 +549,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON",     Mandatory = $false, HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $false, HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
@@ -557,7 +557,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
@@ -592,7 +592,6 @@ function Test-SilkResourceDeployment
                 # Read_Cache_Enabled (Standard_L64s_v3) - High-speed local SSD storage
                 # No_Increased_Logical_Capacity (Standard_D64s_v5) - Basic compute, rarely used
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_Easv6 (Standard_E64as_v6), Increased_Logical_Capacity_Easv5 (Standard_E64as_v5), Increased_Logical_Capacity_Esv5 (Standard_E64s_v5), Read_Cache_Enabled_Lasv4 (Standard_L64as_v4), Read_Cache_Enabled_Lasv3 (Standard_L64as_v3), Read_Cache_Enabled_Lsv3 (Standard_L64s_v3), No_Increased_Logical_Capacity_Dasv6 (Standard_D64as_v6), No_Increased_Logical_Capacity_Dasv5 (Standard_D64as_v5), No_Increased_Logical_Capacity_Dsv5 (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_Easv6 (Standard_E64as_v6), Increased_Logical_Capacity_Easv5 (Standard_E64as_v5), Increased_Logical_Capacity_Esv5 (Standard_E64s_v5), Read_Cache_Enabled_Lasv4 (Standard_L64as_v4), Read_Cache_Enabled_Lasv3 (Standard_L64as_v3), Read_Cache_Enabled_Lsv3 (Standard_L64s_v3), No_Increased_Logical_Capacity_Dasv6 (Standard_D64as_v6), No_Increased_Logical_Capacity_Dasv5 (Standard_D64as_v5), No_Increased_Logical_Capacity_Dsv5 (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_Easv6 (Standard_E64as_v6), Increased_Logical_Capacity_Easv5 (Standard_E64as_v5), Increased_Logical_Capacity_Esv5 (Standard_E64s_v5), Read_Cache_Enabled_Lasv4 (Standard_L64as_v4), Read_Cache_Enabled_Lasv3 (Standard_L64as_v3), Read_Cache_Enabled_Lsv3 (Standard_L64s_v3), No_Increased_Logical_Capacity_Dasv6 (Standard_D64as_v6), No_Increased_Logical_Capacity_Dasv5 (Standard_D64as_v5), No_Increased_Logical_Capacity_Dsv5 (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_Easv6 (Standard_E64as_v6), Increased_Logical_Capacity_Easv5 (Standard_E64as_v5), Increased_Logical_Capacity_Esv5 (Standard_E64s_v5), Read_Cache_Enabled_Lasv4 (Standard_L64as_v4), Read_Cache_Enabled_Lasv3 (Standard_L64as_v3), Read_Cache_Enabled_Lsv3 (Standard_L64s_v3), No_Increased_Logical_Capacity_Dasv6 (Standard_D64as_v6), No_Increased_Logical_Capacity_Dasv5 (Standard_D64as_v5), No_Increased_Logical_Capacity_Dsv5 (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $true, HelpMessage = $("Choose CNode type: Increased_Logical_Capacity_Easv6 (Standard_E64as_v6), Increased_Logical_Capacity_Easv5 (Standard_E64as_v5), Increased_Logical_Capacity_Esv5 (Standard_E64s_v5), Read_Cache_Enabled_Lasv4 (Standard_L64as_v4), Read_Cache_Enabled_Lasv3 (Standard_L64as_v3), Read_Cache_Enabled_Lsv3 (Standard_L64s_v3), No_Increased_Logical_Capacity_Dasv6 (Standard_D64as_v6), No_Increased_Logical_Capacity_Dasv5 (Standard_D64as_v5), No_Increased_Logical_Capacity_Dsv5 (Standard_D64s_v5), or Entry_Level (Standard_E32as_v5)."))]
@@ -607,7 +606,7 @@ function Test-SilkResourceDeployment
                 # Standard_E64s_v5 (default) - High memory, Standard_L64s_v3 - SSD storage, Standard_D64s_v5 - Basic compute
                 # Alternative to CNodeFriendlyName for advanced scenarios requiring specific SKU control
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6, Standard_E64as_v5 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64as_v4, Standard_L64as_v3 or Standard_L64s_v3 (supports read cache), Standard_D64as_v6, Standard_D64as_v5 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6, Standard_E64as_v5 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64as_v4, Standard_L64as_v3 or Standard_L64s_v3 (supports read cache), Standard_D64as_v6, Standard_D64as_v5 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter the CNode VM SKU to test deployment capacity in existing infrastructure. Example: Standard_E64as_v6"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6, Standard_E64as_v5 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64as_v4, Standard_L64as_v3 or Standard_L64s_v3 (supports read cache), Standard_D64as_v6, Standard_D64as_v5 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6, Standard_E64as_v5 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64as_v4, Standard_L64as_v3 or Standard_L64s_v3 (supports read cache), Standard_D64as_v6, Standard_D64as_v5 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $true, HelpMessage = $("Choose CNode VM SKU: Standard_E64as_v6, Standard_E64as_v5 or Standard_E64s_v5 (supports increased logical capacity), Standard_L64as_v4, Standard_L64as_v3 or Standard_L64s_v3 (supports read cache), Standard_D64as_v6, Standard_D64as_v5 or Standard_D64s_v5 (Basic Production CNode), or Standard_E32as_v5 (Production Entry Level)."))]
@@ -640,35 +639,60 @@ function Test-SilkResourceDeployment
                 $CNodeCount,
 
                 # Number of additional CNodes to test in existing infrastructure (range: 1-6)
-                # Used only with existing infrastructure validation to test cluster expansion capacity
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $true, HelpMessage = $("Enter number of additional CNode VMs to test (1-6). Tests deployment capacity in existing cluster infrastructure."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter number of additional CNode VMs to test (1-6). Tests deployment capacity in existing cluster infrastructure."))]
+                # Used only with CNode by SKU Existing Infra to test cluster expansion capacity
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter number of additional CNode VMs to test (1-6). Tests whether the specified SKU can be deployed into the existing PPG and Availability Set."))]
                 [ValidateRange(1, 6)]
                 [ValidateNotNullOrEmpty()]
                 [int]
                 $CNodeCountAdditional,
 
-                # Existing Proximity Placement Group name to use for CNode deployment validation
-                # When specified with AvailabilitySetName, validates VM deployment into existing infrastructure
-                # This tests whether additional CNodes can be deployed into an existing Silk cluster infrastructure
-                # Both ProximityPlacementGroupName and AvailabilitySetName must be specified together
-                # Only CNode-only deployment scenarios are supported with existing infrastructure validation
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $true, HelpMessage = $("Enter the name of an existing Proximity Placement Group to validate CNode deployment capacity. Example: my-silk-cnode-ppg"))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter the name of an existing Proximity Placement Group to validate CNode deployment capacity. Example: my-silk-cnode-ppg"))]
+                # Number of additional DNodes to test in existing infrastructure (range: 1-6)
+                # Used only with DNode by SKU Existing Infra to test MNode expansion capacity
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter number of additional DNode VMs to test (1-6). Tests whether the specified DNode SKU can be deployed into the existing MNode PPG and Availability Set."))]
+                [ValidateRange(1, 6)]
+                [ValidateNotNullOrEmpty()]
+                [int]
+                $DNodeCountAdditional,
+
+                # Existing Proximity Placement Group name to use for CNode/DNode deployment validation
+                # Must be specified together with AvailabilitySetName, VNetName, and SubnetName
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter the name of the existing Proximity Placement Group the test CNodes will deploy into. Example: my-silk-cnode-ppg"))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter the name of the existing Proximity Placement Group the test DNodes will deploy into. Example: my-silk-mnode-ppg"))]
                 [ValidateNotNullOrEmpty()]
                 [string]
                 $ProximityPlacementGroupName,
 
-                # Existing Availability Set name to use for CNode deployment validation
-                # When specified with ProximityPlacementGroupName, validates VM deployment into existing infrastructure
-                # This tests whether additional CNodes can be deployed into an existing Silk cluster infrastructure
-                # Both ProximityPlacementGroupName and AvailabilitySetName must be specified together
-                # Only CNode-only deployment scenarios are supported with existing infrastructure validation
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $true, HelpMessage = $("Enter the name of an existing Availability Set to validate CNode deployment capacity. Example: my-silk-cnode-avset"))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter the name of an existing Availability Set to validate CNode deployment capacity. Example: my-silk-cnode-avset"))]
+                # Existing Availability Set name to use for CNode/DNode deployment validation
+                # Must be specified together with ProximityPlacementGroupName, VNetName, and SubnetName
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter the name of the existing Availability Set the test CNodes will deploy into. Example: my-silk-cnode-avset"))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter the name of the existing Availability Set the test DNodes will deploy into. Example: my-silk-mnode-avset"))]
                 [ValidateNotNullOrEmpty()]
                 [string]
                 $AvailabilitySetName,
+
+                # Existing Virtual Network name that the test VMs' NICs will connect to
+                # Must be specified together with SubnetName for existing infrastructure parameter sets
+                # By providing this you confirm authorization to deploy test VMs into this network
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter the name of the existing Virtual Network to deploy test NICs into. Example: my-silk-vnet"))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter the name of the existing Virtual Network to deploy test NICs into. Example: my-silk-vnet"))]
+                [ValidateNotNullOrEmpty()]
+                [string]
+                $VNetName,
+
+                # Existing Subnet name within the VNet that the test VMs' NICs will connect to
+                # Must be specified together with VNetName for existing infrastructure parameter sets
+                # The subnet must have at least 6 available IP addresses; IPs are allocated from the top of the range
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter the name of the existing subnet to deploy test NICs into. Example: my-silk-mgmt-subnet"))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter the name of the existing subnet to deploy test NICs into. Example: my-silk-mgmt-subnet"))]
+                [ValidateNotNullOrEmpty()]
+                [string]
+                $SubnetName,
+
+                # DNode VM SKU for existing infrastructure DNode expansion testing
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter the DNode VM SKU to test deployment capacity in the existing MNode infrastructure. Example: Standard_L8aos_v4"))]
+                [ValidateNotNullOrEmpty()]
+                [string]
+                $DNodeSku,
 
                 # Array of MNode storage capacities for Lsv3 series SKUs
                 # Valid values: "19.5" (L8s_v3), "39.1" (L16s_v3), "78.2" (L32s_v3) TiB capacity
@@ -754,7 +778,7 @@ function Test-SilkResourceDeployment
                 # Overrides JSON configuration values when specified via command line
                 [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
@@ -762,7 +786,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Enter an additional Azure Subscription ID to check the regions zone alignment. Example: 12345678-1234-1234-1234-123456789012"))]
@@ -788,7 +812,7 @@ function Test-SilkResourceDeployment
                 # Must provide the -ChecklistJSON configuration and specify a different -SubscriptionId
                 [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
@@ -796,7 +820,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Disable zone alignment check. Zone alignment is enabled by default when an additional subscription ID is provided."))]
@@ -818,7 +842,7 @@ function Test-SilkResourceDeployment
                 # quota usage, SKU support, and resource validation results
                 [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
@@ -826,7 +850,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Disable HTML report generation. Reports are generated by default."))]
@@ -850,7 +874,7 @@ function Test-SilkResourceDeployment
                 # HTML reports are generated by default unless -NoHTMLReport is specified
                 [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
@@ -858,7 +882,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Path where the HTML report should be saved. Defaults to current working directory."))]
@@ -884,7 +908,7 @@ function Test-SilkResourceDeployment
                 # Example: 'Contoso' with Region 'eastus' and Zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'
                 [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
@@ -892,7 +916,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Label prefix for the HTML report filename. Default: 'Silk'. Example: 'Contoso' with region 'eastus' zone '1' produces 'Contoso-eastus-1-DeploymentReport_[timestamp].html'"))]
@@ -916,7 +940,7 @@ function Test-SilkResourceDeployment
                 # Resources must be manually removed or cleaned up using -RunCleanupOnly parameter
                 [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
@@ -924,7 +948,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Skip automatic cleanup to keep test resources for inspection. Use -RunCleanupOnly later to clean up."))]
@@ -954,7 +978,7 @@ function Test-SilkResourceDeployment
                 # Overrides JSON configuration values when specified via command line
                 [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
@@ -962,7 +986,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Specify VNet CIDR range for VNET and subnet IP space. Example: 10.0.0.0/24"))]
@@ -987,7 +1011,7 @@ function Test-SilkResourceDeployment
                 # the -RunCleanupOnly parameter can not be used to clean up resource groups you will have to manually delete them
                 [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
@@ -995,7 +1019,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Advanced Option to create a resource group by the given name, requires elevated Role assignment."))]
@@ -1017,7 +1041,7 @@ function Test-SilkResourceDeployment
                 # Advanced parameter - modify only if specific OS requirements exist
                 [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
@@ -1025,7 +1049,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Azure Marketplace VM image offer. Default: 0001-com-ubuntu-server-jammy (Ubuntu 22.04 LTS). Advanced use only"))]
@@ -1048,7 +1072,7 @@ function Test-SilkResourceDeployment
                 # Advanced parameter - modify only if using non-Ubuntu images
                 [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
@@ -1056,7 +1080,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Azure Marketplace VM image publisher. Default: Canonical (Ubuntu). Advanced use only"))]
@@ -1079,7 +1103,7 @@ function Test-SilkResourceDeployment
                 # Advanced parameter - function auto-detects best available SKU for most scenarios
                 [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
@@ -1087,7 +1111,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Azure Marketplace VM image SKU. Leave blank for auto-detection of latest Gen2 SKU. Advanced use only"))]
@@ -1109,7 +1133,7 @@ function Test-SilkResourceDeployment
                 # Advanced parameter - specify only if specific image version required for compliance
                 [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
@@ -1117,7 +1141,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Azure Marketplace VM image version. Default: latest (most recent). Specify version only for compliance requirements"))]
@@ -1150,7 +1174,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Report Only",                    Mandatory = $true,  HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Report Only ChecklistJSON",      Mandatory = $true,  HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
@@ -1158,7 +1182,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
@@ -1246,7 +1270,7 @@ function Test-SilkResourceDeployment
                 # Significantly reduces deployment time and costs for faster testing iterations
                 [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
@@ -1254,7 +1278,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Enable Development Mode with reduced VM sizes and instance counts."))]
@@ -1276,7 +1300,7 @@ function Test-SilkResourceDeployment
                 # Used for VM deployment - SSH key authentication not implemented in test scenarios
                 [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Existing Infra",  Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
@@ -1284,7 +1308,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("PowerShell credential object to assign to VM local administrator account."))]
@@ -1480,11 +1504,21 @@ function Test-SilkResourceDeployment
                 # ========================================================================================================
                 # Existing Infrastructure Parameter Mapping
                 # ========================================================================================================
-                # Map CNodeCountAdditional to CNodeCount for existing infrastructure scenarios
+                # Flag used throughout to gate VNet/NSG/subnet creation and steer deployment paths
+                $isExistingInfraRun = ($PSCmdlet.ParameterSetName -eq "CNode by SKU Existing Infra" -or $PSCmdlet.ParameterSetName -eq "DNode by SKU Existing Infra")
+
+                # Map CNodeCountAdditional to CNodeCount so the rest of the CNode deployment path works unchanged
                 if($CNodeCountAdditional)
                     {
-                        Write-Verbose -Message $("Existing infrastructure validation mode: Testing deployment of {0} additional CNode(s)" -f $CNodeCountAdditional)
+                        Write-Verbose -Message $("Existing infrastructure validation mode: Testing deployment of {0} additional CNode(s) using SKU '{1}'" -f $CNodeCountAdditional, $CNodeSku)
                         $CNodeCount = $CNodeCountAdditional
+                    }
+
+                # For DNode existing infra: no CNodes, deploy only the test DNodes
+                if($DNodeCountAdditional)
+                    {
+                        Write-Verbose -Message $("Existing infrastructure validation mode: Testing deployment of {0} additional DNode(s) using SKU '{1}'" -f $DNodeCountAdditional, $DNodeSku)
+                        $CNodeCount = 0
                     }
 
                 # Define required Azure PowerShell modules
@@ -4553,13 +4587,14 @@ function Test-SilkResourceDeployment
 
                                 # Calculate available capacity (max 200 VMs per AvSet in Azure)
                                 $availableAvSetCapacity = 200 - $currentVMCount
-                                if($CNodeCount -gt $availableAvSetCapacity)
+                                $requestedCount = if ($CNodeCountAdditional) { $CNodeCountAdditional } else { $DNodeCountAdditional }
+                                if($requestedCount -gt $availableAvSetCapacity)
                                     {
-                                        Write-Warning -Message $("{0}Requested {1} CNodes exceeds available Availability Set capacity of {2} VMs. Deployment may fail during capacity allocation." -f $messagePrefix, $CNodeCount, $availableAvSetCapacity)
+                                        Write-Warning -Message $("{0}Requested {1} VM(s) exceeds available Availability Set capacity of {2}. Deployment may fail." -f $messagePrefix, $requestedCount, $availableAvSetCapacity)
                                     }
                                 else
                                     {
-                                        Write-Verbose -Message $("{0}✓ Availability Set has capacity for {1} CNodes (current: {2}, requested: {3}, max: 200)." -f $messagePrefix, $CNodeCount, $currentVMCount, $CNodeCount)
+                                        Write-Verbose -Message $("{0}✓ Availability Set has capacity for {1} additional VM(s) (current: {2}, max: 200)." -f $messagePrefix, $requestedCount, $currentVMCount)
                                     }
                             } `
                         catch
@@ -4570,7 +4605,97 @@ function Test-SilkResourceDeployment
                                 return
                             }
 
-                        Write-Verbose -Message $("{0}✓ All existing infrastructure resources validated successfully. Proceeding with CNode deployment test into existing PPG/AvSet." -f $messagePrefix)
+                        # -----------------------------------------------------------------------
+                        # VNet and Subnet Validation
+                        # -----------------------------------------------------------------------
+                        $sectionStep = $("VNet and Subnet Validation")
+                        $messagePrefix = $("{0}{1}" -f $(if($processSection){$("[{0}] " -f $processSection)}else{$("")}), $(if($sectionStep){$("[{0}] " -f $sectionStep)}else{$("")}))
+
+                        try
+                            {
+                                Write-Verbose -Message $("{0}Locating Virtual Network '{1}' in subscription..." -f $messagePrefix, $VNetName)
+
+                                # Search subscription-wide — VNet may be in a different RG than the test RG
+                                $existingVNet = Get-AzVirtualNetwork | Where-Object { $_.Name -eq $VNetName } | Select-Object -First 1
+
+                                if (-not $existingVNet)
+                                    {
+                                        Write-Error -Message $("{0}Virtual Network '{1}' was not found in subscription '{2}'. Verify the name and ensure you have access to the subscription." -f $messagePrefix, $VNetName, $SubscriptionId)
+                                        $validationError = $true
+                                        return
+                                    }
+
+                                Write-Verbose -Message $("{0}✓ Virtual Network '{1}' found in resource group '{2}' (region: {3})." -f $messagePrefix, $VNetName, $existingVNet.ResourceGroupName, $existingVNet.Location)
+
+                                if ($existingVNet.Location -ne $Region)
+                                    {
+                                        Write-Error -Message $("{0}Virtual Network '{1}' is in region '{2}', but deployment targets region '{3}'. Regions must match." -f $messagePrefix, $VNetName, $existingVNet.Location, $Region)
+                                        $validationError = $true
+                                        return
+                                    }
+
+                                # Locate the specified subnet within the VNet
+                                $existingSubnet = $existingVNet.Subnets | Where-Object { $_.Name -eq $SubnetName } | Select-Object -First 1
+
+                                if (-not $existingSubnet)
+                                    {
+                                        $subnetList = ($existingVNet.Subnets | Select-Object -ExpandProperty Name) -join ", "
+                                        Write-Error -Message $("{0}Subnet '{1}' was not found in Virtual Network '{2}'. Available subnets: {3}" -f $messagePrefix, $SubnetName, $VNetName, $subnetList)
+                                        $validationError = $true
+                                        return
+                                    }
+
+                                Write-Verbose -Message $("{0}✓ Subnet '{1}' found with address prefix '{2}'." -f $messagePrefix, $SubnetName, ($existingSubnet.AddressPrefix -join ", "))
+
+                                # Calculate available IPs in the subnet — Azure reserves 5 per subnet (network, gateway, broadcast + 2 Azure)
+                                $subnetCIDR        = $existingSubnet.AddressPrefix | Select-Object -First 1
+                                $subnetPrefix      = [int]($subnetCIDR -split "/")[1]
+                                $subnetBase        = ($subnetCIDR -split "/")[0]
+                                $totalHosts        = [Math]::Pow(2, 32 - $subnetPrefix) - 5
+                                $usedIPs           = @($existingSubnet.IpConfigurations | Select-Object -ExpandProperty PrivateIpAddress)
+                                $availableIPCount  = $totalHosts - $usedIPs.Count
+                                $neededIPs         = if ($CNodeCountAdditional) { $CNodeCountAdditional } else { $DNodeCountAdditional }
+
+                                Write-Verbose -Message $("{0}Subnet '{1}': {2} total usable IPs, {3} in use, {4} available. Need {5}." -f $messagePrefix, $SubnetName, $totalHosts, $usedIPs.Count, $availableIPCount, $neededIPs)
+
+                                if ($availableIPCount -lt $neededIPs)
+                                    {
+                                        Write-Error -Message $("{0}Subnet '{1}' has only {2} available IP(s), but {3} are required. Free up IP space or choose a larger subnet." -f $messagePrefix, $SubnetName, $availableIPCount, $neededIPs)
+                                        $validationError = $true
+                                        return
+                                    }
+
+                                # Pre-allocate IPs from the top of the subnet range (descending) to minimize conflict risk
+                                # Build the full usable IP list for this subnet, then pick from the high end
+                                $ipBytes    = [System.Net.IPAddress]::Parse($subnetBase).GetAddressBytes()
+                                [Array]::Reverse($ipBytes)
+                                $baseInt    = [BitConverter]::ToUInt32($ipBytes, 0)
+                                $hostCount  = [int][Math]::Pow(2, 32 - $subnetPrefix)
+                                # Broadcast is baseInt + hostCount - 1; last usable is baseInt + hostCount - 2
+                                # Azure reserves first 4 and last 1, so usable range is baseInt+4 .. baseInt+hostCount-2
+                                $allUsableIPs = for ($i = $hostCount - 2; $i -ge 4; $i--)
+                                    {
+                                        $b = [BitConverter]::GetBytes([uint32]($baseInt + $i))
+                                        [Array]::Reverse($b)
+                                        ([System.Net.IPAddress]$b).ToString()
+                                    }
+
+                                $existingInfraReservedIPs = $allUsableIPs | Where-Object { $usedIPs -notcontains $_ } | Select-Object -First $neededIPs
+                                Write-Verbose -Message $("{0}Pre-selected {1} available IP(s) from top of subnet range: {2}" -f $messagePrefix, $neededIPs, ($existingInfraReservedIPs -join ", "))
+
+                                # Store for use during NIC creation
+                                $existingSubnetId = $existingSubnet.Id
+
+                                Write-Verbose -Message $("{0}✓ VNet and subnet validated. Test NICs will use subnet '{1}' (ID: {2})." -f $messagePrefix, $SubnetName, $existingSubnetId)
+                            } `
+                        catch
+                            {
+                                Write-Error -Message $("{0}Failed to validate VNet/subnet: {1}" -f $messagePrefix, $_.Exception.Message)
+                                $validationError = $true
+                                return
+                            }
+
+                        Write-Verbose -Message $("{0}✓ All existing infrastructure resources validated successfully." -f $messagePrefix)
                     }
 
                 # ===============================================================================
@@ -7381,103 +7506,113 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 # Virtual Network Infrastructure Creation
                 # ===============================================================================
-                # Creates a completely isolated network environment for testing VM deployments
-                # This ensures no accidental internet access and validates Azure resource availability
-                try
+                if (-not $isExistingInfraRun)
                     {
-                        # Update progress: Starting network creation
-                        Update-StagedProgress -SectionName 'NetworkCreation' -SectionCurrentStep 0 -SectionTotalSteps 2 `
-                            -DetailMessage $("Setting up network security group...")
+                        # Creates a completely isolated network environment for testing VM deployments
+                        # This ensures no accidental internet access and validates Azure resource availability
+                        try
+                            {
+                                # Update progress: Starting network creation
+                                Update-StagedProgress -SectionName 'NetworkCreation' -SectionCurrentStep 0 -SectionTotalSteps 2 `
+                                    -DetailMessage $("Setting up network security group...")
 
-                        # -----------------------------------------------------------------------
-                        # Network Security Group (NSG) Configuration
-                        # -----------------------------------------------------------------------
-                        # Create restrictive security rules for complete network isolation
-                        # These rules deny ALL traffic to ensure test VMs have no network access
+                                # -----------------------------------------------------------------------
+                                # Network Security Group (NSG) Configuration
+                                # -----------------------------------------------------------------------
+                                # Create restrictive security rules for complete network isolation
+                                # These rules deny ALL traffic to ensure test VMs have no network access
 
-                        # Deny all outbound traffic (blocks internet access and inter-VM communication)
-                        $nSGDenyAllOutboundRule = New-AzNetworkSecurityRuleConfig `
-                                                    -Name "DenyAllOutbound" `
-                                                    -Description "Deny All Outbound Traffic" `
-                                                    -Access Deny `
-                                                    -Protocol * `
-                                                    -Direction Outbound `
-                                                    -Priority 100 `
-                                                    -SourceAddressPrefix * `
-                                                    -SourcePortRange * `
-                                                    -DestinationAddressPrefix * `
-                                                    -DestinationPortRange *
+                                # Deny all outbound traffic (blocks internet access and inter-VM communication)
+                                $nSGDenyAllOutboundRule = New-AzNetworkSecurityRuleConfig `
+                                                            -Name "DenyAllOutbound" `
+                                                            -Description "Deny All Outbound Traffic" `
+                                                            -Access Deny `
+                                                            -Protocol * `
+                                                            -Direction Outbound `
+                                                            -Priority 100 `
+                                                            -SourceAddressPrefix * `
+                                                            -SourcePortRange * `
+                                                            -DestinationAddressPrefix * `
+                                                            -DestinationPortRange *
 
-                        # Deny all inbound traffic (blocks external access to VMs)
-                        $nSGDenyAllInboundRule = New-AzNetworkSecurityRuleConfig `
-                                                    -Name "DenyAllInbound" `
-                                                    -Description "Deny All Inbound Traffic" `
-                                                    -Access Deny `
-                                                    -Protocol * `
-                                                    -Direction Inbound `
-                                                    -Priority 100 `
-                                                    -SourceAddressPrefix * `
-                                                    -SourcePortRange * `
-                                                    -DestinationAddressPrefix * `
-                                                    -DestinationPortRange *
+                                # Deny all inbound traffic (blocks external access to VMs)
+                                $nSGDenyAllInboundRule = New-AzNetworkSecurityRuleConfig `
+                                                            -Name "DenyAllInbound" `
+                                                            -Description "Deny All Inbound Traffic" `
+                                                            -Access Deny `
+                                                            -Protocol * `
+                                                            -Direction Inbound `
+                                                            -Priority 100 `
+                                                            -SourceAddressPrefix * `
+                                                            -SourcePortRange * `
+                                                            -DestinationAddressPrefix * `
+                                                            -DestinationPortRange *
 
-                        # Create the Network Security Group with restrictive rules
-                        $nSG = New-AzNetworkSecurityGroup `
-                                -ResourceGroupName $ResourceGroupName `
-                                -Location $Region `
-                                -Name $("{0}-nsg" -f $ResourceNamePrefix) `
-                                -SecurityRules $nSGDenyAllOutboundRule, $nSGDenyAllInboundRule
+                                # Create the Network Security Group with restrictive rules
+                                $nSG = New-AzNetworkSecurityGroup `
+                                        -ResourceGroupName $ResourceGroupName `
+                                        -Location $Region `
+                                        -Name $("{0}-nsg" -f $ResourceNamePrefix) `
+                                        -SecurityRules $nSGDenyAllOutboundRule, $nSGDenyAllInboundRule
 
-                        Write-Verbose -Message $("✓ Network Security Group '{0}' created with isolation rules:" -f $nSG.Name)
+                                Write-Verbose -Message $("✓ Network Security Group '{0}' created with isolation rules:" -f $nSG.Name)
 
-                        # -----------------------------------------------------------------------
-                        # Security Rule Validation and Verbose Output
-                        # -----------------------------------------------------------------------
-                        # Display detailed security rule information for transparency and validation
-                        $verboseInboundRule = $nSG.SecurityRules | Where-Object Direction -eq 'Inbound'
-                        $verboseOutboundRule = $nSG.SecurityRules | Where-Object Direction -eq 'Outbound'
+                                # -----------------------------------------------------------------------
+                                # Security Rule Validation and Verbose Output
+                                # -----------------------------------------------------------------------
+                                # Display detailed security rule information for transparency and validation
+                                $verboseInboundRule = $nSG.SecurityRules | Where-Object Direction -eq 'Inbound'
+                                $verboseOutboundRule = $nSG.SecurityRules | Where-Object Direction -eq 'Outbound'
 
-                        Write-Verbose -Message $("  - Inbound Rule: '{0}' - {1} traffic from source '{2}' ports '{3}' to destination '{4}' ports '{5}' protocol '{6}' [Priority: {7}]" -f $verboseInboundRule.Name, $verboseInboundRule.Access, ($verboseInboundRule.SourceAddressPrefix -join ','), ($verboseInboundRule.SourcePortRange -join ','), ($verboseInboundRule.DestinationAddressPrefix -join ','), ($verboseInboundRule.DestinationPortRange -join ','), $verboseInboundRule.Protocol, $verboseInboundRule.Priority)
-                        Write-Verbose -Message $("  - Outbound Rule: '{0}' - {1} traffic from source '{2}' ports '{3}' to destination '{4}' ports '{5}' protocol '{6}' [Priority: {7}]" -f $verboseOutboundRule.Name, $verboseOutboundRule.Access, ($verboseOutboundRule.SourceAddressPrefix -join ','), ($verboseOutboundRule.SourcePortRange -join ','), ($verboseOutboundRule.DestinationAddressPrefix -join ','), ($verboseOutboundRule.DestinationPortRange -join ','), $verboseOutboundRule.Protocol, $verboseOutboundRule.Priority)
+                                Write-Verbose -Message $("  - Inbound Rule: '{0}' - {1} traffic from source '{2}' ports '{3}' to destination '{4}' ports '{5}' protocol '{6}' [Priority: {7}]" -f $verboseInboundRule.Name, $verboseInboundRule.Access, ($verboseInboundRule.SourceAddressPrefix -join ','), ($verboseInboundRule.SourcePortRange -join ','), ($verboseInboundRule.DestinationAddressPrefix -join ','), ($verboseInboundRule.DestinationPortRange -join ','), $verboseInboundRule.Protocol, $verboseInboundRule.Priority)
+                                Write-Verbose -Message $("  - Outbound Rule: '{0}' - {1} traffic from source '{2}' ports '{3}' to destination '{4}' ports '{5}' protocol '{6}' [Priority: {7}]" -f $verboseOutboundRule.Name, $verboseOutboundRule.Access, ($verboseOutboundRule.SourceAddressPrefix -join ','), ($verboseOutboundRule.SourcePortRange -join ','), ($verboseOutboundRule.DestinationAddressPrefix -join ','), ($verboseOutboundRule.DestinationPortRange -join ','), $verboseOutboundRule.Protocol, $verboseOutboundRule.Priority)
 
-                        Write-Verbose -Message $("  - Security Impact: Complete network isolation - NO traffic allowed in any direction")
+                                Write-Verbose -Message $("  - Security Impact: Complete network isolation - NO traffic allowed in any direction")
 
-                        # Update progress: Virtual network creation
-                        Update-StagedProgress -SectionName 'NetworkCreation' -SectionCurrentStep 1 -SectionTotalSteps 2 `
-                            -DetailMessage $("Creating virtual network and subnets...")
+                                # Update progress: Virtual network creation
+                                Update-StagedProgress -SectionName 'NetworkCreation' -SectionCurrentStep 1 -SectionTotalSteps 2 `
+                                    -DetailMessage $("Creating virtual network and subnets...")
 
-                        # -----------------------------------------------------------------------
-                        # Subnet Configuration
-                        # -----------------------------------------------------------------------
-                        # Create management subnet with the restrictive NSG applied
-                        # This subnet will contain all test VMs with no network connectivity
-                        $mGMTSubnet = New-AzVirtualNetworkSubnetConfig `
-                                        -Name $("{0}-mgmt-subnet" -f $ResourceNamePrefix) `
-                                        -AddressPrefix $IPRangeCIDR `
-                                        -NetworkSecurityGroup $nSG
+                                # -----------------------------------------------------------------------
+                                # Subnet Configuration
+                                # -----------------------------------------------------------------------
+                                # Create management subnet with the restrictive NSG applied
+                                # This subnet will contain all test VMs with no network connectivity
+                                $mGMTSubnet = New-AzVirtualNetworkSubnetConfig `
+                                                -Name $("{0}-mgmt-subnet" -f $ResourceNamePrefix) `
+                                                -AddressPrefix $IPRangeCIDR `
+                                                -NetworkSecurityGroup $nSG
 
-                        Write-Verbose -Message $("✓ Management subnet '{0}' configured with address range {1}" -f $mGMTSubnet.Name, ($mGMTSubnet.AddressPrefix -join ','))
+                                Write-Verbose -Message $("✓ Management subnet '{0}' configured with address range {1}" -f $mGMTSubnet.Name, ($mGMTSubnet.AddressPrefix -join ','))
 
-                        $vNET = New-AzVirtualNetwork `
-                                    -ResourceGroupName $ResourceGroupName `
-                                    -Location $Region `
-                                    -Name $("{0}-vnet" -f $ResourceNamePrefix) `
-                                    -AddressPrefix $IPRangeCIDR `
-                                    -Subnet $mGMTSubnet #, $storageSubnet
+                                $vNET = New-AzVirtualNetwork `
+                                            -ResourceGroupName $ResourceGroupName `
+                                            -Location $Region `
+                                            -Name $("{0}-vnet" -f $ResourceNamePrefix) `
+                                            -AddressPrefix $IPRangeCIDR `
+                                            -Subnet $mGMTSubnet #, $storageSubnet
 
-                        Write-Verbose -Message $("✓ Virtual Network '{0}' created with address space {1}" -f $vNET.Name, $IPRangeCIDR)
-                        Write-Verbose -Message $("✓ Network isolation configured: All VMs will be deployed with NO network access")
+                                Write-Verbose -Message $("✓ Virtual Network '{0}' created with address space {1}" -f $vNET.Name, $IPRangeCIDR)
+                                Write-Verbose -Message $("✓ Network isolation configured: All VMs will be deployed with NO network access")
 
-                        # Update progress: Network creation complete
-                        Update-StagedProgress -SectionName 'NetworkCreation' -SectionCurrentStep 2 -SectionTotalSteps 2 `
-                            -DetailMessage $("Network and security groups created...")
+                                # Update progress: Network creation complete
+                                Update-StagedProgress -SectionName 'NetworkCreation' -SectionCurrentStep 2 -SectionTotalSteps 2 `
+                                    -DetailMessage $("Network and security groups created...")
 
-                        $mGMTSubnetID = $vNET.Subnets | Where-Object { $_.Name -eq $mGMTSubnet.Name } | Select-Object -ExpandProperty Id
+                                $mGMTSubnetID = $vNET.Subnets | Where-Object { $_.Name -eq $mGMTSubnet.Name } | Select-Object -ExpandProperty Id
+                            } `
+                        catch
+                            {
+                                Write-Error $("An error occurred while creating shared resource group infrastructure: {0}" -f $_)
+                                return
+                            }
                     } `
-                catch
+                else
                     {
-                        Write-Error $("An error occurred while creating shared resource group infrastructure: {0}" -f $_)
-                        return
+                        # Existing infrastructure run: skip VNet/NSG creation entirely.
+                        # Use the pre-validated subnet ID from the begin block validation.
+                        $mGMTSubnetID = $existingSubnetId
+                        Write-Verbose -Message $("Existing infrastructure run: skipping VNet/NSG creation. Using pre-validated subnet '{0}' (ID: {1})" -f $SubnetName, $mGMTSubnetID)
                     }
 
                 # ===============================================================================
@@ -7698,6 +7833,7 @@ function Test-SilkResourceDeployment
                             {
                                 $totalVMsPerZone = $totalDNodes
                             }
+                        if ($DNodeCountAdditional) { $totalVMsPerZone += $DNodeCountAdditional }
                         $totalVMs = $totalVMsPerZone * $zonesToDeploy.Count
 
                         # Update staged progress: VM deployment starting
@@ -7831,11 +7967,16 @@ function Test-SilkResourceDeployment
                                             -Id 4
 
                                         # create the cnode management NIC
-                                        $cNodeMGMTNIC = New-AzNetworkInterface `
-                                                            -ResourceGroupName $ResourceGroupName `
-                                                            -Location $Region `
-                                                            -Name $("{0}{1}-cnode-mgmt-nic-{2:D2}" -f $ResourceNamePrefix, $zonePrefix, $cNode) `
-                                                            -SubnetId $mGMTSubnetID
+                                        # For existing infra runs, assign a pre-selected IP from the reserved pool to
+                                        # minimize conflict with IPs already in use by the production cluster.
+                                        $cNodeNICParams = [ordered]@{
+                                            ResourceGroupName = $ResourceGroupName
+                                            Location          = $Region
+                                            Name              = $("{0}{1}-cnode-mgmt-nic-{2:D2}" -f $ResourceNamePrefix, $zonePrefix, $cNode)
+                                            SubnetId          = $mGMTSubnetID
+                                        }
+                                        if ($isExistingInfraRun) { $cNodeNICParams['PrivateIpAddress'] = $existingInfraReservedIPs[$cNode - 1] }
+                                        $cNodeMGMTNIC = New-AzNetworkInterface @cNodeNICParams
 
                                         Write-Verbose -Message $("✓ CNode {0} management NIC '{1}' successfully created with IP '{2}'" -f $cNode, $cNodeMGMTNIC.Name, $cNodeMGMTNIC.IpConfigurations[0].PrivateIpAddress)
 
@@ -7928,6 +8069,118 @@ function Test-SilkResourceDeployment
 
                                 # Clean up CNode creation sub-progress bar as this phase is complete
                                 Write-Progress -Activity $("CNode Creation") -Id 4 -Completed
+                            }
+
+                        # ---------------------------------------------------------------
+                        # DNode Existing Infrastructure Deployment
+                        # ---------------------------------------------------------------
+                        # Runs only for "DNode by SKU Existing Infra" parameter set.
+                        # Deploys test DNodes directly into the user-provided PPG and AvSet,
+                        # using pre-selected IPs from the existing subnet.
+                        if ($DNodeCountAdditional -and $isExistingInfraRun)
+                            {
+                                Write-Verbose -Message $("DNode existing infrastructure expansion: Deploying {0} DNode(s) using SKU '{1}' into existing PPG '{2}' and AvSet '{3}'" -f $DNodeCountAdditional, $DNodeSku, $ProximityPlacementGroupName, $AvailabilitySetName)
+
+                                Write-Progress `
+                                    -Status $("Creating DNodes{0}" -f $zoneLabel) `
+                                    -CurrentOperation $("Preparing to create {0} DNode VM(s) in existing availability set..." -f $DNodeCountAdditional) `
+                                    -PercentComplete 5 `
+                                    -Activity $("VM Deployment") `
+                                    -ParentId 1 `
+                                    -Id 3
+
+                                for ($dNode = 1; $dNode -le $DNodeCountAdditional; $dNode++)
+                                    {
+                                        Write-Progress `
+                                            -Status $("Creating DNode {0} of {1} ({2})" -f $dNode, $DNodeCountAdditional, $DNodeSku) `
+                                            -CurrentOperation $("Configuring DNode {0} with SKU {1}..." -f $dNode, $DNodeSku) `
+                                            -PercentComplete $(($dNode / $DNodeCountAdditional) * 100) `
+                                            -Activity $("DNode Creation") `
+                                            -ParentId 3 `
+                                            -Id 4
+
+                                        # Create DNode NIC with pre-selected IP from existing subnet.
+                                        # NIC name follows the standard DNode pattern: {prefix}-dnode-{number:D2}-mgmt-nic
+                                        $dNodeNICParams = [ordered]@{
+                                            ResourceGroupName = $ResourceGroupName
+                                            Location          = $Region
+                                            Name              = $("{0}-dnode-{1:D2}-mgmt-nic" -f $ResourceNamePrefix, $dNode)
+                                            SubnetId          = $mGMTSubnetID
+                                            PrivateIpAddress  = $existingInfraReservedIPs[$dNode - 1]
+                                        }
+                                        $dNodeMGMTNIC = New-AzNetworkInterface @dNodeNICParams
+
+                                        Write-Verbose -Message $("✓ DNode {0} management NIC '{1}' successfully created with IP '{2}'" -f $dNode, $dNodeMGMTNIC.Name, $dNodeMGMTNIC.IpConfigurations[0].PrivateIpAddress)
+
+                                        $dNodeConfig = New-AzVMConfig `
+                                                        -VMName $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNode) `
+                                                        -VMSize $DNodeSku `
+                                                        -AvailabilitySetId $existingAvailabilitySet.Id
+
+                                        $dNodeConfig = Set-AzVMOperatingSystem `
+                                                        -VM $dNodeConfig `
+                                                        -Linux `
+                                                        -ComputerName $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNode) `
+                                                        -Credential $VMInstanceCredential `
+                                                        -DisablePasswordAuthentication:$false
+
+                                        if ($VMImageOffer -eq "Ubuntu2204" -or $VMImageOffer -eq "Ubuntu2404" -or $VMImageOffer -eq "UbuntuLTS")
+                                            {
+                                                $dNodeConfig = Set-AzVMSourceImage `
+                                                                -VM $dNodeConfig `
+                                                                -Image $VMImageOffer
+                                            } `
+                                        else
+                                            {
+                                                $dNodeConfig = Set-AzVMSourceImage `
+                                                                -VM $dNodeConfig `
+                                                                -PublisherName $vMImage.PublisherName `
+                                                                -Offer $vMImage.Offer `
+                                                                -Skus $vMImage.Skus `
+                                                                -Version $vMImage.Version
+                                            }
+
+                                        $dNodeConfig = Set-AzVMOSDisk `
+                                                        -VM $dNodeConfig `
+                                                        -CreateOption FromImage `
+                                                        -DeleteOption "Delete"
+
+                                        $dNodeConfig = Set-AzVMBootDiagnostic `
+                                                        -VM $dNodeConfig `
+                                                        -Disable:$true
+
+                                        $dNodeConfig = Add-AzVMNetworkInterface `
+                                                        -VM $dNodeConfig `
+                                                        -Id $dNodeMGMTNIC.Id `
+                                                        -Primary:$true `
+                                                        -DeleteOption "Delete"
+
+                                        try
+                                            {
+                                                $dNodeJob = New-AzVM `
+                                                                -ResourceGroupName $ResourceGroupName `
+                                                                -Location $Region `
+                                                                -VM $dNodeConfig `
+                                                                -AsJob `
+                                                                -WarningAction SilentlyContinue
+
+                                                $vmJobMapping[$dNodeJob.Id] = @{
+                                                    VMName     = $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNode)
+                                                    VMSku      = $DNodeSku
+                                                    NodeType   = "DNode"
+                                                    NodeNumber = $dNode
+                                                    Zone       = $deployZone
+                                                }
+
+                                                Write-Verbose -Message $("✓ DNode {0} VM creation job {1} started: VM '{2}', SKU '{3}', Zone {4}" -f $dNode, $dNodeJob.Id, $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNode), $DNodeSku, $deployZone)
+                                            } `
+                                        catch
+                                            {
+                                                Write-Error $("✗ Failed to start DNode {0} VM creation: {1}" -f $dNode, $_.Exception.Message)
+                                            }
+                                    }
+
+                                Write-Progress -Activity $("DNode Creation") -Id 4 -Completed
                             }
 
                         # Skip MNode deployment if quota is insufficient
@@ -9030,6 +9283,51 @@ function Test-SilkResourceDeployment
                             }
 
                         $dNodeStartCount += $reportDNodeCount
+                    }
+
+                # Build DNode existing infra deployment report
+                if ($DNodeCountAdditional -and $isExistingInfraRun)
+                    {
+                        for ($dNode = 1; $dNode -le $DNodeCountAdditional; $dNode++)
+                            {
+                                $expectedVMName  = $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNode)
+                                $expectedNICName = $("{0}-dnode-{1:D2}-mgmt-nic" -f $ResourceNamePrefix, $dNode)
+
+                                $vm  = $deployedVMs  | Where-Object { $_.Name -eq $expectedVMName }
+                                $nic = $deployedNICs | Where-Object { $_.Name -eq $expectedNICName }
+
+                                $avSetStatus = if ($vm -and $vm.AvailabilitySetReference) { "Existing MNode AvSet" } else { "Not Assigned" }
+
+                                $vmValidationFinding = $deploymentValidationResults | Where-Object { $_.VMName -eq $expectedVMName }
+                                $vmStatus = if (-not $vm)
+                                                {
+                                                    if ($vmValidationFinding) { "✗ Allocation Rejected ($($vmValidationFinding.FailureCategory))" }
+                                                    else { "✗ Deployment Failed (No Error Captured)" }
+                                                } `
+                                            elseif ($vm.ProvisioningState -eq "Succeeded") { "✓ Deployed" } `
+                                            elseif ($vm.ProvisioningState -eq "Failed")
+                                                {
+                                                    if ($vmValidationFinding) { "✗ Provisioning Failed ($($vmValidationFinding.FailureCategory))" }
+                                                    else { "✗ Provisioning Failed (No Error Captured)" }
+                                                } `
+                                            else { "⚠ Unexpected State: $($vm.ProvisioningState)" }
+
+                                $deploymentReport += [PSCustomObject]@{
+                                    ResourceType      = "DNode"
+                                    GroupNumber       = $("Existing MNode AvSet ({0})" -f $AvailabilitySetName)
+                                    NodeNumber        = $dNode
+                                    VMName            = $expectedVMName
+                                    ExpectedSKU       = $DNodeSku
+                                    DeployedSKU       = if ($vm) { $vm.HardwareProfile.VmSize } elseif ($vmValidationFinding) { "Not Allocated" } else { "Not Found" }
+                                    VMStatus          = $vmStatus
+                                    ProvisioningState = if ($vm) { $vm.ProvisioningState } elseif ($vmValidationFinding) { "Allocation Failed" } else { "Not Found" }
+                                    NICStatus         = if ($nic) { "✓ Created" } else { "✗ Failed" }
+                                    AvailabilitySet   = $avSetStatus
+                                    ValidationFinding = if ($vmValidationFinding) { $vmValidationFinding.ErrorMessage } else { "" }
+                                    FailureCategory   = if ($vmValidationFinding) { $vmValidationFinding.FailureCategory } else { "" }
+                                    Zone              = $reportZone
+                                }
+                            }
                     }
 
                     } # end foreach ($reportZone in $zonesToDeploy)

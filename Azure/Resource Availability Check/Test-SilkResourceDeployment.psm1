@@ -91,26 +91,48 @@ function Test-SilkResourceDeployment
 
             .PARAMETER CNodeCountAdditional
                 Number of additional CNode VMs to test for deployment capacity in existing infrastructure.
-                Used only with ProximityPlacementGroupName and AvailabilitySetName parameters to validate
-                whether additional CNodes can be deployed into an existing Silk cluster.
-                Range: 1-6 (limited to ensure realistic expansion testing within Azure Availability Set constraints)
+                Used with the "CNode by SKU Existing Infra" parameter set together with ProximityPlacementGroupName,
+                AvailabilitySetName, VNetName, and SubnetName to validate whether additional CNodes can be deployed
+                into an existing Silk cluster. Range: 1-6.
                 Example: 2 (tests if 2 additional CNodes can be added to existing cluster infrastructure)
 
+            .PARAMETER DNodeCountAdditional
+                Number of additional DNode VMs to test for deployment capacity in existing MNode infrastructure.
+                Used with the "DNode by SKU Existing Infra" parameter set together with ProximityPlacementGroupName,
+                AvailabilitySetName, VNetName, SubnetName, and DNodeSku. Range: 1-6.
+                Example: 3 (tests if 3 additional DNodes can be added to an existing MNode availability set)
+
             .PARAMETER ProximityPlacementGroupName
-                Name of an existing Proximity Placement Group to use for CNode deployment validation.
-                When specified along with AvailabilitySetName, tests whether additional CNodes can be deployed
-                into existing Silk cluster infrastructure. Both parameters must be specified together.
-                This validates VM SKU availability and deployment capacity within an existing PPG/AvSet configuration.
-                Only CNode-only deployment scenarios are supported with existing infrastructure validation.
+                Name of an existing Proximity Placement Group to use for CNode or DNode expansion validation.
+                Must be specified together with AvailabilitySetName, VNetName, and SubnetName.
+                The PPG must be in the same region (and zone if applicable) as the target deployment.
                 Example: "my-silk-cnode-ppg"
 
             .PARAMETER AvailabilitySetName
-                Name of an existing Availability Set to use for CNode deployment validation.
-                When specified along with ProximityPlacementGroupName, tests whether additional CNodes can be deployed
-                into existing Silk cluster infrastructure. Both parameters must be specified together.
-                This validates VM SKU availability and deployment capacity within an existing PPG/AvSet configuration.
-                Only CNode-only deployment scenarios are supported with existing infrastructure validation.
+                Name of an existing Availability Set to use for CNode or DNode expansion validation.
+                Must be specified together with ProximityPlacementGroupName, VNetName, and SubnetName.
+                The AvSet must be associated with the specified ProximityPlacementGroupName.
                 Example: "my-silk-cnode-avset"
+
+            .PARAMETER VNetName
+                Name of the existing Virtual Network that the test NICs will connect to.
+                Required for both "CNode by SKU Existing Infra" and "DNode by SKU Existing Infra" parameter sets.
+                The VNet is located subscription-wide by name and must be in the target region. Providing this
+                parameter authorizes the script to place test NICs inside the production network.
+                Example: "my-silk-VNet"
+
+            .PARAMETER SubnetName
+                Name of an existing subnet within the VNet specified by VNetName.
+                Required for both "CNode by SKU Existing Infra" and "DNode by SKU Existing Infra" parameter sets.
+                The subnet must have sufficient available IP addresses for the test VMs. IPs are allocated from
+                the top of the usable range (descending) to minimize conflict with existing cluster addresses.
+                Example: "my-silk-management-subnet"
+
+            .PARAMETER DNodeSku
+                Azure VM SKU for DNode VMs in existing infrastructure expansion testing.
+                Required for the "DNode by SKU Existing Infra" parameter set.
+                Specify the exact SKU string matching the DNode VMs used by the target MNode group.
+                Example: "Standard_L8as_v4"
 
             .PARAMETER MnodeSizeLsv3
                 Array of MNode storage capacities for Lsv3 series SKUs.

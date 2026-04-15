@@ -1536,11 +1536,10 @@ function Test-SilkResourceDeployment
                         $CNodeCount = $CNodeCountAdditional
                     }
 
-                # For DNode existing infra: no CNodes, deploy only the test DNodes
+                # DNode existing infra: $CNodeCount is already 0 (not in this parameter set)
                 if($DNodeCountAdditional)
                     {
                         Write-Verbose -Message $("Existing infrastructure validation mode: Testing deployment of {0} additional DNode(s) using SKU '{1}'" -f $DNodeCountAdditional, $DNodeSku)
-                        $CNodeCount = 0
                     }
 
                 # Define required Azure PowerShell modules

@@ -128,12 +128,6 @@ function Test-SilkResourceDeployment
                 the top of the usable range (descending) to minimize conflict with existing cluster addresses.
                 Example: "my-silk-management-subnet"
 
-            .PARAMETER DNodeSku
-                Azure VM SKU for DNode VMs in existing infrastructure expansion testing.
-                Required for the "DNode by SKU Existing Infra" parameter set.
-                Specify the exact SKU string matching the DNode VMs used by the target MNode group.
-                Example: "Standard_L8as_v4"
-
             .PARAMETER MnodeSizeLsv3
                 Array of MNode storage capacities for Lsv3 series SKUs.
                 Valid values correspond to physical storage capacity in TiB:
@@ -181,6 +175,8 @@ function Test-SilkResourceDeployment
                 Alternative to size-based selection for advanced scenarios requiring specific SKU control.
                 Valid Lsv3 SKUs: "Standard_L8s_v3", "Standard_L16s_v3", "Standard_L32s_v3"
                 Valid Laosv4 SKUs: "Standard_L2aos_v4", "Standard_L4aos_v4", "Standard_L8aos_v4", "Standard_L12aos_v4", "Standard_L16aos_v4"
+                Also used in "DNode by SKU Existing Infra" mode to specify the DNode VM SKU. In Silk architecture,
+                MNode SKU == DNode SKU; MNodeSku is the correct parameter for both roles.
 
             .PARAMETER MNodeCount
                 Number of MNode instances when using explicit SKU specification (MnodeSku parameter).
@@ -407,6 +403,23 @@ function Test-SilkResourceDeployment
                 Runs a standard CNode deployment check and saves a fully branded report.
                 Report saved as 'C:\Reports\Contoso\Contoso-eastus-1-DeploymentReport_yyyyMMdd_HHmmss.html'.
                 Heading and title will read 'Contoso eastus 1 Azure SKU Availability Report'.
+
+            .EXAMPLE
+                Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-prod-rg" -Region "uksouth" -Zone "1" -CNodeSku "Standard_E32s_v5" -CNodeCountAdditional 2 -ProximityPlacementGroupName "my-silk-cnode-ppg" -AvailabilitySetName "my-silk-cnode-avset" -VNetName "my-silk-vnet" -SubnetName "my-silk-mgmt-subnet"
+
+                Validates whether 2 additional CNodes can be deployed into an existing cluster's network and PPG/AvSet.
+                Test NICs attach to the existing VNet/subnet; no new VNet, NSG, PPG, or AvSet is created.
+                IPs are pre-selected from the top of the subnet's usable range to avoid conflicts with existing cluster addresses.
+                Use this to validate CNode expansion capacity before committing to production changes.
+
+            .EXAMPLE
+                Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-prod-rg" -Region "uksouth" -Zone "1" -MNodeSku "Standard_L8aos_v4" -DNodeCountAdditional 4 -ProximityPlacementGroupName "my-silk-mnode-ppg" -AvailabilitySetName "my-silk-mnode-avset" -VNetName "my-silk-vnet" -SubnetName "my-silk-mgmt-subnet"
+
+                Validates whether 4 additional DNodes can be deployed into an existing MNode PPG and AvSet.
+                MNodeSku specifies the DNode VM SKU — in Silk architecture MNode SKU equals DNode SKU.
+                Test NICs attach to the existing VNet/subnet; no new VNet, NSG, PPG, or AvSet is created.
+                IPs are pre-selected from the top of the subnet's usable range to avoid conflicts with existing cluster addresses.
+                Use this to validate DNode expansion capacity before committing to production changes.
 
             .INPUTS
                 Command line parameters or JSON configuration file containing deployment specifications.
@@ -710,12 +723,6 @@ function Test-SilkResourceDeployment
                 [string]
                 $SubnetName,
 
-                # DNode VM SKU for existing infrastructure DNode expansion testing
-                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter the DNode VM SKU to test deployment capacity in the existing MNode infrastructure. Example: Standard_L8aos_v4"))]
-                [ValidateNotNullOrEmpty()]
-                [string]
-                $DNodeSku,
-
                 # Array of MNode storage capacities for Lsv3 series SKUs
                 # Valid values: "19.5" (L8s_v3), "39.1" (L16s_v3), "78.2" (L32s_v3) TiB capacity
                 # Example: @("19.5", "39.1") for mixed capacity deployment
@@ -778,6 +785,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true, HelpMessage = $("Select MNode VM SKU. LSv3 options: Standard_L8s_v3 (19.5 TiB), Standard_L16s_v3 (39.1 TiB), Standard_L32s_v3 (78.2 TiB). Lasv3 options: Standard_L8as_v3 (19.5 TiB), Standard_L16as_v3 (39.1 TiB), Standard_L32as_v3 (78.2 TiB). LSv4 options: Standard_L8s_v4 (19.5 TiB), Standard_L16s_v4 (39.1 TiB), Standard_L32s_v4 (78.2 TiB). Lasv4 options: Standard_L8as_v4 (19.5 TiB), Standard_L16as_v4 (39.1 TiB), Standard_L32as_v4 (78.2 TiB). Laosv4 options: Standard_L2aos_v4 (14.67 TiB) to Standard_L16aos_v4 (117.35 TiB)."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true, HelpMessage = $("Select MNode VM SKU. LSv3 options: Standard_L8s_v3 (19.5 TiB), Standard_L16s_v3 (39.1 TiB), Standard_L32s_v3 (78.2 TiB). Lasv3 options: Standard_L8as_v3 (19.5 TiB), Standard_L16as_v3 (39.1 TiB), Standard_L32as_v3 (78.2 TiB). LSv4 options: Standard_L8s_v4 (19.5 TiB), Standard_L16s_v4 (39.1 TiB), Standard_L32s_v4 (78.2 TiB). Lasv4 options: Standard_L8as_v4 (19.5 TiB), Standard_L16as_v4 (39.1 TiB), Standard_L32as_v4 (78.2 TiB). Laosv4 options: Standard_L2aos_v4 (14.67 TiB) to Standard_L16aos_v4 (117.35 TiB)."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true, HelpMessage = $("Select MNode VM SKU. LSv3 options: Standard_L8s_v3 (19.5 TiB), Standard_L16s_v3 (39.1 TiB), Standard_L32s_v3 (78.2 TiB). Lasv3 options: Standard_L8as_v3 (19.5 TiB), Standard_L16as_v3 (39.1 TiB), Standard_L32as_v3 (78.2 TiB). LSv4 options: Standard_L8s_v4 (19.5 TiB), Standard_L16s_v4 (39.1 TiB), Standard_L32s_v4 (78.2 TiB). Lasv4 options: Standard_L8as_v4 (19.5 TiB), Standard_L16as_v4 (39.1 TiB), Standard_L32as_v4 (78.2 TiB). Laosv4 options: Standard_L2aos_v4 (14.67 TiB) to Standard_L16aos_v4 (117.35 TiB)."))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter the DNode VM SKU matching the existing MNode availability set. In Silk architecture MNode SKU == DNode SKU. Example: Standard_L8aos_v4"))]
                 [ValidateSet("Standard_L2aos_v4", "Standard_L4aos_v4", "Standard_L8aos_v4", "Standard_L12aos_v4", "Standard_L16aos_v4", "Standard_L8as_v3", "Standard_L16as_v3", "Standard_L32as_v3", "Standard_L8as_v4", "Standard_L16as_v4", "Standard_L32as_v4", "Standard_L8s_v3", "Standard_L16s_v3", "Standard_L32s_v3", "Standard_L8s_v4", "Standard_L16s_v4", "Standard_L32s_v4")]
                 [string[]]
                 $MNodeSku,
@@ -1539,7 +1547,7 @@ function Test-SilkResourceDeployment
                 # DNode existing infra: $CNodeCount is already 0 (not in this parameter set)
                 if($DNodeCountAdditional)
                     {
-                        Write-Verbose -Message $("Existing infrastructure validation mode: Testing deployment of {0} additional DNode(s) using SKU '{1}'" -f $DNodeCountAdditional, $DNodeSku)
+                        Write-Verbose -Message $("Existing infrastructure validation mode: Testing deployment of {0} additional DNode(s) using SKU '{1}'" -f $DNodeCountAdditional, $MNodeSku[0])
                     }
 
                 # Define required Azure PowerShell modules
@@ -8100,7 +8108,7 @@ function Test-SilkResourceDeployment
                         # using pre-selected IPs from the existing subnet.
                         if ($DNodeCountAdditional -and $isExistingInfraRun)
                             {
-                                Write-Verbose -Message $("DNode existing infrastructure expansion: Deploying {0} DNode(s) using SKU '{1}' into existing PPG '{2}' and AvSet '{3}'" -f $DNodeCountAdditional, $DNodeSku, $ProximityPlacementGroupName, $AvailabilitySetName)
+                                Write-Verbose -Message $("DNode existing infrastructure expansion: Deploying {0} DNode(s) using SKU '{1}' into existing PPG '{2}' and AvSet '{3}'" -f $DNodeCountAdditional, $MNodeSku[0], $ProximityPlacementGroupName, $AvailabilitySetName)
 
                                 Write-Progress `
                                     -Status $("Creating DNodes{0}" -f $zoneLabel) `
@@ -8113,8 +8121,8 @@ function Test-SilkResourceDeployment
                                 for ($dNode = 1; $dNode -le $DNodeCountAdditional; $dNode++)
                                     {
                                         Write-Progress `
-                                            -Status $("Creating DNode {0} of {1} ({2})" -f $dNode, $DNodeCountAdditional, $DNodeSku) `
-                                            -CurrentOperation $("Configuring DNode {0} with SKU {1}..." -f $dNode, $DNodeSku) `
+                                            -Status $("Creating DNode {0} of {1} ({2})" -f $dNode, $DNodeCountAdditional, $MNodeSku[0]) `
+                                            -CurrentOperation $("Configuring DNode {0} with SKU {1}..." -f $dNode, $MNodeSku[0]) `
                                             -PercentComplete $(($dNode / $DNodeCountAdditional) * 100) `
                                             -Activity $("DNode Creation") `
                                             -ParentId 3 `
@@ -8135,7 +8143,7 @@ function Test-SilkResourceDeployment
 
                                         $dNodeConfig = New-AzVMConfig `
                                                         -VMName $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNode) `
-                                                        -VMSize $DNodeSku `
+                                                        -VMSize $MNodeSku[0] `
                                                         -AvailabilitySetId $existingAvailabilitySet.Id
 
                                         $dNodeConfig = Set-AzVMOperatingSystem `
@@ -8187,13 +8195,13 @@ function Test-SilkResourceDeployment
 
                                                 $vmJobMapping[$dNodeJob.Id] = @{
                                                     VMName     = $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNode)
-                                                    VMSku      = $DNodeSku
+                                                    VMSku      = $MNodeSku[0]
                                                     NodeType   = "DNode"
                                                     NodeNumber = $dNode
                                                     Zone       = $deployZone
                                                 }
 
-                                                Write-Verbose -Message $("✓ DNode {0} VM creation job {1} started: VM '{2}', SKU '{3}', Zone {4}" -f $dNode, $dNodeJob.Id, $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNode), $DNodeSku, $deployZone)
+                                                Write-Verbose -Message $("✓ DNode {0} VM creation job {1} started: VM '{2}', SKU '{3}', Zone {4}" -f $dNode, $dNodeJob.Id, $("{0}-dnode-{1:D2}" -f $ResourceNamePrefix, $dNode), $MNodeSku[0], $deployZone)
                                             } `
                                         catch
                                             {
@@ -9338,7 +9346,7 @@ function Test-SilkResourceDeployment
                                     GroupNumber       = $("Existing MNode AvSet ({0})" -f $AvailabilitySetName)
                                     NodeNumber        = $dNode
                                     VMName            = $expectedVMName
-                                    ExpectedSKU       = $DNodeSku
+                                    ExpectedSKU       = $MNodeSku[0]
                                     DeployedSKU       = if ($vm) { $vm.HardwareProfile.VmSize } elseif ($vmValidationFinding) { "Not Allocated" } else { "Not Found" }
                                     VMStatus          = $vmStatus
                                     ProvisioningState = if ($vm) { $vm.ProvisioningState } elseif ($vmValidationFinding) { "Allocation Failed" } else { "Not Found" }

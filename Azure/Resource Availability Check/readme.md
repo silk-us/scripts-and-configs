@@ -118,9 +118,6 @@ Install-Module -Name Az.Accounts,Az.Resources,Az.Compute,Az.Network -Repository 
 | `-ChecklistJSON`        | Path to Silk deployment checklist JSON file. | [Example format of expected JSON Structure](silk-deployment-checklist-example.json) | "C:\\configs\\silk-deployment.json" | ⬜️ |
 | `-CNodeFriendlyName`    | CNode SKU selection by Flex terminology | <br> Increased_Logical_Capacity_AMD (Standard_E64as_v6)<br> Increased_Logical_Capacity (Standard_E64s_v5)<br> Read_Cache_Enabled (Standard_L64s_v3)<br> No_Increased_Logical_Capacity_AMD (Standard_D64as_v6)<br> No_Increased_Logical_Capacity (Standard_D64s_v5)<br> Entry_Level_SDP (Standard_E32as_v5) | "Increased_Logical_Capacity" | ⬜️ |
 | `-CNodeCount`           | Number of CNode VMs for new deployments | Minimum of 2 -> Maximum of 8 | 2 | ⬜️ |
-| `-CNodeCountAdditional` | Number of additional CNodes to test in existing infrastructure.<br><br>**Must be used with `-ProximityPlacementGroupName` and `-AvailabilitySetName`**<br>Validates deployment capacity for cluster expansion. | 1-6 CNodes | 2 | ⬜️ |
-| `-ProximityPlacementGroupName` | Name of existing Proximity Placement Group for existing infrastructure validation.<br><br>**Must be used with `-AvailabilitySetName` and `-CNodeCountAdditional`**<br>Tests additional CNode deployment capacity into established PPG/AvSet.<br>Only CNode-only deployments supported. | Existing PPG name | "my-silk-cnode-ppg" | ⬜️ |
-| `-AvailabilitySetName` | Name of existing Availability Set for existing infrastructure validation.<br><br>**Must be used with `-ProximityPlacementGroupName` and `-CNodeCountAdditional`**<br>Tests additional CNode deployment capacity into established PPG/AvSet.<br>Only CNode-only deployments supported. | Existing AvSet name | "my-silk-cnode-avset" | ⬜️ |
 | `-MnodeSizeLsv3`        | List of MNodes represented by storage capacity for Lsv3 SKUs (Intel) | <br> "19.5" TiB (Standard_L8s_v3)<br> "39.1" TiB (Standard_L16s_v3)<br> "78.2" TiB (Standard_L32s_v3) | @("19.5", "39.1") | ⬜️ |
 | `-MnodeSizeLsv4`        | List of MNodes represented by storage capacity for Lsv4 SKUs (Intel, latest gen) | <br> "19.5" TiB (Standard_L8s_v4)<br> "39.1" TiB (Standard_L16s_v4)<br> "78.2" TiB (Standard_L32s_v4) | @("19.5", "39.1") | ⬜️ |
 | `-MnodeSizeLasv3`       | List of MNodes represented by storage capacity for Lasv3 SKUs (AMD) | <br> "19.5" TiB (Standard_L8as_v3)<br> "39.1" TiB (Standard_L16as_v3)<br> "78.2" TiB (Standard_L32as_v3) | @("19.5", "39.1") | ⬜️ |
@@ -176,31 +173,25 @@ Test-SilkResourceDeployment -ChecklistJSON "C:\configs\silk-deployment.json" -Re
 ```
    >Loads Subscription and Region values from the JSON file as well as CNode Type and Count, MNode Size and Count. Overrides the Resource Group and Zone Values to test in 'test-rg' for zone 3.
 
-#### 8. Test additional CNode capacity in existing Silk cluster infrastructure
-```powershell
-Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-prod-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCountAdditional 1 -ProximityPlacementGroupName "my-silk-cnode-ppg" -AvailabilitySetName "my-silk-cnode-avset" -Verbose
-```
-   >Validates whether 1 additional CNodes can be deployed into existing Silk cluster infrastructure. Tests deployment capacity within the specified Proximity Placement Group and Availability Set. Useful for validating cluster expansion scenarios before actual production deployment. Only CNode-only deployments are supported when using existing infrastructure parameters.
-
-#### 9. Report Only - SKU Availability and Quota Analysis
+#### 8. Report Only - SKU Availability and Quota Analysis
 ```powershell
 Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -GenerateReportOnly
 ```
    >Generates a comprehensive SKU availability and quota analysis report without deploying any resources. Analyzes all Silk-supported VM families for zone support and quota availability. Produces console output and an HTML report.
 
-#### 10. Test All SKU Families
+#### 9. Test All SKU Families
 ```powershell
 Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -TestAllSKUFamilies
 ```
    >Tests all Silk-supported VM SKU families by deploying a reduced-size test VM for each unique SKU. Validates actual deployment capacity and produces a report with pass/fail status per SKU family.
 
-#### 11. Test All SKU Families Across All Zones
+#### 10. Test All SKU Families Across All Zones
 ```powershell
 Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -TestAllSKUFamilies -TestAllZones
 ```
    >Tests all Silk-supported VM SKU families across all availability zones in the region. Deploys test VMs for each SKU in every zone and produces a multi-zone deployment results matrix.
 
-#### 12. Test Deployment Configuration Across All Zones
+#### 11. Test Deployment Configuration Across All Zones
 ```powershell
 Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -MnodeSizeLsv3 @("19.5","39.1") -TestAllZones
 ```
@@ -222,8 +213,14 @@ Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-12345678901
 | Parameter                     | Description | Valid Input | Example | Overrides ChecklistJSON |
 |-------------------------------|-------------|-------------|---------|-------------------------|
 | `-CNodeSku`                   | Explicit CNode VM SKU selection for advanced control.<br><br>Valid options:<br> &nbsp;Increased_Logical_Capacity_AMD (Standard_E64as_v6)<br> &nbsp;Increased_Logical_Capacity (Standard_E64s_v5)<br> &nbsp;Read_Cache_Enabled (Standard_L64s_v3)<br> &nbsp;No_Increased_Logical_Capacity_AMD (Standard_D64as_v6)<br> &nbsp;No_Increased_Logical_Capacity (Standard_D64s_v5)<br> &nbsp;Entry_Level_SDP (Standard_E32as_v5)<br>Use for scenarios requiring specific SKU control. | <br>"Standard_E64as_v6"<br>"Standard_E64s_v5"<br>"Standard_L64s_v3"<br>"Standard_D64as_v6"<br>"Standard_D64s_v5"<br>"Standard_E32as_v5" | "Standard_E64s_v5" | ⬜️ |
-| `-MNodeSku`                   | Array of explicit Azure VM SKUs for MNode/DNode VMs.<br><br>Lsv3 SKUs (Intel):<br> &nbsp;Standard_L8s_v3 (19.5 TiB)<br> &nbsp;Standard_L16s_v3 (39.1 TiB)<br> &nbsp;Standard_L32s_v3 (78.2 TiB)<br>Lsv4 SKUs (Intel, latest gen):<br> &nbsp;Standard_L8s_v4 (19.5 TiB)<br> &nbsp;Standard_L16s_v4 (39.1 TiB)<br> &nbsp;Standard_L32s_v4 (78.2 TiB)<br>Lasv3 SKUs (AMD):<br> &nbsp;Standard_L8as_v3 (19.5 TiB)<br> &nbsp;Standard_L16as_v3 (39.1 TiB)<br> &nbsp;Standard_L32as_v3 (78.2 TiB)<br>Lasv4 SKUs (AMD, latest gen):<br> &nbsp;Standard_L8as_v4 (19.5 TiB)<br> &nbsp;Standard_L16as_v4 (39.1 TiB)<br> &nbsp;Standard_L32as_v4 (78.2 TiB)<br>Laosv4 SKUs:<br> &nbsp;Standard_L2aos_v4 (14.67 TiB)<br> &nbsp;Standard_L4aos_v4 (29.34 TiB)<br> &nbsp;Standard_L8aos_v4 (58.67 TiB)<br> &nbsp;Standard_L12aos_v4 (88.01 TiB)<br> &nbsp;Standard_L16aos_v4 (117.35 TiB)<br>Use for advanced scenarios requiring specific SKU control. | "Standard_L8s_v4"<br>"Standard_L16s_v4"<br>"Standard_L8as_v4"<br>"Standard_L16as_v4"<br>"Standard_L8s_v3"<br>"Standard_L16s_v3"<br>"Standard_L32s_v3"<br>"Standard_L2aos_v4"<br>"Standard_L4aos_v4"<br>"Standard_L8aos_v4"<br>"Standard_L12aos_v4"<br>"Standard_L16aos_v4" | @("Standard_L16s_v4", "Standard_L32s_v4") | ⬜️ |
+| `-MNodeSku`                   | Array of explicit Azure VM SKUs for MNode/DNode VMs.<br><br>Lsv3 SKUs (Intel):<br> &nbsp;Standard_L8s_v3 (19.5 TiB)<br> &nbsp;Standard_L16s_v3 (39.1 TiB)<br> &nbsp;Standard_L32s_v3 (78.2 TiB)<br>Lsv4 SKUs (Intel, latest gen):<br> &nbsp;Standard_L8s_v4 (19.5 TiB)<br> &nbsp;Standard_L16s_v4 (39.1 TiB)<br> &nbsp;Standard_L32s_v4 (78.2 TiB)<br>Lasv3 SKUs (AMD):<br> &nbsp;Standard_L8as_v3 (19.5 TiB)<br> &nbsp;Standard_L16as_v3 (39.1 TiB)<br> &nbsp;Standard_L32as_v3 (78.2 TiB)<br>Lasv4 SKUs (AMD, latest gen):<br> &nbsp;Standard_L8as_v4 (19.5 TiB)<br> &nbsp;Standard_L16as_v4 (39.1 TiB)<br> &nbsp;Standard_L32as_v4 (78.2 TiB)<br>Laosv4 SKUs:<br> &nbsp;Standard_L2aos_v4 (14.67 TiB)<br> &nbsp;Standard_L4aos_v4 (29.34 TiB)<br> &nbsp;Standard_L8aos_v4 (58.67 TiB)<br> &nbsp;Standard_L12aos_v4 (88.01 TiB)<br> &nbsp;Standard_L16aos_v4 (117.35 TiB)<br>Use for advanced scenarios requiring specific SKU control.<br><br>Also used in DNode existing infrastructure expansion mode with `-DNodeCountAdditional` — specify the single DNode VM SKU matching the target MNode group. In Silk architecture MNode SKU == DNode SKU. | "Standard_L8s_v4"<br>"Standard_L16s_v4"<br>"Standard_L8as_v4"<br>"Standard_L16as_v4"<br>"Standard_L8s_v3"<br>"Standard_L16s_v3"<br>"Standard_L32s_v3"<br>"Standard_L2aos_v4"<br>"Standard_L4aos_v4"<br>"Standard_L8aos_v4"<br>"Standard_L12aos_v4"<br>"Standard_L16aos_v4" | @("Standard_L16s_v4", "Standard_L32s_v4") | ⬜️ |
 | `-MNodeCount`                 | Number of MNode instances to deploy when using explicit SKU selection. | Minimum of 1 -> Maximum of 4 | 2 | ⬜️ |
+| `-CNodeCountAdditional`       | Number of additional CNodes to test in an existing cluster's PPG/AvSet.<br><br>**Must be used with `-CNodeSku`, `-ProximityPlacementGroupName`, `-AvailabilitySetName`, `-VNetName`, and `-SubnetName`**<br>No new VNet, NSG, PPG, or AvSet is created. Test NICs attach to the existing subnet. IPs are pre-selected from the top of the usable range to minimize conflict with existing cluster addresses. | 1-6 CNodes | 2 | ⬜️ |
+| `-DNodeCountAdditional`       | Number of additional DNodes to test in an existing MNode PPG/AvSet.<br><br>**Must be used with `-MNodeSku`, `-ProximityPlacementGroupName`, `-AvailabilitySetName`, `-VNetName`, and `-SubnetName`**<br>In Silk architecture MNode SKU == DNode SKU — use `-MNodeSku` to specify the DNode VM SKU. No new VNet, NSG, PPG, or AvSet is created. IPs are pre-selected from the top of the usable range to minimize conflict with existing cluster addresses. | 1-6 DNodes | 4 | ⬜️ |
+| `-ProximityPlacementGroupName` | Name of the existing Proximity Placement Group for cluster expansion testing.<br><br>Required for both CNode (`-CNodeCountAdditional`) and DNode (`-DNodeCountAdditional`) existing infrastructure expansion.<br>Must be used together with `-AvailabilitySetName`, `-VNetName`, and `-SubnetName`. | Existing PPG name | "my-silk-cnode-ppg" | ⬜️ |
+| `-AvailabilitySetName`        | Name of the existing Availability Set for cluster expansion testing.<br><br>Required for both CNode (`-CNodeCountAdditional`) and DNode (`-DNodeCountAdditional`) existing infrastructure expansion.<br>Must be used together with `-ProximityPlacementGroupName`, `-VNetName`, and `-SubnetName`. | Existing AvSet name | "my-silk-mnode-avset" | ⬜️ |
+| `-VNetName`                   | Name of the existing Virtual Network that test VM NICs will connect to.<br><br>Required for both existing infrastructure expansion parameter sets. PPG-constrained VMs must share the same VNet as the existing cluster — this is not optional.<br>Must be used with `-SubnetName`. | Existing VNet name | "my-silk-vnet" | ⬜️ |
+| `-SubnetName`                 | Name of the existing subnet within the VNet that test VM NICs will connect to.<br><br>Required for both existing infrastructure expansion parameter sets. The subnet must have sufficient available IP addresses. IPs are allocated from the top of the usable range (descending) to minimize conflict with existing cluster addresses.<br>Must be used with `-VNetName`. | Existing subnet name | "my-silk-mgmt-subnet" | ⬜️ |
 | `-NoHTMLReport`               | Disable HTML report generation.<br><br>By default, a comprehensive HTML report is generated summarizing deployment status, quota usage, SKU support, and resource validation results. | Switch<br>(present or not) | `-NoHTMLReport` | ⬜️ |
 | `-ReportOutputPath`           | Directory path where the HTML report file is saved.<br><br>Default: Current working directory.<br>The filename is auto-generated as `[ReportLabel]-[Region]-[Zone]-DeploymentReport_[timestamp].html`. Region and zone segments are omitted if not available.<br>Cannot be used to specify a custom filename — use `-ReportLabel` to customize the filename prefix. | `"C:\\results\\output\\"`  | `"C:\Reports"` | ⬜️ |
 | `-ReportLabel`                | Label prefix used as the first part of the HTML report filename, browser tab title, and report heading.<br><br>If not provided, automatically sourced from the `customer_name` field in the JSON configuration file.<br>If neither is specified, defaults to `"Silk"` → produces `Silk-[Region]-[Zone]-DeploymentReport_[timestamp].html`.<br>Region and zone are automatically appended after the label (both in filename and report title/heading), and are omitted gracefully when not available.<br>Customize to brand reports for a specific customer or deployment environment.<br>Example: `-ReportLabel "Contoso"` with `-Region "eastus"` `-Zone "1"` produces:<br> &nbsp;Filename: `Contoso-eastus-1-DeploymentReport_20260310_143052.html`<br> &nbsp;Title: `Contoso eastus 1 Azure SKU Availability Report - 2026-03-10 14:30:52`<br> &nbsp;Heading: `🏗️ Contoso eastus 1 Azure SKU Availability Report` | Any string | `"Contoso"` | ⬜️ |
@@ -315,5 +312,17 @@ Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-12345678901
 Test-SilkResourceDeployment -ChecklistJSON "C:\configs\silk-deployment.json" -ReportOutputPath "C:\Reports"
 ```
    >When `-ReportLabel` is not specified, the `customer_name` field from the JSON configuration is automatically used as the report label. If `silk-deployment.json` contains `"customer_name": "Contoso"` and region `"eastus"` with zone `"1"`, the report is saved as `C:\Reports\Contoso-eastus-1-DeploymentReport_yyyyMMdd_HHmmss.html`. Falls back to `"Silk"` if no `customer_name` is present in the JSON.
+
+#### 6.1 Advanced: CNode Expansion — Test Additional CNodes in Existing Cluster Infrastructure
+```powershell
+Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-prod-rg" -Region "uksouth" -Zone "1" -CNodeSku "Standard_E64s_v5" -CNodeCountAdditional 2 -ProximityPlacementGroupName "my-silk-cnode-ppg" -AvailabilitySetName "my-silk-cnode-avset" -VNetName "my-silk-vnet" -SubnetName "my-silk-mgmt-subnet"
+```
+   >Validates whether 2 additional CNodes can be deployed into an existing cluster's PPG and AvSet. Test NICs attach to the existing VNet/subnet — no new VNet, NSG, PPG, or AvSet is created. IPs are pre-selected from the top of the subnet's usable range to avoid conflicts with existing cluster addresses. Use to validate CNode expansion capacity before committing to production changes.
+
+#### 6.2 Advanced: DNode Expansion — Test Additional DNodes in Existing MNode Infrastructure
+```powershell
+Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-prod-rg" -Region "uksouth" -Zone "1" -MNodeSku "Standard_L8aos_v4" -DNodeCountAdditional 4 -ProximityPlacementGroupName "my-silk-mnode-ppg" -AvailabilitySetName "my-silk-mnode-avset" -VNetName "my-silk-vnet" -SubnetName "my-silk-mgmt-subnet"
+```
+   >Validates whether 4 additional DNodes can be deployed into an existing MNode PPG and AvSet. `-MNodeSku` specifies the DNode VM SKU — in Silk architecture MNode SKU equals DNode SKU. Test NICs attach to the existing VNet/subnet — no new VNet, NSG, PPG, or AvSet is created. IPs are pre-selected from the top of the subnet's usable range to avoid conflicts with existing cluster addresses. Use to validate DNode expansion capacity before committing to production changes.
 
 ---

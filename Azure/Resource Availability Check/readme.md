@@ -317,12 +317,12 @@ Test-SilkResourceDeployment -ChecklistJSON "C:\configs\silk-deployment.json" -Re
 ```powershell
 Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-prod-rg" -Region "uksouth" -Zone "1" -CNodeSku "Standard_E64s_v5" -CNodeCountAdditional 2 -ProximityPlacementGroupName "my-silk-cnode-ppg" -AvailabilitySetName "my-silk-cnode-avset" -VNetName "my-silk-vnet" -SubnetName "my-silk-mgmt-subnet"
 ```
-   >Validates whether 2 additional CNodes can be deployed into an existing cluster's PPG and AvSet. Test NICs attach to the existing VNet/subnet — no new VNet, NSG, PPG, or AvSet is created. IPs are pre-selected from the top of the subnet's usable range to avoid conflicts with existing cluster addresses. Use to validate CNode expansion capacity before committing to production changes.
+   >Tests whether 2 additional CNodes SKU instances are available to be deployed into an existing cluster's PPG and AvSet. Test NICs attach to the existing VNet/subnet — no new VNet, NSG, PPG, or AvSet is created, so existing resources must be provided. IPs are pre-selected from the top of the subnet's usable range to avoid conflicts with existing cluster addresses. Use to validate CNode expansion capacity before committing to production changes.
 
 #### 6.2 Advanced: DNode Expansion — Test Additional DNodes in Existing MNode Infrastructure
 ```powershell
-Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-prod-rg" -Region "uksouth" -Zone "1" -MNodeSku "Standard_L8aos_v4" -DNodeCountAdditional 4 -ProximityPlacementGroupName "my-silk-mnode-ppg" -AvailabilitySetName "my-silk-mnode-avset" -VNetName "my-silk-vnet" -SubnetName "my-silk-mgmt-subnet"
+Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-prod-rg" -Region "uksouth" -Zone "1" -MNodeSku "Standard_L8aos_v4" -DNodeCountAdditional 1 -ProximityPlacementGroupName "my-silk-mnode-ppg" -AvailabilitySetName "my-silk-mnode-avset" -VNetName "my-silk-vnet" -SubnetName "my-silk-mgmt-subnet"
 ```
-   >Validates whether 4 additional DNodes can be deployed into an existing MNode PPG and AvSet. `-MNodeSku` specifies the DNode VM SKU — in Silk architecture MNode SKU equals DNode SKU. Test NICs attach to the existing VNet/subnet — no new VNet, NSG, PPG, or AvSet is created. IPs are pre-selected from the top of the subnet's usable range to avoid conflicts with existing cluster addresses. Use to validate DNode expansion capacity before committing to production changes.
+   >Tests whether 1 additional DNode SKU Instance is available to be deployed into an existing MNode PPG and AvSet. `-MNodeSku` specifies the DNode VM SKU — in Silk architecture MNode is composed of DNode instances. Test NICs attach to the existing VNet/subnet — no new VNet, NSG, PPG, or AvSet is created, so existing resources must be provided. IPs are pre-selected from the top of the subnet's usable range to avoid conflicts with existing cluster addresses. Use to validate DNode expansion capacity before committing to production changes.
 
 ---

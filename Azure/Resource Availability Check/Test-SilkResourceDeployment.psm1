@@ -41,7 +41,7 @@ function Test-SilkResourceDeployment
                 - MNodes: Media nodes that coordinate data operations and storage management
                 - DNodes: Data nodes that store and serve data (deployed as part of MNode groups)
 
-                Function Version: 1.0.4
+                Function Version: 1.1.0
                 Supporting Silk SDP configurations from Flex: v2.10.86 VisionOS: v8.6.10
 
             .PARAMETER SubscriptionId
@@ -2341,18 +2341,6 @@ function Test-SilkResourceDeployment
                                         Write-Host $("      → Try: Review error details in HTML report for specific troubleshooting steps") -ForegroundColor DarkGray
                                     }
 
-                                # Show per-VM error details only for failures that could not be automatically classified
-                                $unresolvedConsoleFindings = @($ReportData.Deployment.ValidationFindings | Where-Object { $_.FailureCategory -in @("Other", "Unknown") })
-                                if ($unresolvedConsoleFindings.Count -gt 0)
-                                    {
-                                        Write-Host $("`n  Unresolved Failure Details:") -ForegroundColor Yellow
-                                        foreach ($finding in $unresolvedConsoleFindings)
-                                            {
-                                                $findingColor = if ($finding.FailureCategory -eq "Unknown") { "Red" } else { "Gray" }
-                                                Write-Host $("    {0} ({1}, Zone {2}): [{3}] {4}" -f $finding.VMName, $finding.VMSku, $finding.TestedZone, $finding.FailureCategory, $finding.ErrorMessage) -ForegroundColor $findingColor
-                                            }
-                                    }
-
                                 # Hint about -DisableCleanup for deeper investigation
                                 if (-not $ReportData.Configuration.DisableCleanup)
                                     {
@@ -2772,6 +2760,19 @@ function Test-SilkResourceDeployment
                                                     }
                                                 $configCardContent += @"
                 <strong>$("MNode Sizes:")</strong> $($mNodeSizeDisplay) TiB<br>
+                <strong>$("Total DNodes:")</strong> $($totalDNodes)<br>
+"@
+                                            } `
+                                        elseif ($ReportData.Configuration.MNodeSKUs.Count -gt 0)
+                                            {
+                                                $mNodeSkuDisplay = ($ReportData.Configuration.MNodeSKUs | ForEach-Object { $("{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix) }) -join $(", ")
+                                                $totalDNodes = 0
+                                                foreach ($mNodeSku in $ReportData.Configuration.MNodeSKUs)
+                                                    {
+                                                        $totalDNodes += $mNodeSku.dNodeCount
+                                                    }
+                                                $configCardContent += @"
+                <strong>$("MNode SKU(s):")</strong> $($mNodeSkuDisplay)<br>
                 <strong>$("Total DNodes:")</strong> $($totalDNodes)<br>
 "@
                                             }
@@ -3327,48 +3328,6 @@ function Test-SilkResourceDeployment
                 <strong>$("Affected SKUs:")</strong> $($affectedSkus -join ", ")<br>
                 <strong>$("Issue:")</strong> $("Azure did not return a classifiable error and failure could not be deduced from quota/SKU context.")<br>
                 <strong>$("Solutions:")</strong> $("Re-run with -DisableCleanup and check Azure Activity Log for detailed error information.")<br><br>
-"@
-                                            }
-
-                                        # Per-VM detail table: only show if there are Other/Unknown issues that
-                                        # could not be reclassified, so the user has granular detail to investigate
-                                        $unresolvedFindings = @($ReportData.Deployment.ValidationFindings | Where-Object { $_.FailureCategory -in @("Other", "Unknown") })
-                                        if ($unresolvedFindings.Count -gt 0)
-                                            {
-                                                $validationFindingsHtml += @"
-                <br><strong>$("Unresolved Failure Details:")</strong><br>
-                <table style="margin-top: 5px; font-size: 0.9em;">
-                    <thead>
-                        <tr>
-                            <th>$("VM Name")</th>
-                            <th>$("SKU")</th>
-                            <th>$("Zone")</th>
-                            <th>$("Category")</th>
-                            <th>$("Error Details")</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-"@
-                                                foreach ($finding in $unresolvedFindings)
-                                                    {
-                                                        $errorDisplay = if ($finding.ErrorMessage) { $finding.ErrorMessage } else { $("No error details available") }
-                                                        $errorCodeDisplay = if ($finding.ErrorCode) { $(" [{0}]" -f $finding.ErrorCode) } else { $("") }
-                                                        $zoneDisplay = if ($finding.TestedZone) { $finding.TestedZone } else { $("N/A") }
-
-                                                        $validationFindingsHtml += @"
-                        <tr>
-                            <td>$($finding.VMName)</td>
-                            <td>$($finding.VMSku)</td>
-                            <td>$($zoneDisplay)</td>
-                            <td><span class="status-error">$($finding.FailureCategory)</span></td>
-                            <td>$($errorDisplay)$($errorCodeDisplay)</td>
-                        </tr>
-"@
-                                                    }
-
-                                                $validationFindingsHtml += @"
-                    </tbody>
-                </table>
 "@
                                             }
 
@@ -9675,15 +9634,27 @@ function Test-SilkResourceDeployment
                     }
 
                 # MNode SKU Support Analysis
-                if($MNodeSize -and $mNodeObjectUnique)
+                if(($MNodeSize -or $MNodeSku) -and $mNodeObjectUnique)
                     {
                         foreach ($mNodeType in $mNodeObjectUnique)
                             {
                                 $mNodeSkuName = "{0}{1}{2}" -f $mNodeType.vmSkuPrefix, $mNodeType.vCPU, $mNodeType.vmSkuSuffix
                                 $mNodeSupportedSKU = $locationSupportedSKU | Where-Object { $_.Name -eq $mNodeSkuName }
-                                $mNodeInstanceCount = $MNodeSize | Group-Object | Select-Object Name, Count
-                                $mNodevCPUCount = $mNodeType.vCPU * $mNodeType.dNodeCount * ($mNodeInstanceCount | Where-Object { $_.Name -eq $mNodeType.PhysicalSize }).Count
                                 $mNodeSKUFamilyQuota = $computeQuotaUsage | Where-Object { $_.Name.LocalizedValue -eq $mNodeType.QuotaFamily }
+
+                                # Instance count and vCPU total differ by parameter path:
+                                # $MNodeSize path: instance count comes from how many times each PhysicalSize appears in the list
+                                # $MNodeSku path:  instance count comes from how many times this SKU appears in $MNodeSku
+                                if ($MNodeSize)
+                                    {
+                                        $mNodeSizeGrouped = $MNodeSize | Group-Object | Select-Object Name, Count
+                                        $instanceCount    = ($mNodeSizeGrouped | Where-Object { $_.Name -eq $mNodeType.PhysicalSize }).Count
+                                    } `
+                                else
+                                    {
+                                        $instanceCount = ($MNodeSku | Where-Object { $_ -eq $mNodeSkuName }).Count
+                                    }
+                                $mNodevCPUCount = $mNodeType.vCPU * $mNodeType.dNodeCount * $instanceCount
 
                                 # Check if quota family exists in Azure
                                 if (-not $mNodeSKUFamilyQuota)
@@ -9716,7 +9687,6 @@ function Test-SilkResourceDeployment
                                         $mNodeZoneSupportStatus = "Error"
                                     }
 
-                                $instanceCount = ($mNodeInstanceCount | Where-Object { $_.Name -eq $mNodeType.PhysicalSize }).Count
                                 $skuSupportData += [PSCustomObject]@{
                                     ComponentType = "MNode"
                                     SKUName = $mNodeSkuName

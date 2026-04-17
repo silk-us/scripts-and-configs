@@ -135,7 +135,7 @@ Install-Module -Name Az.Accounts,Az.Resources,Az.Compute,Az.Network -Repository 
 ```powershell
 Test-SilkResourceDeployment -ChecklistJSON "C:\configs\silk-deployment.json"
 ```
-   >Loads Subscription, Resource Group, Region and Zone parameters from the JSON file as well as CNode Type and Count, MNode Size and Count.
+   >Loads Subscription, Resource Group, Region and Zone parameters from the JSON file as well as CNode Type and Count, and MNode Size selection (list length determines instance count).
 
 #### 2. Test by Friendly Name CNode and Lsv4 MNode by Size Selections
 ```powershell

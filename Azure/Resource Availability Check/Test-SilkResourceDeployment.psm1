@@ -1817,6 +1817,10 @@ function Test-SilkResourceDeployment
                                                                             AvSetsReferenced    = @()
                                                                             NICsCreated         = 0
                                                                             TotalResources      = 0
+                                                                            IsExistingInfraRun  = $false
+                                                                            IsPV2Run            = $false
+                                                                            ExistingVNetName    = $("")
+                                                                            ExistingSubnetName  = $("")
                                                                         }
                                             }
 
@@ -2796,8 +2800,10 @@ function Test-SilkResourceDeployment
                                     } `
                                 elseif ($ReportData.Deployment.Attempted)
                                     {
-                                        $summaryStatusClass = if ($totalDeployed -eq $totalExpected -and $infra.VNetCreated -and $infra.NSGCreated) { $("status-success") } else { $("status-warning") }
-                                        $summaryStatusText = if ($totalDeployed -eq $totalExpected -and $infra.VNetCreated -and $infra.NSGCreated) { $("✓ SUCCESSFUL") } else { $("⚠ ISSUES DETECTED") }
+                                        # For existing infra runs, network was not created — that's expected, not an issue
+                                        $networkOk = $infra.IsExistingInfraRun -or ($infra.VNetCreated -and $infra.NSGCreated)
+                                        $summaryStatusClass = if ($totalDeployed -eq $totalExpected -and $networkOk) { $("status-success") } else { $("status-warning") }
+                                        $summaryStatusText = if ($totalDeployed -eq $totalExpected -and $networkOk) { $("✓ SUCCESSFUL") } else { $("⚠ ISSUES DETECTED") }
                                         $deployedCountClass = if ($totalDeployed -eq $totalExpected) { $("status-success") } else { $("status-warning") }
                                     } `
                                 else
@@ -3152,6 +3158,12 @@ function Test-SilkResourceDeployment
                 <strong>$("AvSet Names:")</strong> $($avSetRefNames)<br>
                 <strong>$("Fault Domains:")</strong> $($infra.AvSetsReferenced[0].PlatformFaultDomainCount)<br>
                 <strong>$("Update Domains:")</strong> $($infra.AvSetsReferenced[0].PlatformUpdateDomainCount)
+"@
+                                    } `
+                                elseif ($infra.IsPV2Run)
+                                    {
+                                        @"
+                <strong>$("Availability Sets:")</strong> <span class="status-info">$("N/A (PV2 Architecture)")</span>
 "@
                                     } `
                                 else
@@ -3817,14 +3829,36 @@ function Test-SilkResourceDeployment
                                 $infrastructureHtml = $("")
                                 if ($ReportData.Deployment.Attempted)
                                     {
-                                        $vnetStatusClass = if ($infra.VNetCreated) { $("checkmark") } else { $("error-mark") }
-                                        $vnetStatusText = if ($infra.VNetCreated) { $("✓ Created") } else { $("✗ Not Created") }
-                                        $nsgStatusClass = if ($infra.NSGCreated) { $("checkmark") } else { $("error-mark") }
-                                        $nsgStatusText = if ($infra.NSGCreated) { $("✓ Created") } else { $("✗ Not Created") }
-
-                                        $vnetDetailsHtml = if ($infra.VNetCreated) { $("<strong>$("VNet Name:")</strong> {0}<br><strong>$("Address Space:")</strong> {1}<br>" -f $infra.VNetName, $infra.VNetAddressSpace) } else { $("") }
-                                        $nsgDetailsHtml = if ($infra.NSGCreated) { $("<strong>$("NSG Name:")</strong> {0}<br>" -f $infra.NSGName) } else { $("") }
-                                        $subnetHtml = if ($infra.VNetCreated) { $("✓ Management subnet configured") } else { $("✗ Not configured") }
+                                        if ($infra.IsExistingInfraRun)
+                                            {
+                                                $vnetStatusClass = $("checkmark")
+                                                $vnetStatusText  = $("✓ Using Existing")
+                                                $nsgStatusClass  = $("status-info")
+                                                $nsgStatusText   = $("N/A (Existing Infrastructure)")
+                                                $vnetDetailsHtml = $("<strong>$("VNet Name:")</strong> {0}<br>" -f $infra.ExistingVNetName)
+                                                $nsgDetailsHtml  = $("")
+                                                $subnetHtml      = $("✓ Using existing subnet '{0}'" -f $infra.ExistingSubnetName)
+                                            } `
+                                        elseif ($infra.VNetCreated)
+                                            {
+                                                $vnetStatusClass = $("checkmark")
+                                                $vnetStatusText  = $("✓ Created")
+                                                $nsgStatusClass  = if ($infra.NSGCreated) { $("checkmark") } else { $("error-mark") }
+                                                $nsgStatusText   = if ($infra.NSGCreated) { $("✓ Created") } else { $("✗ Not Created") }
+                                                $vnetDetailsHtml = $("<strong>$("VNet Name:")</strong> {0}<br><strong>$("Address Space:")</strong> {1}<br>" -f $infra.VNetName, $infra.VNetAddressSpace)
+                                                $nsgDetailsHtml  = if ($infra.NSGCreated) { $("<strong>$("NSG Name:")</strong> {0}<br>" -f $infra.NSGName) } else { $("") }
+                                                $subnetHtml      = $("✓ Management subnet configured")
+                                            } `
+                                        else
+                                            {
+                                                $vnetStatusClass = $("error-mark")
+                                                $vnetStatusText  = $("✗ Not Created")
+                                                $nsgStatusClass  = $("error-mark")
+                                                $nsgStatusText   = $("✗ Not Created")
+                                                $vnetDetailsHtml = $("")
+                                                $nsgDetailsHtml  = $("")
+                                                $subnetHtml      = $("✗ Not configured")
+                                            }
 
                                         $networkPPGCount = if ($infra.PPGsCreated.Count -gt 0) { 1 } else { 0 }
 
@@ -9989,6 +10023,10 @@ function Test-SilkResourceDeployment
                 $reportData.Deployment.Infrastructure.AvSetsReferenced  = if ($existingAvailabilitySet) { @($existingAvailabilitySet) } else { @() }
                 $reportData.Deployment.Infrastructure.NICsCreated       = $deployedNICs.Count
                 $reportData.Deployment.Infrastructure.TotalResources    = $totalResourcesCreated
+                $reportData.Deployment.Infrastructure.IsExistingInfraRun = $isExistingInfraRun
+                $reportData.Deployment.Infrastructure.IsPV2Run           = ($isExistingInfraRun -and $PSBoundParameters.ContainsKey('PV2MNodeArchitecture'))
+                $reportData.Deployment.Infrastructure.ExistingVNetName   = if ($existingVNet)    { $existingVNet.Name }    else { $("") }
+                $reportData.Deployment.Infrastructure.ExistingSubnetName = if ($existingSubnet)  { $existingSubnet.Name }  else { $("") }
 
                 # Silk Component Summary
                 $reportData.SilkSummary                                 = $silkSummary

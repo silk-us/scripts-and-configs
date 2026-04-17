@@ -10362,7 +10362,7 @@ function Test-SilkResourceDeployment
                                                 -Status $("Removing NIC: {0} ({1} of {2})" -f $_.Name, $nicCount, $totalNICs) `
                                                 -PercentComplete $nicProgress
 
-                                            Write-Host $("Removing network interface: {0} in resource group: {1}" -f $_.Name, $ResourceGroupName);
+                                            Write-Verbose -Message $("Removing network interface: {0} in resource group: {1}" -f $_.Name, $ResourceGroupName)
 
                                             Remove-AzNetworkInterface -ResourceGroupName $ResourceGroupName -Name $_.Name -Force:$true -AsJob | Out-Null
                                         }

@@ -6312,6 +6312,9 @@ function Test-SilkResourceDeployment
                                                     }
                                             }
 
+                                        # Count how many times this specific SKU appears in $mNodeObject (instances, not DNodes)
+                                        $mNodeInstanceCount = @($mNodeObject | Where-Object { $("{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix) -eq $mNodeSkuName }).Count
+
                                         $skuSupportData += [PSCustomObject]@{
                                             ComponentType       = $("MNode")
                                             SKUName             = $mNodeSkuName
@@ -6321,7 +6324,7 @@ function Test-SilkResourceDeployment
                                             vCPUCount           = $mNodevCPUCount
                                             SKUFamilyQuota      = $mNodeSKUFamilyQuota
                                             QuotaFamilyName     = $mNodeType.QuotaFamily
-                                            InstanceCount       = $mNodeType.dNodeCount
+                                            InstanceCount       = $mNodeInstanceCount
                                             PhysicalSize        = $mNodeType.PhysicalSize
                                             AvailableZones      = if ($mNodeSupportedSKU.LocationInfo.Zones) { $mNodeSupportedSKU.LocationInfo.Zones } else { @() }
                                         }

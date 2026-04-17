@@ -4677,9 +4677,9 @@ function Test-SilkResourceDeployment
                                         return
                                     }
                             } `
-                        elseif ($PV2MNodeArchitecture)
+                        elseif ($PSBoundParameters.ContainsKey('PV2MNodeArchitecture'))
                             {
-                                Write-Verbose -Message $("{0}-PV2MNodeArchitecture specified — skipping Availability Set validation. Test CNodes will deploy into PPG '{1}' only." -f $messagePrefix, $ProximityPlacementGroupName)
+                                Write-Verbose -Message $("{0}PV2 MNode architecture — Availability Set validation skipped. Test CNodes will deploy into PPG '{1}' only." -f $messagePrefix, $ProximityPlacementGroupName)
                             }
 
                         # -----------------------------------------------------------------------

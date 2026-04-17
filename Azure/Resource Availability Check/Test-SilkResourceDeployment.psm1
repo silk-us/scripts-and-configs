@@ -99,7 +99,7 @@ function Test-SilkResourceDeployment
             .PARAMETER DNodeCountAdditional
                 Number of additional DNode VMs to test for deployment capacity in existing MNode infrastructure.
                 Used with the "DNode by SKU Existing Infra" parameter set together with ProximityPlacementGroupName,
-                AvailabilitySetName, VNetName, SubnetName, and DNodeSku. Range: 1-6.
+                AvailabilitySetName, VNetName, SubnetName, and MNodeSku. Range: 1-6.
                 Example: 3 (tests if 3 additional DNodes can be added to an existing MNode availability set)
 
             .PARAMETER ProximityPlacementGroupName
@@ -9512,7 +9512,13 @@ function Test-SilkResourceDeployment
                 # This section calculates all report data once to ensure consistency
 
                 # Infrastructure Summary Data
-                $totalExpectedVMs = ($CNodeCount + ($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum) * $zonesToDeploy.Count
+                # For DNode existing infra runs the deployment is exactly $DNodeCountAdditional VMs,
+                # not a full mNodeObject dNodeCount (16). All other paths use the standard formula.
+                $totalExpectedVMs = if ($DNodeCountAdditional -and $isExistingInfraRun) {
+                    $DNodeCountAdditional * $zonesToDeploy.Count
+                } else {
+                    ($CNodeCount + ($mNodeObject | ForEach-Object { $_.dNodeCount } | Measure-Object -Sum).Sum) * $zonesToDeploy.Count
+                }
                 $successfulVMs = ($deploymentReport | Where-Object { $_.VMStatus -eq "✓ Deployed" }).Count
                 $failedVMs = ($deploymentReport | Where-Object { $_.VMStatus -like "*Failed*" -or $_.VMStatus -like "*Not Allocated*" -or $_.VMStatus -like "*Allocation Rejected*" }).Count
                 $nonSuccessfulVMs = $deploymentReport | Where-Object { $_.ProvisioningState -ne "Succeeded" -and $_.ProvisioningState -ne "Not Found" -and $_.ProvisioningState -ne "Allocation Failed" }

@@ -104,14 +104,15 @@ function Test-SilkResourceDeployment
 
             .PARAMETER ProximityPlacementGroupName
                 Name of an existing Proximity Placement Group to use for CNode or DNode expansion validation.
-                Must be specified together with AvailabilitySetName, VNetName, and SubnetName.
+                Searched subscription-wide — the PPG does not need to be in the same resource group as the test deployment.
                 The PPG must be in the same region (and zone if applicable) as the target deployment.
                 Example: "my-silk-cnode-ppg"
 
             .PARAMETER AvailabilitySetName
-                Name of an existing Availability Set to use for CNode or DNode expansion validation.
-                Must be specified together with ProximityPlacementGroupName, VNetName, and SubnetName.
+                Name of an existing Availability Set to use for CNode or DNode expansion validation (L-series MNode pattern only).
+                Searched subscription-wide — the AvSet does not need to be in the same resource group as the test deployment.
                 The AvSet must be associated with the specified ProximityPlacementGroupName.
+                Not applicable to PV2 MNode architecture — use -PV2MNodeArchitecture instead.
                 Example: "my-silk-cnode-avset"
 
             .PARAMETER VNetName
@@ -4579,15 +4580,22 @@ function Test-SilkResourceDeployment
                         $processSection = $("Existing Infrastructure Validation")
                         $messagePrefix = $("[{0}] " -f $processSection)
 
-                        Write-Verbose -Message $("{0}Validating existing infrastructure resources in resource group '{1}'." -f $messagePrefix, $ResourceGroupName)
+                        Write-Verbose -Message $("{0}Validating existing infrastructure resources in subscription '{1}'." -f $messagePrefix, $SubscriptionId)
 
-                        # Validate Proximity Placement Group exists
+                        # Validate Proximity Placement Group exists — search subscription-wide; PPG may be in a different RG than the test RG
                         try
                             {
-                                Write-Verbose -Message $("{0}Checking for Proximity Placement Group '{1}' in resource group '{2}'..." -f $messagePrefix, $ProximityPlacementGroupName, $ResourceGroupName)
-                                $existingProximityPlacementGroup = Get-AzProximityPlacementGroup -ResourceGroupName $ResourceGroupName -Name $ProximityPlacementGroupName -ErrorAction Stop
+                                Write-Verbose -Message $("{0}Searching subscription for Proximity Placement Group '{1}'..." -f $messagePrefix, $ProximityPlacementGroupName)
+                                $existingProximityPlacementGroup = Get-AzProximityPlacementGroup -ErrorAction Stop | Where-Object { $_.Name -eq $ProximityPlacementGroupName } | Select-Object -First 1
 
-                                Write-Verbose -Message $("{0}✓ Successfully validated Proximity Placement Group '{1}' exists in '{2}' region." -f $messagePrefix, $ProximityPlacementGroupName, $existingProximityPlacementGroup.Location)
+                                if (-not $existingProximityPlacementGroup)
+                                    {
+                                        Write-Error -Message $("{0}Proximity Placement Group '{1}' was not found in subscription '{2}'. Verify the name and ensure you have appropriate permissions to access it." -f $messagePrefix, $ProximityPlacementGroupName, $SubscriptionId)
+                                        $validationError = $true
+                                        return
+                                    }
+
+                                Write-Verbose -Message $("{0}✓ Found Proximity Placement Group '{1}' in resource group '{2}' (region: {3})." -f $messagePrefix, $ProximityPlacementGroupName, $existingProximityPlacementGroup.ResourceGroupName, $existingProximityPlacementGroup.Location)
 
                                 # Validate PPG region matches target region
                                 if($existingProximityPlacementGroup.Location -ne $Region)
@@ -4618,21 +4626,29 @@ function Test-SilkResourceDeployment
                             } `
                         catch
                             {
-                                Write-Error -Message $("{0}Failed to retrieve Proximity Placement Group '{1}' in resource group '{2}'. Error: {3}" -f $messagePrefix, $ProximityPlacementGroupName, $ResourceGroupName, $_.Exception.Message)
-                                Write-Error -Message $("{0}Ensure the Proximity Placement Group exists and you have appropriate permissions to access it." -f $messagePrefix)
+                                Write-Error -Message $("{0}Failed to search for Proximity Placement Group '{1}' in subscription '{2}'. Error: {3}" -f $messagePrefix, $ProximityPlacementGroupName, $SubscriptionId, $_.Exception.Message)
+                                Write-Error -Message $("{0}Ensure you have appropriate permissions to list Proximity Placement Groups in the subscription." -f $messagePrefix)
                                 $validationError = $true
                                 return
                             }
 
                         # Validate Availability Set exists (skipped for PV2 architecture — no AvSet in PV2 pattern)
+                        # Search subscription-wide; AvSet may be in a different RG than the test RG
                         if ($AvailabilitySetName)
                             {
                                 try
                                     {
-                                        Write-Verbose -Message $("{0}Checking for Availability Set '{1}' in resource group '{2}'..." -f $messagePrefix, $AvailabilitySetName, $ResourceGroupName)
-                                        $existingAvailabilitySet = Get-AzAvailabilitySet -ResourceGroupName $ResourceGroupName -Name $AvailabilitySetName -ErrorAction Stop
+                                        Write-Verbose -Message $("{0}Searching subscription for Availability Set '{1}'..." -f $messagePrefix, $AvailabilitySetName)
+                                        $existingAvailabilitySet = Get-AzAvailabilitySet -ErrorAction Stop | Where-Object { $_.Name -eq $AvailabilitySetName } | Select-Object -First 1
 
-                                        Write-Verbose -Message $("{0}✓ Successfully validated Availability Set '{1}' exists with {2} fault domains and {3} update domains." -f $messagePrefix, $AvailabilitySetName, $existingAvailabilitySet.PlatformFaultDomainCount, $existingAvailabilitySet.PlatformUpdateDomainCount)
+                                        if (-not $existingAvailabilitySet)
+                                            {
+                                                Write-Error -Message $("{0}Availability Set '{1}' was not found in subscription '{2}'. Verify the name and ensure you have appropriate permissions to access it." -f $messagePrefix, $AvailabilitySetName, $SubscriptionId)
+                                                $validationError = $true
+                                                return
+                                            }
+
+                                        Write-Verbose -Message $("{0}✓ Found Availability Set '{1}' in resource group '{2}' with {3} fault domains and {4} update domains." -f $messagePrefix, $AvailabilitySetName, $existingAvailabilitySet.ResourceGroupName, $existingAvailabilitySet.PlatformFaultDomainCount, $existingAvailabilitySet.PlatformUpdateDomainCount)
 
                                         # Validate AvSet region matches target region
                                         if($existingAvailabilitySet.Location -ne $Region)
@@ -4671,8 +4687,8 @@ function Test-SilkResourceDeployment
                                     } `
                                 catch
                                     {
-                                        Write-Error -Message $("{0}Failed to retrieve Availability Set '{1}' in resource group '{2}'. Error: {3}" -f $messagePrefix, $AvailabilitySetName, $ResourceGroupName, $_.Exception.Message)
-                                        Write-Error -Message $("{0}Ensure the Availability Set exists and you have appropriate permissions to access it." -f $messagePrefix)
+                                        Write-Error -Message $("{0}Failed to search for Availability Set '{1}' in subscription '{2}'. Error: {3}" -f $messagePrefix, $AvailabilitySetName, $SubscriptionId, $_.Exception.Message)
+                                        Write-Error -Message $("{0}Ensure you have appropriate permissions to list Availability Sets in the subscription." -f $messagePrefix)
                                         $validationError = $true
                                         return
                                     }

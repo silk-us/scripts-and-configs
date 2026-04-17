@@ -713,7 +713,8 @@ function Test-SilkResourceDeployment
                 $DNodeCountAdditional,
 
                 # Existing Proximity Placement Group name to use for CNode/DNode deployment validation
-                # Must be specified together with AvailabilitySetName, VNetName, and SubnetName
+                # For L-series sets: must be specified together with AvailabilitySetName, VNetName, and SubnetName
+                # For PV2 set: specified with VNetName and SubnetName only (no AvailabilitySetName)
                 [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter the name of the existing Proximity Placement Group the test CNodes will deploy into. Example: my-silk-cnode-ppg"))]
                 [Parameter(ParameterSetName = "CNode by SKU Existing Infra PV2",    Mandatory = $true, HelpMessage = $("Enter the name of the existing Proximity Placement Group the test CNodes will deploy into. Example: my-silk-cnode-ppg"))]
                 [Parameter(ParameterSetName = "DNode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter the name of the existing Proximity Placement Group the test DNodes will deploy into. Example: my-silk-mnode-ppg"))]
@@ -4579,14 +4580,6 @@ function Test-SilkResourceDeployment
                         $messagePrefix = $("[{0}] " -f $processSection)
 
                         Write-Verbose -Message $("{0}Validating existing infrastructure resources in resource group '{1}'." -f $messagePrefix, $ResourceGroupName)
-
-                        # Both parameters must be provided together
-                        if((-not $ProximityPlacementGroupName) -or (-not $AvailabilitySetName))
-                            {
-                                Write-Error -Message $("{0}Both ProximityPlacementGroupName and AvailabilitySetName parameters must be specified together. Only one parameter was provided." -f $messagePrefix)
-                                $validationError = $true
-                                return
-                            }
 
                         # Validate Proximity Placement Group exists
                         try

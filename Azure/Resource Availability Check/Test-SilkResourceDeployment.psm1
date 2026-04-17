@@ -181,15 +181,11 @@ function Test-SilkResourceDeployment
 
             .PARAMETER MnodeSku
                 Array of explicit Azure VM SKUs for MNode/DNode VMs when using direct SKU specification.
-                Alternative to size-based selection for advanced scenarios requiring specific SKU control.
-                Valid Lsv3 SKUs: "Standard_L8s_v3", "Standard_L16s_v3", "Standard_L32s_v3"
-                Valid Laosv4 SKUs: "Standard_L2aos_v4", "Standard_L4aos_v4", "Standard_L8aos_v4", "Standard_L12aos_v4", "Standard_L16aos_v4"
+                Each item in the list represents one MNode instance — the list length IS the instance count (max 4).
+                To deploy multiple MNodes of the same SKU, include that SKU multiple times in the list.
+                Example: @("Standard_L8as_v4","Standard_L8as_v4","Standard_L16as_v4") deploys 3 MNodes (two L8 + one L16).
                 Also used in "DNode by SKU Existing Infra" mode to specify the DNode VM SKU. In Silk architecture,
                 MNode SKU == DNode SKU; MNodeSku is the correct parameter for both roles.
-
-            .PARAMETER MNodeCount
-                Number of MNode instances when using explicit SKU specification (MnodeSku parameter).
-                Range: 1-4
 
             .PARAMETER NoHTMLReport
                 Switch parameter to disable HTML report generation.
@@ -344,9 +340,10 @@ function Test-SilkResourceDeployment
                 Uses the standard resource name prefix "sdp-test" to identify and remove test resources.
 
             .EXAMPLE
-                Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-prod-rg" -Region "westus2" -Zone "2" -CNodeSku "Standard_E64s_v5" -CNodeCount 4 -MNodeSku @("Standard_L16s_v3","Standard_L32s_v3") -MNodeCount 2 -DisableCleanup
+                Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-prod-rg" -Region "westus2" -Zone "2" -CNodeSku "Standard_E64s_v5" -CNodeCount 4 -MNodeSku @("Standard_L16s_v3","Standard_L16s_v3","Standard_L32s_v3") -DisableCleanup
 
-                Advanced deployment using explicit SKUs: 4 CNodes with E64s_v5 SKU and 2 MNode groups with mixed L-series SKUs.
+                Advanced deployment using explicit SKUs: 4 CNodes with E64s_v5 SKU and 3 MNodes using L-series SKUs (two Standard_L16s_v3 + one Standard_L32s_v3).
+                Each item in -MNodeSku represents one MNode instance; repeat a SKU to deploy multiple of the same type.
                 Disables automatic cleanup so resources remain for extended testing or manual validation.
 
             .EXAMPLE
@@ -820,21 +817,11 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true, HelpMessage = $("Select MNode VM SKU. LSv3 options: Standard_L8s_v3 (19.5 TiB), Standard_L16s_v3 (39.1 TiB), Standard_L32s_v3 (78.2 TiB). Lasv3 options: Standard_L8as_v3 (19.5 TiB), Standard_L16as_v3 (39.1 TiB), Standard_L32as_v3 (78.2 TiB). LSv4 options: Standard_L8s_v4 (19.5 TiB), Standard_L16s_v4 (39.1 TiB), Standard_L32s_v4 (78.2 TiB). Lasv4 options: Standard_L8as_v4 (19.5 TiB), Standard_L16as_v4 (39.1 TiB), Standard_L32as_v4 (78.2 TiB). Laosv4 options: Standard_L2aos_v4 (14.67 TiB) to Standard_L16aos_v4 (117.35 TiB)."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true, HelpMessage = $("Select MNode VM SKU. LSv3 options: Standard_L8s_v3 (19.5 TiB), Standard_L16s_v3 (39.1 TiB), Standard_L32s_v3 (78.2 TiB). Lasv3 options: Standard_L8as_v3 (19.5 TiB), Standard_L16as_v3 (39.1 TiB), Standard_L32as_v3 (78.2 TiB). LSv4 options: Standard_L8s_v4 (19.5 TiB), Standard_L16s_v4 (39.1 TiB), Standard_L32s_v4 (78.2 TiB). Lasv4 options: Standard_L8as_v4 (19.5 TiB), Standard_L16as_v4 (39.1 TiB), Standard_L32as_v4 (78.2 TiB). Laosv4 options: Standard_L2aos_v4 (14.67 TiB) to Standard_L16aos_v4 (117.35 TiB)."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true, HelpMessage = $("Select MNode VM SKU. LSv3 options: Standard_L8s_v3 (19.5 TiB), Standard_L16s_v3 (39.1 TiB), Standard_L32s_v3 (78.2 TiB). Lasv3 options: Standard_L8as_v3 (19.5 TiB), Standard_L16as_v3 (39.1 TiB), Standard_L32as_v3 (78.2 TiB). LSv4 options: Standard_L8s_v4 (19.5 TiB), Standard_L16s_v4 (39.1 TiB), Standard_L32s_v4 (78.2 TiB). Lasv4 options: Standard_L8as_v4 (19.5 TiB), Standard_L16as_v4 (39.1 TiB), Standard_L32as_v4 (78.2 TiB). Laosv4 options: Standard_L2aos_v4 (14.67 TiB) to Standard_L16aos_v4 (117.35 TiB)."))]
-                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter the DNode VM SKU matching the existing MNode availability set. In Silk architecture MNode SKU == DNode SKU. Example: Standard_L8aos_v4"))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",    Mandatory = $true, HelpMessage = $("Enter exactly one DNode VM SKU matching the existing MNode group. In Silk architecture MNode SKU == DNode SKU. Only a single SKU is permitted — you are targeting a specific existing MNode group. Example: Standard_L8aos_v4"))]
                 [ValidateSet("Standard_L2aos_v4", "Standard_L4aos_v4", "Standard_L8aos_v4", "Standard_L12aos_v4", "Standard_L16aos_v4", "Standard_L8as_v3", "Standard_L16as_v3", "Standard_L32as_v3", "Standard_L8as_v4", "Standard_L16as_v4", "Standard_L32as_v4", "Standard_L8s_v3", "Standard_L16s_v3", "Standard_L32s_v3", "Standard_L8s_v4", "Standard_L16s_v4", "Standard_L32s_v4")]
+                [ValidateCount(1, 4)]
                 [string[]]
                 $MNodeSku,
-
-                # Number of MNode instances when using explicit SKU specification (range: 1-4)
-                # Determines how many DNode VMs are deployed per MNode configuration
-                # Production typically uses 1 MNode per capacity requirement
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true, HelpMessage = $("Enter number (1-4) of MNode instances (x16 DNode VMs) to deploy."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true, HelpMessage = $("Enter number (1-4) of MNode instances (x16 DNode VMs) to deploy."))]
-                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true, HelpMessage = $("Enter number (1-4) of MNode instances (x16 DNode VMs) to deploy."))]
-                [ValidateRange(1, 4)]
-                [ValidateNotNullOrEmpty()]
-                [int]
-                $MNodeCount,
 
                 # Subscription ID to compare zone alignment against the deployment subscription *Requires AvailablityZonePeering feature to be registered*
                 # When specified, the script ouputs the deployment region and zone alignment with this given subscription
@@ -1586,6 +1573,16 @@ function Test-SilkResourceDeployment
                 # ========================================================================================================
                 # Flag used throughout to gate VNet/NSG/subnet creation and steer deployment paths
                 $isExistingInfraRun = ($PSCmdlet.ParameterSetName -in @("CNode by SKU Existing Infra", "CNode by SKU Existing Infra PV2", "DNode by SKU Existing Infra"))
+
+                # DNode existing infra: exactly one MNode SKU must be specified — you are targeting a single existing
+                # MNode group whose DNode SKU is known. [ValidateCount(1,4)] on $MNodeSku permits 1-4 items globally
+                # (for the standard multi-MNode path), so this per-set constraint requires a runtime check.
+                if ($PSCmdlet.ParameterSetName -eq "DNode by SKU Existing Infra" -and $MNodeSku.Count -gt 1)
+                    {
+                        Write-Error -Message $("Only one SKU may be specified in -MNodeSku for DNode existing infrastructure expansion. You are targeting a specific existing MNode group — provide the single DNode VM SKU that matches that group. {0} SKUs were provided: {1}" -f $MNodeSku.Count, ($MNodeSku -join ", "))
+                        $validationError = $true
+                        return
+                    }
 
                 # Map CNodeCountAdditional to CNodeCount so the rest of the CNode deployment path works unchanged
                 if($CNodeCountAdditional)
@@ -5060,14 +5057,12 @@ function Test-SilkResourceDeployment
                     {
                         $MNodeSize | ForEach-Object { $nodeSize = $_; $mNodeObject.Add($($mNodeSizeObject | Where-Object { $_.PhysicalSize -eq $nodeSize -and (!$selectedMNodeSuffix -or $_.vmSkuSuffix -eq $selectedMNodeSuffix) } | Select-Object -First 1)) }
                     } `
-                elseif ($MNodeCount -and $MNodeSku)
+                elseif ($MNodeSku)
                     {
+                        # Each item in $MNodeSku represents one MNode instance — list length IS the instance count
                         foreach ($sku in $MNodeSku)
                             {
-                                for ($node = 1; $node -le $MNodeCount; $node++)
-                                    {
-                                        $mNodeObject.Add($($mNodeSizeObject | Where-Object { $("{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix) -eq $sku } | Select-Object -First 1))
-                                    }
+                                $mNodeObject.Add($($mNodeSizeObject | Where-Object { $("{0}{1}{2}" -f $_.vmSkuPrefix, $_.vCPU, $_.vmSkuSuffix) -eq $sku } | Select-Object -First 1))
                             }
                     } `
                 elseif ($CNodeCount -and !$mNodeSizeParamProvided)

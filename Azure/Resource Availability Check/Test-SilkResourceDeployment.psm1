@@ -41,7 +41,6 @@ function Test-SilkResourceDeployment
                 - MNodes: Media nodes that coordinate data operations and storage management
                 - DNodes: Data nodes that store and serve data (deployed as part of MNode groups)
 
-                Function Version: 1.1.0
                 Supporting Silk SDP configurations from Flex: v2.10.86 VisionOS: v8.6.10
 
             .PARAMETER SubscriptionId
@@ -451,7 +450,7 @@ function Test-SilkResourceDeployment
                 No objects are returned to the pipeline; all output is informational console display and/or HTML report file.
 
             .NOTES
-                Function Version: 1.97.9-1.0.1
+                Function Version: 1.97.9-1.1.0
                 Supporting Silk SDP configurations from version 1.97.9
                 Author: Silk Cloud Infrastructure Team
 
@@ -1397,7 +1396,7 @@ function Test-SilkResourceDeployment
         begin
             {
                 $StartTime     = Get-Date
-                $scriptVersion = '1.0.4'
+                $scriptVersion = '1.1.0'
 
                 Write-Host $("Test-SilkResourceDeployment v{0} — {1}" -f $scriptVersion, $StartTime.ToString("yyyy-MM-dd HH:mm:ss")) -ForegroundColor Cyan
 

@@ -1,4 +1,4 @@
-
+﻿
 
 function Test-SilkResourceDeployment
     {
@@ -277,7 +277,7 @@ function Test-SilkResourceDeployment
                 ChecklistJSON configuration with different deployment subscription. Use this switch to maintain the
                 originally specified zone. Availability Zone alignment will still be reported on if available.
 
-            .PARAMETER GenerateReportOnly
+            .PARAMETER QuotaSKUReport
                 Switch parameter to generate an SKU availability and quota analysis report without deploying any resources.
                 Performs comprehensive SKU support checking across all Silk-supported VM families, quota analysis,
                 and zone availability validation. Produces both console output and an HTML report.
@@ -295,7 +295,7 @@ function Test-SilkResourceDeployment
             .PARAMETER TestAllZones
                 Switch parameter to expand testing across all availability zones in the specified region.
                 When combined with -TestAllSKUFamilies, deploys test VMs for each SKU in every supported zone.
-                When combined with -GenerateReportOnly, produces a multi-zone SKU support matrix.
+                When combined with -QuotaSKUReport, produces a multi-zone SKU support matrix.
                 The -Zone parameter is still used for zone alignment reporting purposes.
                 Results include a per-zone availability matrix in both console and HTML report output.
                 Not compatible with -ProximityPlacementGroupName or -AvailabilitySetName: existing infrastructure
@@ -366,7 +366,7 @@ function Test-SilkResourceDeployment
                 Useful for validating cluster expansion scenarios before actual production deployment.
 
             .EXAMPLE
-                Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -GenerateReportOnly
+                Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -QuotaSKUReport
 
                 Generates an SKU availability and quota analysis report without deploying any resources.
                 Analyzes all Silk-supported VM families for zone support, quota availability, and region presence.
@@ -1262,7 +1262,7 @@ function Test-SilkResourceDeployment
                 [Parameter(ParameterSetName = "ChecklistJSON",                  Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Generate a report without deploying resources."))]
                 [Switch]
-                $GenerateReportOnly,
+                $QuotaSKUReport,
 
                 # Switch to test all SKU families in the specified region and zone
                 # Expands testing beyond the requested CNode/MNode to all Silk-supported VM families
@@ -4991,7 +4991,7 @@ function Test-SilkResourceDeployment
                     } `
                 else
                     {
-                        if ($GenerateReportOnly -or $TestAllSKUFamilies)
+                        if ($QuotaSKUReport -or $TestAllSKUFamilies)
                             {
                                 # Report Only / SKU Family Test mode - no specific CNode/MNode configuration required
                                 Write-Verbose -Message $("Report/SKU test mode - CNode/MNode configuration skipped. All families will be tested from the full size object arrays.")
@@ -5032,7 +5032,7 @@ function Test-SilkResourceDeployment
                         # CNode-only deployment scenario - no MNode configuration required
                         Write-Verbose -Message $("CNode-only deployment mode - no MNode resources will be created.")
                     } `
-                elseif ($GenerateReportOnly -and !$CNodeCount -and !$mNodeSizeParamProvided)
+                elseif ($QuotaSKUReport -and !$CNodeCount -and !$mNodeSizeParamProvided)
                     {
                         # Report Only mode - no CNode/MNode configuration required
                         Write-Verbose -Message $("Report Only mode - no CNode/MNode configuration specified. SKU/Quota analysis will use raw region data only.")
@@ -5886,11 +5886,11 @@ function Test-SilkResourceDeployment
                 # discovery and remaining begin block setup. The process block will populate
                 # $reportData, render reports, and return.
                 #
-                # Report-only gate: only GenerateReportOnly triggers the early return.
+                # SKU Quota Report gate: only QuotaSKUReport triggers the early return.
                 # TestAllZones now proceeds to deployment when combined with deployment
                 # parameter sets (CNode, MNode, SKU Family Test) to enable per-zone
                 # allocation testing.
-                if ($GenerateReportOnly)
+                if ($QuotaSKUReport)
                     {
                         Write-Verbose -Message $("Report/analysis mode - environment validation and SKU/quota data collection complete. Skipping VM image discovery.")
                         return
@@ -6167,9 +6167,9 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 # Populates the centralized report data object with all available analysis
                 # data collected during the begin block, then renders reports and returns.
-                # Report-only gate: only GenerateReportOnly triggers report-only mode.
+                # Report-only gate: only QuotaSKUReport triggers report-only mode.
                 # TestAllZones with deployment parameters proceeds to deployment.
-                if ($GenerateReportOnly)
+                if ($QuotaSKUReport)
                     {
                         Write-Verbose -Message $("Report/analysis mode - generating report without deployment")
 
@@ -6444,7 +6444,7 @@ function Test-SilkResourceDeployment
                 # ===============================================================================
                 # SKU Family Deployment Test - Actual VM Allocation Testing
                 # ===============================================================================
-                # When TestAllSKUFamilies is set WITHOUT GenerateReportOnly, deploy one test VM
+                # When TestAllSKUFamilies is set WITHOUT QuotaSKUReport, deploy one test VM
                 # per SKU family to validate real allocation availability. Each VM is deployed
                 # as a standalone instance (no PPG or Availability Set) since we are testing
                 # individual SKU families that cannot share placement constraints.

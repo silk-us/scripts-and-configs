@@ -946,29 +946,8 @@ function Test-SilkResourceDeployment
                 # Switch to enable JSON report output (replaces console and HTML output)
                 # When specified, generates a structured JSON file for automated parsing and trend analysis.
                 # Does not run console or HTML report output.
-                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
-                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
-                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
-                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
-                [Parameter(ParameterSetName = "CNode by SKU Existing Infra PV2",    Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
-                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
-                [Parameter(ParameterSetName = "Mnode Lsv4",                     Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
-                [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
-                [Parameter(ParameterSetName = "Mnode Lasv4",                    Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
-                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
                 [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Output results as a structured JSON file only, suppressing console and HTML reports."))]
                 [Switch]
@@ -976,29 +955,8 @@ function Test-SilkResourceDeployment
 
                 # Azure Storage account name to upload the JSON report blob to
                 # Requires -JSONReport. Uses the current Az session identity (Storage Blob Data Contributor).
-                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
-                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
-                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
-                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
-                [Parameter(ParameterSetName = "CNode by SKU Existing Infra PV2",    Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
-                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
-                [Parameter(ParameterSetName = "Mnode Lsv4",                     Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
-                [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
-                [Parameter(ParameterSetName = "Mnode Lasv4",                    Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
-                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
                 [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Azure Storage account name to upload the JSON report to as a blob. Requires -JSONReport."))]
                 [string]
@@ -1006,29 +964,8 @@ function Test-SilkResourceDeployment
 
                 # Azure Blob Storage container name for the JSON report
                 # Defaults to 'silk-deployment-reports' if not specified
-                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
-                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
-                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
-                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
-                [Parameter(ParameterSetName = "CNode by SKU Existing Infra PV2",    Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
-                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
-                [Parameter(ParameterSetName = "Mnode Lsv4",                     Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
-                [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
-                [Parameter(ParameterSetName = "Mnode Lasv4",                    Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
-                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
                 [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Azure Blob Storage container name. Defaults to 'silk-deployment-reports'."))]
                 [string]
@@ -1036,29 +973,8 @@ function Test-SilkResourceDeployment
 
                 # Optional folder path prefix within the container (e.g. "eastus/2026")
                 # The JSON filename is appended automatically
-                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
-                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
-                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
                 [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
-                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
-                [Parameter(ParameterSetName = "CNode by SKU Existing Infra PV2",    Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
                 [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
-                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
-                [Parameter(ParameterSetName = "Mnode Lsv4",                     Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
-                [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
-                [Parameter(ParameterSetName = "Mnode Lasv4",                    Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
-                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
                 [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
                 [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $false, HelpMessage = $("Optional folder path prefix within the storage container. The filename is appended automatically."))]
                 [string]
@@ -4335,8 +4251,7 @@ function Test-SilkResourceDeployment
                         try
                             {
                                 $exportObject | ConvertTo-Json -Depth 20 | Out-File -FilePath $OutputPath -Encoding utf8 -Force
-                                Write-Host -Message $("✓ JSON report generated successfully!") -ForegroundColor Green
-                                Write-Host -Message $("📄 Report saved to: `"{0}`"" -f $OutputPath) -ForegroundColor Cyan
+                                Write-Host -Message $("JSON report generated: {0}" -f $OutputPath) -ForegroundColor Cyan
                             } `
                         catch
                             {
@@ -4352,7 +4267,7 @@ function Test-SilkResourceDeployment
                                         $blobName     = if ($StorageBlobPath) { $("{0}/{1}" -f $StorageBlobPath.TrimEnd("/"), $jsonFileName) } else { $jsonFileName }
                                         $storageCtx   = New-AzStorageContext -StorageAccountName $StorageAccountName -UseConnectedAccount
                                         Set-AzStorageBlobContent -Context $storageCtx -Container $StorageContainerName -File $OutputPath -Blob $blobName -Force | Out-Null
-                                        Write-Host -Message $("✓ JSON report uploaded to blob: {0}/{1}" -f $StorageContainerName, $blobName) -ForegroundColor Green
+                                        Write-Host -Message $("JSON report uploaded to blob: {0}/{1}" -f $StorageContainerName, $blobName) -ForegroundColor Cyan
                                     } `
                                 catch
                                     {

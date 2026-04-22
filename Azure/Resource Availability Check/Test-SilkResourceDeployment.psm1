@@ -1453,7 +1453,7 @@ function Test-SilkResourceDeployment
         begin
             {
                 $StartTime     = Get-Date
-                $scriptVersion = '1.1.0'
+                $scriptVersion = '1.3.0'
 
                 Write-Host $("Test-SilkResourceDeployment v{0} — {1}" -f $scriptVersion, $StartTime.ToString("yyyy-MM-dd HH:mm:ss")) -ForegroundColor Cyan
 

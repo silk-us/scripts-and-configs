@@ -1713,6 +1713,7 @@ function Test-SilkResourceDeployment
                                                 Duration            = $null
                                                 ReportMode          = $("Standard")
                                                 TestAllZones        = $false
+                                                TestedZones         = @()
                                                 ParameterSetName    = $("")
                                                 ReportLabel         = $("Silk")
                                             }
@@ -3877,7 +3878,8 @@ function Test-SilkResourceDeployment
                                 $failedVMsHtml = if ($isSKUTestMode) { if ($skuUniqueFailedCount -gt 0) { $("<strong>$("Failed:")</strong> <span class='status-error'>{0}</span><br>" -f $skuUniqueFailedCount) } else { $("") } } elseif ($totalFailed -gt 0) { $("<strong>$("Failed Deployments:")</strong> <span class='status-error'>{0}</span><br>" -f $totalFailed) } else { $("") }
 
                                 # Build the location segment used in title, heading, and filename
-                                $titleLocationPart = $($(if ($ReportData.Configuration.Region) { $(" {0}" -f $ReportData.Configuration.Region) } else { $("") }) + $(if ($ReportData.Metadata.TestAllZones) { $(" All Zones") } elseif ($ReportData.Configuration.Zone) { $(" zone {0}" -f $ReportData.Configuration.Zone) } else { $("") }))
+                                $zoneLabelPart     = if ($ReportData.Metadata.TestedZones.Count -gt 1) { $(" Zones {0}" -f ($ReportData.Metadata.TestedZones -join ", ")) } elseif ($ReportData.Metadata.TestedZones.Count -eq 1) { $(" zone {0}" -f $ReportData.Metadata.TestedZones[0]) } else { $("") }
+                                $titleLocationPart = $(if ($ReportData.Configuration.Region) { $(" {0}" -f $ReportData.Configuration.Region) } else { $("") }) + $zoneLabelPart
 
                                 # Assemble the full HTML document
                                 $htmlContent = @"
@@ -6038,10 +6040,6 @@ function Test-SilkResourceDeployment
                                     }
                             }
 
-                        $reportRegionPart = if ($Region) { $("-{0}" -f $Region) } else { $("") }
-                        $reportZonePart   = if ($TestAllZones) { $("-AllZones") } elseif ($Zone) { $("-{0}" -f $Zone) } else { $("") }
-                        $ReportFullPath = Join-Path -Path $ReportOutputPath -ChildPath $("{0}{1}{2}-DeploymentReport_{3}.html" -f $ReportLabel, $reportRegionPart, $reportZonePart, $StartTime.ToString("yyyyMMdd_HHmmss"))
-                        Write-Verbose -Message $("HTML report will be generated at: {0}" -f $ReportFullPath)
                     }
 
 
@@ -6175,6 +6173,7 @@ function Test-SilkResourceDeployment
                         # Report metadata
                         $reportData.Metadata.ReportMode         = if ($TestAllSKUFamilies -and $TestAllZones) { $("SKU Family Test + Multi-Zone") } elseif ($TestAllSKUFamilies) { $("SKU Family Test") } elseif ($TestAllZones) { $("Multi-Zone Analysis") } else { $("Report Only") }
                         $reportData.Metadata.TestAllZones       = $TestAllZones
+                        $reportData.Metadata.TestedZones        = if ($TestAllZones -and $zoneResults) { @($zoneResults.Zones) } else { @($Zone) }
                         $reportData.Metadata.StartTime          = Get-Date
                         $reportData.Metadata.ParameterSetName   = $PSCmdlet.ParameterSetName
 
@@ -6429,7 +6428,7 @@ function Test-SilkResourceDeployment
                                     }
 
                                 $reportRegionPart = if ($Region) { $("-{0}" -f $Region) } else { $("") }
-                                $reportZonePart   = if ($TestAllZones) { $("-AllZones") } elseif ($Zone) { $("-{0}" -f $Zone) } else { $("") }
+                                $reportZonePart   = if ($reportData.Metadata.TestedZones.Count -gt 1) { $("-Zones-{0}" -f ($reportData.Metadata.TestedZones -join "-")) } elseif ($reportData.Metadata.TestedZones.Count -eq 1) { $("-{0}" -f $reportData.Metadata.TestedZones[0]) } else { $("") }
                                 $ReportFullPath = Join-Path -Path $ReportOutputPath -ChildPath $("{0}{1}{2}-DeploymentReport_{3}.html" -f $ReportLabel, $reportRegionPart, $reportZonePart, $StartTime.ToString("yyyyMMdd_HHmmss"))
                                 Write-Verbose -Message $("Report Only mode - HTML report will be generated at: {0}" -f $ReportFullPath)
                                 Write-SilkHTMLReport -ReportData $reportData -OutputPath $ReportFullPath
@@ -6452,6 +6451,7 @@ function Test-SilkResourceDeployment
                         # Report metadata
                         $reportData.Metadata.ReportMode         = if ($TestAllZones) { $("SKU Family Deployment Test + Multi-Zone") } else { $("SKU Family Deployment Test") }
                         $reportData.Metadata.TestAllZones       = $TestAllZones
+                        $reportData.Metadata.TestedZones        = if ($TestAllZones -and $zoneResults) { @($zoneResults.Zones) } else { @($Zone) }
                         $reportData.Metadata.StartTime          = Get-Date
                         $reportData.Metadata.ParameterSetName   = $PSCmdlet.ParameterSetName
 
@@ -7214,7 +7214,7 @@ function Test-SilkResourceDeployment
                                     }
 
                                 $reportRegionPart = if ($Region) { $("-{0}" -f $Region) } else { $("") }
-                                $reportZonePart   = if ($TestAllZones) { $("-AllZones") } elseif ($Zone) { $("-{0}" -f $Zone) } else { $("") }
+                                $reportZonePart   = if ($reportData.Metadata.TestedZones.Count -gt 1) { $("-Zones-{0}" -f ($reportData.Metadata.TestedZones -join "-")) } elseif ($reportData.Metadata.TestedZones.Count -eq 1) { $("-{0}" -f $reportData.Metadata.TestedZones[0]) } else { $("") }
                                 $ReportFullPath = Join-Path -Path $ReportOutputPath -ChildPath $("{0}{1}{2}-DeploymentReport_{3}.html" -f $ReportLabel, $reportRegionPart, $reportZonePart, $StartTime.ToString("yyyyMMdd_HHmmss"))
                                 Write-SilkHTMLReport -ReportData $reportData -OutputPath $ReportFullPath
                             }
@@ -9947,6 +9947,7 @@ function Test-SilkResourceDeployment
                 $reportData.Configuration.Zone                  = $Zone
                 $reportData.Metadata.ReportMode                 = if ($TestAllZones) { $("Deployment + Multi-Zone") } else { $("Deployment") }
                 $reportData.Metadata.TestAllZones               = $TestAllZones
+                $reportData.Metadata.TestedZones                = if ($TestAllZones -and $zonesToDeploy) { @($zonesToDeploy) } else { @($Zone) }
                 $reportData.Configuration.CNodeSKU              = if ($cNodeObject) { $cNodeVMSku } else { $("") }
                 $reportData.Configuration.CNodeFriendlyName     = if ($cNodeObject) { $cNodeObject.cNodeFriendlyName } else { $("") }
                 $reportData.Configuration.CNodeCount            = $CNodeCount
@@ -10053,6 +10054,11 @@ function Test-SilkResourceDeployment
 
                         Update-StagedProgress -SectionName 'Reporting' -SectionCurrentStep 1 -SectionTotalSteps 2 `
                             -DetailMessage $("Generating HTML report...")
+
+                        $reportRegionPart = if ($Region) { $("-{0}" -f $Region) } else { $("") }
+                        $reportZonePart   = if ($reportData.Metadata.TestedZones.Count -gt 1) { $("-Zones-{0}" -f ($reportData.Metadata.TestedZones -join "-")) } elseif ($reportData.Metadata.TestedZones.Count -eq 1) { $("-{0}" -f $reportData.Metadata.TestedZones[0]) } else { $("") }
+                        $ReportFullPath   = Join-Path -Path $ReportOutputPath -ChildPath $("{0}{1}{2}-DeploymentReport_{3}.html" -f $ReportLabel, $reportRegionPart, $reportZonePart, $StartTime.ToString("yyyyMMdd_HHmmss"))
+                        Write-Verbose -Message $("HTML report will be generated at: {0}" -f $ReportFullPath)
 
                         Write-SilkHTMLReport -ReportData $reportData -OutputPath $ReportFullPath
 

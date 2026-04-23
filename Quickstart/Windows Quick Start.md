@@ -11,12 +11,12 @@ Set-MSDSMGlobalDefaultLoadBalancePolicy -Policy LQD
 Enable-MSDSMAutomaticClaim -BusType iSCSI -Confirm:$false
 Set-MPIOSetting -NewPathVerificationState Enabled
 Set-MPIOSetting -NewPathVerificationPeriod 1
-Set-MPIOSetting -NewDiskTimeout 100
+Set-MPIOSetting -NewPDORemovePeriod 20
 Set-MPIOSetting -NewRetryCount 3
 Set-MPIOSetting -newRetryInterval 3
 Set-MPIOSetting -CustomPathRecovery Enabled
 Set-MPIOSetting -NewPathRecoveryInterval 20
-Set-MPIOSetting -NewPDORemovePeriod 20
+Set-MPIOSetting -NewDiskTimeout 100
 Get-ScheduledTask ScheduledDefrag | Disable-ScheduledTask
 Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\FileSystem" -Name DisableDeleteNotification -Value 1
 ```

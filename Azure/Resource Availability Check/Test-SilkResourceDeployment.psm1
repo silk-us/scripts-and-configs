@@ -3880,7 +3880,7 @@ function Test-SilkResourceDeployment
 
                                 # Build the location segment used in title, heading, and filename
                                 $isAllZones        = ($ReportData.Metadata.RegionZones.Count -gt 0) -and ($ReportData.Metadata.TestedZones.Count -eq $ReportData.Metadata.RegionZones.Count)
-                                $zoneLabelPart     = if ($isAllZones) { $(" All Zones") } elseif ($ReportData.Metadata.TestedZones.Count -gt 1) { $(" Zones {0}" -f ($ReportData.Metadata.TestedZones -join ", ")) } elseif ($ReportData.Metadata.TestedZones.Count -eq 1) { $(" zone {0}" -f $ReportData.Metadata.TestedZones[0]) } else { $("") }
+                                $zoneLabelPart     = if ($ReportData.Configuration.Zone -eq $("Zoneless")) { $(" Zoneless") } elseif ($isAllZones) { $(" All Zones") } elseif ($ReportData.Metadata.TestedZones.Count -gt 1) { $(" Zones {0}" -f ($ReportData.Metadata.TestedZones -join ", ")) } elseif ($ReportData.Metadata.TestedZones.Count -eq 1) { $(" zone {0}" -f $ReportData.Metadata.TestedZones[0]) } else { $("") }
                                 $titleLocationPart = $(if ($ReportData.Configuration.Region) { $(" {0}" -f $ReportData.Configuration.Region) } else { $("") }) + $zoneLabelPart
 
                                 # Assemble the full HTML document
@@ -6176,7 +6176,7 @@ function Test-SilkResourceDeployment
                         # Report metadata
                         $reportData.Metadata.ReportMode         = if ($TestAllSKUFamilies -and $TestAllZones) { $("SKU Family Test + Multi-Zone") } elseif ($TestAllSKUFamilies) { $("SKU Family Test") } elseif ($TestAllZones) { $("Multi-Zone Analysis") } else { $("Report Only") }
                         $reportData.Metadata.TestAllZones       = $TestAllZones
-                        $reportData.Metadata.TestedZones        = if ($TestAllZones -and $zoneResults) { @($zoneResults.Zones) } else { @($Zone) }
+                        $reportData.Metadata.TestedZones        = if ($Zone -eq $("Zoneless")) { @($("Zoneless")) } elseif ($TestAllZones -and $zoneResults) { @($zoneResults.Zones) } else { @($Zone) }
                         $reportData.Metadata.StartTime          = Get-Date
                         $reportData.Metadata.ParameterSetName   = $PSCmdlet.ParameterSetName
 
@@ -6432,7 +6432,7 @@ function Test-SilkResourceDeployment
 
                                 $reportRegionPart = if ($Region) { $("-{0}" -f $Region) } else { $("") }
                                 $isAllZones       = ($reportData.Metadata.RegionZones.Count -gt 0) -and ($reportData.Metadata.TestedZones.Count -eq $reportData.Metadata.RegionZones.Count)
-                                $reportZonePart   = if ($isAllZones) { $("-AllZones") } elseif ($reportData.Metadata.TestedZones.Count -gt 1) { $("-Zones-{0}" -f ($reportData.Metadata.TestedZones -join "-")) } elseif ($reportData.Metadata.TestedZones.Count -eq 1) { $("-{0}" -f $reportData.Metadata.TestedZones[0]) } else { $("") }
+                                $reportZonePart   = if ($Zone -eq $("Zoneless")) { $("-Zoneless") } elseif ($isAllZones) { $("-AllZones") } elseif ($reportData.Metadata.TestedZones.Count -gt 1) { $("-Zones-{0}" -f ($reportData.Metadata.TestedZones -join "-")) } elseif ($reportData.Metadata.TestedZones.Count -eq 1) { $("-{0}" -f $reportData.Metadata.TestedZones[0]) } else { $("") }
                                 $ReportFullPath = Join-Path -Path $ReportOutputPath -ChildPath $("{0}{1}{2}-DeploymentReport_{3}.html" -f $ReportLabel, $reportRegionPart, $reportZonePart, $StartTime.ToString("yyyyMMdd_HHmmss"))
                                 Write-Verbose -Message $("Report Only mode - HTML report will be generated at: {0}" -f $ReportFullPath)
                                 Write-SilkHTMLReport -ReportData $reportData -OutputPath $ReportFullPath
@@ -6455,7 +6455,7 @@ function Test-SilkResourceDeployment
                         # Report metadata
                         $reportData.Metadata.ReportMode         = if ($TestAllZones) { $("SKU Family Deployment Test + Multi-Zone") } else { $("SKU Family Deployment Test") }
                         $reportData.Metadata.TestAllZones       = $TestAllZones
-                        $reportData.Metadata.TestedZones        = if ($TestAllZones -and $zoneResults) { @($zoneResults.Zones) } else { @($Zone) }
+                        $reportData.Metadata.TestedZones        = if ($Zone -eq $("Zoneless")) { @($("Zoneless")) } elseif ($TestAllZones -and $zoneResults) { @($zoneResults.Zones) } else { @($Zone) }
                         $reportData.Metadata.StartTime          = Get-Date
                         $reportData.Metadata.ParameterSetName   = $PSCmdlet.ParameterSetName
 
@@ -7219,7 +7219,7 @@ function Test-SilkResourceDeployment
 
                                 $reportRegionPart = if ($Region) { $("-{0}" -f $Region) } else { $("") }
                                 $isAllZones       = ($reportData.Metadata.RegionZones.Count -gt 0) -and ($reportData.Metadata.TestedZones.Count -eq $reportData.Metadata.RegionZones.Count)
-                                $reportZonePart   = if ($isAllZones) { $("-AllZones") } elseif ($reportData.Metadata.TestedZones.Count -gt 1) { $("-Zones-{0}" -f ($reportData.Metadata.TestedZones -join "-")) } elseif ($reportData.Metadata.TestedZones.Count -eq 1) { $("-{0}" -f $reportData.Metadata.TestedZones[0]) } else { $("") }
+                                $reportZonePart   = if ($Zone -eq $("Zoneless")) { $("-Zoneless") } elseif ($isAllZones) { $("-AllZones") } elseif ($reportData.Metadata.TestedZones.Count -gt 1) { $("-Zones-{0}" -f ($reportData.Metadata.TestedZones -join "-")) } elseif ($reportData.Metadata.TestedZones.Count -eq 1) { $("-{0}" -f $reportData.Metadata.TestedZones[0]) } else { $("") }
                                 $ReportFullPath = Join-Path -Path $ReportOutputPath -ChildPath $("{0}{1}{2}-DeploymentReport_{3}.html" -f $ReportLabel, $reportRegionPart, $reportZonePart, $StartTime.ToString("yyyyMMdd_HHmmss"))
                                 Write-SilkHTMLReport -ReportData $reportData -OutputPath $ReportFullPath
                             }
@@ -9822,9 +9822,10 @@ function Test-SilkResourceDeployment
                                     {
                                         $sku = $finding.VMSku
                                         $vmZone = $finding.TestedZone
-                                        $quotaOk = $skuQuotaSufficient.ContainsKey($sku) -and $skuQuotaSufficient[$sku]
-                                        # Check zone support for the SPECIFIC zone this VM was deployed to
-                                        $zoneOk = $skuAvailableZones.ContainsKey($sku) -and ($skuAvailableZones[$sku] -contains "$vmZone")
+                                        $quotaOk    = $skuQuotaSufficient.ContainsKey($sku) -and $skuQuotaSufficient[$sku]
+                                        # Check zone support for the SPECIFIC zone this VM was deployed to; Zoneless skips zone intersection
+                                        $isZoneless = ($vmZone -eq $("Zoneless") -or [string]::IsNullOrWhiteSpace($vmZone))
+                                        $zoneOk     = $skuAvailableZones.ContainsKey($sku) -and ($isZoneless -or ($skuAvailableZones[$sku] -contains "$vmZone"))
 
                                         $originalCategory = $finding.FailureCategory
                                         if ($quotaOk -and $zoneOk)
@@ -9952,7 +9953,7 @@ function Test-SilkResourceDeployment
                 $reportData.Configuration.Zone                  = $Zone
                 $reportData.Metadata.ReportMode                 = if ($TestAllZones) { $("Deployment + Multi-Zone") } else { $("Deployment") }
                 $reportData.Metadata.TestAllZones               = $TestAllZones
-                $reportData.Metadata.TestedZones                = if ($TestAllZones -and $zonesToDeploy) { @($zonesToDeploy) } else { @($Zone) }
+                $reportData.Metadata.TestedZones                = if ($Zone -eq $("Zoneless")) { @($("Zoneless")) } elseif ($TestAllZones -and $zonesToDeploy) { @($zonesToDeploy) } else { @($Zone) }
                 $reportData.Configuration.CNodeSKU              = if ($cNodeObject) { $cNodeVMSku } else { $("") }
                 $reportData.Configuration.CNodeFriendlyName     = if ($cNodeObject) { $cNodeObject.cNodeFriendlyName } else { $("") }
                 $reportData.Configuration.CNodeCount            = $CNodeCount
@@ -10062,7 +10063,7 @@ function Test-SilkResourceDeployment
 
                         $reportRegionPart = if ($Region) { $("-{0}" -f $Region) } else { $("") }
                         $isAllZones       = ($reportData.Metadata.RegionZones.Count -gt 0) -and ($reportData.Metadata.TestedZones.Count -eq $reportData.Metadata.RegionZones.Count)
-                        $reportZonePart   = if ($isAllZones) { $("-AllZones") } elseif ($reportData.Metadata.TestedZones.Count -gt 1) { $("-Zones-{0}" -f ($reportData.Metadata.TestedZones -join "-")) } elseif ($reportData.Metadata.TestedZones.Count -eq 1) { $("-{0}" -f $reportData.Metadata.TestedZones[0]) } else { $("") }
+                        $reportZonePart   = if ($Zone -eq $("Zoneless")) { $("-Zoneless") } elseif ($isAllZones) { $("-AllZones") } elseif ($reportData.Metadata.TestedZones.Count -gt 1) { $("-Zones-{0}" -f ($reportData.Metadata.TestedZones -join "-")) } elseif ($reportData.Metadata.TestedZones.Count -eq 1) { $("-{0}" -f $reportData.Metadata.TestedZones[0]) } else { $("") }
                         $ReportFullPath   = Join-Path -Path $ReportOutputPath -ChildPath $("{0}{1}{2}-DeploymentReport_{3}.html" -f $ReportLabel, $reportRegionPart, $reportZonePart, $StartTime.ToString("yyyyMMdd_HHmmss"))
                         Write-Verbose -Message $("HTML report will be generated at: {0}" -f $ReportFullPath)
 

@@ -1,10 +1,38 @@
+<#
+.SYNOPSIS
+    Diagnoses whether an AWS subnet can reach the public internet (IGW path).
+
+.DESCRIPTION
+    Checks the four things that must be true for an instance in the subnet to talk
+    to CloudFormation/S3/DNS via an Internet Gateway:
+      1. An IGW is attached to the subnet's VPC.
+      2. The subnet's route table has 0.0.0.0/0 -> that IGW.
+      3. The subnet has MapPublicIpOnLaunch enabled.
+      4. The subnet's NACL allows outbound 443, outbound UDP 53, and inbound ephemeral.
+    Each check prints [ OK ] or [FAIL] with a short detail line.
+
+.PARAMETER SubnetId
+    The subnet to test (e.g. subnet-0abc123).
+
+.PARAMETER Region
+    AWS region the subnet lives in.
+
+.PARAMETER ProfileName
+    Optional named AWS credential profile.
+
+.EXAMPLE
+    .\Test-SubnetPublicAccess.ps1 -SubnetId subnet-0abc123 -Region us-east-1
+
+.EXAMPLE
+    .\Test-SubnetPublicAccess.ps1 -SubnetId subnet-0abc123 -Region us-east-1 -ProfileName silk-dev
+#>
 param(
-     [Parameter(Mandatory)]
-     [string]$SubnetId,
-     [Parameter(Mandatory)]
-     [string]$Region,
-     [Parameter()]
-     [string]$ProfileName
+    [Parameter(Mandatory)]
+    [string]$SubnetId,
+    [Parameter(Mandatory)]
+    [string]$Region,
+    [Parameter()]
+    [string]$ProfileName
 )
 
 $awsCommon = @{ Region = $Region }

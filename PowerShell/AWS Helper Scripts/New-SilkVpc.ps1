@@ -1,3 +1,58 @@
+<#
+.SYNOPSIS
+    Builds (or tears down) a Silk-ready VPC: subnets, IGW, route table, and per-subnet NACLs.
+
+.DESCRIPTION
+    Create mode lays out a flex / management / data1 / data2 / internal1 / internal2
+    subnet set sized by -ClusterSize, attaches an IGW, registers a public route
+    table for the flex and management subnets, and applies the spec NACL rules to
+    each subnet. Pass -OpenVPC to additionally allow any/any traffic between
+    subnets at the NACL layer (rule 1000).
+
+    Pass -VpcId in Create mode to reuse an existing VPC; the script will associate
+    the computed CIDR as a secondary block if needed and create everything else
+    against that VPC.
+
+    Cleanup mode reverses the build: deletes IGWs, subnets, route tables, custom
+    NACLs, custom SGs, and the VPC itself.
+
+.PARAMETER Region
+    AWS region.
+
+.PARAMETER IpSpace
+    Base IP for the VPC CIDR (Create mode). Combined with -ClusterSize to derive the prefix.
+
+.PARAMETER ClusterSize
+    small (/24), medium (/23), or large (/21). Drives subnet prefix and offsets.
+
+.PARAMETER ProfileName
+    Optional named AWS credential profile.
+
+.PARAMETER NameTag
+    Prefix for the Name tag on every resource created. Default 'silk'.
+
+.PARAMETER OpenVPC
+    Adds rule 1000 to every NACL allowing any/any to/from the VPC CIDR.
+    Off by default; the strict spec rules apply on their own.
+
+.PARAMETER VpcId
+    In Create mode: reuse this VPC instead of creating one. In Cleanup mode: target this VPC.
+
+.PARAMETER Cleanup
+    Switch to Cleanup mode. Tears down the VPC tagged "$NameTag-vpc" (or -VpcId if specified).
+
+.EXAMPLE
+    .\New-SilkVpc.ps1 -Region us-east-1 -IpSpace 10.50.0.0 -ClusterSize small
+
+.EXAMPLE
+    .\New-SilkVpc.ps1 -Region us-east-1 -IpSpace 10.50.0.0 -ClusterSize medium -OpenVPC
+
+.EXAMPLE
+    .\New-SilkVpc.ps1 -Region us-east-1 -IpSpace 10.60.0.0 -VpcId vpc-0abc123
+
+.EXAMPLE
+    .\New-SilkVpc.ps1 -Region us-east-1 -Cleanup -VpcId vpc-0abc123
+#>
 [CmdletBinding(DefaultParameterSetName='Create')]
 param(
     [Parameter(Mandatory)]

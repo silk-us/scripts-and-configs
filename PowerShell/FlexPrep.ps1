@@ -123,28 +123,31 @@ $quotaList = @(
 
 Write-Host "Retrieving compute SKUs and locations..." -ForegroundColor Cyan
 # $allskus = get-azComputeResourceSku
-if (!$global) {
-    $allLocations = Get-AzLocation | Where-Object GeographyGroup -match 'US'
-} else {
-    $allLocations = Get-AzLocation
-}
-
 if ($location) {
-    $allLocations = $allLocations | Where-Object {$_.Location -eq $location}
+    $allLocations = Get-AzLocation | Where-Object {$_.Location -eq $location}
+} else {
+    # No region specified: scan every Azure region. Errors per-region are suppressed below.
+    $allLocations = Get-AzLocation
 }
 
 Write-Host "Processing $($allLocations.Count) location(s) for quota information..." -ForegroundColor Cyan
 $locationQuotas = @()
 
 foreach ($l in $allLocations) {
-     try {
-        $allskus = get-azComputeResourceSku -Location $l.Location 
-        $usage = Get-AzVMUsage -Location $l.Location -ErrorAction SilentlyContinue
+    $allskus = $null
+    $usage = $null
+    try {
+        $allskus = Get-AzComputeResourceSku -Location $l.Location -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+        $usage = Get-AzVMUsage -Location $l.Location -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
     } catch {
-        Write-Host "    Error processing location $($l.Location): $($_.Exception.Message)" -ForegroundColor Red
+        # Suppress: region inaccessible / not authorized / unavailable
+    }
+
+    if (-not $usage -and -not $allskus) {
+        Write-Host "  Skipping location (no data available): $($l.Location)" -ForegroundColor DarkGray
         continue
     }
-   
+
     Write-Host "  Checking quotas for location: $($l.Location)" -ForegroundColor Gray
     $clusterLocation = New-Object PSObject  
     $clusterLocation | Add-Member -MemberType NoteProperty -Name "Location" -Value $l.Location

@@ -128,9 +128,12 @@ Write-Host "Retrieving compute SKUs and locations..." -ForegroundColor Cyan
 # $allskus = get-azComputeResourceSku
 if ($location) {
     $allLocations = Get-AzLocation | Where-Object {$_.Location -eq $location}
-} else {
-    # No region specified: scan every Azure region. Errors per-region are suppressed below.
+} elseif ($global) {
+    # -global: scan every Azure region. Errors per-region are suppressed below.
     $allLocations = Get-AzLocation
+} else {
+    # Default: US regions only.
+    $allLocations = Get-AzLocation | Where-Object GeographyGroup -match 'US'
 }
 
 Write-Host "Processing $($allLocations.Count) location(s) for quota information..." -ForegroundColor Cyan

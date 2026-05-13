@@ -111,13 +111,16 @@ try {
 $quotaList = @(
     "Total Regional vCPUs"
     "Standard Dav6 Family vCPUs"
-    "Standard Lasv 4 Family vCPUs"
-    "Standard Eav6 Family vCPUs"
+    "Standard DASv5 Family vCPUs"
     "Standard DSv5 Family vCPUs"
-    "Standard LSv3 Family vCPUs"
-    "Standard ESv5 Family vCPUs"
+    "Standard Eav6 Family vCPUs"
     "Standard EASv5 Family vCPUs"
+    "Standard ESv5 Family vCPUs"
+    "Standard LASv3 Family vCPUs"
+    "Standard LSv3 Family vCPUs"
+    "Standard Lasv 4 Family vCPUs"
     "Standard Laosv4 Family vCPUs"
+    "Standard Lsv 4 Family vCPUs"
     "PremiumV2TotalDiskSizeInGB"
 )
 

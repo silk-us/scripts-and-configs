@@ -1,5 +1,14 @@
 ## User Managed Identity (UMI) Deployment Guide
 
+- [UMI vs SMI Deployments](#umi-vs-smi-deployments)
+- [Required Infrastructure for UMI Deployments](#required-infrastructure-for-umi-deployments)
+  - [1. Network Security Groups (NSGs)](#1-network-security-groups-nsgs)
+  - [2. Virtual Network Subnets](#2-virtual-network-subnets)
+  - [3. User Managed Identity](#3-user-managed-identity)
+  - [4. Custom RBAC Roles and Assignments](#4-custom-rbac-roles-and-assignments)
+- [Resource Creation Order](#resource-creation-order)
+- [What Gets Pre-Created vs What Flex Creates](#what-gets-pre-created-vs-what-flex-creates)
+
 Silk Flex deployments on Azure can utilize either a System Managed Identity (SMI) or a User Managed Identity (UMI).
 For either deployment method, if the account used during the deployment can not have `owner` role assignment to the Resource Group these roles detail the minimum required permissions to deploy from the Azure marketplace:
 - [resource-group-role](../Role%20JSONs/example-silk-deployment-operator-flex-rg-role.json)

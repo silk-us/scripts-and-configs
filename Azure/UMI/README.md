@@ -6,6 +6,8 @@
   - [2. Virtual Network Subnets](#2-virtual-network-subnets)
   - [3. User Managed Identity](#3-user-managed-identity)
   - [4. Custom RBAC Roles and Assignments](#4-custom-rbac-roles-and-assignments)
+    - [Role Configuration](#Required-Roles:)
+    - [Role Assignment](#Assignment-Requirements:)
 - [Resource Creation Order](#resource-creation-order)
 - [What Gets Pre-Created vs What Flex Creates](#what-gets-pre-created-vs-what-flex-creates)
 
@@ -82,14 +84,14 @@ New-AzUserAssignedIdentity -ResourceGroupName $resourceGroupName -Name $identity
 #### 4. Custom RBAC Roles and Assignments
 Custom Azure RBAC roles must be created and assigned to the User Managed Identity with minimum required permissions for Flex operation.
 
-**Required Roles:**
+#### Required Roles:
 - [**UMI Flex Resource Group Role**](../Role%20JSONs/example-silk-umi-flex-rg-role.json) - Permissions to create and manage compute resources in the empty Flex resource group
 - [**UMI NSG Role**](../Role%20JSONs/example-silk-umi-nsg-role.json) - Read and write permissions on Network Security Groups
 - [**UMI VNET Role**](../Role%20JSONs/example-silk-umi-vnet-role.json) - Subnet join and read permissions on the Virtual Network
 - [**UMI Object Role**](../Role%20JSONs/example-silk-umi-object-role.json) - (Optional) - Grants permissions for the User Managed Identity (UMI) to assign itself to new Flex instances during the upgrade process.
 - [**UMI Subscription Logs Role**](../Role%20JSONs/example-silk-umi-subscription-logs-role.json) - (Optional) - Activity log read permissions at the subscription level
 
-**Assignment Requirements:**
+#### Assignment Requirements:
 - **UMI Flex Resource Group Role** → Assigned to UMI on the empty target resource group
 - **UMI NSG Role** → Assigned to UMI on each NSG resource
 - **UMI VNET Role** → Assigned to UMI on the VNET resource

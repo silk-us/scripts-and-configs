@@ -4803,11 +4803,16 @@ function Test-SilkResourceDeployment
 
                         # Generate authorization header using current Azure access token for Management API.
                         # Az.Accounts 3.0+ (Az 12+) returns Token as a SecureString; earlier versions return a plain string.
-                        # LEGACY: Remove the version check and ConvertFrom-SecureString branch once Az < 12 is no longer supported.
+                        # Marshal is used instead of ConvertFrom-SecureString -AsPlainText because -AsPlainText requires PS 7.0+
+                        # and this module must remain compatible with PS 5.1.
+                        # LEGACY: Remove the version check and Marshal branch once Az < 12 is no longer supported.
                         $azAccessToken     = Get-AzAccessToken -ResourceUrl $("https://management.azure.com/")
                         $azAccessTokenValue = if ($azAccessToken.Token -is [System.Security.SecureString])
                                                 {
-                                                    ConvertFrom-SecureString -SecureString $azAccessToken.Token -AsPlainText
+                                                    $bstr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($azAccessToken.Token)
+                                                    $tokenPlain = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+                                                    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+                                                    $tokenPlain
                                                 }
                                              else
                                                 {
@@ -5133,7 +5138,16 @@ function Test-SilkResourceDeployment
                             {
                                 # Call Azure REST API to retrieve zone peer relationship data
                                 Write-Verbose -Message $("{0}Calling checkZonePeers REST API endpoint..." -f $messagePrefix)
-                                $zoneAlignmentResponse = Invoke-AzRestMethod -Method Post -Uri $zoneAlignmentRequestUri -Payload $zoneAlignmentRequestPayload -ErrorAction Stop | Select-Object -ExpandProperty Content | ConvertFrom-Json -Depth 100
+                                # ConvertFrom-Json -Depth was added in PS 6.0; omit it on PS 5.1 where there is no depth limit.
+                                $zoneAlignmentJsonContent = Invoke-AzRestMethod -Method Post -Uri $zoneAlignmentRequestUri -Payload $zoneAlignmentRequestPayload -ErrorAction Stop | Select-Object -ExpandProperty Content
+                                $zoneAlignmentResponse = if ($PSVersionTable.PSVersion.Major -ge 6)
+                                                            {
+                                                                $zoneAlignmentJsonContent | ConvertFrom-Json -Depth 100
+                                                            }
+                                                         else
+                                                            {
+                                                                $zoneAlignmentJsonContent | ConvertFrom-Json
+                                                            }
 
                                 $sectionStep = "Mapping"
                                 $messagePrefix = $("{0}{1}" -f $(if($processSection){"[{0}] " -f $processSection}else{""}), $(if($sectionStep){"[{0}] " -f $sectionStep}else{""}))

@@ -49,21 +49,31 @@ function Invoke-SilkHostBestPractices {
     Disables session transcript logging. By default a timestamped log is written to $env:TEMP.
 
 .EXAMPLE
-    .\ApplyBestPractices.ps1 -iSCSInicGateway 10.2.0.1 -DataSubnet 10.2.3.0 -DataSubnetMask 255.255.255.240 -InstallPWSHModules
+    .\ApplyBestPractices.ps1
 
-    Applies all best practices, adds a persistent data-subnet route, installs required
-    PowerShell modules, and prompts the operator before each restart.
+    Attended run with no route configuration. Applies all MPIO/MSDSM best practices,
+    starts the iSCSI service, displays the host IQN, and prompts the operator before
+    each required restart. This is the typical starting point for a new host.
+
+.EXAMPLE
+    .\ApplyBestPractices.ps1 -iSCSInicGateway 10.2.0.1 -DataSubnet 10.2.3.0 -DataSubnetMask 255.255.255.240 -InstallPWSHModules -AutoRestart
+
+    Full automated deployment: applies all best practices, adds a persistent static route
+    to the Silk data subnet, installs required PowerShell modules, and restarts without
+    prompting. Use this form in RMM tools or deployment scripts.
 
 .EXAMPLE
     .\ApplyBestPractices.ps1 -AutoRestart
 
-    Applies MPIO/MSDSM best practices and restarts without prompting if required.
-    Skips route configuration and module installation.
+    Minimal automated run. Applies MPIO/MSDSM best practices and restarts without
+    prompting. Skips route configuration and module installation.
 
 .EXAMPLE
     .\ApplyBestPractices.ps1 -AuditOnly
 
-    Reports current compliance status without making any changes.
+    Reports current compliance status without making any changes. Use before or after
+    deployment to verify the host meets Silk best practices. Exits with code 1 if any
+    settings are non-compliant.
 
 .NOTES
     Must be run as Administrator.

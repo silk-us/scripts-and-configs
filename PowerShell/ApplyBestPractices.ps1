@@ -1,3 +1,6 @@
+#Requires -RunAsAdministrator
+#Requires -Version 5.1
+
 function Invoke-SilkHostBestPractices {
 <#
 .SYNOPSIS
@@ -15,6 +18,8 @@ function Invoke-SilkHostBestPractices {
 
     If MPIO is not installed, the script installs it and immediately restarts.
     Re-run after restart to complete the remaining configuration steps.
+
+    Use -AuditOnly to report compliance without making any changes.
 
 .PARAMETER iSCSInicGateway
     IP address of the gateway on the iSCSI/data network. Used to identify the correct NIC
@@ -36,6 +41,13 @@ function Invoke-SilkHostBestPractices {
     Installs the silkiscsi and sdp PowerShell modules needed for Silk management operations.
     Requires outbound internet access to PSGallery.
 
+.PARAMETER AuditOnly
+    Reports compliance status without making any changes. No restart occurs.
+    Script exits with code 1 if any settings are non-compliant.
+
+.PARAMETER NoTranscript
+    Disables session transcript logging. By default a timestamped log is written to $env:TEMP.
+
 .EXAMPLE
     .\ApplyBestPractices.ps1 -iSCSInicGateway 10.2.0.1 -DataSubnet 10.2.3.0 -DataSubnetMask 255.255.255.240 -InstallPWSHModules
 
@@ -47,6 +59,11 @@ function Invoke-SilkHostBestPractices {
 
     Applies MPIO/MSDSM best practices and restarts without prompting if required.
     Skips route configuration and module installation.
+
+.EXAMPLE
+    .\ApplyBestPractices.ps1 -AuditOnly
+
+    Reports current compliance status without making any changes.
 
 .NOTES
     Must be run as Administrator.
@@ -64,26 +81,76 @@ param(
     [Parameter()]
     [switch] $AutoRestart,
     [Parameter()]
-    [switch] $InstallPWSHModules
+    [switch] $InstallPWSHModules,
+    [Parameter()]
+    [switch] $AuditOnly,
+    [Parameter()]
+    [switch] $NoTranscript
 )
+
+
+#region Preflight
+
+$transcriptStarted = $false
+if ( !$NoTranscript )
+    {
+        $transcriptFile = $("{0}\SilkBestPractices_{1}.log" -f $env:TEMP, (Get-Date -Format 'yyyyMMdd_HHmmss'))
+        Start-Transcript -Path $transcriptFile -Append | Out-Null
+        $transcriptStarted = $true
+        Write-Host $("Transcript: {0}" -f $transcriptFile)
+    }
+
+# Get-WindowsFeature / Add-WindowsFeature only exist on Server editions.
+$osProductType = (Get-CimInstance Win32_OperatingSystem).ProductType
+if ( $osProductType -eq 1 )
+    {
+        Write-Error $("This script requires Windows Server. Detected desktop OS (ProductType={0})." -f $osProductType)
+        if ( $transcriptStarted ) { Stop-Transcript | Out-Null }
+        return
+    }
+
+$restartRequired = $false
+$auditIssues     = [System.Collections.Generic.List[string]]::new()
+
+#endregion
 
 
 #region MPIO Windows Feature
 
 # MPIO must be installed before MSDSM cmdlets and Set-MPIOSetting are available.
 # The feature requires a restart before it is active; the script exits immediately after.
-if ( !(Get-WindowsFeature -Name Multipath-IO).Installed )
-    {
-        Write-Host $("Windows Feature Multipath-IO Installed: {0}. Installing..." -f (Get-WindowsFeature -Name Multipath-io).Installed)
-        Add-WindowsFeature Multipath-IO -IncludeAllSubFeature -IncludeManagementTools
-        Write-Host $("Windows Feature Multipath-IO now Installed: {0}" -f (Get-WindowsFeature -Name Multipath-io).Installed)
+$mpioFeature = Get-WindowsFeature -Name Multipath-IO
 
-        if ( !$AutoRestart ) { Read-Host -Prompt "Restart Required. Press Enter to continue with restart or Ctrl+C to exit." }
-        shutdown /r /t 0
+if ( !$mpioFeature.Installed )
+    {
+        if ( $AuditOnly )
+            {
+                Write-Host $("AUDIT: MPIO feature: NOT INSTALLED")
+                $auditIssues.Add($("MPIO feature not installed"))
+            }
+        else
+            {
+                Write-Host $("MPIO feature: not installed. Installing...")
+                try
+                    {
+                        Add-WindowsFeature Multipath-IO -IncludeAllSubFeature -IncludeManagementTools -ErrorAction Stop | Out-Null
+                        Write-Host $("MPIO feature: installed.")
+                    }
+                catch
+                    {
+                        Write-Error $("Failed to install MPIO feature: {0}" -f $_.Exception.Message)
+                        if ( $transcriptStarted ) { Stop-Transcript | Out-Null }
+                        return
+                    }
+                if ( !$AutoRestart ) { Read-Host -Prompt "Restart required. Press Enter to restart or Ctrl+C to exit." }
+                if ( $transcriptStarted ) { Stop-Transcript | Out-Null }
+                Restart-Computer -Force
+                return
+            }
     }
 else
     {
-        Write-Host $("Windows Feature Multipath-IO already Installed: {0}" -f (Get-WindowsFeature -Name Multipath-io).Installed)
+        Write-Host $("MPIO feature: installed.")
     }
 
 #endregion
@@ -91,191 +158,202 @@ else
 
 #region MSDSM and MPIO Settings
 
-# All state is captured upfront so the compliance check and every inner check
-# read from the same snapshot — no short-circuit evaluation side effects.
-$MSDSMSupportedHW                    = Get-MSDSMSupportedHW -VendorId MSFT2005 -ProductId iSCSIBusType_0x9 -ErrorAction SilentlyContinue
-$MSDSMGlobalDefaultLoadBalancePolicy = Get-MSDSMGlobalDefaultLoadBalancePolicy
-$iSCSIMSDSMAutomaticClaimSettings    = (Get-MSDSMAutomaticClaimSettings)['iSCSI']
-$MPIOSettings                        = Get-MPIOSetting
-$ScheduledDefrag                     = Get-ScheduledTask -TaskName ScheduledDefrag
-$FSRegistry                          = Get-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\FileSystem"
-
-if (
-    !$MSDSMSupportedHW -or
-    $MSDSMGlobalDefaultLoadBalancePolicy -ne 'LQD' -or
-    !$iSCSIMSDSMAutomaticClaimSettings -or
-    $MPIOSettings.PathVerificationState -ne "Enabled" -or
-    $MPIOSettings.PathVerificationPeriod -ne 1 -or
-    $MPIOSettings.PDORemovePeriod -ne 20 -or
-    $MPIOSettings.RetryCount -ne 3 -or
-    $MPIOSettings.RetryInterval -ne 3 -or
-    $MPIOSettings.UseCustomPathRecoveryTime -ne "Enabled" -or
-    $MPIOSettings.CustomPathRecoveryTime -ne 20 -or
-    $MPIOSettings.DiskTimeoutValue -ne 100 -or
-    $ScheduledDefrag.State -ne 'Disabled' -or
-    $FSRegistry.DisableDeleteNotification -ne 1
-)
+if ( $mpioFeature.Installed )
     {
-        # --- MSDSM: Supported Hardware ---
-        # The MSFT2005/iSCSIBusType_0x9 entry tells MSDSM to claim iSCSI bus-type devices.
-        if ( !$MSDSMSupportedHW )
+        # All state captured upfront so the compliance check and every inner check
+        # read from the same snapshot — no short-circuit evaluation side effects.
+        $MSDSMSupportedHW                    = Get-MSDSMSupportedHW -VendorId MSFT2005 -ProductId iSCSIBusType_0x9 -ErrorAction SilentlyContinue
+        $MSDSMGlobalDefaultLoadBalancePolicy = Get-MSDSMGlobalDefaultLoadBalancePolicy
+        $iSCSIMSDSMAutomaticClaimSettings    = (Get-MSDSMAutomaticClaimSettings)['iSCSI']
+        $MPIOSettings                        = Get-MPIOSetting
+        $ScheduledDefrag                     = Get-ScheduledTask -TaskName ScheduledDefrag
+        $FSRegistry                          = Get-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\FileSystem"
+
+        $msdsmCompliant = (
+            $MSDSMSupportedHW -and
+            $MSDSMGlobalDefaultLoadBalancePolicy      -eq 'LQD' -and
+            $iSCSIMSDSMAutomaticClaimSettings -and
+            $MPIOSettings.PathVerificationState       -eq "Enabled" -and
+            $MPIOSettings.PathVerificationPeriod      -eq 1 -and
+            $MPIOSettings.PDORemovePeriod             -eq 20 -and
+            $MPIOSettings.RetryCount                  -eq 3 -and
+            $MPIOSettings.RetryInterval               -eq 3 -and
+            $MPIOSettings.UseCustomPathRecoveryTime   -eq "Enabled" -and
+            $MPIOSettings.CustomPathRecoveryTime      -eq 20 -and
+            $MPIOSettings.DiskTimeoutValue            -eq 100 -and
+            $ScheduledDefrag.State                    -eq 'Disabled' -and
+            $FSRegistry.DisableDeleteNotification     -eq 1
+        )
+
+        if ( !$msdsmCompliant )
             {
-                New-MSDSMSupportedHW -VendorID MSFT2005 -Product iSCSIBusType_0x9
-                Write-Host $("MSDSM Supported Hardware Vendor Id: {0} Product: {1} Added." -f ($MSDSMSupportedHW = Get-MSDSMSupportedHW -VendorId MSFT2005 -ProductId iSCSIBusType_0x9).VendorId, $MSDSMSupportedHW.ProductId)
+                # --- MSDSM: Supported Hardware ---
+                # The MSFT2005/iSCSIBusType_0x9 entry tells MSDSM to claim iSCSI bus-type devices.
+                if ( !$MSDSMSupportedHW )
+                    {
+                        if ( $AuditOnly )
+                            {
+                                Write-Host $("AUDIT: MSDSM Supported Hardware (MSFT2005/iSCSIBusType_0x9): MISSING")
+                                $auditIssues.Add($("MSDSM Supported Hardware entry missing"))
+                            }
+                        else
+                            {
+                                New-MSDSMSupportedHW -VendorID MSFT2005 -Product iSCSIBusType_0x9
+                                $MSDSMSupportedHW = Get-MSDSMSupportedHW -VendorId MSFT2005 -ProductId iSCSIBusType_0x9
+                                Write-Host $("MSDSM Supported Hardware {0}/{1}: added" -f $MSDSMSupportedHW.VendorId, $MSDSMSupportedHW.ProductId)
+                                $restartRequired = $true
+                            }
+                    }
+                else
+                    {
+                        Write-Host $("MSDSM Supported Hardware {0}/{1}: present" -f $MSDSMSupportedHW.VendorId, $MSDSMSupportedHW.ProductId)
+                    }
+
+                # --- MSDSM: Load Balance Policy ---
+                # LQD (Least Queue Depth) is the Silk-recommended policy for iSCSI multipathing.
+                if ( $MSDSMGlobalDefaultLoadBalancePolicy -ne 'LQD' )
+                    {
+                        if ( $AuditOnly )
+                            {
+                                Write-Host $("AUDIT: MPIO Load Balance Policy: {0} (expected: LQD)" -f $MSDSMGlobalDefaultLoadBalancePolicy)
+                                $auditIssues.Add($("Load balance policy is {0}" -f $MSDSMGlobalDefaultLoadBalancePolicy))
+                            }
+                        else
+                            {
+                                Set-MSDSMGlobalDefaultLoadBalancePolicy -Policy LQD
+                                Write-Host $("MPIO Load Balance Policy: set to {0}" -f (Get-MSDSMGlobalDefaultLoadBalancePolicy))
+                                $restartRequired = $true
+                            }
+                    }
+                else
+                    {
+                        Write-Host $("MPIO Load Balance Policy: {0}" -f $MSDSMGlobalDefaultLoadBalancePolicy)
+                    }
+
+                # --- MSDSM: Automatic iSCSI Claim ---
+                if ( !$iSCSIMSDSMAutomaticClaimSettings )
+                    {
+                        if ( $AuditOnly )
+                            {
+                                Write-Host $("AUDIT: MSDSM Automatic iSCSI Claim: not enabled")
+                                $auditIssues.Add($("MSDSM automatic iSCSI claim not enabled"))
+                            }
+                        else
+                            {
+                                Enable-MSDSMAutomaticClaim -BusType iSCSI -Confirm:$false
+                                Write-Host $("MSDSM Automatic iSCSI Claim: set to {0}" -f (Get-MSDSMAutomaticClaimSettings)['iSCSI'])
+                                $restartRequired = $true
+                            }
+                    }
+                else
+                    {
+                        Write-Host $("MSDSM Automatic iSCSI Claim: {0}" -f $iSCSIMSDSMAutomaticClaimSettings)
+                    }
+
+                # --- MPIO Settings ---
+                # Keyed ordered map so output is consistent and each setting applies via splatting.
+                # Variable name $mpioSettingsMap avoids collision with $MPIOSettings (Get-MPIOSetting result).
+                $mpioSettingsMap = [ordered]@{
+                    PathVerificationState     = @{ Current = $MPIOSettings.PathVerificationState;     Expected = "Enabled"; SetParam = "NewPathVerificationState"  }
+                    PathVerificationPeriod    = @{ Current = $MPIOSettings.PathVerificationPeriod;    Expected = 1;         SetParam = "NewPathVerificationPeriod"  }
+                    PDORemovePeriod           = @{ Current = $MPIOSettings.PDORemovePeriod;           Expected = 20;        SetParam = "NewPDORemovePeriod"         }
+                    RetryCount                = @{ Current = $MPIOSettings.RetryCount;                Expected = 3;         SetParam = "NewRetryCount"              }
+                    RetryInterval             = @{ Current = $MPIOSettings.RetryInterval;             Expected = 3;         SetParam = "newRetryInterval"           }
+                    UseCustomPathRecoveryTime = @{ Current = $MPIOSettings.UseCustomPathRecoveryTime; Expected = "Enabled"; SetParam = "CustomPathRecovery"         }
+                    CustomPathRecoveryTime    = @{ Current = $MPIOSettings.CustomPathRecoveryTime;    Expected = 20;        SetParam = "NewPathRecoveryInterval"    }
+                    DiskTimeoutValue          = @{ Current = $MPIOSettings.DiskTimeoutValue;          Expected = 100;       SetParam = "NewDiskTimeout"             }
+                }
+
+                foreach ( $entry in $mpioSettingsMap.GetEnumerator() )
+                    {
+                        if ( $entry.Value.Current -ne $entry.Value.Expected )
+                            {
+                                if ( $AuditOnly )
+                                    {
+                                        Write-Host $("AUDIT: MPIO {0}: {1} (expected: {2})" -f $entry.Key, $entry.Value.Current, $entry.Value.Expected)
+                                        $auditIssues.Add($("MPIO {0} is {1}" -f $entry.Key, $entry.Value.Current))
+                                    }
+                                else
+                                    {
+                                        Set-MPIOSetting @{ $entry.Value.SetParam = $entry.Value.Expected }
+                                        Write-Host $("MPIO {0}: set to {1}" -f $entry.Key, $entry.Value.Expected)
+                                        $restartRequired = $true
+                                    }
+                            }
+                        else
+                            {
+                                Write-Host $("MPIO {0}: {1}" -f $entry.Key, $entry.Value.Current)
+                            }
+                    }
+
+                # --- Scheduled Defrag ---
+                # Disk defragmentation must be disabled; it can disrupt MPIO path recovery timing.
+                if ( $ScheduledDefrag.State -ne 'Disabled' )
+                    {
+                        if ( $AuditOnly )
+                            {
+                                Write-Host $("AUDIT: ScheduledDefrag: {0} (expected: Disabled)" -f $ScheduledDefrag.State)
+                                $auditIssues.Add($("ScheduledDefrag state is {0}" -f $ScheduledDefrag.State))
+                            }
+                        else
+                            {
+                                Get-ScheduledTask ScheduledDefrag | Disable-ScheduledTask | Out-Null
+                                Write-Host $("ScheduledDefrag: disabled")
+                                $restartRequired = $true
+                            }
+                    }
+                else
+                    {
+                        Write-Host $("ScheduledDefrag: Disabled")
+                    }
+
+                # --- TRIM/UNMAP Disable ---
+                # Prevents Windows from issuing TRIM/UNMAP commands to the storage target;
+                # the Silk array manages reclamation independently.
+                if ( $FSRegistry.DisableDeleteNotification -ne 1 )
+                    {
+                        if ( $AuditOnly )
+                            {
+                                Write-Host $("AUDIT: DisableDeleteNotification: {0} (expected: 1)" -f $FSRegistry.DisableDeleteNotification)
+                                $auditIssues.Add($("DisableDeleteNotification is {0}" -f $FSRegistry.DisableDeleteNotification))
+                            }
+                        else
+                            {
+                                Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\FileSystem" -Name DisableDeleteNotification -Value 1
+                                Write-Host $("DisableDeleteNotification: set to 1")
+                                $restartRequired = $true
+                            }
+                    }
+                else
+                    {
+                        Write-Host $("DisableDeleteNotification: 1")
+                    }
+
+                if ( !$AuditOnly -and $restartRequired )
+                    {
+                        if ( !$AutoRestart ) { Read-Host -Prompt "Settings changed — restart required. Press Enter to restart or Ctrl+C to exit." }
+                        if ( $transcriptStarted ) { Stop-Transcript | Out-Null }
+                        Restart-Computer -Force
+                        return
+                    }
             }
         else
             {
-                Write-Host $("MSDSM Supported Hardware Vendor Id: {0} Product: {1} Present." -f $MSDSMSupportedHW.VendorId, $MSDSMSupportedHW.ProductId)
+                Write-Host $("MSDSM Supported Hardware {0}/{1}: present" -f $MSDSMSupportedHW.VendorId, $MSDSMSupportedHW.ProductId)
+                Write-Host $("MPIO Load Balance Policy: {0}" -f $MSDSMGlobalDefaultLoadBalancePolicy)
+                Write-Host $("MSDSM Automatic iSCSI Claim: {0}" -f $iSCSIMSDSMAutomaticClaimSettings)
+                Write-Host $("MPIO PathVerificationState: {0}" -f $MPIOSettings.PathVerificationState)
+                Write-Host $("MPIO PathVerificationPeriod: {0}" -f $MPIOSettings.PathVerificationPeriod)
+                Write-Host $("MPIO PDORemovePeriod: {0}" -f $MPIOSettings.PDORemovePeriod)
+                Write-Host $("MPIO RetryCount: {0}" -f $MPIOSettings.RetryCount)
+                Write-Host $("MPIO RetryInterval: {0}" -f $MPIOSettings.RetryInterval)
+                Write-Host $("MPIO UseCustomPathRecoveryTime: {0}" -f $MPIOSettings.UseCustomPathRecoveryTime)
+                Write-Host $("MPIO CustomPathRecoveryTime: {0}" -f $MPIOSettings.CustomPathRecoveryTime)
+                Write-Host $("MPIO DiskTimeoutValue: {0}" -f $MPIOSettings.DiskTimeoutValue)
+                Write-Host $("ScheduledDefrag: {0}" -f $ScheduledDefrag.State)
+                Write-Host $("DisableDeleteNotification: {0}" -f $FSRegistry.DisableDeleteNotification)
+                Write-Host $("All MSDSM and MPIO settings compliant.")
             }
-
-        # --- MSDSM: Load Balance Policy ---
-        # LQD (Least Queue Depth) is the Silk-recommended policy for iSCSI multipathing.
-        if ( $MSDSMGlobalDefaultLoadBalancePolicy -ne 'LQD' )
-            {
-                Set-MSDSMGlobalDefaultLoadBalancePolicy -Policy LQD
-                Write-Host $("MPIO LoadBalancePolicy updated to: {0}. Restart Required!" -f (Get-MSDSMGlobalDefaultLoadBalancePolicy))
-            }
-        else
-            {
-                Write-Host $("MPIO LoadBalancePolicy is already set to: {0}." -f $MSDSMGlobalDefaultLoadBalancePolicy)
-            }
-
-        # --- MSDSM: Automatic iSCSI Claim ---
-        if ( !$iSCSIMSDSMAutomaticClaimSettings )
-            {
-                Enable-MSDSMAutomaticClaim -BusType iSCSI -Confirm:$false
-                Write-Host $("Automatic Claim for iSCSI devices updated to {0}. Restart Required!" -f (Get-MSDSMAutomaticClaimSettings)['iSCSI'])
-            }
-        else
-            {
-                Write-Host $("Automatic Claim for iSCSI devices is already: {0}." -f $iSCSIMSDSMAutomaticClaimSettings)
-            }
-
-        # --- MPIO Settings ---
-        if ( $MPIOSettings.PathVerificationState -ne "Enabled" )
-            {
-                Set-MPIOSetting -NewPathVerificationState Enabled
-                Write-Host $("MPIO PathVerificationState is now set to: {0}. Restart Required!" -f (Get-MPIOSetting).PathVerificationState)
-            }
-        else
-            {
-                Write-Host $("MPIO PathVerificationState is already set to: {0}" -f $MPIOSettings.PathVerificationState)
-            }
-
-        if ( $MPIOSettings.PathVerificationPeriod -ne 1 )
-            {
-                Set-MPIOSetting -NewPathVerificationPeriod 1
-                Write-Host $("MPIO PathVerificationPeriod is now set to: {0}. Restart Required!" -f (Get-MPIOSetting).PathVerificationPeriod)
-            }
-        else
-            {
-                Write-Host $("MPIO PathVerificationPeriod is already set to: {0}" -f $MPIOSettings.PathVerificationPeriod)
-            }
-
-        if ( $MPIOSettings.PDORemovePeriod -ne 20 )
-            {
-                Set-MPIOSetting -NewPDORemovePeriod 20
-                Write-Host $("MPIO PDORemovePeriod is now set to: {0}. Restart Required!" -f (Get-MPIOSetting).PDORemovePeriod)
-            }
-        else
-            {
-                Write-Host $("MPIO PDORemovePeriod is already set to: {0}" -f $MPIOSettings.PDORemovePeriod)
-            }
-
-        if ( $MPIOSettings.RetryCount -ne 3 )
-            {
-                Set-MPIOSetting -NewRetryCount 3
-                Write-Host $("MPIO RetryCount is now set to: {0}. Restart Required!" -f (Get-MPIOSetting).RetryCount)
-            }
-        else
-            {
-                Write-Host $("MPIO RetryCount is already set to: {0}" -f $MPIOSettings.RetryCount)
-            }
-
-        if ( $MPIOSettings.RetryInterval -ne 3 )
-            {
-                Set-MPIOSetting -newRetryInterval 3
-                Write-Host $("MPIO RetryInterval is now set to: {0}. Restart Required!" -f (Get-MPIOSetting).RetryInterval)
-            }
-        else
-            {
-                Write-Host $("MPIO RetryInterval is already set to: {0}" -f $MPIOSettings.RetryInterval)
-            }
-
-        if ( $MPIOSettings.UseCustomPathRecoveryTime -ne "Enabled" )
-            {
-                Set-MPIOSetting -CustomPathRecovery Enabled
-                Write-Host $("MPIO UseCustomPathRecoveryTime is now set to: {0}. Restart Required!" -f (Get-MPIOSetting).UseCustomPathRecoveryTime)
-            }
-        else
-            {
-                Write-Host $("MPIO UseCustomPathRecoveryTime is already set to: {0}" -f $MPIOSettings.UseCustomPathRecoveryTime)
-            }
-
-        if ( $MPIOSettings.CustomPathRecoveryTime -ne 20 )
-            {
-                Set-MPIOSetting -NewPathRecoveryInterval 20
-                Write-Host $("MPIO CustomPathRecoveryTime is now set to: {0}. Restart Required!" -f (Get-MPIOSetting).CustomPathRecoveryTime)
-            }
-        else
-            {
-                Write-Host $("MPIO CustomPathRecoveryTime is already set to: {0}" -f $MPIOSettings.CustomPathRecoveryTime)
-            }
-
-        if ( $MPIOSettings.DiskTimeoutValue -ne 100 )
-            {
-                Set-MPIOSetting -NewDiskTimeout 100
-                Write-Host $("MPIO DiskTimeoutValue is now set to: {0}. Restart Required!" -f (Get-MPIOSetting).DiskTimeoutValue)
-            }
-        else
-            {
-                Write-Host $("MPIO DiskTimeoutValue is already set to: {0}" -f $MPIOSettings.DiskTimeoutValue)
-            }
-
-        # --- Scheduled Defrag ---
-        # Disk defragmentation must be disabled; it can disrupt MPIO path recovery timing.
-        if ( $ScheduledDefrag.State -ne 'Disabled' )
-            {
-                Get-ScheduledTask ScheduledDefrag | Disable-ScheduledTask
-                Write-Host $("ScheduledDefrag Task State updated to: {0}. Restart Required!" -f (Get-ScheduledTask -TaskName ScheduledDefrag).State)
-            }
-        else
-            {
-                Write-Host $("ScheduledDefrag task state: '{0}' expected: 'Disabled'" -f $ScheduledDefrag.State)
-            }
-
-        # --- TRIM/UNMAP Disable ---
-        # Prevents Windows from issuing TRIM/UNMAP commands to the storage target;
-        # the Silk array manages reclamation independently.
-        if ( $FSRegistry.DisableDeleteNotification -ne 1 )
-            {
-                Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\FileSystem" -Name DisableDeleteNotification -Value 1
-                Write-Host $("DisableDeleteNotification updated to: {0}. Restart Required!" -f (Get-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\FileSystem").DisableDeleteNotification)
-            }
-        else
-            {
-                Write-Host $("DisableDeleteNotification is already set to: {0}" -f $FSRegistry.DisableDeleteNotification)
-            }
-
-        if ( !$AutoRestart ) { Read-Host -Prompt "Restart Required. Press Enter to continue with restart or Ctrl+C to exit." }
-        shutdown /r /t 0
-    }
-else
-    {
-        Write-Host $("MSDSM Supported Hardware Vendor Id: {0} Product: {1} Present." -f $MSDSMSupportedHW.VendorId, $MSDSMSupportedHW.ProductId)
-        Write-Host $("MPIO LoadBalancePolicy is set to: {0}." -f $MSDSMGlobalDefaultLoadBalancePolicy)
-        Write-Host $("Automatic Claim for iSCSI devices is: {0}." -f $iSCSIMSDSMAutomaticClaimSettings)
-        Write-Host $("MPIO PathVerificationState is set to: {0}" -f $MPIOSettings.PathVerificationState)
-        Write-Host $("MPIO PathVerificationPeriod is set to: {0}" -f $MPIOSettings.PathVerificationPeriod)
-        Write-Host $("MPIO PDORemovePeriod is set to: {0}" -f $MPIOSettings.PDORemovePeriod)
-        Write-Host $("MPIO RetryCount is set to: {0}" -f $MPIOSettings.RetryCount)
-        Write-Host $("MPIO RetryInterval is set to: {0}" -f $MPIOSettings.RetryInterval)
-        Write-Host $("MPIO UseCustomPathRecoveryTime is set to: {0}" -f $MPIOSettings.UseCustomPathRecoveryTime)
-        Write-Host $("MPIO CustomPathRecoveryTime is set to: {0}" -f $MPIOSettings.CustomPathRecoveryTime)
-        Write-Host $("MPIO DiskTimeoutValue is set to: {0}" -f $MPIOSettings.DiskTimeoutValue)
-        Write-Host $("ScheduledDefrag task state: '{0}' expected: 'Disabled'" -f $ScheduledDefrag.State)
-        Write-Host $("DisableDeleteNotification is set to: {0}" -f $FSRegistry.DisableDeleteNotification)
-        Write-Host "All MSDSM and MPIO best practices are applied. No changes made."
     }
 
 #endregion
@@ -284,24 +362,41 @@ else
 #region iSCSI Initiator Service
 
 $iSCSIService = Get-Service MSiSCSI
+
 if ( $iSCSIService.Status -ne 'Running' )
     {
-        Start-Service MSiSCSI
-        Write-Host $("iSCSI Service status now: {0}" -f ($iSCSIService = Get-Service MSiSCSI).Status)
+        if ( $AuditOnly )
+            {
+                Write-Host $("AUDIT: iSCSI service status: {0} (expected: Running)" -f $iSCSIService.Status)
+                $auditIssues.Add($("iSCSI service not running"))
+            }
+        else
+            {
+                Start-Service MSiSCSI
+                Write-Host $("iSCSI service: started ({0})" -f (Get-Service MSiSCSI).Status)
+            }
     }
 else
     {
-        Write-Host $("iSCSI Service status already: {0}" -f $iSCSIService.Status)
+        Write-Host $("iSCSI service status: {0}" -f $iSCSIService.Status)
     }
 
 if ( $iSCSIService.StartType -ne 'Automatic' )
     {
-        $iSCSIService | Set-Service -StartupType Automatic
-        Write-Host $("iSCSI Service startup type now: {0}" -f (Get-Service MSiSCSI).StartType)
+        if ( $AuditOnly )
+            {
+                Write-Host $("AUDIT: iSCSI service startup type: {0} (expected: Automatic)" -f $iSCSIService.StartType)
+                $auditIssues.Add($("iSCSI service startup type is {0}" -f $iSCSIService.StartType))
+            }
+        else
+            {
+                $iSCSIService | Set-Service -StartupType Automatic
+                Write-Host $("iSCSI service startup type: set to Automatic")
+            }
     }
 else
     {
-        Write-Host $("iSCSI Service startup type already: {0}" -f $iSCSIService.StartType)
+        Write-Host $("iSCSI service startup type: {0}" -f $iSCSIService.StartType)
     }
 
 #endregion
@@ -317,22 +412,38 @@ if ( $DataSubnet -and $DataSubnetMask -and $iSCSInicGateway )
         $PrefixLength = ( ([IPAddress]$DataSubnetMask.IPAddressToString).GetAddressBytes() |
             ForEach-Object { [Convert]::ToString($_, 2).PadLeft(8, '0') } ) -join '' |
             ForEach-Object { ($_ -replace '0+$').Length }
-        $iSCSIInterfaceIndex = (Find-NetRoute -RemoteIPAddress $iSCSInicGateway.IPAddressToString).InterfaceIndex
+        $iSCSIInterfaceIndex = (Find-NetRoute -RemoteIPAddress $iSCSInicGateway.IPAddressToString | Select-Object -First 1).InterfaceIndex
         $RouteParams = @{
-            DestinationPrefix = "$DataSubnet/$PrefixLength"
+            DestinationPrefix = $("{0}/{1}" -f $DataSubnet.IPAddressToString, $PrefixLength)
             NextHop           = $iSCSInicGateway.IPAddressToString
             InterfaceIndex    = $iSCSIInterfaceIndex
             RouteMetric       = 1
             PolicyStore       = 'PersistentStore'
         }
-        if ( !( Get-NetRoute -DestinationPrefix $RouteParams.DestinationPrefix -NextHop $RouteParams.NextHop -ErrorAction SilentlyContinue ) )
+
+        if ( !(Get-NetRoute -DestinationPrefix $RouteParams.DestinationPrefix -NextHop $RouteParams.NextHop -ErrorAction SilentlyContinue) )
             {
-                New-NetRoute @RouteParams | Out-Null
-                Write-Host $("Persistent route added: {0} via {1}" -f $RouteParams.DestinationPrefix, $RouteParams.NextHop)
+                if ( $AuditOnly )
+                    {
+                        Write-Host $("AUDIT: Persistent route {0} via {1}: missing" -f $RouteParams.DestinationPrefix, $RouteParams.NextHop)
+                        $auditIssues.Add($("Persistent route {0} missing" -f $RouteParams.DestinationPrefix))
+                    }
+                else
+                    {
+                        try
+                            {
+                                New-NetRoute @RouteParams | Out-Null
+                                Write-Host $("Persistent route added: {0} via {1}" -f $RouteParams.DestinationPrefix, $RouteParams.NextHop)
+                            }
+                        catch
+                            {
+                                Write-Error $("Failed to add route {0}: {1}" -f $RouteParams.DestinationPrefix, $_.Exception.Message)
+                            }
+                    }
             }
         else
             {
-                Write-Host $("Persistent route already exists: {0} via {1}" -f $RouteParams.DestinationPrefix, $RouteParams.NextHop)
+                Write-Host $("Persistent route: {0} via {1}" -f $RouteParams.DestinationPrefix, $RouteParams.NextHop)
             }
     }
 
@@ -343,21 +454,42 @@ if ( $DataSubnet -and $DataSubnetMask -and $iSCSInicGateway )
 
 # The IQN must be registered in the Silk portal before iSCSI sessions can be established.
 $HostIQN = (Get-InitiatorPort | Where-Object { $_.ConnectionType -eq 'iSCSI' } | Select-Object -First 1).NodeAddress
-Write-Host $("Host iSCSI IQN: {0}`n`n" -f $HostIQN)
-Read-Host -Prompt "Record the IQN above, then press Enter to continue"
+
+if ( [string]::IsNullOrEmpty($HostIQN) )
+    {
+        Write-Host $("Host iSCSI IQN: not found — confirm the iSCSI initiator service is running and a port is available.")
+    }
+else
+    {
+        Write-Host $("Host iSCSI IQN: {0}`n" -f $HostIQN)
+    }
+
+if ( !$AutoRestart -and !$AuditOnly )
+    {
+        Read-Host -Prompt "Record the IQN above, then press Enter to continue"
+    }
 
 #endregion
 
 
 #region PowerShell Module Installation
 
-if ( $InstallPWSHModules )
+if ( $InstallPWSHModules -and !$AuditOnly )
     {
         # Ensure NuGet provider is available — required by Install-Module from PSGallery
         if ( !($NuGetVersion = Get-PackageProvider | Where-Object -FilterScript { $_.Name -eq "NuGet" -and $_.Version -ge 2.8.5.201 }) )
             {
-                Write-Host "NuGet Package Provider not found. Installing..."
-                Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false
+                Write-Host $("NuGet Package Provider not found. Installing...")
+                try
+                    {
+                        Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false -ErrorAction Stop
+                    }
+                catch
+                    {
+                        Write-Error $("Failed to install NuGet provider: {0}" -f $_.Exception.Message)
+                        if ( $transcriptStarted ) { Stop-Transcript | Out-Null }
+                        return
+                    }
                 $NuGetVersion = Get-PackageProvider | Where-Object -FilterScript { $_.Name -eq "NuGet" }
             }
 
@@ -373,22 +505,70 @@ if ( $InstallPWSHModules )
         $Modules = @("silkiscsi", "sdp")
         foreach ($Module in $Modules)
             {
-                $LatestModule = Find-Module -Name $Module -Repository PSGallery -ErrorAction SilentlyContinue
+                $LatestModule = $null
+                try
+                    {
+                        $LatestModule = Find-Module -Name $Module -Repository PSGallery -ErrorAction Stop
+                    }
+                catch
+                    {
+                        Write-Error $("Could not reach PSGallery for module '{0}': {1}" -f $Module, $_.Exception.Message)
+                        continue
+                    }
+
                 if ( !($FoundModule = Get-Module -ListAvailable -Name $Module | Select-Object -First 1 | Where-Object -FilterScript { $_.Version -ge $LatestModule.Version }) )
                     {
-                        Write-Host $("Module {0} latest version {1} not found. Installing..." -f $LatestModule.Name, $LatestModule.Version)
-                        Install-Module -Name $Module -MinimumVersion $LatestModule.Version -Force -Confirm:$false
-                        $LatestModule = Get-Module -ListAvailable -Name $Module | Select-Object -First 1
+                        Write-Host $("Module {0} version {1}: installing..." -f $LatestModule.Name, $LatestModule.Version)
+                        try
+                            {
+                                Install-Module -Name $Module -MinimumVersion $LatestModule.Version -Force -Confirm:$false -ErrorAction Stop
+                                $LatestModule = Get-Module -ListAvailable -Name $Module | Select-Object -First 1
+                            }
+                        catch
+                            {
+                                Write-Error $("Failed to install module '{0}': {1}" -f $Module, $_.Exception.Message)
+                                continue
+                            }
                     }
-                Write-Host $("Module {0} latest version {1} installed." -f $LatestModule.Name, $LatestModule.Version)
+                Write-Host $("Module {0} version {1}: installed." -f $LatestModule.Name, $LatestModule.Version)
                 if ( !(Get-Module -Name $Module) ) { Import-Module $Module }
             }
     }
 
 #endregion
 
+
+#region Audit Summary
+
+if ( $AuditOnly )
+    {
+        Write-Host $("")
+        if ( $auditIssues.Count -eq 0 )
+            {
+                Write-Host $("AUDIT COMPLETE: Host is fully compliant. No changes required.")
+            }
+        else
+            {
+                Write-Host $("AUDIT COMPLETE: {0} issue(s) found:" -f $auditIssues.Count)
+                foreach ($issue in $auditIssues)
+                    {
+                        Write-Host $("  - {0}" -f $issue)
+                    }
+            }
+    }
+
+#endregion
+
+
+if ( $transcriptStarted ) { Stop-Transcript | Out-Null }
+if ( $AuditOnly ) { return $auditIssues.Count }
+
 } # end function Invoke-SilkHostBestPractices
 
 
 # Run the function, forwarding all parameters passed to the script
-Invoke-SilkHostBestPractices @PSBoundParameters
+$silkResult = Invoke-SilkHostBestPractices @PSBoundParameters
+if ( $PSBoundParameters.ContainsKey('AuditOnly') -and ($null -ne $silkResult) -and ($silkResult -gt 0) )
+    {
+        exit 1
+    }

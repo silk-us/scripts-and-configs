@@ -417,6 +417,12 @@ function New-RoleObject {
 $iamRoles = @()
 try {
     $account = $azContext.Account
+    if ($account.Id -match '^MSI@') {
+        $upn = (Get-AzADUser -ObjectId $env:ACC_OID).UserPrincipalName
+        $account = New-Object Microsoft.Azure.Commands.Profile.Models.PSAzureRmAccount
+        $account.Id   = $upn
+        $account.Type = 'User'
+    }
     if ($account.Type -eq 'User') {
         # -ExpandPrincipalGroups also returns roles the user gets via group membership
         # (e.g. Owner granted to a group you're in), not just direct assignments.

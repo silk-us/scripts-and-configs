@@ -125,6 +125,7 @@ if ( $osProductType -eq 1 )
 
 $restartRequired = $false
 $auditIssues     = [System.Collections.Generic.List[string]]::new()
+$Report          = [System.Collections.Generic.List[PSCustomObject]]::new()
 
 #endregion
 
@@ -135,11 +136,18 @@ $auditIssues     = [System.Collections.Generic.List[string]]::new()
 # The feature requires a restart before it is active; the script exits immediately after.
 $mpioFeature = Get-WindowsFeature -Name Multipath-IO
 
+$Report.Add([PSCustomObject]@{
+    Section  = $("MPIO Feature")
+    Name     = $("Multipath-IO Feature")
+    Current  = if ($mpioFeature.Installed) { $("Installed") } else { $("Not installed") }
+    Expected = $("Installed")
+    Status   = if ($mpioFeature.Installed) { $("Pass") } else { $("Fail") }
+})
+
 if ( !$mpioFeature.Installed )
     {
         if ( $AuditOnly )
             {
-                Write-Host $("AUDIT: MPIO feature: NOT INSTALLED")
                 $auditIssues.Add($("MPIO feature not installed"))
             }
         else
@@ -162,10 +170,6 @@ if ( !$mpioFeature.Installed )
                 return
             }
     }
-else
-    {
-        Write-Host $("MPIO feature: installed.")
-    }
 
 #endregion
 
@@ -182,6 +186,68 @@ if ( $mpioFeature.Installed )
         $MPIOSettings                        = Get-MPIOSetting
         $ScheduledDefrag                     = Get-ScheduledTask -TaskName ScheduledDefrag
         $FSRegistry                          = Get-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\FileSystem"
+
+        # Keyed ordered map defined at section scope so it is available for report building
+        # and apply logic. Variable name $mpioSettingsMap avoids collision with $MPIOSettings.
+        $mpioSettingsMap = [ordered]@{
+            PathVerificationState     = @{ Current = $MPIOSettings.PathVerificationState;     Expected = "Enabled"; SetParam = "NewPathVerificationState"  }
+            PathVerificationPeriod    = @{ Current = $MPIOSettings.PathVerificationPeriod;    Expected = 1;         SetParam = "NewPathVerificationPeriod"  }
+            PDORemovePeriod           = @{ Current = $MPIOSettings.PDORemovePeriod;           Expected = 20;        SetParam = "NewPDORemovePeriod"         }
+            RetryCount                = @{ Current = $MPIOSettings.RetryCount;                Expected = 3;         SetParam = "NewRetryCount"              }
+            RetryInterval             = @{ Current = $MPIOSettings.RetryInterval;             Expected = 3;         SetParam = "newRetryInterval"           }
+            UseCustomPathRecoveryTime = @{ Current = $MPIOSettings.UseCustomPathRecoveryTime; Expected = "Enabled"; SetParam = "CustomPathRecovery"         }
+            CustomPathRecoveryTime    = @{ Current = $MPIOSettings.CustomPathRecoveryTime;    Expected = 20;        SetParam = "NewPathRecoveryInterval"    }
+            DiskTimeoutValue          = @{ Current = $MPIOSettings.DiskTimeoutValue;          Expected = 100;       SetParam = "NewDiskTimeout"             }
+        }
+
+        # Build report items from snapshot before any changes are applied.
+        # Current values always reflect the state at script entry, making the report
+        # accurate for both audit (compliance check) and apply (before/after reference).
+        $Report.Add([PSCustomObject]@{
+            Section  = $("MSDSM / MPIO Settings")
+            Name     = $("Supported Hardware")
+            Current  = if ($MSDSMSupportedHW) { $("{0}/{1}" -f $MSDSMSupportedHW.VendorId, $MSDSMSupportedHW.ProductId) } else { $("Missing") }
+            Expected = $("MSFT2005/iSCSIBusType_0x9")
+            Status   = if ($MSDSMSupportedHW) { $("Pass") } else { $("Fail") }
+        })
+        $Report.Add([PSCustomObject]@{
+            Section  = $("MSDSM / MPIO Settings")
+            Name     = $("Load Balance Policy")
+            Current  = $MSDSMGlobalDefaultLoadBalancePolicy
+            Expected = $("LQD")
+            Status   = if ($MSDSMGlobalDefaultLoadBalancePolicy -eq 'LQD') { $("Pass") } else { $("Fail") }
+        })
+        $Report.Add([PSCustomObject]@{
+            Section  = $("MSDSM / MPIO Settings")
+            Name     = $("Automatic iSCSI Claim")
+            Current  = $("{0}" -f $iSCSIMSDSMAutomaticClaimSettings)
+            Expected = $("True")
+            Status   = if ($iSCSIMSDSMAutomaticClaimSettings) { $("Pass") } else { $("Fail") }
+        })
+        foreach ( $entry in $mpioSettingsMap.GetEnumerator() )
+            {
+                $Report.Add([PSCustomObject]@{
+                    Section  = $("MSDSM / MPIO Settings")
+                    Name     = $entry.Key
+                    Current  = $("{0}" -f $entry.Value.Current)
+                    Expected = $("{0}" -f $entry.Value.Expected)
+                    Status   = if ($entry.Value.Current -eq $entry.Value.Expected) { $("Pass") } else { $("Fail") }
+                })
+            }
+        $Report.Add([PSCustomObject]@{
+            Section  = $("MSDSM / MPIO Settings")
+            Name     = $("ScheduledDefrag")
+            Current  = $("{0}" -f $ScheduledDefrag.State)
+            Expected = $("Disabled")
+            Status   = if ($ScheduledDefrag.State -eq 'Disabled') { $("Pass") } else { $("Fail") }
+        })
+        $Report.Add([PSCustomObject]@{
+            Section  = $("MSDSM / MPIO Settings")
+            Name     = $("DisableDeleteNotification")
+            Current  = $("{0}" -f $FSRegistry.DisableDeleteNotification)
+            Expected = $("1")
+            Status   = if ($FSRegistry.DisableDeleteNotification -eq 1) { $("Pass") } else { $("Fail") }
+        })
 
         $msdsmCompliant = (
             $MSDSMSupportedHW -and
@@ -201,172 +267,92 @@ if ( $mpioFeature.Installed )
 
         if ( !$msdsmCompliant )
             {
-                # --- MSDSM: Supported Hardware ---
-                # The MSFT2005/iSCSIBusType_0x9 entry tells MSDSM to claim iSCSI bus-type devices.
-                if ( !$MSDSMSupportedHW )
+                if ( $AuditOnly )
                     {
-                        if ( $AuditOnly )
+                        # Collect audit issue strings - the report handles all output.
+                        if ( !$MSDSMSupportedHW )
+                            { $auditIssues.Add($("MSDSM Supported Hardware entry missing")) }
+                        if ( $MSDSMGlobalDefaultLoadBalancePolicy -ne 'LQD' )
+                            { $auditIssues.Add($("Load balance policy is {0}" -f $MSDSMGlobalDefaultLoadBalancePolicy)) }
+                        if ( !$iSCSIMSDSMAutomaticClaimSettings )
+                            { $auditIssues.Add($("MSDSM automatic iSCSI claim not enabled")) }
+                        foreach ( $entry in $mpioSettingsMap.GetEnumerator() )
                             {
-                                Write-Host $("AUDIT: MSDSM Supported Hardware (MSFT2005/iSCSIBusType_0x9): MISSING")
-                                $auditIssues.Add($("MSDSM Supported Hardware entry missing"))
+                                if ( $entry.Value.Current -ne $entry.Value.Expected )
+                                    { $auditIssues.Add($("MPIO {0} is {1}" -f $entry.Key, $entry.Value.Current)) }
                             }
-                        else
+                        if ( $ScheduledDefrag.State -ne 'Disabled' )
+                            { $auditIssues.Add($("ScheduledDefrag state is {0}" -f $ScheduledDefrag.State)) }
+                        if ( $FSRegistry.DisableDeleteNotification -ne 1 )
+                            { $auditIssues.Add($("DisableDeleteNotification is {0}" -f $FSRegistry.DisableDeleteNotification)) }
+                    }
+                else
+                    {
+                        # --- MSDSM: Supported Hardware ---
+                        # The MSFT2005/iSCSIBusType_0x9 entry tells MSDSM to claim iSCSI bus-type devices.
+                        if ( !$MSDSMSupportedHW )
                             {
                                 New-MSDSMSupportedHW -VendorID MSFT2005 -Product iSCSIBusType_0x9
                                 $MSDSMSupportedHW = Get-MSDSMSupportedHW -VendorId MSFT2005 -ProductId iSCSIBusType_0x9
                                 Write-Host $("MSDSM Supported Hardware {0}/{1}: added" -f $MSDSMSupportedHW.VendorId, $MSDSMSupportedHW.ProductId)
                                 $restartRequired = $true
                             }
-                    }
-                else
-                    {
-                        Write-Host $("MSDSM Supported Hardware {0}/{1}: present" -f $MSDSMSupportedHW.VendorId, $MSDSMSupportedHW.ProductId)
-                    }
 
-                # --- MSDSM: Load Balance Policy ---
-                # LQD (Least Queue Depth) is the Silk-recommended policy for iSCSI multipathing.
-                if ( $MSDSMGlobalDefaultLoadBalancePolicy -ne 'LQD' )
-                    {
-                        if ( $AuditOnly )
-                            {
-                                Write-Host $("AUDIT: MPIO Load Balance Policy: {0} (expected: LQD)" -f $MSDSMGlobalDefaultLoadBalancePolicy)
-                                $auditIssues.Add($("Load balance policy is {0}" -f $MSDSMGlobalDefaultLoadBalancePolicy))
-                            }
-                        else
+                        # --- MSDSM: Load Balance Policy ---
+                        # LQD (Least Queue Depth) is the Silk-recommended policy for iSCSI multipathing.
+                        if ( $MSDSMGlobalDefaultLoadBalancePolicy -ne 'LQD' )
                             {
                                 Set-MSDSMGlobalDefaultLoadBalancePolicy -Policy LQD
                                 Write-Host $("MPIO Load Balance Policy: set to {0}" -f (Get-MSDSMGlobalDefaultLoadBalancePolicy))
                                 $restartRequired = $true
                             }
-                    }
-                else
-                    {
-                        Write-Host $("MPIO Load Balance Policy: {0}" -f $MSDSMGlobalDefaultLoadBalancePolicy)
-                    }
 
-                # --- MSDSM: Automatic iSCSI Claim ---
-                if ( !$iSCSIMSDSMAutomaticClaimSettings )
-                    {
-                        if ( $AuditOnly )
-                            {
-                                Write-Host $("AUDIT: MSDSM Automatic iSCSI Claim: not enabled")
-                                $auditIssues.Add($("MSDSM automatic iSCSI claim not enabled"))
-                            }
-                        else
+                        # --- MSDSM: Automatic iSCSI Claim ---
+                        if ( !$iSCSIMSDSMAutomaticClaimSettings )
                             {
                                 Enable-MSDSMAutomaticClaim -BusType iSCSI -Confirm:$false
                                 Write-Host $("MSDSM Automatic iSCSI Claim: set to {0}" -f (Get-MSDSMAutomaticClaimSettings)['iSCSI'])
                                 $restartRequired = $true
                             }
-                    }
-                else
-                    {
-                        Write-Host $("MSDSM Automatic iSCSI Claim: {0}" -f $iSCSIMSDSMAutomaticClaimSettings)
-                    }
 
-                # --- MPIO Settings ---
-                # Keyed ordered map so output is consistent and each setting applies via splatting.
-                # Variable name $mpioSettingsMap avoids collision with $MPIOSettings (Get-MPIOSetting result).
-                $mpioSettingsMap = [ordered]@{
-                    PathVerificationState     = @{ Current = $MPIOSettings.PathVerificationState;     Expected = "Enabled"; SetParam = "NewPathVerificationState"  }
-                    PathVerificationPeriod    = @{ Current = $MPIOSettings.PathVerificationPeriod;    Expected = 1;         SetParam = "NewPathVerificationPeriod"  }
-                    PDORemovePeriod           = @{ Current = $MPIOSettings.PDORemovePeriod;           Expected = 20;        SetParam = "NewPDORemovePeriod"         }
-                    RetryCount                = @{ Current = $MPIOSettings.RetryCount;                Expected = 3;         SetParam = "NewRetryCount"              }
-                    RetryInterval             = @{ Current = $MPIOSettings.RetryInterval;             Expected = 3;         SetParam = "newRetryInterval"           }
-                    UseCustomPathRecoveryTime = @{ Current = $MPIOSettings.UseCustomPathRecoveryTime; Expected = "Enabled"; SetParam = "CustomPathRecovery"         }
-                    CustomPathRecoveryTime    = @{ Current = $MPIOSettings.CustomPathRecoveryTime;    Expected = 20;        SetParam = "NewPathRecoveryInterval"    }
-                    DiskTimeoutValue          = @{ Current = $MPIOSettings.DiskTimeoutValue;          Expected = 100;       SetParam = "NewDiskTimeout"             }
-                }
-
-                foreach ( $entry in $mpioSettingsMap.GetEnumerator() )
-                    {
-                        if ( $entry.Value.Current -ne $entry.Value.Expected )
+                        # --- MPIO Settings ---
+                        foreach ( $entry in $mpioSettingsMap.GetEnumerator() )
                             {
-                                if ( $AuditOnly )
-                                    {
-                                        Write-Host $("AUDIT: MPIO {0}: {1} (expected: {2})" -f $entry.Key, $entry.Value.Current, $entry.Value.Expected)
-                                        $auditIssues.Add($("MPIO {0} is {1}" -f $entry.Key, $entry.Value.Current))
-                                    }
-                                else
+                                if ( $entry.Value.Current -ne $entry.Value.Expected )
                                     {
                                         Set-MPIOSetting @{ $entry.Value.SetParam = $entry.Value.Expected }
                                         Write-Host $("MPIO {0}: set to {1}" -f $entry.Key, $entry.Value.Expected)
                                         $restartRequired = $true
                                     }
                             }
-                        else
-                            {
-                                Write-Host $("MPIO {0}: {1}" -f $entry.Key, $entry.Value.Current)
-                            }
-                    }
 
-                # --- Scheduled Defrag ---
-                # Disk defragmentation must be disabled; it can disrupt MPIO path recovery timing.
-                if ( $ScheduledDefrag.State -ne 'Disabled' )
-                    {
-                        if ( $AuditOnly )
-                            {
-                                Write-Host $("AUDIT: ScheduledDefrag: {0} (expected: Disabled)" -f $ScheduledDefrag.State)
-                                $auditIssues.Add($("ScheduledDefrag state is {0}" -f $ScheduledDefrag.State))
-                            }
-                        else
+                        # --- Scheduled Defrag ---
+                        # Disk defragmentation must be disabled; it can disrupt MPIO path recovery timing.
+                        if ( $ScheduledDefrag.State -ne 'Disabled' )
                             {
                                 Get-ScheduledTask ScheduledDefrag | Disable-ScheduledTask | Out-Null
                                 Write-Host $("ScheduledDefrag: disabled")
                                 $restartRequired = $true
                             }
-                    }
-                else
-                    {
-                        Write-Host $("ScheduledDefrag: Disabled")
-                    }
 
-                # --- TRIM/UNMAP Disable ---
-                # Prevents Windows from issuing TRIM/UNMAP commands to the storage target;
-                # the Silk array manages reclamation independently.
-                if ( $FSRegistry.DisableDeleteNotification -ne 1 )
-                    {
-                        if ( $AuditOnly )
-                            {
-                                Write-Host $("AUDIT: DisableDeleteNotification: {0} (expected: 1)" -f $FSRegistry.DisableDeleteNotification)
-                                $auditIssues.Add($("DisableDeleteNotification is {0}" -f $FSRegistry.DisableDeleteNotification))
-                            }
-                        else
+                        # --- TRIM/UNMAP Disable ---
+                        # Prevents Windows from issuing TRIM/UNMAP commands to the storage target;
+                        # the Silk array manages reclamation independently.
+                        if ( $FSRegistry.DisableDeleteNotification -ne 1 )
                             {
                                 Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\FileSystem" -Name DisableDeleteNotification -Value 1
                                 Write-Host $("DisableDeleteNotification: set to 1")
                                 $restartRequired = $true
                             }
-                    }
-                else
-                    {
-                        Write-Host $("DisableDeleteNotification: 1")
-                    }
 
-                if ( !$AuditOnly -and $restartRequired )
-                    {
-                        if ( !$AutoRestart ) { Read-Host -Prompt "Settings changed - restart required. Press Enter to restart or Ctrl+C to exit." }
-                        if ( $transcriptStarted ) { Stop-Transcript | Out-Null }
-                        Restart-Computer -Force
-                        return
+                        if ( $restartRequired )
+                            {
+                                if ( !$AutoRestart ) { Read-Host -Prompt "Settings changed - restart required. Press Enter to restart or Ctrl+C to exit." }
+                                if ( $transcriptStarted ) { Stop-Transcript | Out-Null }
+                                Restart-Computer -Force
+                                return
+                            }
                     }
-            }
-        else
-            {
-                Write-Host $("MSDSM Supported Hardware {0}/{1}: present" -f $MSDSMSupportedHW.VendorId, $MSDSMSupportedHW.ProductId)
-                Write-Host $("MPIO Load Balance Policy: {0}" -f $MSDSMGlobalDefaultLoadBalancePolicy)
-                Write-Host $("MSDSM Automatic iSCSI Claim: {0}" -f $iSCSIMSDSMAutomaticClaimSettings)
-                Write-Host $("MPIO PathVerificationState: {0}" -f $MPIOSettings.PathVerificationState)
-                Write-Host $("MPIO PathVerificationPeriod: {0}" -f $MPIOSettings.PathVerificationPeriod)
-                Write-Host $("MPIO PDORemovePeriod: {0}" -f $MPIOSettings.PDORemovePeriod)
-                Write-Host $("MPIO RetryCount: {0}" -f $MPIOSettings.RetryCount)
-                Write-Host $("MPIO RetryInterval: {0}" -f $MPIOSettings.RetryInterval)
-                Write-Host $("MPIO UseCustomPathRecoveryTime: {0}" -f $MPIOSettings.UseCustomPathRecoveryTime)
-                Write-Host $("MPIO CustomPathRecoveryTime: {0}" -f $MPIOSettings.CustomPathRecoveryTime)
-                Write-Host $("MPIO DiskTimeoutValue: {0}" -f $MPIOSettings.DiskTimeoutValue)
-                Write-Host $("ScheduledDefrag: {0}" -f $ScheduledDefrag.State)
-                Write-Host $("DisableDeleteNotification: {0}" -f $FSRegistry.DisableDeleteNotification)
-                Write-Host $("All MSDSM and MPIO settings compliant.")
             }
     }
 
@@ -377,32 +363,29 @@ if ( $mpioFeature.Installed )
 
 $iSCSIService = Get-Service MSiSCSI
 
-if ( $iSCSIService.Status -ne 'Running' )
+$Report.Add([PSCustomObject]@{
+    Section  = $("iSCSI Service")
+    Name     = $("Status")
+    Current  = $("{0}" -f $iSCSIService.Status)
+    Expected = $("Running")
+    Status   = if ($iSCSIService.Status -eq 'Running') { $("Pass") } else { $("Fail") }
+})
+$Report.Add([PSCustomObject]@{
+    Section  = $("iSCSI Service")
+    Name     = $("Startup Type")
+    Current  = $("{0}" -f $iSCSIService.StartType)
+    Expected = $("Automatic")
+    Status   = if ($iSCSIService.StartType -eq 'Automatic') { $("Pass") } else { $("Fail") }
+})
+
+if ( !$AuditOnly )
     {
-        if ( $AuditOnly )
-            {
-                Write-Host $("AUDIT: iSCSI service status: {0} (expected: Running)" -f $iSCSIService.Status)
-                $auditIssues.Add($("iSCSI service not running"))
-            }
-        else
+        if ( $iSCSIService.Status -ne 'Running' )
             {
                 Start-Service MSiSCSI
                 Write-Host $("iSCSI service: started ({0})" -f (Get-Service MSiSCSI).Status)
             }
-    }
-else
-    {
-        Write-Host $("iSCSI service status: {0}" -f $iSCSIService.Status)
-    }
-
-if ( $iSCSIService.StartType -ne 'Automatic' )
-    {
-        if ( $AuditOnly )
-            {
-                Write-Host $("AUDIT: iSCSI service startup type: {0} (expected: Automatic)" -f $iSCSIService.StartType)
-                $auditIssues.Add($("iSCSI service startup type is {0}" -f $iSCSIService.StartType))
-            }
-        else
+        if ( $iSCSIService.StartType -ne 'Automatic' )
             {
                 $iSCSIService | Set-Service -StartupType Automatic
                 Write-Host $("iSCSI service startup type: set to Automatic")
@@ -410,7 +393,8 @@ if ( $iSCSIService.StartType -ne 'Automatic' )
     }
 else
     {
-        Write-Host $("iSCSI service startup type: {0}" -f $iSCSIService.StartType)
+        if ( $iSCSIService.Status -ne 'Running' )      { $auditIssues.Add($("iSCSI service not running")) }
+        if ( $iSCSIService.StartType -ne 'Automatic' ) { $auditIssues.Add($("iSCSI service startup type is {0}" -f $iSCSIService.StartType)) }
     }
 
 #endregion
@@ -425,6 +409,13 @@ $routeParamsProvided = @($DataSubnet, $DataSubnetMask, $iSCSInicGateway) | Where
 
 if ( $routeParamsProvided.Count -gt 0 -and $routeParamsProvided.Count -lt 3 )
     {
+        $Report.Add([PSCustomObject]@{
+            Section  = $("Static Route")
+            Name     = $("Route Parameters")
+            Current  = $("Incomplete ({0}/3 provided)" -f $routeParamsProvided.Count)
+            Expected = $("All 3 required")
+            Status   = $("Warn")
+        })
         Write-Warning $("Route configuration incomplete - all three params required: -iSCSInicGateway, -DataSubnet, -DataSubnetMask. Route skipped.")
     }
 
@@ -442,11 +433,21 @@ if ( $DataSubnet -and $DataSubnetMask -and $iSCSInicGateway )
             PolicyStore       = 'PersistentStore'
         }
 
-        if ( !(Get-NetRoute -DestinationPrefix $RouteParams.DestinationPrefix -NextHop $RouteParams.NextHop -ErrorAction SilentlyContinue) )
+        $existingRoute = Get-NetRoute -DestinationPrefix $RouteParams.DestinationPrefix -NextHop $RouteParams.NextHop -ErrorAction SilentlyContinue
+        $routeName     = $("{0} via {1}" -f $RouteParams.DestinationPrefix, $RouteParams.NextHop)
+
+        $Report.Add([PSCustomObject]@{
+            Section  = $("Static Route")
+            Name     = $routeName
+            Current  = if ($existingRoute) { $("Present") } else { $("Missing") }
+            Expected = $("Present")
+            Status   = if ($existingRoute) { $("Pass") } else { $("Fail") }
+        })
+
+        if ( !$existingRoute )
             {
                 if ( $AuditOnly )
                     {
-                        Write-Host $("AUDIT: Persistent route {0} via {1}: missing" -f $RouteParams.DestinationPrefix, $RouteParams.NextHop)
                         $auditIssues.Add($("Persistent route {0} missing" -f $RouteParams.DestinationPrefix))
                     }
                 else
@@ -462,10 +463,6 @@ if ( $DataSubnet -and $DataSubnetMask -and $iSCSInicGateway )
                             }
                     }
             }
-        else
-            {
-                Write-Host $("Persistent route: {0} via {1}" -f $RouteParams.DestinationPrefix, $RouteParams.NextHop)
-            }
     }
 
 #endregion
@@ -476,18 +473,18 @@ if ( $DataSubnet -and $DataSubnetMask -and $iSCSInicGateway )
 # The IQN must be registered in the Silk portal before iSCSI sessions can be established.
 $HostIQN = (Get-InitiatorPort | Where-Object { $_.ConnectionType -eq 'iSCSI' } | Select-Object -First 1).NodeAddress
 
-if ( [string]::IsNullOrEmpty($HostIQN) )
-    {
-        Write-Host $("Host iSCSI IQN: not found - confirm the iSCSI initiator service is running and a port is available.")
-    }
-else
-    {
-        Write-Host $("Host iSCSI IQN: {0}`n" -f $HostIQN)
-    }
+$Report.Add([PSCustomObject]@{
+    Section  = $("Host IQN")
+    Name     = $("iSCSI IQN")
+    Current  = if ([string]::IsNullOrEmpty($HostIQN)) { $("Not found - confirm iSCSI service is running") } else { $HostIQN }
+    Expected = $("N/A")
+    Status   = $("Info")
+})
 
-if ( !$AutoRestart -and !$AuditOnly )
+if ( !$AuditOnly )
     {
-        Read-Host -Prompt "Record the IQN above, then press Enter to continue"
+        Write-Host $("Host iSCSI IQN: {0}`n" -f (if ([string]::IsNullOrEmpty($HostIQN)) { $("not found - confirm the iSCSI initiator service is running and a port is available.") } else { $HostIQN }))
+        if ( !$AutoRestart ) { Read-Host -Prompt "Record the IQN above, then press Enter to continue" }
     }
 
 #endregion
@@ -510,31 +507,48 @@ if ( $AuditOnly )
                     }
                 catch
                     {
-                        if ( $InstalledModule )
-                            {
-                                Write-Host $("Module {0}: {1} installed (PSGallery unreachable - cannot check for updates)" -f $Module, $InstalledModule.Version)
-                            }
-                        else
-                            {
-                                Write-Host $("AUDIT: Module {0}: NOT INSTALLED (PSGallery unreachable)" -f $Module)
-                                $auditIssues.Add($("Module {0} not installed" -f $Module))
-                            }
+                        $Report.Add([PSCustomObject]@{
+                            Section  = $("PowerShell Modules")
+                            Name     = $Module
+                            Current  = if ($InstalledModule) { $("{0} (PSGallery unreachable)" -f $InstalledModule.Version) } else { $("Not installed (PSGallery unreachable)") }
+                            Expected = $("N/A")
+                            Status   = if ($InstalledModule) { $("Warn") } else { $("Fail") }
+                        })
+                        if ( !$InstalledModule ) { $auditIssues.Add($("Module {0} not installed" -f $Module)) }
                         continue
                     }
 
                 if ( !$InstalledModule )
                     {
-                        Write-Host $("AUDIT: Module {0}: NOT INSTALLED (PSGallery: {1})" -f $Module, $LatestModule.Version)
+                        $Report.Add([PSCustomObject]@{
+                            Section  = $("PowerShell Modules")
+                            Name     = $Module
+                            Current  = $("Not installed")
+                            Expected = $("{0}" -f $LatestModule.Version)
+                            Status   = $("Fail")
+                        })
                         $auditIssues.Add($("Module {0} not installed" -f $Module))
                     }
                 elseif ( $InstalledModule.Version -lt $LatestModule.Version )
                     {
-                        Write-Host $("AUDIT: Module {0}: {1} installed, {2} available on PSGallery" -f $Module, $InstalledModule.Version, $LatestModule.Version)
+                        $Report.Add([PSCustomObject]@{
+                            Section  = $("PowerShell Modules")
+                            Name     = $Module
+                            Current  = $("{0}" -f $InstalledModule.Version)
+                            Expected = $("{0}" -f $LatestModule.Version)
+                            Status   = $("Warn")
+                        })
                         $auditIssues.Add($("Module {0} outdated ({1} installed, {2} available)" -f $Module, $InstalledModule.Version, $LatestModule.Version))
                     }
                 else
                     {
-                        Write-Host $("Module {0}: {1} (current)" -f $Module, $InstalledModule.Version)
+                        $Report.Add([PSCustomObject]@{
+                            Section  = $("PowerShell Modules")
+                            Name     = $Module
+                            Current  = $("{0} (current)" -f $InstalledModule.Version)
+                            Expected = $("{0}" -f $LatestModule.Version)
+                            Status   = $("Pass")
+                        })
                     }
             }
     }
@@ -576,6 +590,13 @@ elseif ( $InstallPWSHModules )
                 catch
                     {
                         Write-Error $("Could not reach PSGallery for module '{0}': {1}" -f $Module, $_.Exception.Message)
+                        $Report.Add([PSCustomObject]@{
+                            Section  = $("PowerShell Modules")
+                            Name     = $Module
+                            Current  = $("PSGallery unreachable")
+                            Expected = $("N/A")
+                            Status   = $("Warn")
+                        })
                         continue
                     }
 
@@ -590,9 +611,23 @@ elseif ( $InstallPWSHModules )
                         catch
                             {
                                 Write-Error $("Failed to install module '{0}': {1}" -f $Module, $_.Exception.Message)
+                                $Report.Add([PSCustomObject]@{
+                                    Section  = $("PowerShell Modules")
+                                    Name     = $Module
+                                    Current  = $("Install failed")
+                                    Expected = $("{0}" -f $LatestModule.Version)
+                                    Status   = $("Error")
+                                })
                                 continue
                             }
                     }
+                $Report.Add([PSCustomObject]@{
+                    Section  = $("PowerShell Modules")
+                    Name     = $Module
+                    Current  = $("{0}" -f $LatestModule.Version)
+                    Expected = $("{0}" -f $LatestModule.Version)
+                    Status   = $("Pass")
+                })
                 Write-Host $("Module {0} version {1}: installed." -f $LatestModule.Name, $LatestModule.Version)
                 if ( !(Get-Module -Name $Module) ) { Import-Module $Module }
             }
@@ -601,24 +636,95 @@ elseif ( $InstallPWSHModules )
 #endregion
 
 
-#region Audit Summary
+#region Report
 
-if ( $AuditOnly )
+$reportSeparator = $("=" * 72)
+$modeLabel       = if ( $AuditOnly ) { $("Audit Report") } else { $("Apply Summary") }
+
+Write-Host $("")
+Write-Host $reportSeparator
+Write-Host $("  Silk Host Best Practices - {0}" -f $modeLabel)
+Write-Host $("  Host: {0}    {1}" -f $env:COMPUTERNAME, (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'))
+Write-Host $reportSeparator
+
+$currentSection = $("")
+foreach ( $item in $Report )
     {
-        Write-Host $("")
-        if ( $auditIssues.Count -eq 0 )
+        if ( $item.Section -ne $currentSection )
             {
-                Write-Host $("AUDIT COMPLETE: Host is fully compliant. No changes required.")
+                $currentSection = $item.Section
+                Write-Host $("")
+                Write-Host $("  {0}" -f $currentSection)
+            }
+
+        $statusTag = switch ( $item.Status )
+            {
+                'Pass'  { if ( $AuditOnly ) { '[PASS]' } else { '[ OK ]' } }
+                'Fail'  { if ( $AuditOnly ) { '[FAIL]' } else { '[CHGD]' } }
+                'Warn'  { '[WARN]' }
+                'Info'  { '[INFO]' }
+                'Error' { '[ERR ]' }
+                default { '[    ]' }
+            }
+        $color = switch ( $item.Status )
+            {
+                'Pass'  { 'Green' }
+                'Fail'  { if ( $AuditOnly ) { 'Red' } else { 'Yellow' } }
+                'Warn'  { 'Yellow' }
+                'Info'  { 'Cyan' }
+                'Error' { 'Red' }
+                default { 'White' }
+            }
+
+        $nameCol = $("    {0}" -f $item.Name).PadRight(34)
+
+        if ( $item.Status -eq 'Info' )
+            {
+                # Info items show value after the tag - IQNs can be long
+                Write-Host $("{0}{1}  {2}" -f $nameCol, $statusTag, $item.Current) -ForegroundColor $color
+            }
+        elseif ( $item.Status -eq 'Pass' )
+            {
+                $currentCol = $("{0}" -f $item.Current).PadRight(26)
+                Write-Host $("{0}{1}{2}" -f $nameCol, $currentCol, $statusTag) -ForegroundColor $color
             }
         else
             {
-                Write-Host $("AUDIT COMPLETE: {0} issue(s) found:" -f $auditIssues.Count)
-                foreach ($issue in $auditIssues)
-                    {
-                        Write-Host $("  - {0}" -f $issue)
-                    }
+                $currentCol = $("{0}" -f $item.Current).PadRight(26)
+                Write-Host $("{0}{1}{2}  (expected: {3})" -f $nameCol, $currentCol, $statusTag, $item.Expected) -ForegroundColor $color
             }
     }
+
+$failCount = ($Report | Where-Object { $_.Status -eq 'Fail' }).Count
+$warnCount = ($Report | Where-Object { $_.Status -eq 'Warn' }).Count
+
+Write-Host $("")
+Write-Host $reportSeparator
+
+if ( $AuditOnly )
+    {
+        if ( $failCount -eq 0 -and $warnCount -eq 0 )
+            {
+                Write-Host $("  RESULT: Host is fully compliant. No changes required.") -ForegroundColor Green
+            }
+        else
+            {
+                Write-Host $("  RESULT: {0} issue(s) found." -f ($failCount + $warnCount)) -ForegroundColor Red
+            }
+    }
+else
+    {
+        if ( $failCount -eq 0 )
+            {
+                Write-Host $("  RESULT: All settings already compliant. No changes made.") -ForegroundColor Green
+            }
+        else
+            {
+                Write-Host $("  RESULT: {0} setting(s) applied." -f $failCount) -ForegroundColor Yellow
+            }
+    }
+
+Write-Host $reportSeparator
 
 #endregion
 

@@ -421,6 +421,13 @@ else
 # Adds a persistent (boot-surviving) route so iSCSI traffic to the Silk data subnet is
 # directed through the iSCSI gateway rather than the default gateway.
 # Find-NetRoute resolves the correct NIC interface index from the gateway IP alone.
+$routeParamsProvided = @($DataSubnet, $DataSubnetMask, $iSCSInicGateway) | Where-Object { $_ }
+
+if ( $routeParamsProvided.Count -gt 0 -and $routeParamsProvided.Count -lt 3 )
+    {
+        Write-Warning $("Route configuration incomplete - all three params required: -iSCSInicGateway, -DataSubnet, -DataSubnetMask. Route skipped.")
+    }
+
 if ( $DataSubnet -and $DataSubnetMask -and $iSCSInicGateway )
     {
         $PrefixLength = ( ([IPAddress]$DataSubnetMask.IPAddressToString).GetAddressBytes() |
@@ -572,7 +579,7 @@ elseif ( $InstallPWSHModules )
                         continue
                     }
 
-                if ( !($FoundModule = Get-Module -ListAvailable -Name $Module | Select-Object -First 1 | Where-Object -FilterScript { $_.Version -ge $LatestModule.Version }) )
+                if ( !(Get-Module -ListAvailable -Name $Module | Select-Object -First 1 | Where-Object -FilterScript { $_.Version -ge $LatestModule.Version }) )
                     {
                         Write-Host $("Module {0} version {1}: installing..." -f $LatestModule.Name, $LatestModule.Version)
                         try

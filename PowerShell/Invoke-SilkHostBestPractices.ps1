@@ -1,6 +1,26 @@
 #Requires -RunAsAdministrator
 #Requires -Version 5.1
 
+[CmdletBinding(DefaultParameterSetName='Apply')]
+param(
+    [Parameter()]
+    [ipaddress] $iSCSInicGateway,
+    [Parameter()]
+    [ipaddress] $DataSubnet,
+    [Parameter()]
+    [ValidateSet("255.255.255.240", "255.255.255.224", "255.255.255.128")]
+    [ipaddress] $DataSubnetMask,
+    [Parameter(ParameterSetName='Apply')]
+    [switch] $AutoRestart,
+    [Parameter()]
+    [switch] $InstallPWSHModules,
+    [Parameter(ParameterSetName='Audit')]
+    [switch] $AuditOnly,
+    [Parameter()]
+    [switch] $NoTranscript
+)
+
+
 function Invoke-SilkHostBestPractices {
 <#
 .SYNOPSIS
@@ -483,7 +503,8 @@ $Report.Add([PSCustomObject]@{
 
 if ( !$AuditOnly )
     {
-        Write-Host $("Host iSCSI IQN: {0}`n" -f (if ([string]::IsNullOrEmpty($HostIQN)) { $("not found - confirm the iSCSI initiator service is running and a port is available.") } else { $HostIQN }))
+        $iqnDisplay = if ([string]::IsNullOrEmpty($HostIQN)) { $("not found - confirm the iSCSI initiator service is running and a port is available.") } else { $HostIQN }
+        Write-Host $("Host iSCSI IQN: {0}`n" -f $iqnDisplay)
         if ( !$AutoRestart ) { Read-Host -Prompt "Record the IQN above, then press Enter to continue" }
     }
 

@@ -171,7 +171,7 @@ else
 if ( $mpioFeature.Installed )
     {
         # All state captured upfront so the compliance check and every inner check
-        # read from the same snapshot — no short-circuit evaluation side effects.
+        # read from the same snapshot - no short-circuit evaluation side effects.
         $MSDSMSupportedHW                    = Get-MSDSMSupportedHW -VendorId MSFT2005 -ProductId iSCSIBusType_0x9 -ErrorAction SilentlyContinue
         $MSDSMGlobalDefaultLoadBalancePolicy = Get-MSDSMGlobalDefaultLoadBalancePolicy
         $iSCSIMSDSMAutomaticClaimSettings    = (Get-MSDSMAutomaticClaimSettings)['iSCSI']
@@ -341,7 +341,7 @@ if ( $mpioFeature.Installed )
 
                 if ( !$AuditOnly -and $restartRequired )
                     {
-                        if ( !$AutoRestart ) { Read-Host -Prompt "Settings changed — restart required. Press Enter to restart or Ctrl+C to exit." }
+                        if ( !$AutoRestart ) { Read-Host -Prompt "Settings changed - restart required. Press Enter to restart or Ctrl+C to exit." }
                         if ( $transcriptStarted ) { Stop-Transcript | Out-Null }
                         Restart-Computer -Force
                         return
@@ -467,7 +467,7 @@ $HostIQN = (Get-InitiatorPort | Where-Object { $_.ConnectionType -eq 'iSCSI' } |
 
 if ( [string]::IsNullOrEmpty($HostIQN) )
     {
-        Write-Host $("Host iSCSI IQN: not found — confirm the iSCSI initiator service is running and a port is available.")
+        Write-Host $("Host iSCSI IQN: not found - confirm the iSCSI initiator service is running and a port is available.")
     }
 else
     {
@@ -486,7 +486,7 @@ if ( !$AutoRestart -and !$AuditOnly )
 
 if ( $InstallPWSHModules -and !$AuditOnly )
     {
-        # Ensure NuGet provider is available — required by Install-Module from PSGallery
+        # Ensure NuGet provider is available - required by Install-Module from PSGallery
         if ( !($NuGetVersion = Get-PackageProvider | Where-Object -FilterScript { $_.Name -eq "NuGet" -and $_.Version -ge 2.8.5.201 }) )
             {
                 Write-Host $("NuGet Package Provider not found. Installing...")

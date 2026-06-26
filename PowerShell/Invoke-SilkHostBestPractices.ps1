@@ -34,16 +34,19 @@ function Invoke-SilkHostBestPractices {
     Accepted values: 255.255.255.240 (/28), 255.255.255.224 (/27), 255.255.255.128 (/25).
 
 .PARAMETER AutoRestart
-    Suppresses the interactive confirmation prompt before each required restart.
+    (Apply mode) Suppresses the interactive confirmation prompt before each required restart.
     Omit for attended use; include for automated/unattended deployments.
+    Cannot be combined with -AuditOnly.
 
 .PARAMETER InstallPWSHModules
-    Installs the silkiscsi and sdp PowerShell modules needed for Silk management operations.
+    Apply mode: installs or upgrades the silkiscsi and sdp PowerShell modules from PSGallery.
+    Audit mode: reports installed version vs PSGallery latest for each module.
     Requires outbound internet access to PSGallery.
 
 .PARAMETER AuditOnly
-    Reports compliance status without making any changes. No restart occurs.
+    (Audit mode) Reports compliance status without making any changes. No restart occurs.
     Script exits with code 1 if any settings are non-compliant.
+    Cannot be combined with -AutoRestart.
 
 .PARAMETER NoTranscript
     Disables session transcript logging. By default a timestamped log is written to $env:TEMP.
@@ -80,6 +83,7 @@ function Invoke-SilkHostBestPractices {
     After an MPIO feature install restart, re-run this script to complete configuration.
     Can also be dot-sourced and called directly: . .\Invoke-SilkHostBestPractices.ps1; Invoke-SilkHostBestPractices @params
 #>
+[CmdletBinding(DefaultParameterSetName='Apply')]
 param(
     [Parameter()]
     [ipaddress] $iSCSInicGateway,
@@ -88,11 +92,11 @@ param(
     [Parameter()]
     [ValidateSet("255.255.255.240", "255.255.255.224", "255.255.255.128")]
     [ipaddress] $DataSubnetMask,
-    [Parameter()]
+    [Parameter(ParameterSetName='Apply')]
     [switch] $AutoRestart,
     [Parameter()]
     [switch] $InstallPWSHModules,
-    [Parameter()]
+    [Parameter(ParameterSetName='Audit')]
     [switch] $AuditOnly,
     [Parameter()]
     [switch] $NoTranscript
@@ -484,7 +488,50 @@ if ( !$AutoRestart -and !$AuditOnly )
 
 #region PowerShell Module Installation
 
-if ( $InstallPWSHModules -and !$AuditOnly )
+$SilkModules = @("silkiscsi", "sdp")
+
+if ( $AuditOnly )
+    {
+        # Always report module state in audit mode regardless of -InstallPWSHModules
+        foreach ($Module in $SilkModules)
+            {
+                $InstalledModule = Get-Module -ListAvailable -Name $Module | Sort-Object Version -Descending | Select-Object -First 1
+                $LatestModule    = $null
+                try
+                    {
+                        $LatestModule = Find-Module -Name $Module -Repository PSGallery -ErrorAction Stop
+                    }
+                catch
+                    {
+                        if ( $InstalledModule )
+                            {
+                                Write-Host $("Module {0}: {1} installed (PSGallery unreachable - cannot check for updates)" -f $Module, $InstalledModule.Version)
+                            }
+                        else
+                            {
+                                Write-Host $("AUDIT: Module {0}: NOT INSTALLED (PSGallery unreachable)" -f $Module)
+                                $auditIssues.Add($("Module {0} not installed" -f $Module))
+                            }
+                        continue
+                    }
+
+                if ( !$InstalledModule )
+                    {
+                        Write-Host $("AUDIT: Module {0}: NOT INSTALLED (PSGallery: {1})" -f $Module, $LatestModule.Version)
+                        $auditIssues.Add($("Module {0} not installed" -f $Module))
+                    }
+                elseif ( $InstalledModule.Version -lt $LatestModule.Version )
+                    {
+                        Write-Host $("AUDIT: Module {0}: {1} installed, {2} available on PSGallery" -f $Module, $InstalledModule.Version, $LatestModule.Version)
+                        $auditIssues.Add($("Module {0} outdated ({1} installed, {2} available)" -f $Module, $InstalledModule.Version, $LatestModule.Version))
+                    }
+                else
+                    {
+                        Write-Host $("Module {0}: {1} (current)" -f $Module, $InstalledModule.Version)
+                    }
+            }
+    }
+elseif ( $InstallPWSHModules )
     {
         # Ensure NuGet provider is available - required by Install-Module from PSGallery
         if ( !($NuGetVersion = Get-PackageProvider | Where-Object -FilterScript { $_.Name -eq "NuGet" -and $_.Version -ge 2.8.5.201 }) )
@@ -512,8 +559,7 @@ if ( $InstallPWSHModules -and !$AuditOnly )
             }
 
         # Install silkiscsi and sdp from PSGallery; upgrade if an older version is already present
-        $Modules = @("silkiscsi", "sdp")
-        foreach ($Module in $Modules)
+        foreach ($Module in $SilkModules)
             {
                 $LatestModule = $null
                 try

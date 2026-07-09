@@ -36,9 +36,20 @@ trap 'rm -rf "$tmpdir"' EXIT
 
 # little wrapper - run a gcloud cmd with --format=json and hand back parsed json.
 # gcloud writes progress to stderr so we only care about stdout here.
+# gcloud_json() {
+#     local out
+#     out=$(gcloud "$@" --format=json 2>/dev/null) || { echo "[]"; return; }
+#     if [ -z "$out" ]; then echo "[]"; else echo "$out"; fi
+# }
+# ^ swallowed errors silently - empty sections in the json with zero clue why.
+# now we keep stderr and warn so api-disabled / permission fails are visible.
 gcloud_json() {
     local out
-    out=$(gcloud "$@" --format=json 2>/dev/null) || { echo "[]"; return; }
+    if ! out=$(gcloud "$@" --format=json 2>"$tmpdir/gcloud_err"); then
+        echo -e "${YELLOW}  warn: 'gcloud $*' failed: $(tail -n1 "$tmpdir/gcloud_err")${NC}" >&2
+        echo "[]"
+        return
+    fi
     if [ -z "$out" ]; then echo "[]"; else echo "$out"; fi
 }
 
@@ -108,8 +119,10 @@ echo -e "${GREEN}Using project: $proj_name ($PROJECT)${NC}"
 # region quotas
 echo -e "${CYAN}Retrieving compute regions and quotas...${NC}"
 
-# which metrics we care about for a flex deploy
-quota_metrics='["CPUS","N2_CPUS","C2_CPUS","DISKS_TOTAL_GB","SSD_TOTAL_GB","LOCAL_SSD_TOTAL_GB","IN_USE_ADDRESSES","NETWORKS","SUBNETWORKS"]'
+# which metrics we care about for a flex deploy - families come from gcp_skus.json
+# (c4d/c3d standard+highmem cnodes, n2 highmem cnodes + n2 standard mnodes)
+# quota_metrics='["CPUS","N2_CPUS","C2_CPUS","DISKS_TOTAL_GB","SSD_TOTAL_GB","LOCAL_SSD_TOTAL_GB","IN_USE_ADDRESSES","NETWORKS","SUBNETWORKS"]'   # c2 isnt a flex sku anymore, missing c3d/c4d
+quota_metrics='["CPUS","N2_CPUS","C3D_CPUS","C4D_CPUS","DISKS_TOTAL_GB","SSD_TOTAL_GB","LOCAL_SSD_TOTAL_GB","IN_USE_ADDRESSES","NETWORKS","SUBNETWORKS"]'
 
 gcloud_json compute regions list > "$tmpdir/regions.json"
 
@@ -193,23 +206,56 @@ jq -r '.[]?.name' "$tmpdir/networks.json" | while read -r nn; do
     echo -e "${GRAY}  Processed network: $nn${NC}"
 done
 
+# ancestors (folder/org) - iam grants and org policies usually live up the
+# chain, not on the project itself. need these for the next two sections.
+gcloud_json projects get-ancestors "$PROJECT" > "$tmpdir/ancestors.json"
+
 # org policies (the gcp version of azure policy / aws SCPs)
+# newer gcloud dropped 'resource-manager org-policies' for plain 'org-policies'
+# with a different shape (name + spec.rules instead of constraint + listPolicy).
+# try the new one first, fall back to legacy, normalize both to the same objects.
 echo -e "${CYAN}Retrieving organization policies...${NC}"
-gcloud_json resource-manager org-policies list --project="$PROJECT" > "$tmpdir/org_policies_raw.json"
+gcloud_json org-policies list --project="$PROJECT" > "$tmpdir/op_project.json"
+if [ "$(jq 'length' "$tmpdir/op_project.json")" -eq 0 ]; then
+    gcloud_json resource-manager org-policies list --project="$PROJECT" > "$tmpdir/op_project.json"
+fi
+
+# policies set directly on a project are rare - orgs set them at folder/org
+# level and they inherit down. walk the ancestry too. project stays first in
+# the stream so it wins when the same constraint shows up twice.
+cat "$tmpdir/op_project.json" > "$tmpdir/op_stream.json"
+while IFS=$'\t' read -r atype aid; do
+    case "$atype" in
+        folder)       gcloud_json org-policies list --folder="$aid"       >> "$tmpdir/op_stream.json" ;;
+        organization) gcloud_json org-policies list --organization="$aid" >> "$tmpdir/op_stream.json" ;;
+    esac
+done < <(jq -r '.[]? | select(.type != "project") | [.type, .id] | @tsv' "$tmpdir/ancestors.json")
+
+jq -s 'map(if type == "array" then . else [] end) | add // []' "$tmpdir/op_stream.json" > "$tmpdir/org_policies_raw.json"
 
 op_count=$(jq 'length' "$tmpdir/org_policies_raw.json")
-echo -e "${CYAN}Processing $op_count org policy/policies...${NC}"
+echo -e "${CYAN}Processing $op_count org policy/policies (project + inherited)...${NC}"
 
-# listPolicy vs booleanPolicy - record whichever is set
-jq '[ .[]? | { "Constraint": .constraint }
+# legacy: listPolicy vs booleanPolicy. new: spec.rules with enforce / values.
+# unique_by keeps the first hit per constraint = the most specific level.
+jq '[ .[]? |
+    { "Constraint": (.constraint // (.name | split("/") | last)) }
     + (if .booleanPolicy then
         { "Type": "boolean", "Enforced": (.booleanPolicy.enforced // false) }
       elif .listPolicy then
         { "Type": "list",
           "Allowed Values": (.listPolicy.allowedValues // []),
           "Denied Values":  (.listPolicy.deniedValues // []) }
+      elif .spec then
+        (if ([ .spec.rules[]? | select(.enforce != null) ] | length) > 0 then
+            { "Type": "boolean", "Enforced": ([ .spec.rules[]? | .enforce == true ] | any) }
+        else
+            { "Type": "list",
+              "Allowed Values": ([ .spec.rules[]?.values.allowedValues // [] ] | add // []),
+              "Denied Values":  ([ .spec.rules[]?.values.deniedValues  // [] ] | add // []) }
+        end)
       else {} end)
-]' "$tmpdir/org_policies_raw.json" > "$tmpdir/org_policies.json"
+] | unique_by(.Constraint)' "$tmpdir/org_policies_raw.json" > "$tmpdir/org_policies.json"
 
 # operator iam roles + permissions
 # pull the project iam policy, find the bindings the caller is in, describe each role for its perms
@@ -247,15 +293,41 @@ gcloud_json projects get-iam-policy "$PROJECT" > "$tmpdir/iam_policy.json"
 # we surface group bindings and note them).
 user_member="user:$active_account"
 
-binding_count=$(jq '.bindings | length' "$tmpdir/iam_policy.json" 2>/dev/null || echo 0)
-echo -e "${CYAN}Processing $binding_count IAM binding(s)...${NC}"
+# v1 kept only bindings the operator appeared in:
+# jq --arg u "$user_member" '[ .bindings[]?
+#     | select(
+#         ((.members // []) | index($u))
+#         or ([ .members[]? | select(startswith("group:") or startswith("domain:")) ] | length > 0)
+#     ) ]' "$tmpdir/iam_policy.json" > "$tmpdir/op_bindings.json"
+# ^ came back empty on org-managed projects - the humans are granted at the
+# folder/org level and the project policy is all service accounts. so now:
+# keep EVERY project binding (labeled), and chase the operator up the ancestry.
 
-# keep only the bindings the operator is actually in
-jq --arg u "$user_member" '[ .bindings[]?
-    | select(
-        ((.members // []) | index($u))
-        or ([ .members[]? | select(startswith("group:") or startswith("domain:")) ] | length > 0)
-    ) ]' "$tmpdir/iam_policy.json" > "$tmpdir/op_bindings.json"
+jq --arg s "projects/$PROJECT" \
+    '[ (if type == "object" then (.bindings // []) else [] end)[] | . + { "scope": $s } ]' \
+    "$tmpdir/iam_policy.json" > "$tmpdir/bindings_stream.json"
+
+# folder/org bindings - just the ones that mention the operator. these 403
+# for plenty of users, thats fine, gcloud_json warns and moves on.
+while IFS=$'\t' read -r atype aid; do
+    case "$atype" in
+        folder)       gcloud_json resource-manager folders get-iam-policy "$aid" > "$tmpdir/anc_policy.json"; ascope="folders/$aid" ;;
+        organization) gcloud_json organizations get-iam-policy "$aid" > "$tmpdir/anc_policy.json"; ascope="organizations/$aid" ;;
+        *) continue ;;
+    esac
+    jq --arg s "$ascope" --arg u "$user_member" \
+        '[ (if type == "object" then (.bindings // []) else [] end)[]
+            | select(
+                ((.members // []) | index($u))
+                or ([ .members[]? | select(startswith("group:") or startswith("domain:")) ] | length > 0)
+            )
+            | . + { "scope": $s } ]' "$tmpdir/anc_policy.json" >> "$tmpdir/bindings_stream.json"
+done < <(jq -r '.[]? | select(.type != "project") | [.type, .id] | @tsv' "$tmpdir/ancestors.json")
+
+jq -s 'map(if type == "array" then . else [] end) | add // []' "$tmpdir/bindings_stream.json" > "$tmpdir/all_bindings.json"
+
+binding_count=$(jq 'length' "$tmpdir/all_bindings.json")
+echo -e "${CYAN}Processing $binding_count IAM binding(s) across project + ancestors...${NC}"
 
 # describe each unique role once, collect into a role -> permissions map
 echo '{}' > "$tmpdir/role_perms.json"
@@ -265,24 +337,25 @@ while IFS= read -r role; do
         | jq -c 'if type=="object" then (.includedPermissions // []) else [] end' > "$tmpdir/perms_one.json"
     jq --arg r "$role" --slurpfile p "$tmpdir/perms_one.json" '. + { ($r): $p[0] }' \
         "$tmpdir/role_perms.json" > "$tmpdir/role_perms.tmp" && mv "$tmpdir/role_perms.tmp" "$tmpdir/role_perms.json"
-done < <(jq -r '.[].role' "$tmpdir/op_bindings.json" | sort -u)
+done < <(jq -r '.[].role' "$tmpdir/all_bindings.json" | sort -u)
 
 # all the shaping lives in jq now - match the standardized role object shape
 # (Role Name / Scope / Actions), same as the azure/aws scripts emit.
-jq --arg u "$user_member" --arg scope "projects/$PROJECT" \
-   --slurpfile perms "$tmpdir/role_perms.json" '
+jq --arg u "$user_member" --slurpfile perms "$tmpdir/role_perms.json" '
 [ .[] | {
     "Role Name": .role,
-    "Scope": $scope,
-    "Assignment Type": (if ((.members // []) | index($u)) then "User (Direct)"
-        else "Group/Domain (\([ .members[]? | select(startswith("group:") or startswith("domain:")) ] | join(", ")))"
-        end),
+    "Scope": .scope,
+    "Assignment Type": (
+        if ((.members // []) | index($u)) then "User (Direct)"
+        elif ([ .members[]? | select(startswith("group:") or startswith("domain:")) ] | length) > 0 then
+            "Group/Domain (\([ .members[]? | select(startswith("group:") or startswith("domain:")) ] | join(", ")))"
+        else "Other Principals" end),
     "Is Custom": (.role | (startswith("projects/") or startswith("organizations/"))),
     "Actions": ($perms[0][.role] // []),
     "Members": (.members // [])
-} ]' "$tmpdir/op_bindings.json" > "$tmpdir/iam_roles.json"
+} ]' "$tmpdir/all_bindings.json" > "$tmpdir/iam_roles.json"
 
-echo -e "${CYAN}Processed $(jq 'length' "$tmpdir/iam_roles.json") role binding(s) for the operator.${NC}"
+echo -e "${CYAN}Processed $(jq 'length' "$tmpdir/iam_roles.json") role binding(s).${NC}"
 
 # write the json out
 # gcp has no PIM so that array stays empty, keeps the schema parallel with azure.

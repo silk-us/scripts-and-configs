@@ -21,6 +21,7 @@
     "Microsoft.Compute/galleries/images/write",
     "Microsoft.Compute/galleries/images/versions/read",
     "Microsoft.Compute/galleries/images/versions/write",
+    "Microsoft.Compute/galleries/images/versions/delete",
     "Microsoft.Compute/images/read",
     "Microsoft.Compute/images/write",
     "Microsoft.Compute/images/delete",

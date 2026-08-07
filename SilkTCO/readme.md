@@ -47,6 +47,7 @@ Install the required AWS Tools for PowerShell modules:
 Install-Module AWS.Tools.EC2 -Force
 Install-Module AWS.Tools.CloudWatch -Force
 Install-Module AWS.Tools.Pricing -Force
+Install-Module AWS.Tools.RDS -Force   # only needed for the RDS export
 ```
 
 Then configure your AWS credentials:
@@ -152,6 +153,65 @@ Export-SilkTCOAWS -days 7 -TagKey "Project" -TagValue "Database" -region "us-eas
 ```powershell
 Export-SilkTCOAWS -inputFile ".\instances.txt" -days 14
 ```
+
+---
+
+## AWS RDS TCO Export
+
+For managed **RDS** databases, use the `Export-SilkTCOAWSRDS` function. RDS is separate from EC2 - the storage is managed by AWS and can't be enumerated like EBS volumes, so capacity is read from the database instance itself and performance comes from CloudWatch.
+
+> **Note:** Aurora is not covered by this function. Its storage model is different from standard RDS and is out of scope.
+
+### Basic Usage
+```powershell
+Export-SilkTCOAWSRDS
+```
+
+This generates a report with 1 day of capacity, performance, cost, and snapshot data for all available RDS instances.
+
+### RDS Parameters
+
+* **`-days`** - Number of days to include in the report (default: 1)
+    ```powershell
+    Export-SilkTCOAWSRDS -days 7
+    ```
+
+* **`-offsetDays`** - Days to shift the collection window back from "now" (default: 1). Leave this at the default for normal reporting - metrics and billing data lag behind real time, so the offset keeps the window complete. Only drop to `0` to capture instances created within the last day.
+    ```powershell
+    Export-SilkTCOAWSRDS -days 1 -offsetDays 0
+    ```
+
+* **`-region`** - Specify AWS region (auto-detected if not provided)
+    ```powershell
+    Export-SilkTCOAWSRDS -region "us-west-2"
+    ```
+
+* **`-TagKey`** and **`-TagValue`** - Filter RDS instances by tag
+    ```powershell
+    Export-SilkTCOAWSRDS -TagKey "Environment" -TagValue "Production"
+    ```
+
+* **`-inputFile`** - Read DB instance identifiers from a file (one per line)
+    ```powershell
+    Export-SilkTCOAWSRDS -inputFile ".\rds-list.txt"
+    ```
+
+* **`-allDBs`** - Include non-available instances (default: available only)
+    ```powershell
+    Export-SilkTCOAWSRDS -allDBs
+    ```
+
+### Example: 7-Day Report for a Region
+```powershell
+Export-SilkTCOAWSRDS -days 7 -region "us-east-1"
+```
+
+### RDS Output
+
+The RDS report is written to a date-stamped CSV (`SilkTCO_RDS_Report_...csv`) with two row types, identified by the **`RecordType`** column:
+
+* **`Instance`** rows - one per database instance: provisioned and used capacity, IOPS, throughput and latency (average and peak), plus estimated compute and storage cost.
+* **`Snapshot`** rows - one per snapshot: snapshot name, its source instance, size, type (manual / automated / copy), and creation date. Performance and cost columns are blank on these rows - a snapshot is static backup storage and does not serve I/O.
 
 ---
 

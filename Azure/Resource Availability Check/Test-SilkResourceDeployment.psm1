@@ -1,5 +1,35 @@
 
 
+<#
+    Detects whether this host can actually take keyboard input.
+
+    Azure Automation sandboxes, CI agents and scheduled tasks have no console, and
+    the System.Console members below throw there rather than returning anything. The
+    module previously called them unconditionally, so an unattended run died at the
+    first question it tried to ask - which for Automation meant the zone quota gate
+    aborted the run, and the cleanup countdown threw before cleanup could start,
+    leaving deployed VMs behind.
+
+    Probing KeyAvailable is the direct test: it is the same member the countdown
+    relies on, and it throws in exactly the hosts that cannot answer a prompt.
+    Cached because the answer cannot change within a run.
+#>
+$script:SilkConsoleAvailable = $null
+function Test-SilkConsoleAvailable
+    {
+        if ($null -ne $script:SilkConsoleAvailable) { return $script:SilkConsoleAvailable }
+        try
+            {
+                $null = [Console]::KeyAvailable
+                $script:SilkConsoleAvailable = $true
+            }
+        catch
+            {
+                $script:SilkConsoleAvailable = $false
+            }
+        return $script:SilkConsoleAvailable
+    }
+
 function Test-SilkResourceDeployment
     {
 
@@ -1396,7 +1426,7 @@ function Test-SilkResourceDeployment
         begin
             {
                 $StartTime     = Get-Date
-                $scriptVersion = '1.1.0'
+                $scriptVersion = '1.2.0'
 
                 Write-Host $("Test-SilkResourceDeployment v{0} — {1}" -f $scriptVersion, $StartTime.ToString("yyyy-MM-dd HH:mm:ss")) -ForegroundColor Cyan
 
@@ -7561,7 +7591,21 @@ function Test-SilkResourceDeployment
                                 Write-Host $("")
                                 Write-Host $("  [Enter]  Run all {0} zones sequentially (one at a time — takes longer, uses only 1x quota)" -f $zoneCount) -ForegroundColor Green
                                 Write-Host $("  [zones]  Specify up to {0} zone(s) for a simultaneous run, e.g. {1}: " -f $maxSupportedZones, (($availableZoneChoices | Select-Object -First $maxSupportedZones) -join ",")) -NoNewline -ForegroundColor DarkGray
-                                $userZoneInput = [Console]::ReadLine().Trim()
+                                # Enter - i.e. run every zone sequentially - is already this
+                                # prompt's default, and it is the only answer that still covers
+                                # all the requested zones. An unattended run therefore takes it
+                                # rather than asking a question nobody is there to answer.
+                                # Announced, so the report and the transcript both show that the
+                                # choice was made for quota reasons rather than requested.
+                                if (Test-SilkConsoleAvailable)
+                                    {
+                                        $userZoneInput = [Console]::ReadLine().Trim()
+                                    }
+                                else
+                                    {
+                                        $userZoneInput = ''
+                                        Write-Host $("   No interactive console - running all {0} zones sequentially, which is this prompt's default." -f $zoneCount) -ForegroundColor Yellow
+                                    }
 
                                 if ([string]::IsNullOrEmpty($userZoneInput))
                                     {
@@ -10128,6 +10172,16 @@ function Test-SilkResourceDeployment
                         # 60-second countdown with keypress detection
                         $countdownSeconds = 60
                         $userProceeded = $false
+
+                        # The countdown exists only so a person can interrupt cleanup. With no
+                        # console there is nobody to interrupt it, and polling KeyAvailable
+                        # throws - which used to abort the function BEFORE the cleanup below,
+                        # leaving the deployed resources in place. Skip straight to cleanup.
+                        if (-not (Test-SilkConsoleAvailable))
+                            {
+                                $countdownSeconds = 0
+                                Write-Host $("No interactive console - starting cleanup immediately.") -ForegroundColor Yellow
+                            }
 
                         for ($i = $countdownSeconds; $i -gt 0; $i--)
                             {

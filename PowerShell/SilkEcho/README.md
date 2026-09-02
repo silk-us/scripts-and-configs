@@ -32,8 +32,8 @@ already run.
 
 ## Requirements
 
-- Windows PowerShell 5.1 or PowerShell 7. Tested on 5.1, which is what SQL Server
-  Agent launches.
+- Windows PowerShell 5.1 or PowerShell 7. Verified on both; 5.1 is what SQL
+  Server Agent launches, and what the live testing was done on.
 - Network access from wherever the script runs to the Flex server. The script does
   not have to run on either database host.
 - Both hosts registered in Echo with the Silk Agent connected.
@@ -48,6 +48,47 @@ the module from its own directory.
 
 It does not have to be either database host. Anywhere with network access to Flex
 will do, including the SQL Server itself if that is convenient.
+
+## Get started
+
+You need three things: the two files above on a machine that can reach Flex, an
+application token issued in Flex, and the names of the two hosts as Echo has them
+registered. `Get-SilkEchoHost` lists those if you are not sure.
+
+**See what it would do.** This changes nothing and does not take a snapshot:
+
+```powershell
+.\Invoke-EchoDatabaseCopy.ps1 -Server flex.contoso.com -Token '<token>' `
+    -SourceHost sql-prod -DestinationHost sql-dev -WhatIf
+```
+
+```
+[INFO ] SilkEcho 1.3.0 loaded from C:\Silk\SilkEcho\SilkEcho.psm1
+[INFO ] Discovering the databases Echo can see on 'sql-prod'.
+[INFO ] In scope (3): SalesDB, financeDB, inventoryDB
+[STEP ] Plan:
+[STEP ]   sql-dev
+[INFO ]     Clone    SalesDB -> SalesDB  (not present on the destination host)
+[INFO ]     Clone    financeDB -> financeDB  (not present on the destination host)
+[INFO ]     Clone    inventoryDB -> inventoryDB  (not present on the destination host)
+[WARN ] WhatIf: stopping before the snapshot. Nothing has been changed.
+```
+
+**Then do it,** by dropping `-WhatIf`. One snapshot of the source, then the
+copies are mounted on the destination. Expect a couple of minutes per operation.
+
+**Then run the exact same command again.** The plan flips to `Refresh`, because
+the copies now exist: it takes a new snapshot, drops the old volumes and attaches
+the new ones under the same names. That is the whole point, and it is why the
+scheduled job never needs to know whether it is the first run or the hundredth.
+
+From here:
+
+- [What the caller has to supply](#what-the-caller-has-to-supply) for every
+  option, including naming databases explicitly rather than taking them all.
+- [Triggering from a SQL Server Agent job](#triggering-from-a-sql-server-agent-job)
+  to put it on a schedule.
+- [Exit codes](#exit-codes) if something calls this and needs to react.
 
 ## Authentication
 
@@ -78,7 +119,11 @@ Flex rejected the token on /api/v1/hosts (403). It is revoked, belongs to a
 different Flex, or lacks access to this endpoint.
 ```
 
-## Quick start
+## Working from the module directly
+
+The wrapper is the thing to schedule, but the module underneath is usable on its
+own, which is the quicker way to look around an environment before committing to
+anything:
 
 ```powershell
 Import-Module C:\Silk\SilkEcho\SilkEcho.psm1
@@ -94,6 +139,10 @@ Copy-SilkEchoDatabase -SourceHost sql-prod -DestinationHost sql-dev -WhatIf
 
 # Do it. Every database on sql-prod, presented on sql-dev under the same names.
 Copy-SilkEchoDatabase -SourceHost sql-prod -DestinationHost sql-dev
+
+# Or name the databases explicitly, and suffix the copies.
+Copy-SilkEchoDatabase -SourceHost sql-prod -DestinationHost sql-dev `
+                      -SourceDatabase SalesDB,Inventory -DestinationSuffix _Dev
 ```
 
 **Certificates.** Flex ships with a self signed certificate, so validation is off
@@ -319,24 +368,66 @@ unattended operation.
     -SourceHost sql-prod -DestinationHost sql-dev
 ```
 
-Worth adding for a scheduled job:
+Choosing which databases:
 
-| | |
+| Parameter | Effect |
 |---|---|
-| `-DestinationSuffix` | If the copies should not carry the source names |
-| `-ExcludeDatabase` | Anything on the source that should not be copied |
+| *(neither)* | Every database Echo can see on the source host, rediscovered every run |
+| `-SourceDatabase A,B` | Exactly these, by name. The run fails if one is not on the source host |
+| `-ExcludeDatabase A,B` | Everything except these. Only valid when `-SourceDatabase` is omitted |
+
+Naming the copies:
+
+| Parameter | Effect |
+|---|---|
+| *(neither)* | The copies keep the source names, which is fine on a different host |
+| `-DestinationSuffix _Dev` | `SalesDB` becomes `SalesDB_Dev` on every destination |
+| `-DestinationDatabase X,Y` | Exact names, in the same order as `-SourceDatabase`. Requires it |
+
+Everything else:
+
+| Parameter | When |
+|---|---|
 | `-RemoveOrphaned` | Mirror source drops onto the destination, instead of reporting them |
-| `-ConsistencyLevel crash` | If the application consistent path is not set up |
 | `-ConsistencyLevel application-novss` | Application consistent without the VSS provider |
+| `-ConsistencyLevel crash` | No quiesce. The copy may come up in recovery |
+| `-TargetState recovery` | Leave the copies in recovery rather than online |
+| `-SnapshotPrefix name` | Name the snapshot yourself instead of deriving it |
+| `-RequireValidCertificate` | Where Flex has a certificate that chains |
+| `-SkipValidation` | Skip the `__validate` pre-flight before each mutation |
+| `-SkipIdleCheck` | Do not wait for the Flex queue at all. Only safe when nothing else uses this Flex |
+| `-WhatIf` | Print the plan and stop before the snapshot |
 
 Timings, all tuned for operations that take a couple of minutes:
 
-| | Default | |
+| Parameter | Default | Effect |
 |---|---|---|
 | `-PollSeconds` | 2 | How often the task queue is checked |
 | `-TimeoutMinutes` | 15 | How long one operation may run before it is called hung |
 | `-IdleWaitMinutes` | 15 | How long to wait for the queue to clear before giving up with exit 4 |
 | `-StepAttempts` | 3 | How many times to submit an operation before giving up on it |
+
+## Exit codes
+
+`Invoke-EchoDatabaseCopy.ps1` exits with a code any caller can branch on. A SQL
+Server Agent step fails on anything non-zero.
+
+| Code | Meaning |
+|---|---|
+| 0 | Every destination succeeded |
+| 1 | Bad parameters or a missing prerequisite |
+| 2 | Could not reach or authenticate to Flex |
+| 3 | The copy failed and no destination was updated |
+| 4 | Flex stayed busy with other work, so nothing was attempted |
+| 5 | Partial: some destinations were updated, some failed |
+
+Codes 1, 2 and 4 leave everything untouched, so they are safe to retry as is.
+Code 5 means the run did real work: re-running it is safe, since reconciliation
+is idempotent, and it will pick up whatever failed last time if the cause has
+cleared.
+
+The script writes to standard output and opens no files. Capture it however you
+capture job output.
 
 ## Triggering from a SQL Server Agent job
 
@@ -439,27 +530,6 @@ JOIN msdb.dbo.sysjobs AS j ON j.job_id = h.job_id
 WHERE j.name = N'Silk Echo - Refresh SalesDB_Dev' AND h.step_id = 1
 ORDER BY h.instance_id DESC;
 ```
-
-### Exit codes
-
-The step fails when the exit code is not zero.
-
-| Code | Meaning |
-|---|---|
-| 0 | Every destination succeeded |
-| 1 | Bad parameters or a missing prerequisite |
-| 2 | Could not reach or authenticate to Flex |
-| 3 | The copy failed and no destination was updated |
-| 4 | Flex stayed busy with other work, so nothing was attempted |
-| 5 | Partial: some destinations were updated, some failed |
-
-Codes 1, 2 and 4 leave everything untouched, so they are safe to retry as is.
-Code 5 means the run did real work: re-running it is safe, since reconciliation
-is idempotent, and it will pick up whatever failed last time if the cause has
-cleared.
-
-The script writes to standard output and opens no files. Capture it however you
-capture job output.
 
 ### Follow up T-SQL
 

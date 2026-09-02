@@ -94,6 +94,10 @@ Copy-SilkEchoDatabase -SourceHost sql-prod -DestinationHost sql-dev -WhatIf
 
 # Do it. Every database on sql-prod, presented on sql-dev under the same names.
 Copy-SilkEchoDatabase -SourceHost sql-prod -DestinationHost sql-dev
+
+# Or name the databases explicitly, and suffix the copies.
+Copy-SilkEchoDatabase -SourceHost sql-prod -DestinationHost sql-dev `
+                      -SourceDatabase SalesDB,Inventory -DestinationSuffix _Dev
 ```
 
 **Certificates.** Flex ships with a self signed certificate, so validation is off
@@ -319,19 +323,39 @@ unattended operation.
     -SourceHost sql-prod -DestinationHost sql-dev
 ```
 
-Worth adding for a scheduled job:
+Choosing which databases:
 
-| | |
+| Parameter | Effect |
 |---|---|
-| `-DestinationSuffix` | If the copies should not carry the source names |
-| `-ExcludeDatabase` | Anything on the source that should not be copied |
+| *(neither)* | Every database Echo can see on the source host, rediscovered every run |
+| `-SourceDatabase A,B` | Exactly these, by name. The run fails if one is not on the source host |
+| `-ExcludeDatabase A,B` | Everything except these. Only valid when `-SourceDatabase` is omitted |
+
+Naming the copies:
+
+| Parameter | Effect |
+|---|---|
+| *(neither)* | The copies keep the source names, which is fine on a different host |
+| `-DestinationSuffix _Dev` | `SalesDB` becomes `SalesDB_Dev` on every destination |
+| `-DestinationDatabase X,Y` | Exact names, in the same order as `-SourceDatabase`. Requires it |
+
+Everything else:
+
+| Parameter | When |
+|---|---|
 | `-RemoveOrphaned` | Mirror source drops onto the destination, instead of reporting them |
-| `-ConsistencyLevel crash` | If the application consistent path is not set up |
 | `-ConsistencyLevel application-novss` | Application consistent without the VSS provider |
+| `-ConsistencyLevel crash` | No quiesce. The copy may come up in recovery |
+| `-TargetState recovery` | Leave the copies in recovery rather than online |
+| `-SnapshotPrefix name` | Name the snapshot yourself instead of deriving it |
+| `-RequireValidCertificate` | Where Flex has a certificate that chains |
+| `-SkipValidation` | Skip the `__validate` pre-flight before each mutation |
+| `-SkipIdleCheck` | Do not wait for the Flex queue at all. Only safe when nothing else uses this Flex |
+| `-WhatIf` | Print the plan and stop before the snapshot |
 
 Timings, all tuned for operations that take a couple of minutes:
 
-| | Default | |
+| Parameter | Default | Effect |
 |---|---|---|
 | `-PollSeconds` | 2 | How often the task queue is checked |
 | `-TimeoutMinutes` | 15 | How long one operation may run before it is called hung |

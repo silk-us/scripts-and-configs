@@ -92,11 +92,15 @@
     source host. Off by default, in which case they are reported and left alone.
 
 .PARAMETER ConsistencyLevel
-    application (default) or crash. See the README for which to pick.
+    application (default), application-novss, or crash.
 
-.PARAMETER NoVss
-    Take an application consistent snapshot without the Silk VSS provider.
-    SQL Server 2022 and later support this.
+    application uses the Silk VSS provider and the copy comes up immediately
+    usable. application-novss is application consistent without the provider,
+    which SQL Server 2022 and later support. crash asks nothing of the database
+    engine and the copy may come up in recovery.
+
+    The choice is sent explicitly rather than left to the API default, and the
+    log says which was asked for.
 
 .PARAMETER TargetState
     online (default) or recovery.
@@ -176,10 +180,8 @@ param(
 
     [switch]$SkipValidation,
 
-    [ValidateSet('application', 'crash')]
+    [ValidateSet('application', 'application-novss', 'crash')]
     [string]$ConsistencyLevel = 'application',
-
-    [switch]$NoVss,
 
     [ValidateSet('online', 'recovery')]
     [string]$TargetState = 'online',
@@ -284,7 +286,6 @@ try {
         DestinationHost           = $DestinationHost
         ConsistencyLevel          = $ConsistencyLevel
         TargetState               = $TargetState
-        NoVss                     = $NoVss
         RemoveOrphaned            = $RemoveOrphaned
         SkipValidation            = $SkipValidation
         StepAttempts              = $StepAttempts

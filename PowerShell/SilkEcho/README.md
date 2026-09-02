@@ -197,12 +197,32 @@ Duplicate hosts in the list are collapsed.
 
 ### Consistency level
 
-`-ConsistencyLevel application` is the default. The Silk Agent quiesces the
-database, so the copy comes up immediately usable. `-NoVss` takes that path
-without the Silk VSS provider, which SQL Server 2022 and later support.
+Three states, and `-ConsistencyLevel` is an exhaustive set, so they cannot
+contradict each other:
 
-`-ConsistencyLevel crash` is faster and asks nothing of the database engine, at
-the cost of the copy possibly coming up in recovery on first attach.
+| Value | What Flex is asked for |
+|---|---|
+| `application` *(default)* | Quiesced through the Silk VSS provider. The copy comes up immediately usable. Sends `consistency_level=application`, `use_vss=true`. |
+| `application-novss` | Application consistent without the VSS provider, which SQL Server 2022 and later support. Sends `consistency_level=application`, `use_vss=false`. |
+| `crash` | No quiesce, nothing asked of the database engine. The copy may come up in recovery on first attach. Sends `consistency_level=crash`; VSS does not apply. |
+
+`use_vss` is **sent explicitly** for the application levels rather than left to
+the API's default. Whether a copy comes up usable or in recovery matters too much
+to inherit from a server side default that could differ between Flex builds: the
+request says what it wants, and the run logs it:
+
+```
+[STEP ] Creating a snapshot of SalesDB on sql-prod (application consistent, using VSS, prefix 'salesdb')
+```
+
+Flex reports which path it actually took in the task `command_type`, so a
+completed run can be checked after the fact:
+
+| `command_type` | Means |
+|---|---|
+| `CreateVssDbSnapshotCommand` | application consistent via VSS |
+| `CreateGenericDBSnapshotCommand` | application consistent without VSS |
+| `CreateDBSnapshotCrashLevelCommand` | crash consistent |
 
 Either way the agent does the work and already holds the credentials it needs.
 
@@ -307,6 +327,7 @@ Worth adding for a scheduled job:
 | `-ExcludeDatabase` | Anything on the source that should not be copied |
 | `-RemoveOrphaned` | Mirror source drops onto the destination, instead of reporting them |
 | `-ConsistencyLevel crash` | If the application consistent path is not set up |
+| `-ConsistencyLevel application-novss` | Application consistent without the VSS provider |
 
 Timings, all tuned for operations that take a couple of minutes:
 

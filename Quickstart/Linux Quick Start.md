@@ -77,6 +77,14 @@ Apply the updated settings using the following command:
 sudo netplan apply
 ```
 
+#### One-liner
+If you dont want to hand edit the yaml, `netplan set` will write the route for you. Same example, eth1 to 10.10.0.128/28 via 10.251.1.1:
+```
+sudo netplan set ethernets.eth1.routes='[{"to":"10.10.0.128/28","via":"10.251.1.1"}]' && sudo netplan apply
+```
+
+This drops the route into `/etc/netplan/90-netplan-set.yaml` rather than the file you edited above, which is fine, netplan merges them. Verify with `ip route` or `netplan get ethernets.eth1`.
+
 ### Using NetworkManager
 `sudo nmcli c` to list the devices. Responds with something like:
 
@@ -107,6 +115,14 @@ Once done, re-apply the affected device (eth1 in this case) using this command:
 ```
 nmcli device reapply eth1
 ```
+
+#### One-liner
+You can skip the interactive editor entirely and modify the connection in place. Using the same route of 10.1.0.0/28 via 10.1.1.1 on the `Wired connection 1` profile:
+```
+sudo nmcli con mod 'Wired connection 1' +ipv4.routes "10.1.0.0/28 10.1.1.1" && sudo nmcli dev reapply eth1
+```
+
+The `+` appends to any existing routes, use `ipv4.routes` without it to replace them all. `nmcli con mod` writes to the profile on disk so it persists through restarts. Check your work with `nmcli con show 'Wired connection 1' | grep ipv4.routes`.
 
 (Optional) If you see a down interface when attempting to configure the above, such as eth1 in this example:
 

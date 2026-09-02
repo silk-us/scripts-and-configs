@@ -19,7 +19,7 @@
     Copyright (c) Silk Technologies, Inc. Licensed under the repository LICENSE.
 #>
 
-Set-Variable -Name SilkEchoModuleVersion -Value '1.2.1' -Scope Script -Option ReadOnly -Force -WhatIf:$false -Confirm:$false
+Set-Variable -Name SilkEchoModuleVersion -Value '1.3.0' -Scope Script -Option ReadOnly -Force -WhatIf:$false -Confirm:$false
 
 # ---------------------------------------------------------------------------
 # Module state
@@ -1162,13 +1162,27 @@ function New-SilkEchoSnapshot {
     always normalised to the Flex pattern.
 
 .PARAMETER ConsistencyLevel
-    application (default) has the Silk Agent quiesce the database, so the copy is
-    immediately usable. crash is faster and asks nothing of the database engine,
-    but the copy may come up in recovery.
+    How the snapshot is taken. Three states, and the set is exhaustive so no two
+    can be asked for at once:
 
-.PARAMETER NoVss
-    Skip VSS for application consistent snapshots. SQL Server 2022 and later can
-    take an application consistent snapshot without the Silk VSS provider.
+      application         (default) the Silk Agent quiesces the database through
+                          the VSS provider, so the copy comes up immediately
+                          usable. Sends consistency_level=application, use_vss=true.
+      application-novss   application consistent without the VSS provider, which
+                          SQL Server 2022 and later support. Sends
+                          consistency_level=application, use_vss=false.
+      crash               no quiesce, nothing asked of the database engine, and
+                          the copy may come up in recovery on first attach.
+                          Sends consistency_level=crash. VSS does not apply.
+
+    use_vss is always sent explicitly for the application levels rather than left
+    to the API default. Whether a copy comes up usable or in recovery is too
+    important to inherit from a server side default that could differ between
+    builds: the request says what it wants, and the log says what was asked for.
+
+    Flex reports which path it took in the task command_type, so a run can be
+    checked after the fact: CreateVssDbSnapshotCommand, CreateGenericDBSnapshotCommand
+    or CreateDBSnapshotCrashLevelCommand.
 
 .PARAMETER SkipValidation
     Do not call the Flex validation endpoint first.
@@ -1186,12 +1200,11 @@ function New-SilkEchoSnapshot {
 
         [string]$NamePrefix,
 
-        [ValidateSet('application', 'crash')]
+        [ValidateSet('application', 'application-novss', 'crash')]
         [string]$ConsistencyLevel = 'application',
 
-        [switch]$NoVss,
-
         [switch]$SkipValidation,
+
         [ValidateRange(1, 20)]
         [int]$Attempts = $script:OpAttempts
     )
@@ -1218,18 +1231,31 @@ function New-SilkEchoSnapshot {
     if (-not $NamePrefix) { $NamePrefix = $dbNames[0] }
     $prefix = ConvertTo-EchoNamePrefix -InputString $NamePrefix
 
+    # One place where the three states become the two API fields. use_vss is
+    # sent rather than omitted: leaving it to the server default means the
+    # difference between a usable copy and one in recovery is inherited rather
+    # than requested, and nothing in the payload would say which was wanted.
     $body = @{
         source_host_id    = $echoHost.host_id
         database_ids      = @($dbIds)
         name_prefix       = $prefix
-        consistency_level = $ConsistencyLevel
+        consistency_level = if ($ConsistencyLevel -eq 'crash') { 'crash' } else { 'application' }
     }
-    if ($ConsistencyLevel -eq 'application' -and $NoVss) { $body.use_vss = $false }
+    if ($ConsistencyLevel -eq 'application')       { $body.use_vss = $true }
+    if ($ConsistencyLevel -eq 'application-novss') { $body.use_vss = $false }
+    # For crash, use_vss is not sent: the API ignores it, so sending it would
+    # only imply a choice that is not being made.
+
+    $described = switch ($ConsistencyLevel) {
+        'application'       { 'application consistent, using VSS' }
+        'application-novss' { 'application consistent, without VSS' }
+        default             { 'crash consistent' }
+    }
 
     $target = "$($dbNames -join ', ') on $($echoHost.host_name)"
-    if (-not $PSCmdlet.ShouldProcess($target, "Create $ConsistencyLevel snapshot")) { return $null }
+    if (-not $PSCmdlet.ShouldProcess($target, "Create $described snapshot")) { return $null }
 
-    Write-EchoLog -Level 'STEP' -Message "Creating $ConsistencyLevel snapshot of $target (prefix '$prefix')"
+    Write-EchoLog -Level 'STEP' -Message "Creating a snapshot of $target ($described, prefix '$prefix')"
 
     $completed = Invoke-EchoOperation -Activity "the snapshot of $target" -Attempts $Attempts -Submit {
         if (-not $SkipValidation) {
@@ -1671,13 +1697,27 @@ function Copy-SilkEchoDatabase {
     Only applies when databases are discovered rather than named.
 
 .PARAMETER ConsistencyLevel
-    application (default) has the Silk Agent quiesce the database, so the copy is
-    immediately usable. crash is faster and asks nothing of the database engine,
-    but the copy may come up in recovery.
+    How the snapshot is taken. Three states, and the set is exhaustive so no two
+    can be asked for at once:
 
-.PARAMETER NoVss
-    Take the application consistent snapshot without the Silk VSS provider.
-    Supported by SQL Server 2022 and later.
+      application         (default) the Silk Agent quiesces the database through
+                          the VSS provider, so the copy comes up immediately
+                          usable. Sends consistency_level=application, use_vss=true.
+      application-novss   application consistent without the VSS provider, which
+                          SQL Server 2022 and later support. Sends
+                          consistency_level=application, use_vss=false.
+      crash               no quiesce, nothing asked of the database engine, and
+                          the copy may come up in recovery on first attach.
+                          Sends consistency_level=crash. VSS does not apply.
+
+    use_vss is always sent explicitly for the application levels rather than left
+    to the API default. Whether a copy comes up usable or in recovery is too
+    important to inherit from a server side default that could differ between
+    builds: the request says what it wants, and the log says what was asked for.
+
+    Flex reports which path it took in the task command_type, so a run can be
+    checked after the fact: CreateVssDbSnapshotCommand, CreateGenericDBSnapshotCommand
+    or CreateDBSnapshotCrashLevelCommand.
 
 .PARAMETER TargetState
     State the copies are left in. online (default) or recovery.
@@ -1752,10 +1792,8 @@ function Copy-SilkEchoDatabase {
 
         [switch]$RemoveOrphaned,
 
-        [ValidateSet('application', 'crash')]
+        [ValidateSet('application', 'application-novss', 'crash')]
         [string]$ConsistencyLevel = 'application',
-
-        [switch]$NoVss,
 
         [ValidateSet('online', 'recovery')]
         [string]$TargetState = 'online',
@@ -1974,7 +2012,6 @@ function Copy-SilkEchoDatabase {
                                          -Database $sourceNames `
                                          -NamePrefix $SnapshotPrefix `
                                          -ConsistencyLevel $ConsistencyLevel `
-                                         -NoVss:$NoVss `
                                          -SkipValidation:$SkipValidation `
                                          -Attempts $StepAttempts `
                                          -Confirm:$false

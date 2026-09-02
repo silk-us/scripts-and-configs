@@ -32,8 +32,7 @@ already run.
 
 ## Requirements
 
-- Windows PowerShell 5.1 or PowerShell 7. Verified on both; 5.1 is what SQL
-  Server Agent launches, and what the live testing was done on.
+- Windows PowerShell 5.1 or PowerShell 7. Verified on both.
 - Network access from wherever the script runs to the Flex server. The script does
   not have to run on either database host.
 - Both hosts registered in Echo with the Silk Agent connected.

@@ -116,7 +116,7 @@ Install-Module -Name Az.Accounts,Az.Resources,Az.Compute,Az.Network -Repository 
 | `-Region`               | Azure region for deployment. | [Valid Azure Location](https://learn.microsoft.com/en-us/azure/reliability/regions-list) | "eastus" | ☑️ |
 | `-Zone`                 | Azure Availability Zone [Check Presence in Region](https://datacenters.microsoft.com/globe/explore/?view=table)  | "1", "2", "3", "Zoneless" | "1" | ☑️ |
 | `-ChecklistJSON`        | Path to Silk deployment checklist JSON file. | [Example format of expected JSON Structure](silk-deployment-checklist-example.json) | "C:\\configs\\silk-deployment.json" | ⬜️ |
-| `-CNodeFriendlyName`    | CNode SKU selection by Flex terminology | <br> Increased_Logical_Capacity_AMD (Standard_E64as_v6)<br> Increased_Logical_Capacity (Standard_E64s_v5)<br> Read_Cache_Enabled (Standard_L64s_v3)<br> No_Increased_Logical_Capacity_AMD (Standard_D64as_v6)<br> No_Increased_Logical_Capacity (Standard_D64s_v5)<br> Entry_Level_SDP (Standard_E32as_v5) | "Increased_Logical_Capacity" | ⬜️ |
+| `-CNodeFriendlyName`    | CNode SKU selection by Flex terminology | <br> Increased_Logical_Capacity_Eav6 (Standard_E64as_v6)<br> Increased_Logical_Capacity_Easv5 (Standard_E64as_v5)<br> Increased_Logical_Capacity_Esv5 (Standard_E64s_v5)<br> Read_Cache_Enabled_Lasv4 (Standard_L64as_v4)<br> Read_Cache_Enabled_Lasv3 (Standard_L64as_v3)<br> Read_Cache_Enabled_Lsv3 (Standard_L64s_v3)<br> No_Increased_Logical_Capacity_Dav6 (Standard_D64as_v6)<br> No_Increased_Logical_Capacity_Dasv5 (Standard_D64as_v5)<br> No_Increased_Logical_Capacity_Dsv5 (Standard_D64s_v5)<br> Entry_Level_Easv5 (Standard_E32as_v5) | "Increased_Logical_Capacity_Esv5" | ⬜️ |
 | `-CNodeCount`           | Number of CNode VMs for new deployments | Minimum of 2 -> Maximum of 8 | 2 | ⬜️ |
 | `-MnodeSizeLsv3`        | List of MNodes represented by storage capacity for Lsv3 SKUs (Intel) | <br> "19.5" TiB (Standard_L8s_v3)<br> "39.1" TiB (Standard_L16s_v3)<br> "78.2" TiB (Standard_L32s_v3) | @("19.5", "39.1") | ⬜️ |
 | `-MnodeSizeLsv4`        | List of MNodes represented by storage capacity for Lsv4 SKUs (Intel, latest gen) | <br> "19.5" TiB (Standard_L8s_v4)<br> "39.1" TiB (Standard_L16s_v4)<br> "78.2" TiB (Standard_L32s_v4) | @("19.5", "39.1") | ⬜️ |
@@ -139,7 +139,7 @@ Test-SilkResourceDeployment -ChecklistJSON "C:\configs\silk-deployment.json"
 
 #### 2. Test by Friendly Name CNode and Lsv4 MNode by Size Selections
 ```powershell
-Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -MnodeSizeLsv4 @("19.5","39.1")
+Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity_Esv5" -CNodeCount 2 -MnodeSizeLsv4 @("19.5","39.1")
 ```
    >Test deployment in given Subscription, Resource Group, Region and Zone with two CNodes providing Increased Logical Capacity capability and two Lsv4 MNodes one with 19.5 TiB and second with 39.1 TiB storage capacity.
 
@@ -151,7 +151,7 @@ Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-12345678901
 
 #### 4. Test by Friendly Name CNode and Laosv4 MNode by Size Selections
 ```powershell
-Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -MnodeSizeLaosv4 @("14.67","29.34")
+Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity_Esv5" -CNodeCount 2 -MnodeSizeLaosv4 @("14.67","29.34")
 ```
    >Test deployment in given Subscription, Resource Group, Region and Zone with two CNodes providing Increased Logical Capacity capability and two Laosv4 MNodes one with 14.67 TiB and second with 29.34 TiB storage capacity.
 
@@ -163,7 +163,7 @@ Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-12345678901
 
 #### 6. Test CNode Only Maximum Count by Friendly Name CNode Selection
 ```powershell
-Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-prod-rg" -Region "centralus" -Zone "3" -CNodeFriendlyName "Read_Cache_Enabled" -CNodeCount 8
+Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-prod-rg" -Region "centralus" -Zone "3" -CNodeFriendlyName "Read_Cache_Enabled_Lsv3" -CNodeCount 8
 ```
    >Test deployment in given Subscription, Resource Group, Region and Zone with maximum number of Standard_L64s_v3 Read Cache Enabled SKU CNodes.
 
@@ -193,7 +193,7 @@ Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-12345678901
 
 #### 11. Test Deployment Configuration Across All Zones
 ```powershell
-Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -MnodeSizeLsv3 @("19.5","39.1") -TestAllZones
+Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity_Esv5" -CNodeCount 2 -MnodeSizeLsv3 @("19.5","39.1") -TestAllZones
 ```
    >Tests a specific deployment configuration across all availability zones simultaneously. Deploys the full CNode and MNode configuration into every zone where all requested SKUs are supported, producing a multi-zone deployment comparison showing pass/fail per zone. The `-Zone` parameter is still used for zone alignment reporting.
 
@@ -212,7 +212,7 @@ Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-12345678901
 
 | Parameter                     | Description | Valid Input | Example | Overrides ChecklistJSON |
 |-------------------------------|-------------|-------------|---------|-------------------------|
-| `-CNodeSku`                   | Explicit CNode VM SKU selection for advanced control.<br><br>Valid options:<br> &nbsp;Increased_Logical_Capacity_AMD (Standard_E64as_v6)<br> &nbsp;Increased_Logical_Capacity (Standard_E64s_v5)<br> &nbsp;Read_Cache_Enabled (Standard_L64s_v3)<br> &nbsp;No_Increased_Logical_Capacity_AMD (Standard_D64as_v6)<br> &nbsp;No_Increased_Logical_Capacity (Standard_D64s_v5)<br> &nbsp;Entry_Level_SDP (Standard_E32as_v5)<br>Use for scenarios requiring specific SKU control. | <br>"Standard_E64as_v6"<br>"Standard_E64s_v5"<br>"Standard_L64s_v3"<br>"Standard_D64as_v6"<br>"Standard_D64s_v5"<br>"Standard_E32as_v5" | "Standard_E64s_v5" | ⬜️ |
+| `-CNodeSku`                   | Explicit CNode VM SKU selection for advanced control.<br><br>Valid options:<br> &nbsp;Increased_Logical_Capacity_Eav6 (Standard_E64as_v6)<br> &nbsp;Increased_Logical_Capacity_Easv5 (Standard_E64as_v5)<br> &nbsp;Increased_Logical_Capacity_Esv5 (Standard_E64s_v5)<br> &nbsp;Read_Cache_Enabled_Lasv4 (Standard_L64as_v4)<br> &nbsp;Read_Cache_Enabled_Lasv3 (Standard_L64as_v3)<br> &nbsp;Read_Cache_Enabled_Lsv3 (Standard_L64s_v3)<br> &nbsp;No_Increased_Logical_Capacity_Dav6 (Standard_D64as_v6)<br> &nbsp;No_Increased_Logical_Capacity_Dasv5 (Standard_D64as_v5)<br> &nbsp;No_Increased_Logical_Capacity_Dsv5 (Standard_D64s_v5)<br> &nbsp;Entry_Level_Easv5 (Standard_E32as_v5)<br>Use for scenarios requiring specific SKU control. | <br>"Standard_E64as_v6"<br>"Standard_E64as_v5"<br>"Standard_E64s_v5"<br>"Standard_L64as_v4"<br>"Standard_L64as_v3"<br>"Standard_L64s_v3"<br>"Standard_D64as_v6"<br>"Standard_D64as_v5"<br>"Standard_D64s_v5"<br>"Standard_E32as_v5" | "Standard_E64s_v5" | ⬜️ |
 | `-MNodeSku`                   | Array of explicit Azure VM SKUs for MNode/DNode VMs.<br><br>**Each item in the list represents one MNode instance** — the list length IS the instance count (max 4 items). To deploy multiple MNodes of the same SKU type, include that SKU multiple times in the list.<br><br>Lsv3 SKUs (Intel):<br> &nbsp;Standard_L8s_v3 (19.5 TiB)<br> &nbsp;Standard_L16s_v3 (39.1 TiB)<br> &nbsp;Standard_L32s_v3 (78.2 TiB)<br>Lsv4 SKUs (Intel, latest gen):<br> &nbsp;Standard_L8s_v4 (19.5 TiB)<br> &nbsp;Standard_L16s_v4 (39.1 TiB)<br> &nbsp;Standard_L32s_v4 (78.2 TiB)<br>Lasv3 SKUs (AMD):<br> &nbsp;Standard_L8as_v3 (19.5 TiB)<br> &nbsp;Standard_L16as_v3 (39.1 TiB)<br> &nbsp;Standard_L32as_v3 (78.2 TiB)<br>Lasv4 SKUs (AMD, latest gen):<br> &nbsp;Standard_L8as_v4 (19.5 TiB)<br> &nbsp;Standard_L16as_v4 (39.1 TiB)<br> &nbsp;Standard_L32as_v4 (78.2 TiB)<br>Laosv4 SKUs:<br> &nbsp;Standard_L2aos_v4 (14.67 TiB)<br> &nbsp;Standard_L4aos_v4 (29.34 TiB)<br> &nbsp;Standard_L8aos_v4 (58.67 TiB)<br> &nbsp;Standard_L12aos_v4 (88.01 TiB)<br> &nbsp;Standard_L16aos_v4 (117.35 TiB)<br><br>Also used in DNode existing infrastructure expansion mode with `-DNodeCountAdditional` — specify the single DNode VM SKU matching the target MNode group. | "Standard_L8s_v4"<br>"Standard_L16s_v4"<br>"Standard_L8as_v4"<br>"Standard_L16as_v4"<br>"Standard_L8s_v3"<br>"Standard_L16s_v3"<br>"Standard_L32s_v3"<br>"Standard_L2aos_v4"<br>"Standard_L4aos_v4"<br>"Standard_L8aos_v4"<br>"Standard_L12aos_v4"<br>"Standard_L16aos_v4" | @("Standard_L16s_v4", "Standard_L32s_v4") | ⬜️ |
 | `-CNodeCountAdditional`       | Number of additional CNodes to test in an existing cluster's PPG.<br><br>**L-series MNode pattern:** Must be used with `-CNodeSku`, `-ProximityPlacementGroupName`, `-AvailabilitySetName`, `-VNetName`, and `-SubnetName`<br>**PV2 MNode pattern:** Must be used with `-CNodeSku`, `-ProximityPlacementGroupName`, `-PV2MNodeArchitecture`, `-VNetName`, and `-SubnetName` (no `-AvailabilitySetName`)<br>No new VNet, NSG, PPG, or AvSet is created in either path. | 1-6 CNodes | 2 | ⬜️ |
 | `-PV2MNodeArchitecture`       | Mandatory acknowledgment switch for PV2 MNode architecture CNode expansion testing.<br><br>Must be explicitly passed to confirm the target cluster uses PV2 MNode architecture. PV2 DNodes cannot use Availability Sets — when this switch is present, test CNodes deploy into the existing PPG only with no Availability Set constraint applied.<br>**Cannot be combined with `-AvailabilitySetName`.** | Switch<br>(present or not) | `-PV2MNodeArchitecture` | ⬜️ |
@@ -237,19 +237,20 @@ Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-12345678901
 | `-ZoneAlignmentSubscriptionId`| Azure Subscription ID for cross-subscription availability zone alignment validation.<br><br>Enables zone alignment to ensure the closest representation of a production deployment that can be tested when deploying across multiple subscriptions by comparing zone mappings between the deployment subscription and this alignment subscription. Requires AvailabilityZonePeering Azure feature registration in both subscriptions.<br><br>When using ChecklistJSON with specified -Subscription parameter, this parameter is automatically populated from the Checklist JSON if not specified. | GUID format subscription ID | "87654321-4321-4321-4321-210987654321" | ☑️ |
 | `-DisableZoneAlignment`       | Disable automatic cross-subscription availability zone alignment.<br><br>By default, zone alignment is performed when ZoneAlignmentSubscriptionId is provided or when using ChecklistJSON configuration with a different deployment subscription specified. Use this switch to maintain original zone settings without alignment adjustments for production deployment testing accuracy. | Switch<br>(present or not) | `-DisableZoneAlignment` | ⬜️ |
 | `-Development`                | Enable Development Mode with reduced VM sizes and instance counts.<br><br>CNode VMs use 2 vCPU SKUs instead of production 64 vCPU, and MNode groups deploy 1 DNode instead of 16. Reduces deployment time and quota consumption for faster testing. Automatically enabled by `-TestAllSKUFamilies`. SKU reference table always shows full production sizes. | Switch<br>(present or not) | `-Development` | ⬜️ |
+| `-TestZonesSequentially`      | Run zone tests one at a time in series instead of in parallel, reusing the shared VNet/NSG/subnet between zones while cleaning up per-zone VMs, NICs, AvSets, and PPGs after each iteration. All results are consolidated into a single report.<br><br>Requires `-TestAllZones`. Not available with `-TestAllSKUFamilies`. Reduces peak quota consumption at the cost of longer total runtime. When the pre-flight quota gate detects insufficient quota for parallel zone testing, pressing Enter at the zone selection prompt defaults to this mode automatically. | Switch<br>(present or not) | `-TestZonesSequentially` | ⬜️ |
 
 ---
 
 ### Advanced Examples
 #### 1.1 Advanced: Mixed Friendly CNode and Explicit MNode SKU Selection
 ```powershell
-Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-rg-01" -Region "eastus2" -Zone "1" -CNodeFriendlyName "Read_Cache_Enabled" -CNodeCount 3 -MNodeSku @("Standard_L4aos_v4")
+Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-rg-01" -Region "eastus2" -Zone "1" -CNodeFriendlyName "Read_Cache_Enabled_Lsv3" -CNodeCount 3 -MNodeSku @("Standard_L4aos_v4")
 ```
    >Deploys three Standard_L64s_v3 Read Cache capable CNodes and a single MNode of the specified Standard_L4aos_v4 SKU. One item in `-MNodeSku` = one MNode instance.
 
 #### 1.2 Advanced: Mixed Explicit CNode SKU and Laosv4 MNode size Selection
 ```powershell
-Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-rg-01" -Region "eastus2" -Zone "1" -CNodeSku "Standard_D64s_v5" -CNodeCount -CNodeCount 5 -MnodeSizeLaosv4 @("14.67","88.01")
+Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-rg-01" -Region "eastus2" -Zone "1" -CNodeSku "Standard_D64s_v5" -CNodeCount 5 -MnodeSizeLaosv4 @("14.67","88.01")
 ```
    >Deploys five SKU specified Standard_D64s_v5 standard production CNodes and two Laosv4 MNodes one with 14.67 TiB and second with 88.01 TiB storage capacity.
 
@@ -279,7 +280,7 @@ Test-SilkResourceDeployment -ChecklistJSON "C:\configs\silk-deployment.json" -Re
 
 #### 4.1 Advanced: Cross-Subscription Zone Alignment with Explicit Parameters
 ```powershell
-Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -ZoneAlignmentSubscriptionId "87654321-4321-4321-4321-210987654321" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -MnodeSizeLaosv4 @("14.67","29.34") -Verbose
+Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -ZoneAlignmentSubscriptionId "87654321-4321-4321-4321-210987654321" -CNodeFriendlyName "Increased_Logical_Capacity_Esv5" -CNodeCount 2 -MnodeSizeLaosv4 @("14.67","29.34") -Verbose
 ```
    >Tests deployment with explicit zone alignment between deployment subscription and alignment subscription. Automatically adjusts deployment zone to ensure the closest representation of a production deployment that can be tested. Requires AvailabilityZonePeering feature registration in both subscriptions.
 
@@ -303,7 +304,7 @@ Test-SilkResourceDeployment -ChecklistJSON "C:\configs\silk-deployment.json" -Re
 
 #### 5.2 Advanced: Custom Label as Identifier
 ```powershell
-Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity" -CNodeCount 2 -MnodeSizeLaosv4 @("14.67","29.34") -ReportLabel "Contoso" -ReportOutputPath "C:\Reports"
+Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity_Esv5" -CNodeCount 2 -MnodeSizeLaosv4 @("14.67","29.34") -ReportLabel "Contoso" -ReportOutputPath "C:\Reports"
 ```
    >Runs a deployment check with a customer label. Report saved as `C:\Reports\Contoso-eastus-1-DeploymentReport_yyyyMMdd_HHmmss.html`. Region and zone are automatically included in the filename, title, and heading. Useful for distinguishing reports across multiple regions or deployment scenarios stored in the same output folder.
 
@@ -330,5 +331,11 @@ Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-12345678901
 Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-prod-rg" -Region "uksouth" -Zone "1" -CNodeSku "Standard_E64s_v5" -CNodeCountAdditional 2 -ProximityPlacementGroupName "my-silk-cnode-ppg" -VNetName "my-silk-vnet" -SubnetName "my-silk-mgmt-subnet" -PV2MNodeArchitecture
 ```
    >Validates whether 2 additional CNodes can be deployed into an existing PV2 MNode cluster. `-PV2MNodeArchitecture` explicitly confirms the target uses PV2 MNode architecture where Availability Sets are not used — passing this switch is required to select the PV2 parameter set and acknowledge intent. Test CNodes deploy into the PPG only with no Availability Set constraint. Test NICs attach to the existing VNet/subnet — no new VNet, NSG, PPG, or AvSet is created. Use to validate CNode expansion capacity for PV2 MNode configurations before committing to production changes.
+
+#### 7.1 Advanced: Sequential Multi-Zone Testing to Reduce Peak Quota Consumption
+```powershell
+Test-SilkResourceDeployment -SubscriptionId "12345678-1234-1234-1234-123456789012" -ResourceGroupName "silk-test-rg" -Region "eastus" -Zone "1" -CNodeFriendlyName "Increased_Logical_Capacity_Esv5" -CNodeCount 2 -MnodeSizeLsv3 @("19.5","39.1") -TestAllZones -TestZonesSequentially
+```
+   >Tests the deployment configuration across all availability zones one zone at a time instead of in parallel. The shared VNet/NSG/subnet are reused between zones while per-zone VMs, NICs, AvSets, and PPGs are cleaned up after each iteration, then all results are consolidated into a single report. Requires `-TestAllZones`; not available with `-TestAllSKUFamilies`. Reduces peak quota consumption at the cost of longer total runtime — useful when regional quota is too limited to test all zones simultaneously. If the pre-flight quota gate detects insufficient quota for parallel testing, pressing Enter at the zone selection prompt defaults to this mode automatically.
 
 ---

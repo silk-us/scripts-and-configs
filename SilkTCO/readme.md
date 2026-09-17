@@ -25,6 +25,9 @@ Install-Module Az.Compute -Force
 Install-Module Az.Monitor -Force
 Install-Module Az.CostManagement -Force
 Install-Module Az.Resources -Force
+Install-Module Az.Sql -Force          # only needed for the Azure SQL export
+Install-Module Az.PostgreSql -Force   # only needed for the Azure SQL export
+Install-Module Az.MySql -Force        # only needed for the Azure SQL export
 ```
 
 Then authenticate to Azure:
@@ -103,6 +106,97 @@ This will generate a report with 1 day of Azure cost and performance data for al
 ```powershell
 Export-SilkTCOAzure -days 7 -resourceGroupNames "prod-rg","test-rg"
 ```
+
+---
+
+## Azure SQL TCO Export
+
+For Azure's managed database services, use the `Export-SilkTCOAzureSQL` function. It is the Azure equivalent of the AWS RDS export and covers:
+
+* **Azure SQL Database** - single databases and databases in elastic pools
+* **Azure SQL elastic pools**
+* **Azure SQL Managed Instance** - the instance and the databases on it
+* **Azure Database for PostgreSQL** - flexible server
+* **Azure Database for MySQL** - flexible server
+
+> **Note:** SQL Server running on an Azure VM is not covered here - it's included in `Export-SilkTCOAzure`. PostgreSQL and MySQL *single server* and Azure Database for MariaDB are retired services and are not collected.
+
+### Basic Usage
+```powershell
+Export-SilkTCOAzureSQL
+```
+
+This generates a report with 1 day of inventory, performance, and cost data for all managed SQL resources in the current subscription.
+
+### Azure SQL Parameters
+
+* **`-days`** - Number of days to include in the report (default: 1)
+    ```powershell
+    Export-SilkTCOAzureSQL -days 7
+    ```
+
+* **`-offsetDays`** - How many days back the reporting window ends (default: 1). Cost is reported in whole days (UTC), so the default reports all of yesterday. Azure billing data can take up to two days to arrive; if the export warns that there is no cost data yet for a date, run it again with `-offsetDays 2`.
+    ```powershell
+    Export-SilkTCOAzureSQL -offsetDays 2
+    ```
+
+* **`-resourceGroupNames`** - Filter by specific resource groups (array or comma-separated list)
+    ```powershell
+    Export-SilkTCOAzureSQL -resourceGroupNames sqlprod-rg,sqltest-rg
+    ```
+
+* **`-excludeMetrics`** - Skip performance metrics and report inventory and cost only. Performance collection makes one call per metric per database, so this is much faster on large environments.
+    ```powershell
+    Export-SilkTCOAzureSQL -excludeMetrics
+    ```
+
+* **`-costMetric`** - `AmortizedCost` (default) or `ActualCost`. Amortized cost spreads reserved capacity and savings plan purchases across the databases that use them, which gives the true per-database cost. Actual cost shows a reservation as a single charge on the day it was purchased and the databases it covers as $0.
+    ```powershell
+    Export-SilkTCOAzureSQL -costMetric ActualCost
+    ```
+
+* **`-includeSystemDatabases`** - Include the `master` database on each logical server (excluded by default, as it is not billed)
+    ```powershell
+    Export-SilkTCOAzureSQL -includeSystemDatabases
+    ```
+
+* **`-skipCost`** - Report inventory and performance only, without cost
+    ```powershell
+    Export-SilkTCOAzureSQL -skipCost
+    ```
+
+### Example: 7-Day Cost-Only Report for a Resource Group
+```powershell
+Export-SilkTCOAzureSQL -days 7 -resourceGroupNames "sqlprod-rg" -excludeMetrics
+```
+
+### Cost Data Requirements
+
+Cost is read from the Azure Cost Details report, so the account running the export needs:
+
+* The **Cost Management Reader** role (or higher) on the subscription
+* A subscription billed under an **Enterprise Agreement (EA)** or **Microsoft Customer Agreement (MCA)**. Pay-as-you-go, MSDN, and Visual Studio subscriptions can't provide cost data this way; use `-skipCost` to collect inventory and performance only.
+
+### Azure SQL Output
+
+The report is written to a date-stamped CSV (`SilkTCO_AzureSQL_Report_...csv`). Each row is identified by the **`RecordType`** column:
+
+| RecordType | Description |
+|---|---|
+| `SqlDatabase` | An Azure SQL database (single or pooled) |
+| `ElasticPool` | An elastic pool - pooled databases are billed here |
+| `ManagedInstance` | A SQL Managed Instance |
+| `ManagedDatabase` | A database on a managed instance - billed at the instance |
+| `PostgreSqlFlexible` | A PostgreSQL flexible server |
+| `MySqlFlexible` | A MySQL flexible server |
+| `UnmatchedCost` | Billed SQL cost for a resource the inventory didn't return (for example, one deleted during the report period), so no SQL spend is left out |
+
+Cost is split into **compute**, **SQL license**, **storage**, and **backup** columns, with a total for the report period and a 30-day monthly equivalent:
+
+* Pooled databases and managed instance databases show no cost of their own - the `CostNotes` column points to the elastic pool or managed instance row that carries it.
+* The **SQL license** column is the charge Azure Hybrid Benefit removes for customers with SQL Server licenses and Software Assurance.
+
+Performance columns include CPU, storage used, and IO. Azure SQL Database and elastic pools report IO as a **percentage of the service tier's limit** rather than as absolute IOPS; Managed Instance and the PostgreSQL/MySQL flexible servers report absolute IOPS and throughput.
 
 ---
 
@@ -217,18 +311,22 @@ The RDS report is written to a date-stamped CSV (`SilkTCO_RDS_Report_...csv`) wi
 
 ## Output
 
-Both export functions generate a date-stamped CSV file in the current directory:
+Each export function generates a date-stamped CSV file in the current directory:
 
-```
-SilkTCO_Report_20260213_143052.csv
-```
+| Function | File |
+|---|---|
+| `Export-SilkTCOAzure`, `Export-SilkTCOAWS` | `SilkTCO_Report_20260213_143052.csv` |
+| `Export-SilkTCOAzureSQL` | `SilkTCO_AzureSQL_Report_20260213_143052.csv` |
+| `Export-SilkTCOAWSRDS` | `SilkTCO_RDS_Report_20260213_143052.csv` |
 
-The report includes:
+The VM / EC2 report includes:
 - VM/Instance names and sizes
 - Disk/Volume specifications (size, SKU/type, IOPS, throughput)
 - Performance metrics (read/write MB/s, read/write IOPS)
-- Daily cost breakdown (compute and storage)
+- Cost for the report period (compute and storage)
 - Uptime percentage
 - Resource grouping information
 
-**Submit this CSV file to your Silk account team for TCO analysis.** 
+The Azure SQL and RDS report contents are described in their own sections above.
+
+**Submit the CSV file(s) to your Silk account team for TCO analysis.** 

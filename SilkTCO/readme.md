@@ -150,11 +150,6 @@ This generates a report with 1 day of inventory, performance, and cost data for 
     Export-SilkTCOAzureSQL -excludeMetrics
     ```
 
-* **`-costMetric`** - `AmortizedCost` (default) or `ActualCost`. Amortized cost spreads reserved capacity and savings plan purchases across the databases that use them, which gives the true per-database cost. Actual cost shows a reservation as a single charge on the day it was purchased and the databases it covers as $0.
-    ```powershell
-    Export-SilkTCOAzureSQL -costMetric ActualCost
-    ```
-
 * **`-includeSystemDatabases`** - Include the `master` database on each logical server (excluded by default, as it is not billed)
     ```powershell
     Export-SilkTCOAzureSQL -includeSystemDatabases

@@ -494,10 +494,10 @@ function ValidateWindows {
 '@
 
         if (-not $regRows) {
-            AddRowWarnText "No data returned while checking iSCSI Parameters"
+            AddRowErrText "No data returned while checking iSCSI Parameters"
         }
         elseif ($regRows[0].Kind -eq 'Error') {
-            AddRowWarnText $regRows[0].Message
+            AddRowErrText $regRows[0].Message
         }
         else {
             $evaluatedPath = ($regRows | Select-Object -First 1 -ExpandProperty Path)
@@ -510,7 +510,7 @@ function ValidateWindows {
                 $summary = $nonCompliant | ForEach-Object {
                     "{0}={1} (expected {2})" -f $_.Name, $_.Actual, $_.Expected
                 }
-                AddRowWarnText ("Non-compliant iSCSI registry parameters: {0}" -f ($summary -join '; '))
+                AddRowErrText ("Non-compliant iSCSI registry parameters: {0}" -f ($summary -join '; '))
             }
             $view = $regRows | Select-Object Name, Expected, Actual, OK
             DumpTable $view
@@ -673,9 +673,9 @@ function ValidateWindows {
         $val = Invoke-Windows $ComputerName $Credential '(Get-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\FileSystem" -Name DisableDeleteNotification -ErrorAction SilentlyContinue).DisableDeleteNotification'
         if ($null -eq $val) { AddRowWarnText "DisableDeleteNotification not found" }
         elseif ($val -eq 1) { AddRowOKText "TRIM/UNMAP registry = 1 (disabled for controlled retrim)" }
-        else { AddRowErrText ("TRIM/UNMAP registry = {0} (expected 1)" -f $val) }
+        else { AddRowWarnText ("TRIM/UNMAP registry = {0} (expected 1)" -f $val) }
     }
-    catch { AddRowErrText ("TRIM registry read error: {0}" -f $_.Exception.Message) }
+    catch { AddRowWarnText ("TRIM registry read error: {0}" -f $_.Exception.Message) }
     try {
         $task = Invoke-Windows $ComputerName $Credential 'Get-ScheduledTask -TaskPath "\Microsoft\Windows\Defrag\" -TaskName "ScheduledDefrag" -ErrorAction SilentlyContinue'
         if ($task -and -not $task.Settings.Enabled) { AddRowOKText "Scheduled Disk Fragmentation policy is Disabled" } else { AddRowWarnText "Scheduled Disk Fragmentation policy not Disabled"
@@ -776,30 +776,27 @@ function ValidateWindows {
     }
     catch { AddRowWarnText ("NIC inventory failed: {0}" -f $_.Exception.Message) }
 
-    try {
-        $rsc = Invoke-Windows $ComputerName $Credential 'Get-NetAdapterRsc -ErrorAction SilentlyContinue | Sort-Object -Property Name'
-        if ($rsc) {
-            $view = $rsc | Select-Object Name, IPv4Enabled, IPv6Enabled, IPv4OperationalState, IPv6OperationalState
-            DumpTable $view
-            $bad = @($rsc | Where-Object { $_.IPv4Enabled -or $_.IPv6Enabled } | Select-Object -ExpandProperty Name -Unique)
-            if ($bad.Count -gt 0) { 
-                $action = "Get-NetAdapterRsc | Disable-NetAdapterRsc (NOTE: running this may cause a brief network interruption on the selected adapter)"
-                if ($Azure) { 
-                    AddRowErrText ("RSC is ENABLED on adapters: {0}. Expected: Disabled on Azure. Impact: packet coalescing can increase latency and cause throughput anomalies. Action: {1}" -f (($bad -join ', ')), $action) 
+    if ($Azure) {
+        try {
+            $rsc = Invoke-Windows $ComputerName $Credential 'Get-NetAdapterRsc -ErrorAction SilentlyContinue | Sort-Object -Property Name'
+            if ($rsc) {
+                $view = $rsc | Select-Object Name, IPv4Enabled, IPv6Enabled, IPv4OperationalState, IPv6OperationalState
+                DumpTable $view
+                $bad = @($rsc | Where-Object { $_.IPv4Enabled -or $_.IPv6Enabled } | Select-Object -ExpandProperty Name -Unique)
+                if ($bad.Count -gt 0) {
+                    $action = "Get-NetAdapterRsc | Disable-NetAdapterRsc (NOTE: running this may cause a brief network interruption on the selected adapter)"
+                    AddRowErrText ("RSC is ENABLED on adapters: {0}. Expected: Disabled on Azure. Impact: packet coalescing can increase latency and cause throughput anomalies. Action: {1}" -f (($bad -join ', ')), $action)
                 }
-                else {
-                    AddRowWarnText ("RSC is ENABLED on adapters: {0}. Not recommended for SDP hosts. Action: {1}" -f (($bad -join ', ')), $action)
-                }
+                else { AddRowOKText "All adapters have RSC disabled (compliant)" }
             }
-            else { AddRowOKText "All adapters have RSC disabled (compliant)" }
+            else {
+                AddRowWarnText "Get-NetAdapterRsc returned no results (older OS or module). Consider checking adapter advanced properties for 'Receive Segment Coalescing'."
+                $adv = Invoke-Windows $ComputerName $Credential 'Get-NetAdapterAdvancedProperty -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -match "Receive Segment Coalescing" } | Select-Object Name, DisplayName, DisplayValue'
+                if ($adv) { DumpTable $adv }
+            }
         }
-        else {
-            AddRowWarnText "Get-NetAdapterRsc returned no results (older OS or module). Consider checking adapter advanced properties for 'Receive Segment Coalescing'."
-            $adv = Invoke-Windows $ComputerName $Credential 'Get-NetAdapterAdvancedProperty -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -match "Receive Segment Coalescing" } | Select-Object Name, DisplayName, DisplayValue'
-            if ($adv) { DumpTable $adv }
-        }
+        catch { AddRowErrText ("RSC validation failed: {0}" -f $_.Exception.Message) }
     }
-    catch { AddRowErrText ("RSC validation failed: {0}" -f $_.Exception.Message) }
     CloseCard
 
     # ---------- Dedicated iSCSI NICs ----------

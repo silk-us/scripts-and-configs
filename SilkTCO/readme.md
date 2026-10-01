@@ -306,7 +306,7 @@ The RDS report is written to a date-stamped CSV (`SilkTCO_RDS_Report_...csv`) wi
 
 ## SQL Server Database Storage Export
 
-For SQL Server instances (on-prem or on a VM), `Export-DbStorage.ps1` in this folder collects per-database storage usage: data and log file sizes, space used and free, growth settings, and max size for every user database on the instance. It's a standalone script and not part of the `SilkTCO` module.
+For SQL Server instances (on-prem or on a VM), `Export-DbStorage.ps1` in the `SQL` folder collects per-database storage usage: data and log file sizes, space used and free, growth settings, and max size for every user database on the instance. It's a standalone script and not part of the `SilkTCO` module.
 
 ### Basic Usage
 Run it on (or against) the SQL Server as a Windows user with access to the databases:
@@ -338,7 +338,7 @@ Two CSVs are written, stamped with the instance name and time:
 
 > **Note:** Databases the account can't open are skipped and listed in the verbose output. A `sysadmin` login sees every database. Offline databases and the system databases (`master`, `model`, `msdb`, `tempdb`) aren't included.
 
-If you'd rather not run PowerShell, `sql1.sql` has the same query and can be run directly in SSMS.
+If you'd rather not run PowerShell, `DbStorage.sql` has the same query and can be run directly in SSMS.
 
 ---
 

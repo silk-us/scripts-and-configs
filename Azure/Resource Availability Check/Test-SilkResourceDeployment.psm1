@@ -1426,7 +1426,7 @@ function Test-SilkResourceDeployment
         begin
             {
                 $StartTime     = Get-Date
-                $scriptVersion = '1.2.0'
+                $scriptVersion = '1.3.0'
 
                 Write-Host $("Test-SilkResourceDeployment v{0} — {1}" -f $scriptVersion, $StartTime.ToString("yyyy-MM-dd HH:mm:ss")) -ForegroundColor Cyan
 
@@ -5124,11 +5124,13 @@ function Test-SilkResourceDeployment
                                 Write-Verbose -Message $("{0}Validating AvailabilityZonePeering feature registration for zone alignment capabilities..." -f $messagePrefix)
                                 try
                                     {
-                                        $featureCheckAvailabilityZonePeering = Get-AzProviderFeature -ProviderNamespace "Microsoft.Compute" -FeatureName "AvailabilityZonePeering" -ErrorAction Stop
+                                        # Microsoft.Resources, which serves checkZonePeers: Azure registers the feature there,
+                                        # and Microsoft.Compute answers FeatureNotFound for it.
+                                        $featureCheckAvailabilityZonePeering = Get-AzProviderFeature -ProviderNamespace "Microsoft.Resources" -FeatureName "AvailabilityZonePeering" -ErrorAction Stop
                                         if ($featureCheckAvailabilityZonePeering.RegistrationState -ne "Registered")
                                             {
                                                 Write-Warning -Message $("{0}AvailabilityZonePeering feature status: '{1}' in deployment subscription '{2}' - zone alignment cannot be performed." -f $messagePrefix, $featureCheckAvailabilityZonePeering.RegistrationState, $SubscriptionId)
-                                                Write-Warning -Message $("{0}To enable zone alignment, register the feature using: Register-AzProviderFeature -FeatureName AvailabilityZonePeering -ProviderNamespace Microsoft.Compute" -f $messagePrefix)
+                                                Write-Warning -Message $("{0}To enable zone alignment, register the feature using: Register-AzProviderFeature -FeatureName AvailabilityZonePeering -ProviderNamespace Microsoft.Resources" -f $messagePrefix)
                                                 Write-Verbose -Message $("{0}Proceeding without zone alignment due to missing feature registration." -f $messagePrefix)
                                             } `
                                         else
@@ -10821,6 +10823,25 @@ function Test-SilkResourceDeployment
 
                 # notify total runtime
                 Write-Host -message $("⏱️ Total Script Runtime: {0}" -f (New-TimeSpan -Start $StartTime -End (Get-Date)).ToString("hh\:mm\:ss")) -ForegroundColor Cyan
+
+                # ===============================================================================
+                # Return the report data
+                # ===============================================================================
+                # The same object the console and HTML reports are rendered from, returned so a
+                # caller can keep the results as data (for example: $result | ConvertTo-Json -Depth 20).
+                # Returned here, at the end of the end block, because the end block runs on every
+                # path: a return in begin or process ends only that block. It is the function's only
+                # pipeline output; everything else goes to the host, verbose, warning or error streams.
+                if ($reportData)
+                    {
+                        $reportData.Cleanup.Performed = [bool]$cleanupDidRun
+                        if ($cleanupDidRun)
+                            {
+                                $reportData.Cleanup.StartTime = $cleanupStartTime
+                                $reportData.Cleanup.Duration  = New-TimeSpan -Start $cleanupStartTime -End (Get-Date)
+                            }
+                        $reportData
+                    }
             }
     }
 

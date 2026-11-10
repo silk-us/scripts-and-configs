@@ -70,6 +70,7 @@ Typically this would deploy the test resources into an existing resource group, 
   - Multi-zone availability matrix (when using `-TestAllZones`)
   - Infrastructure resource details (VNet, NSG, PPG, AvSets)
   - Any issues or recommendations
+- **Return Value:** The function returns the report data the console and HTML reports are built from (configuration, environment validation, SKU support, quota analysis, deployment results, zone and SKU family results, cleanup), so results can be kept as data: `$result = Test-SilkResourceDeployment ...; $result | ConvertTo-Json -Depth 20 | Set-Content result.json`. `SKUSupport.RawRegionSKUs` and `QuotaAnalysis.RawQuotaData` hold Azure's raw responses and are large; leave them out when storing results.
 - **Resource Cleanup:** By default, all test resources are removed after validation unless `-DisableCleanup` is specified.
 
 > **Troubleshooting:** If you encounter issues, add `-Verbose` for detailed output. This can help identify problems with authentication, resource creation, quota limits etc.

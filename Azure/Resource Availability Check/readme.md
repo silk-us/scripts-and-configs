@@ -65,7 +65,7 @@ Typically this would deploy the test resources into an existing resource group, 
   - Silk Data Pod component summary (CNodes, MNodes, DNodes) showing requested and deployed counts
   - Deployment status for each resource
   - Availability checks for all relevant quotas with detailed analysis showing available vs. required resources
-  - SKU support analysis for region and zone with comprehensive reference table
+  - SKU support analysis for region and zone with comprehensive reference table. A zone Azure closes to the subscription (a SKU's Zone restriction, e.g. NotAvailableForSubscription) counts as not supported.
   - SKU family deployment test results (when using `-TestAllSKUFamilies`)
   - Multi-zone availability matrix (when using `-TestAllZones`)
   - Infrastructure resource details (VNet, NSG, PPG, AvSets)
@@ -115,7 +115,7 @@ Install-Module -Name Az.Accounts,Az.Resources,Az.Compute,Az.Network -Repository 
 | `-SubscriptionId`       | Azure Subscription ID where resources will be deployed. | Azure Subscription GUID | "12345678-1234-1234-1234-123456789012" | ☑️ |
 | `-ResourceGroupName`    | Azure Resource Group name. | Existing Azure RG | "silk-test-rg" | ☑️ |
 | `-Region`               | Azure region for deployment. | [Valid Azure Location](https://learn.microsoft.com/en-us/azure/reliability/regions-list) | "eastus" | ☑️ |
-| `-Zone`                 | Azure Availability Zone [Check Presence in Region](https://datacenters.microsoft.com/globe/explore/?view=table)  | "1", "2", "3", "Zoneless" | "1" | ☑️ |
+| `-Zone`                 | Azure Availability Zone [Check Presence in Region](https://datacenters.microsoft.com/globe/explore/?view=table)  | "1", "2", "3", "4", "Zoneless" | "1" | ☑️ |
 | `-ChecklistJSON`        | Path to Silk deployment checklist JSON file. | [Example format of expected JSON Structure](silk-deployment-checklist-example.json) | "C:\\configs\\silk-deployment.json" | ⬜️ |
 | `-CNodeFriendlyName`    | CNode SKU selection by Flex terminology | <br> Increased_Logical_Capacity_AMD (Standard_E64as_v6)<br> Increased_Logical_Capacity (Standard_E64s_v5)<br> Read_Cache_Enabled (Standard_L64s_v3)<br> No_Increased_Logical_Capacity_AMD (Standard_D64as_v6)<br> No_Increased_Logical_Capacity (Standard_D64s_v5)<br> Entry_Level_SDP (Standard_E32as_v5) | "Increased_Logical_Capacity" | ⬜️ |
 | `-CNodeCount`           | Number of CNode VMs for new deployments | Minimum of 2 -> Maximum of 8 | 2 | ⬜️ |

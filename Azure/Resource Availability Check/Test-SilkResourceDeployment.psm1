@@ -91,7 +91,7 @@ function Test-SilkResourceDeployment
 
             .PARAMETER Zone
                 Azure Availability Zone for resource placement. Use "Zoneless" for regions without zones.
-                Valid values: "1", "2", "3", "Zoneless"
+                Valid values: "1", "2", "3", "4", "Zoneless" (some regions, such as eastus2, have a fourth zone)
                 This parameter overrides JSON configuration values if provided.
 
             .PARAMETER ChecklistJSON
@@ -623,40 +623,40 @@ function Test-SilkResourceDeployment
                 [string]
                 $Region,
 
-                # Azure Availability Zone for resource placement (1, 2, 3, or Zoneless for regions without zones)
+                # Azure Availability Zone for resource placement (1, 2, 3, 4, or Zoneless for regions without zones)
                 # Use "Zoneless" for regions that do not support availability zones
                 # Overrides JSON configuration values when specified via command line
                 # if -ZoneAlignmentSubscriptionId specified, zone alignment will occur unless -DisableZoneAlignment is also specified
-                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON",     Mandatory = $false, HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $false, HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "CNode by SKU Existing Infra PV2",    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Mnode Lsv4",                     Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Mnode Lasv4",                    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Report Only",                    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "Report Only ChecklistJSON",      Mandatory = $false, HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3 (for high availability) or Zoneless (for regions without zone support)."))]
-                [ValidateSet("1", "2", "3", "Zoneless")]
+                [Parameter(ParameterSetName = 'ChecklistJSON',                  Mandatory = $false, HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Cleanup Only ChecklistJSON",     Mandatory = $false, HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Cleanup Only",                   Mandatory = $false, HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Friendly Cnode",                 Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "DNode by SKU Existing Infra",  Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv3",      Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lsv4",      Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv3",     Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Lasv4",     Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode Laosv4",    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Friendly Cnode Mnode by SKU",    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Cnode by SKU",                   Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra",    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "CNode by SKU Existing Infra PV2",    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv3",        Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lsv4",        Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv3",       Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Lasv4",       Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode Laosv4",      Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Cnode by SKU Mnode by SKU",      Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Mnode Lsv3",                     Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Mnode Lsv4",                     Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Mnode Lasv3",                    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Mnode Lasv4",                    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Mnode Laosv4",                   Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Mnode by SKU",                   Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Report Only",                    Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "Report Only ChecklistJSON",      Mandatory = $false, HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [Parameter(ParameterSetName = "SKU Family Test",                Mandatory = $true,  HelpMessage = $("Select an Availability Zone: 1, 2, 3, 4 (for high availability) or Zoneless (for regions without zone support)."))]
+                [ValidateSet("1", "2", "3", "4", "Zoneless")]
                 [ValidateNotNullOrEmpty()]
                 [string]
                 $Zone,
@@ -1426,7 +1426,7 @@ function Test-SilkResourceDeployment
         begin
             {
                 $StartTime     = Get-Date
-                $scriptVersion = '1.3.0'
+                $scriptVersion = '1.3.1'
 
                 Write-Host $("Test-SilkResourceDeployment v{0} — {1}" -f $scriptVersion, $StartTime.ToString("yyyy-MM-dd HH:mm:ss")) -ForegroundColor Cyan
 
@@ -4552,6 +4552,26 @@ function Test-SilkResourceDeployment
                                 Write-Error -Message $("Region '{0}' ({1}) is accessible but returned no compute SKU data. The subscription may lack permissions to enumerate compute resources in this region (requires Microsoft.Compute/skus/read), or the region may not support compute workloads." -f $Region, $accessibleRegion.DisplayName)
                                 $validationError = $true
                                 return
+                            }
+
+                        # A zone Azure lists for a SKU can still be closed to this subscription: the SKU's
+                        # Zone restrictions (e.g. NotAvailableForSubscription) name those zones. Take them out
+                        # of the SKU's zones here, once, so every support check, the zone matrix and the
+                        # report say what this subscription can actually deploy. A SKU closed for the whole
+                        # region lists every zone as restricted, so it is left with none.
+                        foreach ($regionSKU in $locationSupportedSKU)
+                            {
+                                $restrictedZones = @($regionSKU.Restrictions | Where-Object { $_.Type -eq $("Zone") } | ForEach-Object { $_.RestrictionInfo.Zones })
+                                if ($restrictedZones.Count -gt 0)
+                                    {
+                                        foreach ($skuLocation in $regionSKU.LocationInfo)
+                                            {
+                                                foreach ($restrictedZone in $restrictedZones)
+                                                    {
+                                                        [void]$skuLocation.Zones.Remove([string]$restrictedZone)
+                                                    }
+                                            }
+                                    }
                             }
 
                         # Check zone availability
